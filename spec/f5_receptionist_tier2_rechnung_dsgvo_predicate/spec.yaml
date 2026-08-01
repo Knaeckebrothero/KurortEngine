@@ -1,0 +1,104 @@
+# =============================================================================
+# spec.yaml — iter-24 F5 receptionist-subcommands Tier-2 (rechnung / dsgvo / predicate)
+# =============================================================================
+# Iteration 24 · Developer role · Pattern F chain-extension of iter-16 SHIPPED
+# Tier-1 wiring. This spec.yaml formalizes the Tier-2 carry-forward that the
+# iter-23 Critic verdict selected as the iter-24+ Developer PRIMARY
+# (composite 18 raw / 13.77 risk-adjusted; both-kind-triage rank-1). The 3
+# Tier-2 subcommands are wired onto already-shipped library modules per the
+# verdict §4 module inventory; no greenfield work, no cross-border dsgvo, no
+# PDF library dependency. The 5 verification commands in iter-23 verdict §6
+# are the verbatim done_when acceptance gate.
+# =============================================================================
+
+feature: f5-receptionist-subcommands-tier-2-rechnung-dsgvo-predicate
+iteration: 24
+owner: developer
+created: 2026-07-13
+predecessor: >-
+  iter-23 Critic verdict (job 012c72cb, confidence 0.82 HIGH) chose
+  `iter-14-qa-finding-f5-receptionist-subcommands-still-missing` (Tier-2
+  carry-forward for rechnung / dsgvo / predicate subcommands) as the
+  iter-24+ Developer PRIMARY. Pattern F chain-extension: wires 3 SHIPPED
+  library modules onto iter-16 SHIPPED Tier-1 wiring (4 of 6 receptionist
+  subcommands already wired per `repo/src/kurort_engine/__main__.py:
+  _build_parser` lines 50-149, plus the Tier-2 entry-point module
+  `repo/src/kurort_engine/__init__.py:parse_subcommand` Tier-1 dispatcher).
+
+# -----------------------------------------------------------------------------
+# intent — one-sentence purpose of the feature
+# -----------------------------------------------------------------------------
+intent: >-
+  Wire 3 SHIPPED library modules (rechnung.py / kurgaste_retention.auto_cascade
+  / predicate_filing) onto `__main__.py` argparse subparsers and
+  `__init__.py:parse_subcommand` dispatcher so the receptionist-facing CLI
+  exposes 7 subcommands (4 Tier-1 + 3 Tier-2) for meldeschein, kurtaxe,
+  remittance, arrival, rechnung, dsgvo, predicate — closing the F5 qa-finding
+  that 3 Tier-2 subcommands remain missing despite their library modules
+  being SHIPPED.
+
+# -----------------------------------------------------------------------------
+# acceptance_criteria — 3 EARS ACs (one per Tier-2 subcommand)
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+  - id: AC-1
+    ears: "When the user invokes `python -m kurort_engine rechnung issue` with a valid JSON payload supplied either via stdin or via `--input-file <path.json>`, the system shall parse monetary fields as `Decimal(string_value)` (no raw float), validate the payload schema, and emit a GoBD §10 retention-compliant text-only output on stdout; and the system shall exit 0 on success or exit non-zero with a structured error message on schema violation."
+    test_oracle: tests/test_f5_receptionist_subcommands_tier2.py::test_ac1_rechnung_issue_subcommand_emits_gobd_text
+  - id: AC-2
+    ears: "If the user invokes `python -m kurort_engine dsgvo cascade` with a `guest_id` argument, then the system shall execute the in-house retention cascade via `kurort_engine.kurgaste_retention.auto_cascade.run_cascade(guest_id)`, restrict the cascade to the in-house data inventory (no cross-border subprocessor work), and report the planned retention actions to stdout as a JSON object with at minimum the keys `guest_id`, `actions_planned`, and `actions_count`."
+    test_oracle: tests/test_f5_receptionist_subcommands_tier2.py::test_ac2_dsgvo_cascade_subcommand_reports_in_house_actions
+  - id: AC-3
+    ears: "When the user invokes `python -m kurort_engine predicate file` with a `year` argument (integer) and a `heilbad_code` argument (string), then the system shall dispatch to `kurort_engine.predicate_filing.run(year, heilbad_code)`, persist the predicate artifact to the configured output directory, and emit a success line on stdout containing the year, the heilbad_code, and the persisted artifact path."
+    test_oracle: tests/test_f5_receptionist_subcommands_tier2.py::test_ac3_predicate_file_subcommand_persists_artifact
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries (addresses R1, R3, R4, R5, R6)
+# -----------------------------------------------------------------------------
+not_included:
+  - "PDF library dependency: no reportlab, weasyprint, fpdf, or pypdf added to the project; rechnung subcommand output is text-only per GoBD §10 retention (addresses R1)."
+  - "Cross-border DSGVO cascade: dsgvo cascade is strictly in-house data inventory + retention; no subprocessor or third-country transfer work (addresses R4)."
+  - "Decimal-as-float JSON payload: JSON payloads MUST use string-quoted decimals (e.g. `\"42.00\"` parseable as `Decimal(\"42.00\")`); raw float is forbidden to avoid IEEE-754 rounding in monetary fields (addresses R5)."
+  - "Stdin-only JSON input: the rechnung subcommand MUST support BOTH stdin fallback AND `--input-file <path.json>` for ergonomic operator invocation (addresses R6)."
+  - "F8 README module-count drift fix: this spec does NOT touch README; F8 stays superseded at iter-23; if README refresh ships it is a separate cycle (addresses R3)."
+  - "Lawyer-budget-dependent work: no DSGVO Art. 28 NIS2-BSIG audit, no P1 avv_console extension; Mix-B safety (STATE-OF-PROJECT = NO Lawyer)."
+  - "HHB-API-dependent work: no P3 Loyalty/Stammgast wiring; bound by iter-23 supersession (DEFERRED pending HHB-API or Stammgast-LTV A/B-test trigger)."
+  - "Edits to 7 preserved SHAs: the SHIPPED library modules that this spec wires onto MUST remain byte-identical; this spec IMPORTS from them but does NOT MODIFY them (Pattern C chain-extension, not duplication). The 7 preserved SHAs are: (a) `repo/src/kurort_engine/rechnung.py`, (b) `repo/src/kurort_engine/kurgaste_retention/auto_cascade.py`, (c) `repo/src/kurort_engine/predicate_filing/__init__.py`, plus the iter-16 Tier-1 wiring (d) `repo/src/kurort_engine/__main__.py` Tier-1 lines 50-149, (e) `repo/src/kurort_engine/__init__.py:parse_subcommand` Tier-1 dispatcher, (f) `repo/src/kurort_engine/meldeschein.py`, (g) `repo/src/kurort_engine/kurtaxe.py`."
+  - "Test framework change: no pytest plugin, no fixture-engine rewrite; the existing `tests/test_f5_receptionist_subcommands.py` subprocess+JSON-stdin convention is reused for the new Tier-2 test file."
+  - "Production deployment / Docker / k8s: out of code-module scope."
+
+# -----------------------------------------------------------------------------
+# done_when — 5 verbatim verification commands from iter-23 verdict §6
+#              PLUS the spec-phase byte-identity SHA check
+# -----------------------------------------------------------------------------
+done_when:
+  - "shasum -a 256 repo/spec/f5_receptionist_tier2_rechnung_dsgvo_predicate/spec.yaml matches the SHA-256 recorded in repo/spec/f5_receptionist_tier2_rechnung_dsgvo_predicate/spec_lock.md PROTECTED block (byte-identical AC block, SHA + byte count preserved verbatim)."
+  - "VC1 — `grep -nE 'rechnung|dsgvo|predicate' repo/src/kurort_engine/__main__.py` returns ≥3 matches (each Tier-2 subcommand added under `add_subparsers(dest=\"subcommand\")`)."
+  - "VC2 — `PYTHONPATH=repo/src ./.venv/bin/python -m kurort_engine --help` lists subcommands: meldeschein, kurtaxe, remittance, arrival, rechnung, dsgvo, predicate (7 total)."
+  - "VC3 — `grep -nE 'def _cmd_rechnung|def _cmd_dsgvo|def _cmd_predicate|def _handle_rechnung|def _handle_dsgvo|def _handle_predicate' repo/src/kurort_engine/__init__.py` returns ≥3 handler functions or subcommand dispatchers."
+  - "VC4 — Library-module existence (no regression on F5 Tier-2 wiring prerequisites): `file_exists repo/src/kurort_engine/rechnung.py` + `file_exists repo/src/kurort_engine/kurgaste_retention/auto_cascade.py` + `file_exists repo/src/kurort_engine/predicate_filing/__init__.py` — all 3 return exists."
+  - "VC5 — `cd repo && PYTHONPATH=src ./.venv/bin/pytest tests/ -x --tb=short` returns ≥137 PASS (iter-16 baseline) + Tier-2 new tests; 0 FAIL."
+  - "git_diff against HEAD~1 shows 0 lines changed in the 7 preserved SHAs (rechnung.py, kurgaste_retention/auto_cascade.py, predicate_filing/__init__.py, __main__.py Tier-1 lines 50-149, __init__.py:parse_subcommand Tier-1 dispatcher, meldeschein.py, kurtaxe.py)."
+  - "Traceability matrix in spec_lock.md shows every AC-* mapped to ≥1 passing test (all rows status=green at Phase 3 GREEN end-state)."
+  - "ruff check src/kurort_engine/__main__.py src/kurort_engine/__init__.py exits 0 (no lint regressions in the green-phase Tier-2 wiring files)."
+
+# -----------------------------------------------------------------------------
+# assumptions
+# -----------------------------------------------------------------------------
+assumptions:
+  - "SPEC LOCATION: spec lives at repo/spec/f5_receptionist_tier2_rechnung_dsgvo_predicate/spec.yaml (module scope). The workspace-root spec.yaml from prior cycles (e.g. iter-23 verdict document) is a different artifact."
+  - "The 3 SHIPPED library modules are read-only consumers of this spec; this spec IMPORTS from them but does NOT MODIFY them (Pattern C chain-extension). Any library-module byte-change violates the 7 preserved SHAs done_when gate."
+  - "The existing `tests/test_f5_receptionist_subcommands.py` (Tier-1) establishes the subprocess+JSON-stdin test convention that the new `tests/test_f5_receptionist_subcommands_tier2.py` MUST follow (per pinned memory [2])."
+  - "Decimal round-trip: monetary fields use string-quoted JSON per iter-17 developer handoff §2.1 (`meldeschein-json-stdin-keyaliases-pattern-englishgerman-key-normalization-per-bm`); raw float is forbidden by AC-1 EARS."
+  - "Stdin and --input-file: both paths are tested; the existing Tier-1 meldeschein checkin handler demonstrates the pattern (per pinned memory [5])."
+  - "The iter-23 verdict §6 5 verification commands are the binding contract; done_when lists them verbatim (this spec re-lists them so the gate is self-contained)."
+  - "kurortengine.f5_receptionist_subcommands_tier2 0.1.0 is the initial version of the Tier-2 wiring. No semver compatibility commitment for 0.x releases."
+  - "F8 README drift stays superseded; F8 re-engagement trigger per iter-23 verdict §8 is 'F5 Tier-2 ship OR any future cycle that touches README'. This spec does NOT bundle F8; it stays a separate cycle per R3."
+
+# -----------------------------------------------------------------------------
+# traceability_summary — initial state (every AC starts at not_started;
+#                          status updates in spec_lock.md across phases)
+# -----------------------------------------------------------------------------
+traceability_summary:
+  - AC-1: not_started — RED → GREEN in Phase 2/3
+  - AC-2: not_started — RED → GREEN in Phase 2/3
+  - AC-3: not_started — RED → GREEN in Phase 2/3

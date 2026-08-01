@@ -1,0 +1,48 @@
+# Hessen Bad Orb MinLOS peak-week profile (iter-15 L13-004 channel-manager push)
+#
+# Schema (per spec.yaml AC-1):
+#   bundesland: str         — e.g. "hessen"
+#   kurort: str             — e.g. "bad_orb"
+#   rules: list[MinLosRule] — 4 named DHV Saison peak-weeks + 1 default shoulder
+#     - name: str              — canonically "easter" | "whitsun" | "summer" | "christmas" | "shoulder"
+#     - date_range: [str, str] — [start ISO-8601 date, end ISO-8601 date]
+#     - minlos: int            — minimum length of stay in nights
+#     - applies_to_ota: bool   — whether this rule pushes to OTA channels
+#
+# Peak-week dates estimated per L13-004-CF4 (refinement via direct
+# Kurverwaltung Bad Orb outreach deferred to iter-16+).
+#
+# Source references:
+#   - loop13-004-channel-manager-minstay-2-way-sync-booking-hrs
+#   - l7-003-minstay-seasonal-restriction-enforcement-deep-dive-de-kurort-peak-week-ru
+#   - DHV 2026 Neuausrichtung [canonical industry reference for peak-week patterns]
+bundesland: hessen
+kurort: bad_orb
+rules:
+  # Easter (Karfreitag-Ostermontag + adjacent weeks).
+  - name: easter
+    date_range: ["2026-04-03", "2026-04-12"]
+    minlos: 5
+    applies_to_ota: true
+  # Whitsun (Pfingstmontag + adjacent weeks).
+  - name: whitsun
+    date_range: ["2026-05-15", "2026-05-25"]
+    minlos: 4
+    applies_to_ota: true
+  # Summer Hochsaison (mid-June through early September per Hessen KMK).
+  - name: summer
+    date_range: ["2026-07-01", "2026-08-31"]
+    minlos: 3
+    applies_to_ota: true
+  # Christmas + New Year (Dec 20 - Jan 6).
+  - name: christmas
+    date_range: ["2026-12-20", "2027-01-06"]
+    minlos: 5
+    applies_to_ota: true
+  # Shoulder (default fallback for all dates not covered by a named peak-week).
+  # Per L7-003 retro §4.6 low-season convention: shoulder rules do NOT push
+  # to OTA channels (1-night bookings are universally accepted).
+  - name: shoulder
+    date_range: ["2026-01-01", "2026-12-31"]
+    minlos: 1
+    applies_to_ota: false

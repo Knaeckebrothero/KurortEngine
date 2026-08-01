@@ -1,0 +1,57 @@
+feature: q64-checkout-departure-meldung-mirror
+intent: "Ship a kurort_engine.q64_checkout package that extends the SHIPPED kurort-vertical-meldeschein (iter-6) with the departure-side mirror: populate Abreisedatum on the MeldescheinForm, run Bezahlung/Gutschein/Reisebüro-commission clearing, and emit a same-day Kurtaxe Abreise-Meldung per § 15 Abs. 3 Kurverwaltung-Bad-Orb ordinance (idempotent + audit-logged) — so Hotel Rheinland Bad Orb discharges the mandatory local-ordinance obligation in automated form, closing 1/3 of Resavio pain-row #2 (the departure-side mirror no commercial PMS automates)."
+
+acceptance_criteria:
+  - id: AC-1
+    ears: "When f5_q64_checkout.checkout(gast_id, today) is invoked for a foreign-guest gast_id (Ausweis-Seriennummer Pflicht per BMG § 30 Abs. 2), the system shall load the SHIPPED MeldescheinForm for gast_id, populate the previously-null Abreisedatum field with today, verify the existing BMG § 30 Pflichtangaben surface, and emit a q64.checkout.completed event carrying (ausweis_seriennummer, abreisedatum, gast_kategorie) for § 30 BMG + § 15 Abs. 3 Kurverwaltung-Bad-Orb discharge."
+    test_oracle: tests/test_q64_checkout_departure_meldung.py::test_ac1_foreign_guest_checkout_populates_abreisedatum_and_emits_event
+  - id: AC-2
+    ears: "When emit_departure_meldung(gast_id, abreisedatum, anreisedatum, kurtaxe_betrag, kurbeitragspflichtige_uebernachtungen_watermark) is called on the Kurverwaltung-Bad-Orb endpoint, the system shall be idempotent for the same (gast_id, abreisedatum) pair (re-emission returns the existing emission_id and is a no-op for state) and shall append a q64.audit_log_entry with idempotency_key = sha256(gast_id + abreisedatum + emission_timestamp).hexdigest() per the SHIPPED kurgaste_retention.auditlog companion-pattern."
+    test_oracle: tests/test_q64_checkout_departure_meldung.py::test_ac2_departure_meldung_event_idempotent_and_audit_logged
+  - id: AC-3
+    ears: "When redeem_gutschein(gast_id, issuer, code) is called at checkout, the system shall validate the code via kurpaket_orchestrator.lookup_gutschein(issuer, code), append one row to gutschein_redemption_ledger with fields (redemption_id, gast_id, code, issuer, redeemed_at, redeemed_value, audit_chain_hash) where audit_chain_hash = sha256(redemption_id + gast_id + code + str(redeemed_value)).hexdigest(), and apply redeemed_value to the checkout-summary PDF total (the SHIPPED checkout_form.total_kurtaxe is reduced by redeemed_value before § 35 KAG Abrechnung)."
+    test_oracle: tests/test_q64_checkout_departure_meldung.py::test_ac3_gutschein_redemption_validates_appends_ledger_and_applies_value
+  - id: AC-4
+    ears: "When compute_commission_split(booking_id, channel) is called for an OTA- or Reisebüro-routed booking routed via the SHIPPED channel_manager_minstay, the system shall return a CommissionSplit whose rate is read from commission_split_table.json per (a) booking_com: 0.15, (b) agoda: 0.12, (c) trivago: 0.0 (lead-gen only), (d) reisebuero_x_negotiated: the negotiated entry in the table (config-only update, no code change), (e) direct: 0.0; and shall emit a q64.commission_split.calculated event with idempotency_key = sha256(booking_id + commission_table_version).hexdigest(); and shall raise ValueError citing the unsupported channel for any channel not present in commission_split_table.json."
+    test_oracle: tests/test_q64_checkout_departure_meldung.py::test_ac4_reisebuero_commission_split_per_table_with_idempotency_key
+  - id: AC-5
+    ears: "When f5_q64_checkout.checkout(gast_id, today) is invoked for a German-guest gast_id (BEG IV 2025-01-01 carve-out — no Meldepflicht per pinned memory [6] / [9]), the system shall NOT require a Meldeschein completion and shall skip the BMG § 30 Pflichtangaben verification surface, but shall still emit emit_departure_meldung per § 15 Abs. 3 Kurverwaltung-Bad-Orb (AC-2 surface) and shall still apply redeem_gutschein (AC-3 surface) and compute_commission_split (AC-4 surface) when those code paths are reached."
+    test_oracle: tests/test_q64_checkout_departure_meldung.py::test_ac5_german_guest_beg_iv_carve_out_skips_meldepflicht_but_keeps_ordinance
+
+not_included:
+  - "External lawyer onboarding (Mix-B: STATE-OF-PROJECT = NO Lawyer per lawyer-budget-gate)."
+  - "Phase 7.5 BLOCKER rework (tests/test_a11y_guest_pwa_bitv20.py AC-3/AC-4 assertions + spec/a11y_guest_pwa_bitv20_disclosure/spec.lock.md PROTECTED block). BLOCKER is SUPERSEDED-to-iter-7+ per iter-5 verdict §6.3. Re-engagement is OUT of scope this iter."
+  - "Pre-arrival Meldeschein digital-capture layer (covered by iter-1 P4 BACKLOG; distinct event-time phase, NOT a re-proposal of P4)."
+  - "Toskana-Plus B2B partnership card bundle topology (covered by iter-1 P3 BACKLOG; q64 only CONSUMES Toskana-issued Gutschein codes, does NOT re-propose the bundle)."
+  - "HHV-GasteCard Kurorte-Netz reciprocity (SUPERSEDED-by-critic-iter-5-verdict; HHV partner-MOU API integration Phase-2 follow-on gated on HHV negotiation)."
+  - "Pedelec-Kurbeitrag-discount (SUPERSEDED-by-critic-iter-5-verdict; REUSE-EXTERNAL coupling — requires q64 SHIPPED for line-item display)."
+  - "Resavio, Apaleo, Cloudbeds, Mews, Hestia, KIMISUITE PMS integration (out of engineering scope; commercial)."
+  - "Production deployment / Docker / k8s (out of code-module scope)."
+  - "Kurpark weather-cancel (covered by iter-1 P2 BACKLOG; Kurpark layer ≠ checkout layer)."
+  - "Self-host air-gap deployment pattern (covered by iter-1 P5 BACKLOG; deployment-pattern layer)."
+  - "DSGVO Art. 17 cascade re-implementation (covered by iter-38 kurgaste_retention SHIPPED; q64 audit_log_entry is a write-allow consumer, not a re-implementer)."
+  - "Predicate filing narrative generator (covered by iter-33 SHIPPED; q64 has no predicate-evidence automation surface)."
+  - "DSGVO Art. 28 vendor AVV cascade (covered by iter-28 avv_kaskade SHIPPED; q64 has no sub-processor surface)."
+  - "7-locale checkout_summary.pdf template (Stage-1 = de-locale only per iter-6 Stage-1/Stage-2 discipline; 7-locale deferred to Stage-2)."
+
+done_when:
+  - "shasum -a 256 repo/spec/q64_checkout_departure_meldung/spec.yaml matches the SHA-256 recorded in repo/spec/q64_checkout_departure_meldung/spec.lock.md PROTECTED block (byte-identical)."
+  - "PYTHONPATH=src python3 -m pytest tests/test_q64_checkout_departure_meldung.py -v --override-ini=\"addopts=--tb=short\" returns 5 passed, 0 failed (one test per AC-1..AC-5)."
+  - "PYTHONPATH=src python3 -m pytest tests/ -q | tail -5 returns >=118 passed (118 PASS baseline per iter-38 must be preserved; 118 + 5 NEW = 123 expected at Phase 3 GREEN end-state)."
+  - "file_exists repo/src/kurort_engine/q64_checkout/__init__.py returns 'Exists (file)'."
+  - "file_exists repo/src/kurort_engine/q64_checkout/checkout_form.py returns 'Exists (file)' (Pattern F strict — CheckoutForm EXTENDS MeldescheinForm non-destructively)."
+  - "git diff HEAD~1 --stat shows 0 lines changed in any of the 6 SHIPPED Pattern F anchors: meldeschein/__init__.py, kurverwaltung/__init__.py, kurkarte_wallet/__init__.py, kurpaket_orchestrator/__init__.py, channel_manager_minstay/__init__.py, kurgaste_retention/__init__.py."
+  - "ruff check src/kurort_engine/q64_checkout/ exits 0 (no lint regressions; line-length 100, target py311 per pyproject.toml:47-50)."
+  - "Traceability matrix in spec_lock.md shows every Q64-AC-* row mapped to its test_oracle path with status progressing not_started -> red (Phase 2) -> green (Phase 3) -> verified (Phase 5 integration)."
+
+assumptions:
+  - "SPEC LOCATION: spec lives at repo/spec/q64_checkout_departure_meldung/spec.yaml (NOT workspace root). The project convention pinned in pinned memory [1] is per-feature subdirectory under repo/spec/, mirroring avv_kaskade/spec.yaml as the structural template."
+  - "Pattern F strict (q64-checkout EXTENDS SHIPPED modules non-destructively, NEVER re-implements): the 6 SHIPPED Pattern F anchors are meldeschein (iter-6), kurverwaltung (iter-36 H1-narrow 4-tier Satzung 2026), kurkarte_wallet (iter-21 PKPass issuer), kurpaket_orchestrator (iter-18 Gutschein issuer), channel_manager_minstay (iter-15 OTA/Reisebüro routing), kurgaste_retention (iter-38 auditlog). q64 IMPORTS from these but does NOT MODIFY them."
+  - "idempotency_key formula: sha256(gast_id + abreisedatum + emission_timestamp).hexdigest() — exact spec per iter-4 proposal §9 AC-2."
+  - "Gutschein audit_chain_hash formula: sha256(redemption_id + gast_id + code + str(redeemed_value)).hexdigest() — bound to ledger row content."
+  - "commission_split_table.json schema (config-only): { 'booking_com': 0.15, 'agoda': 0.12, 'trivago': 0.0, 'reisebuero_x_negotiated': <negotiated>, 'direct': 0.0 }. Rate changes are operational config updates (pinned memory [3] config-only discipline); code unchanged."
+  - "departure_meldung_event payload includes (gast_id, abreisedatum, anreisedatum, kurtaxe_betrag, kurbeitragspflichtige_uebernachtungen_watermark) per iter-4 proposal §5.3 Step 8; kurbeitragspflichtige_uebernachtungen_watermark is the leading-edge counterfactual for § 44 HFAG Bäderzuweisungen 5 000-Übernachtungen floor eligibility."
+  - "Checkout flow Stage-1 = de-locale only (per iter-6 Stage-1/Stage-2 boundary discipline); checkout_summary.pdf template is de-locale only in this iter; 7-locale deferred to Stage-2."
+  - "kurort_engine.q64_checkout 0.1.0 is the initial version. No semver compatibility commitment for 0.x releases."
+  - "Mid-campaign honesty (per task brief §Mid-campaign honesty): the Developer may ship a partial green state (2-3 of 5 ACs GREEN) this iter; the retrospective MUST be honest about actual state; the closing critic runs the done_when commands to verify the on-disk state matches the claims."
+  - "f5.q64.checkout F5-Receptionist subcommand surface is OUT OF SCOPE for this iter — q64 ships the underlying library functions (f5_q64_checkout.checkout, emit_departure_meldung, redeem_gutschein, compute_commission_split); the F5 receptionist CLI binding is a separate re-engagement trigger (the iter-5 verdict §10 Phase 7.5 BLOCKER ownership lane covers this). Pattern F non-destructive discipline: f5_receptionist_subcommands SHIPPED iter-16 reads these functions at import-time; no modification to that module."

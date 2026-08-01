@@ -1,0 +1,43 @@
+# Bad Orb Kurbeitragssatzung (Hessen KAG, effective 2020-07-01).
+# Source: https://www.bad-orb.info/kurbeitrag
+# Domain-truth reference: bad-orb-kurbeitragssatzung-domain-truth-hessen-kag-01072020
+#
+# `rate_per_day` is stored as a string so that yaml.safe_load returns a plain
+# string; the rates.py loader (filled in Phase 4 green) converts it to
+# Decimal at parse time. This keeps the placeholder YAML importable without
+# requiring any custom YAML constructors.
+bundesland: hessen
+kurort: bad_orb
+predicate: heilbad
+satzung_date: "2020-07-01"
+bands:
+  - name: adult
+    min_age: 16
+    max_age: null
+    disability_pct_min: null
+    disability_pct_max: null
+    rate_per_day: "2.50"
+  - name: adult_disabled_70
+    min_age: 16
+    max_age: null
+    disability_pct_min: 70
+    disability_pct_max: 99
+    rate_per_day: "1.25"
+  - name: youth
+    min_age: 6
+    max_age: 15
+    disability_pct_min: null
+    disability_pct_max: null
+    rate_per_day: "1.00"
+  - name: youth_disabled_70
+    min_age: 6
+    max_age: 15
+    disability_pct_min: 70
+    disability_pct_max: 99
+    rate_per_day: "0.50"
+  - name: child
+    min_age: 0
+    max_age: 5
+    disability_pct_min: null
+    disability_pct_max: null
+    rate_per_day: "0.00"

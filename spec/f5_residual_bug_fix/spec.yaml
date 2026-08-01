@@ -1,0 +1,225 @@
+---
+# spec.yaml — f5_residual_bug_fix
+# ----------------------------------------------------------------------
+# Iteration: 18 · Role: Developer · Phase: 1 (spec) · TDD phase: spec
+# Job: kurort_engine f5-residual-bug-fix
+# ----------------------------------------------------------------------
+# Scope: repair the two HIGH-severity user-facing bugs the iter-17
+# Product-QA report identified in the SHIPPED F5 receptionist CLI
+# handlers (repo/src/kurort_engine/__init__.py):
+#
+#   Gap A — _handle_meldeschein_checkin (lines 209-235) raises
+#           KeyError when the JSON-stdin payload uses the standard
+#           English-keyed intake form instead of the German BMG §30
+#           field names that MeldescheinForm requires.
+#
+#   Gap B — _handle_kurtaxe_charge (lines 238-250) and
+#           _handle_remittance_generate (lines 253-272) are stubs.
+#           They do not call the SHIPPED calculator / reporting
+#           primitives; the Kurtaxe handler echoes a payload field
+#           (`amount_eur`) and the remittance handler passes an
+#           empty reservations=[] list. The portal cannot
+#           reconcile a header-only file, and the Kurtaxe ledger
+#           prints whatever the operator typed in.
+#
+# The fix is constrained to the three handler bodies. The SHIPPED
+# calculator / reporting / Meldeschein / Satzung primitives are
+# correct and are NOT in scope.
+# ----------------------------------------------------------------------
+
+feature: f5_residual_bug_fix
+intent: Repair the two HIGH-severity user-facing bugs in the F5 receptionist CLI handlers so the Meldeschein intake form accepts English-keyed payloads and the Kurtaxe / remittance handlers persist real data through the SHIPPED calculator and reporting primitives.
+version: 1
+iteration: 18
+owner: developer
+
+# ---------------------------------------------------------------------------
+# Acceptance criteria — 3 EARS-formatted criteria.
+# ---------------------------------------------------------------------------
+#
+# EARS templates used (per instructions §1):
+#   - Event-driven: "When <event>, the system shall <response>"
+#   - Unwanted-behavior: "If <unwanted condition>, the system shall
+#                          <response that prevents/recovers>"
+#   - Ubiquitous: "The system shall <always-true statement>"
+#
+# Each AC has an ID (AC-N), an `ears` body, and a `test_oracle` path
+# that points to the pytest test that proves it. The test file does
+# NOT exist at HEAD — Phase 2 (red) will create it.
+
+acceptance_criteria:
+
+  # -----------------------------------------------------------------
+  # AC-A — Gap A fix (English-key Meldeschein payload acceptance)
+  # -----------------------------------------------------------------
+  - id: AC-A
+    title: meldeschein_english_key_payload_accepted
+    category: bug-fix / Gap A
+    ears: |
+      When the operator submits a JSON-stdin payload to the
+      `meldeschein check-in` subcommand that uses the standard
+      English-keyed intake form (last_name, first_name,
+      date_of_birth, nationality, address, arrival_date,
+      departure_date, optional passport_number), the handler
+      shall normalise the payload to a MeldescheinForm instance
+      whose German BMG §30 field names (familienname, vorname,
+      geburtsdatum, staatsangehoerigkeit, anschrift, anreisedatum,
+      abreisedatum, ausweis_seriennummer) are populated with the
+      corresponding English-keyed values; `render(form)` shall
+      then be called and the handler shall exit 0 with stdout
+      containing the marker `Meldeschein emitted:`.
+    template: event-driven
+    test_oracle: tests/test_f5_residual_bug_fix.py::test_meldeschein_handler_accepts_english_keys
+    rationale: |
+      Closes the KeyError that receptionists hit when they submit
+      the standard English-keyed intake form. The fix is
+      payload-shape normalisation; the German MeldescheinForm
+      dataclass itself is unchanged.
+    shas: []
+    confidence: high
+
+  # -----------------------------------------------------------------
+  # AC-B — Gap B / Kurtaxe fix (calculator pipeline)
+  # -----------------------------------------------------------------
+  - id: AC-B
+    title: kurtaxe_handler_uses_calculator_pipeline
+    category: bug-fix / Gap B
+    ears: |
+      When the operator submits a JSON-stdin payload to the
+      `kurtaxe charge` subcommand that carries a reservation_id and
+      the SHIPPED Reservation shape (arrival, departure, guests),
+      the handler shall call
+      `kurort_engine.calculator.calculate_kurtaxe_for_reservation`
+      with the Reservation and the Hessen Bad Orb Satzung loaded
+      via `kurort_engine.load_profile("hessen", "bad_orb")`, and
+      shall print the resulting Decimal formatted as EUR with two
+      decimal places alongside the reservation_id; the printed
+      amount shall NOT equal an `amount_eur` field echoed from
+      the payload.
+    template: event-driven
+    test_oracle: tests/test_f5_residual_bug_fix.py::test_kurtaxe_handler_uses_calculator_pipeline
+    rationale: |
+      The current stub echoes a payload field — the printed
+      amount is operator-supplied, not derived. After the fix
+      the printed amount is the calculator's Decimal output, so
+      an operator who submits `amount_eur: 0.01` for a 3-night
+      adult stay at the Bad Orb Hauptsaison rate gets the real
+      rate × day_count, not 0.01 EUR.
+    shas: []
+    confidence: high
+
+  # -----------------------------------------------------------------
+  # AC-C — Gap B / remittance fix (real CSV data rows)
+  # -----------------------------------------------------------------
+  - id: AC-C
+    title: remittance_handler_emits_real_data_rows
+    category: bug-fix / Gap B
+    ears: |
+      When the operator invokes the `remittance generate`
+      subcommand with `--year`, `--month`, and a JSON-stdin
+      payload that carries a non-empty list of reservations whose
+      `arrival` falls inside the (year, month) window, the
+      handler shall pass that list to
+      `kurort_engine.reporting.generate_monthly_remittance_csv`,
+      and the resulting CSV shall contain the 12-column header
+      row followed by at least one data row whose
+      `subtotal_eur` column equals the rate_band × day_count for
+      the first paying guest.
+    template: event-driven
+    test_oracle: tests/test_f5_residual_bug_fix.py::test_remittance_handler_emits_real_data_rows
+    rationale: |
+      The current stub always passes `reservations=[]` so the
+      portal gets a header-only file. After the fix, with a
+      non-empty in-window reservation stream, the CSV has at
+      least one data row whose subtotal reconciles to
+      `rate_per_day × day_count` per AC-4 in
+      `repo/spec/<iter-12>/spec.yaml` (the spec pinned by
+      `kurort_engine/reporting.py:AC4_HEADER_COLUMNS`).
+    shas: []
+    confidence: high
+
+# ---------------------------------------------------------------------------
+# not_included — explicit scope boundaries (per instructions §1).
+# ---------------------------------------------------------------------------
+# Anything listed here is OUT of this feature. The red/green phases
+# may not write tests or code that exercises these.
+
+not_included:
+  - id: NI-1
+    title: F7 / F8 document fixes
+    description: |
+      The F7 / F8 document-generation follow-ups that the iter-17
+      Product-QA report flagged as separate items are NOT in scope
+      here. They will be addressed in their own iterations.
+  - id: NI-2
+    title: New CLI subcommands
+    description: |
+      No new subcommands. The four F5 Tier-1 subcommands
+      (`meldeschein check-in`, `kurtaxe charge`,
+      `remittance generate`, `arrival bundle`) plus the avv
+      tree remain the only CLI surface. The dispatcher
+      (`kurort_engine.parse_subcommand`) is unchanged.
+  - id: NI-3
+    title: Satzung profile loader redesign
+    description: |
+      `kurort_engine.load_profile("hessen", "bad_orb")` is
+      SHIPPED and unchanged. The handler may call it but
+      cannot modify it.
+  - id: NI-4
+    title: MeldescheinForm schema rename
+    description: |
+      The German BMG §30 field names on the SHIPPED
+      MeldescheinForm dataclass are unchanged. The fix is
+      payload-shape normalisation at the handler boundary,
+      not a dataclass migration.
+  - id: NI-5
+    title: Public API expansion
+    description: |
+      No new public symbols. The three repaired handlers
+      are internal (`_handle_*`) and not in `kurort_engine.__all__`.
+      The 72-symbol public surface at HEAD is preserved
+      byte-for-byte.
+  - id: NI-6
+    title: Audit-log schema change
+    description: |
+      The exemption audit-log schema (sha-256 canonical-JSON
+      payload via `calculate_kurtaxe_for_reservation._last_audit_log`)
+      is unchanged. The handler does not write to the audit log.
+
+# ---------------------------------------------------------------------------
+# done_when — exact commands that must pass for the feature to ship.
+# ---------------------------------------------------------------------------
+# Each command MUST be runnable in the repo workspace. The red/green
+# phases will keep these green.
+
+done_when:
+  # The new spec-specific tests pass.
+  - command: pytest tests/test_f5_residual_bug_fix.py -v
+    expected_exit_code: 0
+    evidence: 3 collected items, all passing
+
+  # The full project test suite stays green — no regressions.
+  - command: pytest -q
+    expected_exit_code: 0
+    evidence: baseline + 3 new tests, all passing
+
+  # The import surface is unchanged (no accidental __all__ drift).
+  - command: python -c "import kurort_engine; print(len(kurort_engine.__all__))"
+    expected_exit_code: 0
+    evidence: "77"
+
+  # The four F5 Tier-1 subcommands remain reachable via the dispatcher.
+  - command: python -c "from kurort_engine import parse_subcommand; print(parse_subcommand is not None)"
+    expected_exit_code: 0
+    evidence: "True"
+
+# ---------------------------------------------------------------------------
+# cross-cutting constraints (pinned rules)
+# ---------------------------------------------------------------------------
+constraints:
+  - "No edit under tests/ in green phase (TDD red/green discipline)."
+  - "No edit under src/ in red phase."
+  - "Test must fail with AssertionError, not ImportError / SyntaxError / CollectionError."
+  - "No `assert True`, no `pytest.skip`, no `@pytest.mark.xfail` (todo-guide §forbidden)."
+  - "Test must observe the bug end-to-end through the dispatcher; no mocking of the unit under test."
+  - "AC block in spec_lock.md `## Acceptance Criteria` section is byte-identical to this file's `acceptance_criteria:` block (sha-256 equality enforced)."

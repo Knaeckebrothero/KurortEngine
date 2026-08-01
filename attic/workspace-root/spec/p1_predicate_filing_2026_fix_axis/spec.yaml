@@ -1,0 +1,170 @@
+# =============================================================================
+# spec.yaml — iter-12 P1 predicate_filing 2026 fix-axis (regression-lock cycle)
+# =============================================================================
+# Iteration 12 · Developer role · Pattern F stale-kickoff re-launch (7th observed
+# instance). The 4 surgical bug fixes (CF-PF-2026-1 + CF-PF-2026-2 +
+# CF-PF-2026-4 + CF-PF-2026-3) are ALREADY SHIPPED on branch job/65fd85f1 at
+# HEAD 27d22548 (iter-11 Critic merged prior). This spec.yaml formalizes the
+# regression-lock cycle: the 4 fix-axis contracts are pinned as acceptance
+# criteria, the 4 pytest repros are the test_oracle, and the 5 verification
+# commands are the done_when gate.
+# =============================================================================
+#
+# Predecessor chain:
+#   iter-11 Critic verdict (job 968785c8) — CHOSE iter-9 Scholar Proposal #001
+#                                        (predicate_filing 2026 fix-axis Tier-1)
+#                                        as iter-12 Developer action.
+#   iter-9  Scholar Proposal #001       — Authored the 4-bug fix-axis
+#                                        (CF-PF-2026-1+2+4+3) with 12 src LOC +
+#                                        110 test LOC + 5 EARS ACs + 5 verifier
+#                                        commands + 7 anti-drift checks.
+#   iter-6  Bughunter                   — Confirmed the 4 bugs (3 HIGH + 1 MEDIUM)
+#                                        on `kurort_engine.predicate_filing.2026`.
+#   iter-33 Developer                   — SHIPPED 4 predicate_filing modules +
+#                                        compute_anti_drift_sha() discipline.
+#   iter-36 Developer                   — SHIPPED h1-narrow-satzung-2026 layer
+#                                        (118/118 tests pass at iter-36 close).
+#   iter-30 Foundation                  — 6 SHAs anti-drift discipline
+#                                        (esg + esg.report + kurpaket_orchestrator
+#                                        + kurkarte_wallet + spa_wellness +
+#                                        ev_charging) preserved verbatim.
+# =============================================================================
+
+feature: p1-predicate-filing-2026-fix-axis
+iteration: 12
+owner: developer
+created: 2026-07-12
+predecessor: >-
+  iter-11 Critic verdict (job 968785c8) chose iter-9 Scholar Proposal #001
+  (predicate_filing 2026 fix-axis Tier-1) as the iter-12 Developer action.
+  The 4 bug fixes (CF-PF-2026-1 + CF-PF-2026-2 + CF-PF-2026-4 + CF-PF-2026-3)
+  were shipped on branch job/65fd85f1 (sealed 2026-07-08, 138/138 tests pass)
+  and merged to main at HEAD 27d22548. Per Pattern F stale-kickoff rule (7th
+  observed instance), this cycle formalizes the 4 fixes as regression-locks
+  rather than re-running shipped work. Per pinned rule 10 (regression-lock
+  discipline), tests in `output/repros/` are GREEN at HEAD and serve as
+  anti-drift guards against future regression.
+
+# -----------------------------------------------------------------------------
+# intent — one-sentence purpose of the feature
+# -----------------------------------------------------------------------------
+intent: >-
+  Lock the 4 iter-6 confirmed bug fixes (CF-PF-2026-1 adult_rate Decimal
+  precision + CF-PF-2026-2 Beglaubigung unquoted-clause extraction +
+  CF-PF-2026-3 BFSGComplianceError diagnostic clarity + CF-PF-2026-4
+  period/reprdikatisierung_window tuple type-guard) as acceptance criteria
+  in `kurort_engine.predicate_filing.2026_{validate,attestation}` so that
+  any future regression of these contracts is caught by the existing 4
+  pytest repros in `output/repros/001..004_*.py`.
+
+# -----------------------------------------------------------------------------
+# acceptance_criteria — 5 EARS-format ACs (Ubiquitous + Event-driven +
+# State-driven + Unwanted-behavior mix; regression-lock cycle framing)
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+  - id: AC-1
+    ears: >-
+      When `_find_adult_rate_eur(bands)` is called with a bands list
+      containing an `adult` band whose `rate_eur` or `rate_per_day` field
+      is the Decimal-or-float value `2.50`, the function shall return
+      the canonical string `"2.50"` (two fractional digits, trailing
+      zero preserved); the `adult_rate_applied` field of the attestation
+      payload shall equal `"2.50"`, not `"2.5"`. The implementation
+      shall use `decimal.Decimal` (e.g. `f"{Decimal(str(rate)):.2f}"`)
+      rather than `str(rate)`.
+    test_oracle: >-
+      output/repros/001_adult_rate_float_precision_loss.py::test_repro_001_adult_rate_float_precision_loss
+      output/repros/001_adult_rate_float_precision_loss.py::test_repro_001b_adult_rate_via_yaml_unquoted_path
+
+  - id: AC-2
+    ears: >-
+      When `extract_2026_satzung_schema(profile)` is called with a
+      `beglaubigung_clauses` list whose YAML clauses are in canonical
+      Bad Orb 2026 Satzung unquoted-prose form (no surrounding double
+      quotes around `clause_text`), the function shall return a non-empty
+      list of clauses with one element per `- clause_id:` block; the
+      extracted `clause_text` shall equal the prose body verbatim.
+    test_oracle: >-
+      output/repros/002_beglaubigung_silent_drop_unescaped_clauses.py::test_repro_002a_single_unquoted_german_clause_extracted
+      output/repros/002_beglaubigung_silent_drop_unescaped_clauses.py::test_repro_002b_two_unquoted_clauses_extracted
+
+  - id: AC-3
+    ears: >-
+      When `load_2026_profile(profile_dict)` is called with a profile
+      whose `period` or `reprdikatisierung_window` field is a `str` (or
+      `None`, or any non-list type), the function shall raise
+      `ValueError` (not silently bypass); when the field is a 2-element
+      list of strings, the function shall coerce it to a `tuple[str, str]`.
+    test_oracle: >-
+      output/repros/004_load_2026_profile_period_string_bypass.py::test_repro_004_period_as_string_returns_tuple
+
+  - id: AC-4
+    ears: >-
+      When `compute_anti_drift_sha()` raises `BFSGComplianceError`
+      (anti-drift violation), the error message body shall reference
+      ONLY the 4 iter-33 SHIPPED predicate_filing chain-extension modules
+      (`predicate_packet_assembler`, `kurgaste_health_data_aggregator`,
+      `heilbad_2036_narrative_generator`, `predicate_filing_export`) —
+      not the 6 SHIPPED non-predicate_filing SHAs (esg + esg.report +
+      kurpaket_orchestrator + kurkarte_wallet + spa_wellness +
+      ev_charging), which are protected by separate git-diff discipline.
+    test_oracle: >-
+      output/repros/003_anti_drift_sha_misleading_diagnostic.py::test_repro_003_diagnostic_lists_only_modules_actually_shaed
+
+  - id: AC-5
+    ears: >-
+      While the regression-lock cycle is in effect, the full pytest suite
+      under `tests/` shall report `132 passed, 0 failed` (or more if new
+      tests are added in future cycles); no previously-passing test shall
+      fail. The 4 regression-locks in `output/repros/` shall report
+      `6 passed, 0 failed` (the 6 tests across the 4 repro files).
+    test_oracle: >-
+      repo/tests/test_predicate_filing_2026.py (full predicate_filing 2026 suite)
+      output/repros/001_adult_rate_float_precision_loss.py
+      output/repros/002_beglaubigung_silent_drop_unescaped_clauses.py
+      output/repros/003_anti_drift_sha_misleading_diagnostic.py
+      output/repros/004_load_2026_profile_period_string_bypass.py
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries (per Pattern F regression-lock cycle)
+# -----------------------------------------------------------------------------
+not_included:
+  - "New modules under `repo/src/kurort_engine/predicate_filing/` (the 6 iter-33 SHIPPED modules + the 2 surgical-edit files are the complete surface for this cycle)."
+  - "New public API surface — only the existing `kurort_engine.predicate_filing` import path is used; no new exports, no new `__init__.py` symbols beyond what the 4 surgical edits need."
+  - "New third-party dependencies — stdlib only (`decimal.Decimal` + `re` are stdlib); no PyPI additions."
+  - "DSGVO / AVV / DSGVO-relevant surface — predicate_filing 2026 layer is non-personal-data compliance (Hessen KAG + BMF Heilmittel), so MIX B safety is preserved with no Lawyer engagement required."
+  - "New pytest tests under `repo/tests/` — regression-locks live exclusively in `output/repros/` per the iter-12 precedent (the 4 repro files predate this spec and serve as both RED-evidence and GREEN-oracle)."
+  - "Behavior changes to the 6 SHAs (esg + esg.report + kurpaket_orchestrator + kurkarte_wallet + spa_wellness + ev_charging) — these are read-only consumers of predicate_filing and are preserved verbatim via git-diff discipline."
+  - "Behavior changes to the 6 iter-33 SHIPPED predicate_filing modules (predicate_packet_assembler + kurgaste_health_data_aggregator + heilbad_2036_narrative_generator + predicate_filing_export + __init__ + 2026 layer files besides the 2 surgical-edit files) — these are preserved verbatim via git-diff discipline."
+
+# -----------------------------------------------------------------------------
+# done_when — 5 verification commands that MUST pass at cycle SEAL
+# -----------------------------------------------------------------------------
+done_when:
+  - "shasum -a 256 spec/p1_predicate_filing_2026_fix_axis/spec.yaml matches the SHA-256 recorded in spec/p1_predicate_filing_2026_fix_axis/spec.lock.md PROTECTED block (byte-identical)."
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/ -q --override-ini=\"addopts=--tb=line\" reports 132 passed, 0 failed (baseline pytest regression-guard)."
+  - "PYTHONPATH=src .venv/bin/python -m pytest output/repros/001_adult_rate_float_precision_loss.py output/repros/002_beglaubigung_silent_drop_unescaped_clauses.py output/repros/003_anti_drift_sha_misleading_diagnostic.py output/repros/004_load_2026_profile_period_string_bypass.py -v reports 6 passed, 0 failed (4 regression-locks GREEN at HEAD, proving the 4 fixes are pinned)."
+  - "git diff HEAD --stat shows 0 lines changed in: src/kurort_engine/esg/__init__.py + src/kurort_engine/esg/report/__init__.py + src/kurort_engine/kurpaket_orchestrator.py + src/kurort_engine/kurkarte_wallet/__init__.py + src/kurort_engine/spa_wellness/__init__.py + src/kurort_engine/ev_charging/__init__.py + src/kurort_engine/predicate_filing/__init__.py + src/kurort_engine/predicate_filing/predicate_packet_assembler.py + src/kurort_engine/predicate_filing/kurgaste_health_data_aggregator.py + src/kurort_engine/predicate_filing/heilbad_2036_narrative_generator.py + src/kurort_engine/predicate_filing/predicate_filing_export.py (6 SHAs + 5 iter-33 SHIPPED predicate_filing modules preserved verbatim; only 2026_validate.py + 2026_attestation.py may show surgical diff lines, all within the iter-9 Proposal #001 §3 line-mapping table)."
+  - "PYTHONPATH=src .venv/bin/python -c 'from kurort_engine.predicate_filing import compute_anti_drift_sha; print(\"compute_anti_drift_sha IMPORTABLE from kurort_engine.predicate_filing:\", compute_anti_drift_sha)' exits 0 AND PYTHONPATH=src .venv/bin/python -c 'from kurort_engine.kurkarte_wallet import BFSGComplianceError; print(\"BFSGComplianceError RE-EXPORTED from kurort_engine.kurkarte_wallet (iter-21 SHIPPED):\", BFSGComplianceError)' exits 0."
+
+# -----------------------------------------------------------------------------
+# assumptions — 7 binding assumptions (per iter-9 Proposal #001 + iter-12 entry-state)
+# -----------------------------------------------------------------------------
+assumptions:
+  - "The 4 surgical bug fixes are ALREADY SHIPPED on branch job/65fd85f1 and merged to main at HEAD 27d22548 (per `iter-12-developer-cycle-entry-state-pattern-f-stale-kickoff-re-launch-7th-observ` Pattern F 7th observed instance). No new src/ changes are required in this cycle — the regression-locks document the contracts that the shipped code already satisfies."
+  - "HEAD 27d22548 contains the 4 src-file fixes at the EXACT line numbers documented in iter-9 Proposal #001 §3: 2026_attestation.py:73 (`f\"{Decimal(str(rate)):.2f}\"`) + 2026_validate.py:82-88 (regex accepts both quoted + unquoted) + 2026_validate.py:178-187 (full type-check on period/reprdikatisierung_window) + 2026_attestation.py:248-256 (BFSGComplianceError message trims to 4 iter-33 modules)."
+  - "Baseline pytest = 132 passed (per iter-12 spec-input KB note `iter-12-spec-input-p1-predicatefiling-2026-fix-axis-kb-findings-4-repros-red-ver`); the 4 pre-existing failures documented in iter-11 Critic verdict are NOT caused by this iteration and remain at 0 (no regressions introduced)."
+  - "MIX B fully safe (per `lawyer-budget-gate-state-of-project-crossed-5-iteration-threshold-at-iter-26-was`): no Lawyer + no DSGVO/AVV + no partner-MOU + no third-party cert required. Predicate_filing 2026 is non-personal-data compliance surface (Hessen KAG + BMF Heilmittel)."
+  - "The 4 pytest repros in `output/repros/001..004_*.py` are the OBJECTIVE TRUTH for the 4 bugs (per `iter-6-bughunter-4-confirmed-findings-3-high-1-medium-on-kurortenginepredicatefi`); they serve as both the RED-evidence (assertion-failure on shipped-HEAD) and the GREEN-oracle (assertion-pass on fixed-HEAD). The repro files predate this spec and are not authored by this cycle."
+  - "Spec location: spec.yaml lives at `<workspace>/spec/p1_predicate_filing_2026_fix_axis/spec.yaml` per the iter-12 convention (per pinned memory [1] + `stale-workspace-artifact-replacement-policy-specyaml-speclockmd-planmd-overwritt`). This matches the iter-36 spec.yaml location for h1-narrow-satzung-2026."
+  - "The locked AC block (5 ACs verbatim) is the PROTECTED `## Acceptance Criteria` section in `spec.lock.md`; SHA-256 of spec.yaml + SHA-256 of AC block are recorded in spec.lock.md lock metadata. Per pinned rule 5, the locked ACs cannot be rewritten to match what shipped — if the AC turns out to be wrong, surface it as BLOCKED or revise it in a strategic phase."
+
+# -----------------------------------------------------------------------------
+# traceability_summary — quick mapping of AC → repro → src line (for spec_lock.md)
+# -----------------------------------------------------------------------------
+traceability_summary:
+  - {ac: AC-1, src_file: src/kurort_engine/predicate_filing/2026_attestation.py, src_lines: "67-73 (function _find_adult_rate_eur)", repro: output/repros/001_adult_rate_float_precision_loss.py, cf_id: CF-PF-2026-1}
+  - {ac: AC-2, src_file: src/kurort_engine/predicate_filing/2026_validate.py, src_lines: "82-102 (regex + group selection)", repro: output/repros/002_beglaubigung_silent_drop_unescaped_clauses.py, cf_id: CF-PF-2026-2}
+  - {ac: AC-3, src_file: src/kurort_engine/predicate_filing/2026_validate.py, src_lines: "178-187 (type-guard for period + reprdikatisierung_window)", repro: output/repros/004_load_2026_profile_period_string_bypass.py, cf_id: CF-PF-2026-4}
+  - {ac: AC-4, src_file: src/kurort_engine/predicate_filing/2026_attestation.py, src_lines: "248-256 (BFSGComplianceError message body)", repro: output/repros/003_anti_drift_sha_misleading_diagnostic.py, cf_id: CF-PF-2026-3}
+  - {ac: AC-5, src_file: "(regression-guard, no src change)", src_lines: "(suite-wide)", repro: "(full pytest + 4 repros)", cf_id: "(regression-guard)"}

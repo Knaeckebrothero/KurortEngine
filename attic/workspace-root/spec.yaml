@@ -1,0 +1,228 @@
+# spec.yaml — F-12 systemic-import-failure fix-bundle (iter-3, branch job/0550d87c)
+# Source-of-truth hierarchy: this file > spec_lock.md PROTECTED block > plan.md > instructions.md.
+# Lock discipline: see spec_lock.md. SHA-256 of this file is recorded in spec_lock.md §Lock metadata.
+
+feature: f-12-systemic-import-failure-fix-bundle
+
+intent: >-
+  Repair the four systemic-import failures that block every operator of the shipped
+  kurort_engine package on a fresh checkout of branch job/0550d87c, so the entire
+  170-test suite becomes genuinely reachable as a true green and the package's
+  declared entry points (`kurort-engine`, `guest-pwa`) become discoverable from
+  the venv PATH without a `PYTHONPATH=src` workaround. This unblocks the next
+  iteration's kurort-vertical feature work by collapsing four trivial but
+  load-bearing fix surfaces into one deliverable.
+
+# All ACs use one of the EARS templates:
+#   Ubiquitous        — "The <thing> SHALL <property>" (no trigger)
+#   Event-driven      — "WHEN <trigger> THEN <system> SHALL <response>"
+#   State-driven      — "WHILE <state> <system> SHALL <response>"
+#   Unwanted-behavior — "IF <bad condition> THEN <system> SHALL <safer response>"
+#   Optional          — "WHERE <feature flag> <system> SHALL <behavior>"
+# Each AC references a `test_oracle` whose path matches the repo test layout
+# (repo/tests/test_<module>.py::test_ac<N>_<descriptive_name>) per the project
+# TDD discipline (pinned memory [1]).
+
+acceptance_criteria:
+
+  - id: AC-1
+    ears: >-
+      WHEN an operator runs `pip install -e .[dev]` from `repo/`
+      THEN the command SHALL exit 0 AND the trailing stdout SHALL contain
+      "Successfully installed kurort-engine" — proving the editable
+      install completes against the declared `packages = ["src/kurort_engine"]`
+      hatchling target without manual PYTHONPATH workarounds.
+    template: Event-driven
+    test_oracle: repo/tests/test_repo_layout.py::test_ac1_pip_install_editable_dev_exits_zero
+    maps_to_iter2_critic_fix: F-12-install-blocker
+
+  - id: AC-2
+    ears: >-
+      WHEN an operator runs `repo/.venv/bin/kurort-engine --help` from a fresh shell
+      THEN the command SHALL exit 0 AND stdout SHALL list at least two of the
+      documented subcommands (e.g. `version`, `demo`, `meldeschein`,
+      `kurtaxe`, `remittance`) — proving the `kurort-engine` console-script
+      entry point declared in pyproject.toml `[project.scripts]` is wired
+      through the editable install to a runnable module entry function.
+    template: Event-driven
+    test_oracle: repo/tests/test_repo_layout.py::test_ac2_kurort_engine_help_exits_zero
+    maps_to_iter2_critic_fix: F7-kurort-engine-cli
+
+  - id: AC-3
+    ears: >-
+      WHEN an operator runs `repo/.venv/bin/kurort-engine version`
+      THEN the command SHALL exit 0 AND stdout SHALL contain a semantic-
+      version-shaped string matching `\d+\.\d+\.\d+` — proving the
+      `__version__` constant on `kurort_engine` resolves from the installed
+      package (not from a missing source-tree PYTHONPATH fallback).
+    template: Event-driven
+    test_oracle: repo/tests/test_repo_layout.py::test_ac3_kurort_engine_version_exits_zero
+    maps_to_iter2_critic_fix: F7-kurort-engine-cli
+
+  - id: AC-4
+    ears: >-
+      WHILE the README §Overview module-count claim is the public documentation
+      of how many modules ship in `src/kurort_engine/`, the count quoted in
+      `README.md` line 12 SHALL equal `find repo/src/kurort_engine -name '*.py'
+      | wc -l` within a tolerance of ±0 — proving the README is honest about
+      the on-disk shipping surface and cannot drift again (this AC pins the
+      regression-lock test).
+    template: State-driven
+    test_oracle: repo/tests/test_repo_layout.py::test_ac4_readme_module_count_matches_disk_find
+    maps_to_iter2_critic_fix: F8-readme-module-count-drift
+
+  - id: AC-5
+    ears: >-
+      WHILE `kurort_engine.spa_wellness.payment_adapter` is imported,
+      the Python 3.12 runtime SHALL NOT emit a `DeprecationWarning` for
+      `datetime.utcnow()` — proving all four occurrences at lines 111, 140,
+      169, 216 have been replaced with the timezone-aware
+      `datetime.now(timezone.utc)` form, AND a regression-lock grep
+      (`grep -rn 'datetime\.utcnow' repo/src/`) SHALL exit non-zero
+      (no matches).
+    template: Unwanted-behavior
+    test_oracle: repo/tests/test_repo_layout.py::test_ac5_no_datetime_utcnow_remaining_in_src
+    maps_to_iter2_critic_fix: F-30-01-datetime-utcnow-deprecation
+
+  - id: AC-6
+    ears: >-
+      WHEN the full pytest suite runs at `repo/` with the editable install
+      from AC-1 (no `PYTHONPATH=src` workaround) THEN
+      `repo/.venv/bin/pytest repo/tests/ -q` SHALL exit 0 with a summary
+      line containing "0 failed" — proving every shipped test file is
+      reachable through the installed package and no regression is
+      introduced by the F-12 + F7 + F8 + F-30-01 changes.
+    template: Event-driven
+    test_oracle: repo/tests/test_repo_layout.py::test_ac6_full_pytest_suite_exits_zero
+    maps_to_iter2_critic_fix: F-12-install-blocker (downstream consequence)
+
+  - id: AC-7
+    ears: >-
+      The command `repo/.venv/bin/ruff check repo/src/` SHALL exit 0 with
+      no findings reported — proving the F-12 fix-bundle source edits do
+      not regress the ruff lint baseline (`select = ["E","F","I","B","UP"]`,
+      `line-length = 100`, `target-version = "py311"` per pyproject.toml).
+    template: Ubiquitous
+    test_oracle: repo/tests/test_repo_layout.py::test_ac7_ruff_check_src_exits_zero
+    maps_to_iter2_critic_fix: F-12-install-blocker (cross-cutting hygiene)
+
+# Scope-guard: explicit out-of-scope for this iteration. Per the iter-2 CRITIC
+# verdict (pinned memory), these are HARD EXCLUDES — moving any of them into
+# in-scope mid-iteration requires a spec.yaml SHA bump + spec_lock.md lock
+# metadata update; in practice that means another iteration.
+not_included:
+  - >-
+    Editing the SHIPPED-module SHA-set that this iteration must not perturb:
+    `repo/src/kurort_engine/audit/audit.py`,
+    `repo/src/kurort_engine/audit/kurpaket_compliance.py`,
+    `repo/src/kurort_engine/predicate_filing/*.py`,
+    `repo/src/kurort_engine/esg/report/heilbad_predicate_2036_repraedikatisierung.py`,
+    `repo/src/kurort_engine/kurpaket_orchestrator.py`,
+    `repo/src/kurort_engine/spa_wellness/__init__.py`,
+    `repo/src/kurort_engine/ev_charging/__init__.py`,
+    `repo/src/kurort_engine/kurkarte_wallet/__init__.py`.
+    These remain unchanged at HEAD+1.
+  - >-
+    Weakening, deleting, or modifying any existing acceptance-criterion test
+    body (e.g. tests in `tests/test_audit.py`, `tests/test_a11y_guest_pwa.py`,
+    `tests/test_kurpaket_*.py`, etc.). The fix-bundle MAY add new tests in
+    `tests/test_repo_layout.py`; it MUST NOT alter existing test assertions.
+  - >-
+    Mocking `AuditLog` or any other audit-pipeline symbol as a way to make
+    AC-6 pass. Forbidden by pinned memory [1] discipline.
+  - >-
+    Skipping, marking `@pytest.mark.xfail`, or commenting out
+    `tests/test_a11y_guest_pwa.py::test_ac2_wcag_aa_audit_infra_with_manual_fallback`
+    as a way to clear AC-6. This test is a pre-existing failure that is
+    OUT OF SCOPE for this iteration; if it prevents AC-6 from turning green,
+    emit `BLOCKED: AC-6 blocked by pre-existing test_a11y_guest_pwa::test_ac2
+    failure (out of F-12 fix-bundle scope per iter-2 verdict)` and ship
+    the rest of the bundle rather than weakening the test.
+  - >-
+    Adding new kurort-vertical features (e.g. new subpackages, new
+    cli subcommands, new predicates). This iteration is repair-only.
+  - >-
+    Updating `pyproject.toml` version, dependencies, or build target —
+    the package metadata is correct as declared; the install blocker
+    is purely "no install was ever run", not "pyproject is wrong".
+
+# done_when — exact shell commands that MUST all pass for this iteration
+# to be declared complete. Each command must be run from `/home/agent-host/workspace`.
+# The terminal output is captured verbatim into `archive/iter-3_phase_<N>_<description>.md`.
+done_when:
+
+  - name: F-12 install succeeds
+    command: cd /home/agent-host/workspace/repo && .venv/bin/pip install -e .[dev]
+    expected_exit: 0
+    expected_stdout_tail_must_contain: "Successfully installed kurort-engine"
+
+  - name: kurort-engine --help reachable via venv binary
+    command: cd /home/agent-host/workspace/repo && .venv/bin/kurort-engine --help
+    expected_exit: 0
+    expected_stdout_tail_must_contain_at_least_one_of:
+      - "version"
+      - "demo"
+      - "meldeschein"
+      - "kurtaxe"
+      - "remittance"
+
+  - name: kurort-engine version reachable via venv binary
+    command: cd /home/agent-host/workspace/repo && .venv/bin/kurort-engine version
+    expected_exit: 0
+    expected_stdout_tail_must_match_regex: "\\d+\\.\\d+\\.\\d+"
+
+  - name: README module count matches on-disk find
+    command: |
+      CD_COUNT=$(find /home/agent-host/workspace/repo/src/kurort_engine -name '*.py' | wc -l) && \
+      README_LINE=$(grep -E '[0-9]+ modules' /home/agent-host/workspace/repo/README.md | head -1 | grep -oE '[0-9]+ modules' | grep -oE '[0-9]+') && \
+      test "$CD_COUNT" = "$README_LINE" && echo "OK: cd=$CD_COUNT readme=$README_LINE"
+    expected_exit: 0
+    expected_stdout_tail_must_contain: "OK: cd="
+
+  - name: zero datetime.utcnow occurrences in src
+    command: |
+      if grep -rn 'datetime\.utcnow' /home/agent-host/workspace/repo/src/ ; then \
+        echo "FAIL: datetime.utcnow still present" >&2 ; exit 1 ; \
+      else \
+        echo "OK: 0 datetime.utcnow occurrences in src" ; \
+      fi
+    expected_exit: 0
+    expected_stdout_tail_must_contain: "OK: 0 datetime.utcnow occurrences in src"
+
+  - name: full pytest suite green from editable install (no PYTHONPATH workaround)
+    command: cd /home/agent-host/workspace/repo && .venv/bin/pytest tests/ -q
+    expected_exit: 0
+    expected_stdout_tail_must_contain: "0 failed"
+    allowed_pre_existing_blocker: tests/test_a11y_guest_pwa.py::test_ac2_wcag_aa_audit_infra_with_manual_fallback
+    blocker_action: >-
+      If this command fails because of the allowed_pre_existing_blocker
+      alone, emit `BLOCKED: AC-6 blocked by pre-existing a11y test_ac2
+      failure (out of F-12 fix-bundle scope per iter-2 verdict)`,
+      record the blocker in the project KB via kb_write
+      type=state tag=blocker, and ship the rest of the bundle by
+      narrowing AC-6's test_oracle to `pytest tests/ --ignore=tests/test_a11y_guest_pwa.py -q`
+      for THIS iteration only — DO NOT modify the a11y test itself.
+
+  - name: ruff check src/ clean
+    command: cd /home/agent-host/workspace/repo && .venv/bin/ruff check src/
+    expected_exit: 0
+    expected_stdout_tail_must_contain_one_of:
+      - "All checks passed!"
+      - "no findings"
+      - "Found 0 errors"
+
+  - name: shipped-module SHA anti-drift guard
+    command: |
+      for f in \
+        src/kurort_engine/audit/audit.py \
+        src/kurort_engine/audit/kurpaket_compliance.py \
+        src/kurort_engine/kurpaket_orchestrator.py \
+        src/kurort_engine/spa_wellness/__init__.py \
+        src/kurort_engine/ev_charging/__init__.py \
+        src/kurort_engine/kurkarte_wallet/__init__.py \
+      ; do \
+        sha256sum "$f" ; \
+      done
+    expected_exit: 0
+    expected_to_be_unchanged_from_HEAD: 35ea69743eee22cdc9f3e80fdba0b210c15345e0
+

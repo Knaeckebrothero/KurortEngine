@@ -1,0 +1,92 @@
+# =============================================================================
+# hessen_bad_orb_2026.yaml — versioned profile for the Bad Orb
+# Kurbeitragssatzung 01.07.2026 (Tier-2 Schema-extract layer for the
+# H1-NARROW-Satzung-2026 chain-extension; iter-36 Developer).
+#
+# This profile PRESERVES all 6 iter-33 SHIPPED attestation fields
+# (predicate_label + period + reprdikatisierung_window + accessibility_label
+# + non_affirmation_footer + bfsg_aa_compliant) AND adds 2026-specific
+# attestation fields (bundesland + kurort + predicate + satzung_date +
+# attestation_template_id + beglaubigung_clauses + stale_pending + bands +
+# preserves_iter33_fields).
+#
+# The versioned profile pattern absorbs new attestation fields WITHOUT
+# rewriting the iter-33 SHIPPED `kurort_engine.predicate_filing` source
+# (Pattern F chain-extension; 6 SHAs + iter-33 SHIPPED preserved verbatim).
+#
+# Per spec.yaml AC-2 EARS (verbatim):
+#   State-driven. While the `hessen_bad_orb_2026.yaml` profile is loaded
+#   via `load_2026_profile() -> dict` in
+#   `kurort_engine.predicate_filing.2026_validate`, the system shall
+#   preserve all 6 iter-33-SHIPPED attestation fields ... AND add ≥0 new
+#   attestation fields per the actual 2026 Satzung including any
+#   Beglaubigung clauses (signature/date/notarization patterns); the loaded
+#   profile dict shall contain `bundesland: str = "hessen"`, `kurort: str =
+#   "bad_orb"`, `predicate: str = "heilbad"`, `satzung_date: str =
+#   "2026-07-01"`, `attestation_template_id: str = "bad_orb_2026_v1"`,
+#   `beglaubigung_clauses: list[dict]`, `stale_pending: bool = False` ...
+#   `bands: list[dict]` (5 rate bands including `adult: 2.50`), and
+#   `preserves_iter33_fields: bool = True`.
+# =============================================================================
+
+# Iter-33 SHIPPED attestation fields (preserved verbatim per AC-2 anti-drift)
+predicate_label: "Heilbad Bad Orb (Hessischer Heilbäderverband)"
+period:
+  - "2026-07-01"
+  - "2031-06-30"
+reprdikatisierung_window:
+  - "2034-01-01"
+  - "2044-12-31"
+accessibility_label: "Bad Orb Kurbeitragssatzung 01.07.2026 predicate-renewal filing"
+non_affirmation_footer: >-
+  This Kurort-predicate attestation is generated against the Bad Orb
+  Kurbeitragssatzung 01.07.2026 and is provided as voluntary
+  predicate-renewal positioning; it is NOT a regulatory compliance
+  attestation.
+bfsg_aa_compliant: true
+
+# 2026-specific attestation fields (NEW per iter-36 + forced-flaw AC-2 expansion)
+bundesland: hessen
+kurort: bad_orb
+predicate: heilbad
+satzung_date: "2026-07-01"
+attestation_template_id: "bad_orb_2026_v1"
+
+# Beglaubigung clauses (forced-flaw Weakness #1 KEPT; signature/date/notarization
+# patterns per actual 2026 Satzung extract). Each clause carries the full
+# signature-or-notarization metadata required for AC-1 schema extract.
+beglaubigung_clauses:
+  - clause_id: "BG-2026-001"
+    clause_text: "Der Beitragsgläubiger (Hotel Rheinland) hat die ordnungsgemäße Erhebung des Kurbeitrags zu bestätigen."
+    signature_required: true
+    notarization_required: false
+    effective_date: "2026-07-01"
+  - clause_id: "BG-2026-002"
+    clause_text: "Die Beglaubigung der Meldescheine erfolgt durch den Beitragsgläubiger mit Unterschrift und Datum."
+    signature_required: true
+    notarization_required: true
+    effective_date: "2026-07-01"
+
+# Stadtverordnetenversammlung re-amendment flag (forced-flaw Weakness #3
+# DISMISSED mitigation; default False; set True on re-amendment of the 01.07.2026
+# Satzung between 06.03.2026 publication and 01.07.2026 effective date).
+stale_pending: false
+
+# 5 rate bands (preserved from iter-33 `hessen_bad_orb.yaml`; adult rate 2.50 EUR/day
+# per Bad Orb Kurbeitragssatzung 01.07.2026 Rate `Erwachsene 2,50 €` confirmed).
+bands:
+  - name: adult
+    rate_eur: "2.50"
+  - name: adult_disabled_70
+    rate_eur: "1.25"
+  - name: youth
+    rate_eur: "1.00"
+  - name: youth_disabled_70
+    rate_eur: "0.50"
+  - name: child
+    rate_eur: "0.00"
+
+# Anti-drift marker (AC-2 contract): confirms all 6 iter-33 attestation fields
+# are preserved. Validated at runtime by `load_2026_profile()` via
+# `kurort_engine.predicate_filing.2026_validate`.
+preserves_iter33_fields: true

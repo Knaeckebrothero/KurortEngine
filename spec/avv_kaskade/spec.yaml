@@ -1,0 +1,55 @@
+feature: avv-kaskade-dsgvo-art-28-cascade-audit
+intent: "Ship a kurortengine.avv_kaskade package that registers processors, runs Art. 28(1) Geeignetheitspruefung, attests chains per DSK-Kurzpapier-Nr.13, exports 3-state audit packets (BayLDA/LfDI-BW/HBDI-HE), and produces NIS2 §38 BSIG BSI Grundschutz 2026 TOM evidence — so Hotel Rheinland Bad Orb can produce the Art. 28 cascade audit chain in 30 seconds, not 30 days."
+
+acceptance_criteria:
+  - id: AC-1
+    ears: "When register_processor(processor) is called with a Processor dataclass whose avv_signed_date < avv_expiry_date, the system shall compute avv_hash = sha256(avv_pdf_bytes).hexdigest() and append the processor to an append-only registry; and the system shall reject processors whose avv_signed_date >= avv_expiry_date with a ValueError."
+    test_oracle: tests/test_avv_kaskade.py::test_ac1_register_processor_happy_path
+  - id: AC-1.1
+    ears: "If register_processor(processor) is called with a Processor whose avv_signed_date >= avv_expiry_date, then the system shall raise ValueError citing the date constraint and shall NOT append the processor to the registry."
+    test_oracle: tests/test_avv_kaskade.py::test_ac11_register_processor_expired_avv_rejected
+  - id: AC-2
+    ears: "While a processor is registered in the avv_kaskade registry, the system shall expose run_geeignetheitspruefung(processor_id) which returns a GeeignetheitspruefungReport containing (a) ISO 27001 control coverage >= 0.80 of the mandatory control set, (b) sub_processor_disclosure_completeness == 1.0, (c) avv_signature_verified == True, and (d) a tom_evidence_index for each data_category of every sub_processor."
+    test_oracle: tests/test_avv_kaskade.py::test_ac2_geeignetheitspruefung_report_complete
+  - id: AC-2.1
+    ears: "If a registered processor has a sub_processor with vendor_non_cooperation == True, then the system shall produce a GeeignetheitspruefungReport with vendor_non_coop_complete < 1.0 and flag the sub_processor in the report's gaps list."
+    test_oracle: tests/test_avv_kaskade.py::test_ac21_vendor_non_coop_flagged_in_report
+  - id: AC-3
+    ears: "When attest_chain(format=\"dsk-kp13\") is called, the system shall emit a JSON packet whose top-level keys are verantwortlicher, auftragsverarbeiter, toms, sub_processors, and avv_hash_chain, and whose verantwortlicher block contains controller_name + controller_address + attestation_date; and the avv_hash_chain shall be a list of SHA-256 hex strings matching the avv_hash of each registered processor in registration order."
+    test_oracle: tests/test_avv_kaskade.py::test_ac3_attestor_dsk_kp13_packet_shape
+  - id: AC-4
+    ears: "When export_audit_packet(processor_id, format) is called with format in {\"lfa-baylda\", \"lfdi-bw\", \"hbdi-he\"}, the system shall return a packet object whose payload bytes start with b\"%PDF-\" and whose metadata[\"state_format\"] equals the requested format; and the system shall raise ValueError for any format not in the three supported state formats. NOTE (manual-review deferral, per binding contract mitigation 1): if no internal privacy-experienced reviewer is available to verify the 3 state-format PDF byte-shapes against the DSK-aligned reference templates (BayLDA, LfDI BW, HBDI Hessen), then AC-4 acceptance MAY be deferred to the BFSG-AA reviewer pool. In that case the spec_lock.md STALE_PENDING_FLAG shall be flipped to SET, and the deferred-AC-4 marker shall be recorded in the retrospective."
+    test_oracle: tests/test_avv_kaskade.py::test_ac4_export_audit_packet_3state
+  - id: AC-5
+    ears: "When build_tom_evidence_index(processor_id, control_set=\"bsi-grundschutz-2026\") is called, the system shall return a TomEvidenceIndex whose control_set == \"bsi-grundschutz-2026\", whose entries list one TOM-evidence record per ISO 27001 Annex A control mapped to the BSI Grundschutz 2026 Bausteine, and whose evidence_chain_hash is a SHA-256 hex of the canonical-JSON serialization of the entries in registry-registration order."
+    test_oracle: tests/test_avv_kaskade.py::test_ac5_nis2_bsig_evidence_locker
+
+not_included:
+  - "External lawyer onboarding (Mix-B: STATE-OF-PROJECT = NO Lawyer per lawyer-budget-gate)."
+  - "NIS2 supply-chain contractual clauses (covered by iter-31 l13-002 SHIPPED)."
+  - "BFSG-AA multi-language module (covered by iter-19 DEFERRED)."
+  - "Hestia PMS vendor onboarding / commercial negotiation (out of engineering scope)."
+  - "DATEV connector implementation (covered by iter-15 SHIPPED via l13-004)."
+  - "Production deployment / Docker / k8s (out of code-module scope)."
+  - "Backfill of historical AVV records (ops, not engineering)."
+  - "ISO 27001 cert procurement (cert body engagement is ops, not code)."
+  - "DSGVO Art. 17 cascade (covered by iter-38 kurgaste_retention SHIPPED — read-only consumer)."
+  - "Predicate filing narrative generator (covered by iter-33 SHIPPED — read-only consumer)."
+  - "F7 CLI binary fix and F8 README module-count drift fix (separate re-engagement trigger per iter-27-critic-handoff §9; NOT bundled into this cycle)."
+
+done_when:
+  - "shasum -a 256 repo/spec/avv_kaskade/spec.yaml matches the SHA-256 recorded in repo/spec/avv_kaskade/spec.lock.md PROTECTED block (byte-identical)."
+  - "PYTHONPATH=src pytest tests/test_avv_kaskade.py -v --override-ini=\"addopts=--tb=short\" returns 5+ passed, 0 failed."
+  - "git diff HEAD~1 --stat shows 0 lines changed in any of the 6 preserved SHAs (predicate_filing/__init__.py, predicate_filing/predicate_packet_assembler.py, predicate_filing/heilbad_2036_narrative_generator.py, kurgaste_retention/__init__.py, kurgaste_retention/auto_cascade.py, kurkarte_wallet/__init__.py)."
+  - "cat knowledge/lawyer-budget-gate-state-of-project-crossed-5-iteration-threshold-at-iter-26-was.md | head -50 confirms STATE-OF-PROJECT = NO Lawyer (Mix-B safety verified)."
+  - "PYTHONPATH=src python -c 'from kurort_engine.avv_kaskade import (register_processor, run_geeignetheitspruefung, attest_chain, export_audit_packet, build_tom_evidence_index); chain=[\"cm-booking-com\",\"pms-kurortengine\",\"kb-datev\",\"kv-bad-orb-kurverwaltung\",\"ms-kurverwaltung\",\"hkka-rp-kassel\"]; [run_geeignetheitspruefung(p) for p in chain]; print(\"BAD ORB KURVERWALTUNG PROCESSOR CHAIN INTEGRATION: 6/6 sub-processors PASS\")' exits 0."
+  - "Traceability matrix in spec_lock.md shows every AC-* mapped to >=1 passing test (all rows status=green at Phase 3 GREEN end-state)."
+  - "ruff check src/kurort_engine/avv_kaskade/ exits 0 (no lint regressions)."
+
+assumptions:
+  - "SPEC LOCATION: spec lives at repo/spec/avv_kaskade/spec.yaml (not workspace root spec.yaml). The workspace-root spec.yaml from prior iterations (e.g. iter-36) is the iter-28 spec.yaml at workspace root. THIS file is the avv_kaskade-package-level spec. Both are valid spec.yaml files at different scopes (workspace-root = cycle scope; repo/spec/<package>/ = module scope)."
+  - "AC-4 manual-review availability is UNVERIFIED; the deferral clause is included by default per binding contract mitigation 1. If a privacy-experienced reviewer is confirmed available before Phase 3 GREEN, the STALE_PENDING_FLAG may be flipped to CLEAR in spec_lock.md."
+  - "Hestia PMS reference template is a public PDF (per iter-39 proposal §4.5); the AC-3 structural validation uses a small inline fixture in tests/test_avv_kaskade.py rather than the full PDF bytes (avoiding a multi-MB fixture in the repo)."
+  - "BayLDA / LfDI BW / HBDI Hessen state formats are publicly available audit-packet templates; the AC-4 implementation produces PDF-prefixed byte strings with a metadata[\"state_format\"] discriminator (full PDF generation is out of scope for this cycle per not_included)."
+  - "The 6 SHAs to preserve are read-only consumers; avv_kaskade IMPORTS from them but does not MODIFY them. Pattern C chain-extension (not duplication)."
+  - "kurortengine.avv_kaskade 0.1.0 is the initial version. No semver compatibility commitment for 0.x releases."

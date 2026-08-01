@@ -1,0 +1,6 @@
+# tests/test_demo.py compares the generated demo CSV against
+# tests/fixtures/expected_synthetic_bad_orb.csv byte-for-byte (read_bytes +
+# SHA-256). The demo writes CRLF line endings (Python csv module default), so
+# git must NOT normalise line endings on these files — otherwise a fresh clone
+# checks out LF fixtures, the demo produces CRLF, and the comparison fails.
+*.csv -text
