@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neue Reservierung — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --state-switcher-width: calc(var(--space-4xl) * 11);
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Reset and foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select, textarea { font: inherit; }
+
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-control);
+      background: var(--accent-color);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    /* ===== Shared operational shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-header-bg);
+      flex-wrap: wrap;
+    }
+
+    .brand, .top-actions, .badge-row, .action-row, .switcher-controls, .mobile-nav, .context-values, .state-metadata, .form-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      place-items: center;
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      background: var(--surface-0);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .brand-copy, .page-copy, .panel-copy, .state-copy, .field-group, .notice-copy, .reservation-copy, .dependency-copy, .draft-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .state-copy p, .notice-copy p, .reservation-copy p, .dependency-copy p, .draft-copy p, .field-help, .page-note, .table-note, .disabled-explanation, .local-status { color: var(--text-secondary); font-size: 13px; }
+    .muted-copy, .detail-label, .nav-label, .context-label { color: var(--text-muted); font-size: 12px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.5;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover, .button-link:hover { border-color: var(--surface-1); background: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { border-color: var(--surface-2); background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { border-color: var(--accent-hover); background: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl)));
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      border-right: 1px solid var(--border-color);
+      background: var(--panel-bg);
+    }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      background: var(--panel-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover { border-color: var(--surface-1); background: var(--surface-0); color: var(--text-primary); }
+    .nav-link[aria-current="page"] { border-left-color: var(--accent-color); border-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+
+    .sidebar-boundary {
+      display: grid;
+      gap: var(--space-sm);
+      margin-top: auto;
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--timeline-bg);
+    }
+
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+
+    main {
+      display: grid;
+      align-content: start;
+      gap: var(--space-xl);
+      min-width: var(--space-none);
+      padding: var(--space-xl);
+    }
+
+    .context-panel, .panel, .side-card, .availability-card, .draft-card, .recovery-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+    }
+
+    .context-panel { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .context-heading, .panel-heading, .state-heading, .side-heading, .draft-heading {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+    .context-form, .reservation-form, .validation-form, .draft-form { display: grid; gap: var(--space-md); }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .form-grid.two-columns { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+    .field-group { align-content: start; }
+    label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    textarea { min-height: calc(var(--space-4xl) * 2); resize: vertical; }
+    input[readonly] { color: var(--text-secondary); }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    .invalid-input { border-color: var(--color-red); }
+    .field-error { color: var(--color-red); font-size: 12px; }
+    .check-row { display: flex; align-items: start; gap: var(--space-sm); color: var(--text-secondary); font-size: 13px; }
+    .check-row input { width: auto; min-height: var(--space-none); margin-top: var(--space-xs); }
+    .check-row label { color: var(--text-secondary); font-weight: 400; }
+
+    .form-boundary, .page-note {
+      padding: var(--space-md);
+      border-left: 3px solid var(--color-blue);
+      border-radius: var(--radius-control);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .form-boundary strong { color: var(--color-blue); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { padding: var(--space-none) var(--space-xs); }
+
+    .reservation-layout, .validation-layout, .unavailable-layout, .draft-layout {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 5), 1fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+
+    .panel-heading, .side-heading, .draft-heading { padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-color); background: var(--panel-header-bg); }
+    .panel-body, .side-body, .draft-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .side-stack { display: grid; gap: var(--space-lg); }
+
+    .reservation-reference {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      gap: var(--space-lg);
+      align-items: start;
+      padding: var(--space-lg);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+      background: var(--surface-0);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+
+    .draft-reference { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .status-stack { display: grid; justify-items: end; gap: var(--space-xs); }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card, .evidence-card, .mobile-availability-card {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--surface-0);
+    }
+
+    .summary-card span, .evidence-card span, .mobile-availability-card span { color: var(--text-muted); font-size: 12px; }
+    .summary-card strong, .evidence-card strong, .mobile-availability-card strong { color: var(--text-primary); font-size: 14px; }
+    .summary-card small, .evidence-card small, .mobile-availability-card small { color: var(--text-secondary); font-size: 12px; }
+
+    .decision-card, .persistent-alert, .availability-notice, .recovery-card, .draft-status-card {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--timeline-bg);
+    }
+
+    .decision-card { grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; border-color: var(--accent-color); }
+    .persistent-alert { grid-template-columns: auto minmax(var(--space-none), 1fr); border-left: 3px solid var(--color-red); }
+    .unavailable-alert { border-left-color: var(--color-yellow); }
+    .alert-symbol { display: grid; width: var(--space-xl); height: var(--space-xl); place-items: center; border: 1px solid var(--color-red); border-radius: var(--radius-badge); color: var(--color-red); font-weight: 600; }
+    .unavailable-alert .alert-symbol { border-color: var(--color-yellow); color: var(--color-yellow); }
+
+    .section-divider { display: grid; gap: var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--border-color); }
+    .detail-list, .dependency-list, .relationship-list, .draft-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li, .dependency-list li, .relationship-list li, .draft-list li {
+      display: grid;
+      grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr);
+      gap: var(--space-md);
+      padding: var(--space-sm) var(--space-none);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .detail-list li:last-child, .dependency-list li:last-child, .relationship-list li:last-child, .draft-list li:last-child { border-bottom: var(--space-none); }
+    .detail-value, .dependency-list span, .relationship-list a, .draft-list span { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .relationship-list a { color: var(--accent-color); text-decoration: none; }
+    .relationship-list a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+    .error-summary {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      border: 1px solid var(--color-red);
+      border-radius: var(--radius-card);
+      background: var(--timeline-bg);
+    }
+
+    .error-summary strong { color: var(--color-red); }
+    .error-summary p, .error-summary a { color: var(--text-secondary); font-size: 13px; }
+    .error-summary ol { display: grid; gap: var(--space-xs); padding-left: var(--space-lg); }
+    .error-summary a { color: var(--color-red); }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 12); border-collapse: collapse; }
+    caption { padding: var(--space-md); color: var(--text-secondary); font-size: 12px; text-align: left; }
+    th { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); background: var(--surface-0); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-align: left; text-transform: uppercase; }
+    td { padding: var(--space-md); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-availability-list { display: none; gap: var(--space-md); }
+
+    .draft-status-card { border-color: var(--color-yellow); }
+    .draft-status-card strong { color: var(--color-yellow); font-size: 13px; }
+    .draft-rows { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      display: grid;
+      gap: var(--space-sm);
+      width: min(var(--state-switcher-width), calc(100vw - var(--space-2xl)));
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+
+    .switcher-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .switcher-controls { align-items: stretch; }
+    .state-switcher button { min-height: 32px; padding: var(--space-xs) var(--space-sm); font-size: 12px; }
+    .state-switcher button[aria-pressed="true"] { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+
+    .mobile-nav { display: none; }
+
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .sidebar { display: none; }
+      .reservation-layout, .validation-layout, .unavailable-layout, .draft-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .reservation-layout .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .form-grid { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+    }
+
+    @media (max-width: 767px) {
+      .app-header { padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-panel, .panel-body, .side-body, .draft-body { padding: var(--space-md); }
+      .form-grid, .form-grid.two-columns, .summary-grid, .reservation-layout .side-stack, .draft-rows { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .reservation-reference, .decision-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .status-stack { justify-items: start; }
+      .detail-list li, .dependency-list li, .relationship-list li, .draft-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .table-wrap { display: none; }
+      .mobile-availability-list { display: grid; }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-mobile-nav);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+        gap: var(--space-xs);
+        padding: var(--space-sm);
+        border-top: 1px solid var(--border-color);
+        background: var(--panel-bg);
+      }
+      .mobile-nav a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--touch-target);
+        padding: var(--space-sm);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-control);
+        background: var(--surface-0);
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { border-color: var(--accent-color); color: var(--text-primary); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--space-4xl) + var(--space-xl)); left: var(--space-sm); width: auto; }
+      .state-switcher button { min-height: var(--touch-target); }
+      .action-row > button, .action-row > .button-link, .form-actions > button, .form-actions > .button-link { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#reservation-workspace">Zur neuen Reservierung</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Designprototyp</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Prototypkontext">
+      <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+      <span class="badge badge-planned">Geplant · Reservierungsvertrag</span>
+      <span class="badge badge-unclear">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primäre Aufgabenbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <span class="nav-label">Rezeption</span>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="today_front_desk_dashboard.html"><span>Heute</span><span class="nav-count">Beispiel</span></a></li>
+          <li><a class="nav-link" href="arrivals_queue.html"><span>Anreisen</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="reservation_search_results.html#state-results"><span>Reservierungssuche</span><span class="nav-count">Keine Live-Suche</span></a></li>
+          <li><a class="nav-link" href="reservation_detail.html#state-detail"><span>Reservierungsdetail</span><span class="nav-count">Dateilink</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Reservierungen">
+        <span class="nav-label">Reservierungen</span>
+        <ul class="nav-list">
+          <li><a class="nav-link" aria-current="page" href="#state-new"><span>Neue Reservierung</span><span class="nav-count">Vorbereiten</span></a></li>
+          <li><a class="nav-link" href="guest_profile.html#state-profile"><span>Gastprofil</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="room_planning_calendar.html#state-list"><span>Zimmerplanung</span><span class="nav-count">Keine Live-Daten</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="sidebar-boundary-heading">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="sidebar-boundary-heading">Keine Buchungsmaschine</h2>
+        <p>Navigation und lokale Dokumentlinks sind Prüfbezüge. Sie suchen keine Person, prüfen keine Verfügbarkeit und legen keine Reservierung oder Zimmerblockierung an.</p>
+      </section>
+    </aside>
+
+    <main id="reservation-workspace">
+      <section class="context-panel" aria-labelledby="reservation-page-title">
+        <header class="context-heading">
+          <div class="page-copy">
+            <h1 id="reservation-page-title">Neue Reservierung vorbereiten</h1>
+            <p>Fiktiver Entwurfsrahmen für eine spätere Rezeption. Eine sichtbare Eingabe ist weder ein Angebot noch eine Preis-, Verfügbarkeits-, Hold- oder Buchungszusage.</p>
+          </div>
+          <div class="badge-row" aria-label="Kontextstatus">
+            <span class="badge badge-warning">Keine Live-Verfügbarkeit</span>
+            <span class="badge badge-planned">Reservierung anlegen: Geplant</span>
+          </div>
+        </header>
+
+        <form id="new-reservation-context-form" class="context-form" novalidate>
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="reservation-origin">Statischer Ursprung</label>
+              <select id="reservation-origin" name="origin">
+                <option value="new-request">Neue Anfrage · fiktiv</option>
+                <option value="search">Reservierungssuche · Beispiel</option>
+                <option value="detail">Reservierungsdetail · Beispiel</option>
+                <option value="planning">Zimmerplanung · Beispiel</option>
+              </select>
+              <span class="field-help">Kein echter Rückkehrpfad, keine gemeinsame Sitzung und keine gespeicherte Auswahl.</span>
+            </div>
+            <div class="field-group">
+              <label for="reservation-property">Betrieb</label>
+              <select id="reservation-property" name="property">
+                <option value="rheinland">Hotel Rheinland · Bad Orb</option>
+                <option value="sample">Weiterer Betrieb · nur Beispiel</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="reservation-purpose">Anfragezweck</label>
+              <select id="reservation-purpose" name="purpose">
+                <option value="direct">Direktanfrage · fiktiv</option>
+                <option value="change">Änderung vorbereiten · fiktiv</option>
+                <option value="phone">Telefonnotiz · fiktiv</option>
+              </select>
+              <span class="field-help">Kanal und Zweck sind keine Authentifizierung, Einwilligung oder Quellbestätigung.</span>
+            </div>
+          </div>
+          <div class="action-row" aria-label="Lokale Kontextaktionen">
+            <button class="btn-teal" type="submit">Beispielkontext aktualisieren</button>
+            <a class="button-link" href="reservation_search_results.html#state-results">Statische Suche lesen</a>
+          </div>
+        </form>
+
+        <p class="form-boundary"><strong>Geplant / Backend erforderlich:</strong> Reservierungsroute, Personensuche, Datenquelle, Zimmerinventar, Verfügbarkeits-/Preis-/Satzungslogik, Hold/Lock, Validierung, Rollenprüfung, Speicherung, Channel- oder Zahlungsfolge und Audit werden durch diese Ansicht nicht bereitgestellt.</p>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Standardansicht für eine fiktive neue Reservierung angezeigt.</p>
+
+      <!-- ===== State: default new reservation ===== -->
+      <section id="state-new" class="state-panel" aria-labelledby="state-new-heading">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="state-new-heading">Fiktive neue Reservierung vorbereiten</h2>
+            <p>Form und Nachweisgrenze sind gemeinsam sichtbar: erst die gewünschte Anfrage strukturieren, dann eine spätere Daten-/Verfügbarkeits-/Rechteentscheidung einholen.</p>
+          </div>
+          <div class="badge-row">
+            <span class="badge badge-prototype">Keine Anfrage gesendet</span>
+            <span class="badge badge-unclear">Quelle / Preis unklar</span>
+          </div>
+        </header>
+
+        <div class="reservation-layout">
+          <section class="panel" aria-labelledby="new-reservation-form-heading">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="new-reservation-form-heading">Fiktiver Reservierungsentwurf</h2>
+                <p>Beschriftete Eingaben zeigen den späteren Bedarf an Validierung und einer autoritativen Verfügbarkeit. Sie erzeugen keinen Datensatz.</p>
+              </div>
+              <span class="badge badge-teal">Vorschlag prüfen</span>
+            </header>
+            <div class="panel-body">
+              <section class="reservation-reference" aria-label="Fiktiver Entwurfsstatus">
+                <div class="reservation-copy">
+                  <span class="badge badge-prototype">Entwurf · nur Anzeige</span>
+                  <h2>Mara König</h2>
+                  <p class="draft-reference">DRAFT-BO-2026-0724-001</p>
+                  <p>24.–28.07.2026 · 2 Erwachsene · Doppelzimmer als unverbindlicher Wunsch. Alle Werte sind synthetisch und nicht gespeichert.</p>
+                </div>
+                <div class="status-stack">
+                  <span class="badge badge-warning">Nicht gespeichert</span>
+                  <span class="badge badge-planned">Keine Zimmerhaltung</span>
+                </div>
+              </section>
+
+              <form id="new-reservation-form" class="reservation-form" novalidate>
+                <div class="form-grid">
+                  <div class="field-group">
+                    <label for="new-guest-name">Name der anfragenden Person</label>
+                    <input id="new-guest-name" name="guest-name" type="text" value="Mara König" autocomplete="off" aria-describedby="new-guest-name-help">
+                    <span id="new-guest-name-help" class="field-help">Fiktiver Name. Eine spätere Suche/Zuordnung braucht Datenquelle, Zweck und Berechtigung.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="new-arrival-date">Gewünschte Anreise</label>
+                    <input id="new-arrival-date" name="arrival" type="date" value="2026-07-24" aria-describedby="new-arrival-help">
+                    <span id="new-arrival-help" class="field-help">Keine Kalender-, Mindestaufenthalts- oder Verfügbarkeitsprüfung ausgeführt.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="new-departure-date">Gewünschte Abreise</label>
+                    <input id="new-departure-date" name="departure" type="date" value="2026-07-28" aria-describedby="new-departure-help">
+                    <span id="new-departure-help" class="field-help">Eine spätere Regel prüft Reihenfolge, Dauer, Haus-/Saison-/Kanalbedingungen.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="new-guest-count">Gästezahl</label>
+                    <select id="new-guest-count" name="guest-count">
+                      <option value="1">1 Person · fiktiv</option>
+                      <option value="2" selected>2 Erwachsene · fiktiv</option>
+                      <option value="3">3 Personen · fiktiv</option>
+                      <option value="family">Familie / Begleitpersonen · fiktiv</option>
+                    </select>
+                    <span class="field-help">Belegung, Begleitpersonen und gesetzliche Angaben werden nicht abgeleitet.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="new-room-preference">Zimmerwunsch</label>
+                    <select id="new-room-preference" name="room-preference">
+                      <option value="double" selected>Doppelzimmer · unverbindlicher Wunsch</option>
+                      <option value="single">Einzelzimmer · unverbindlicher Wunsch</option>
+                      <option value="accessible">Barrierearme Option · nur Wunsch</option>
+                    </select>
+                    <span class="field-help">Nicht als verfügbar, sauber, preislich bestätigt, blockiert oder zugeteilt verstehen.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="new-contact-preference">Bevorzugter Kontaktweg</label>
+                    <select id="new-contact-preference" name="contact-preference">
+                      <option value="unknown" selected>Unklar · fiktive Auswahl</option>
+                      <option value="email">E-Mail · fiktive Auswahl</option>
+                      <option value="phone">Telefon · fiktive Auswahl</option>
+                    </select>
+                    <span class="field-help">Ein Kontaktweg ist keine Einwilligung, Nachricht oder Zustellzusage.</span>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="new-request-note">Wunsch oder Prüfhinweis</label>
+                  <textarea id="new-request-note" name="request-note" rows="3">Fiktiver Wunsch: ruhige Lage, wenn eine spätere autoritative Quelle dies prüfen kann.</textarea>
+                  <span class="field-help">Freitext bleibt ein Prototypmuster. Er wird nicht klassifiziert, gespeichert, an ein PMS/Channel-System gesendet oder als Zusage gelesen.</span>
+                </div>
+
+                <span class="check-row"><input id="new-data-minimization" name="data-minimization" type="checkbox" checked><label for="new-data-minimization">Nur notwendige Fiktivdaten für den vorgeschlagenen Prüfweg zeigen</label></span>
+
+                <section class="decision-card" aria-labelledby="new-decision-heading">
+                  <div class="reservation-copy">
+                    <span class="badge badge-planned">Geplant · Validierung / Verfügbarkeit / RBAC</span>
+                    <h3 id="new-decision-heading">Nächste menschliche Entscheidung: Vorschlag prüfen, nicht buchen</h3>
+                    <p>Eine künftige Anwendung müsste Person, Zeitraum, Belegung, Zimmer-/Preis-/Satzungsquelle, Duplikate, Channel-Konflikte, Verfügbarkeit, Berechtigung, Lock/Idempotenz und Audit prüfen, bevor sie einen Buchungsvorgang anbietet.</p>
+                  </div>
+                  <button class="btn-primary" type="submit">Vorschlag prüfen</button>
+                </section>
+
+                <div class="form-actions">
+                  <button type="button" disabled aria-describedby="new-create-disabled-reason">Reservierung anlegen</button>
+                  <button class="btn-warning" type="button" data-prototype-action="Die fehlende Verfügbarkeits- und Speichergrenze wurde lokal erläutert. Es wurde keine Reservierung, Zimmerhaltung, Preisberechnung, Nachricht oder Integration ausgelöst.">Grenze prüfen</button>
+                </div>
+                <p id="new-create-disabled-reason" class="disabled-explanation">Anlegen deaktiviert: keine Gast-/Reservierungsquelle, keine Validierung, keine Zimmer-/Preis-/Verfügbarkeitsquelle, keine Hold-/Lock-/Idempotenzregel, keine Authentifizierung/RBAC, keine Transaktion, keine Persistenz, kein Audit und keine Channel-/Zahlungsfolge vorhanden.</p>
+              </form>
+
+              <section class="section-divider" aria-labelledby="availability-intent-heading">
+                <div class="panel-copy">
+                  <h3 id="availability-intent-heading">Verfügbarkeit vor einer späteren Buchung</h3>
+                  <p>Die fiktive Anfrage beschreibt einen Wunsch. Eine Raumkategorie oder ein leer aussehender Planungsausschnitt ist kein Verfügbarkeits- oder Preisnachweis.</p>
+                </div>
+                <div class="summary-grid" aria-label="Fiktive Prüfparameter">
+                  <article class="summary-card"><span>Zeitraum</span><strong>24.–28.07.2026</strong><small>Keine Dauer-/Saison-/Mindestaufenthaltsregel berechnet</small></article>
+                  <article class="summary-card"><span>Zimmerwunsch</span><strong>Doppelzimmer</strong><small>Kein Inventar, keine Belegung, keine Reinigung und keine Sperre geprüft</small></article>
+                  <article class="summary-card"><span>Preis / Angebot</span><strong>Unklar</strong><small>Keine Rate, Steuer, Kurtaxe, Gültigkeit, Zahlung oder Bestätigung erzeugt</small></article>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Nachweisgrenzen und statische Referenzen">
+            <section class="side-card" aria-labelledby="reservation-boundary-heading">
+              <header class="side-heading">
+                <div class="panel-copy"><h2 id="reservation-boundary-heading">Wirkung vor Anlegen</h2><p>Der Entwurf ist keine verdeckte Buchung.</p></div>
+                <span class="badge badge-planned">Backend erforderlich</span>
+              </header>
+              <div class="side-body">
+                <ul class="dependency-list">
+                  <li><span class="detail-label">Datensatz</span><span>Keine Reservierung, kein Gastprofil, keine Begleitperson und keine Änderung werden erstellt.</span></li>
+                  <li><span class="detail-label">Zimmer</span><span>Keine Verfügbarkeit, Raumhaltung, Zuteilung, Reinigung, Wartung oder Schlüsselwirkung.</span></li>
+                  <li><span class="detail-label">Preis / Zahlung</span><span>Keine Rate, Gebühr, Kurtaxe, Zahlung, Rechnung, Folio- oder Kanalfolge.</span></li>
+                  <li><span class="detail-label">Nachweis</span><span>Kein authentifizierter Akteur, keine Rolle, kein Audit, keine Bestätigung und keine Persistenz.</span></li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="side-card" aria-labelledby="static-reference-heading">
+              <header class="side-heading">
+                <div class="panel-copy"><h2 id="static-reference-heading">Statischer Suite-Bezug</h2><p>Nur für Designprüfung; nicht als vorausgefüllte Änderung lesen.</p></div>
+                <span class="badge badge-info">Dateilinks</span>
+              </header>
+              <div class="side-body">
+                <div class="evidence-card"><strong>Jana Müller-Kaya</strong><small><span class="draft-reference">RES-BO-2026-0716-014</span> · 16.–23.07.2026 · Zimmer 214 als fiktiver bestehender Kontext.</small></div>
+                <p class="muted-copy">Der Entwurf `DRAFT-BO-2026-0724-001` übernimmt keine Auswahl oder Daten aus diesem statischen Kontext. Es gibt keine Live-Route, gemeinsame Session, Suche, Verfügbarkeit, Zimmerzuteilung oder Persistenz.</p>
+                <ul class="relationship-list">
+                  <li><span class="detail-label">Suche</span><span><a href="reservation_search_results.html#state-results">Fiktive Suche öffnen</a><br><span class="muted-copy">Keine Live-Suche und keine Profilübernahme.</span></span></li>
+                  <li><span class="detail-label">Detail</span><span><a href="reservation_detail.html#state-detail">Fiktives Detail lesen</a><br><span class="muted-copy">Keine Änderung, Rückkehrpersistenz oder Konfliktauflösung.</span></span></li>
+                  <li><span class="detail-label">Planung</span><span><a href="room_planning_calendar.html#state-list">Fiktive Zimmerliste lesen</a><br><span class="muted-copy">Keine Live-Verfügbarkeit, Preislogik oder Zimmerhaltung.</span></span></li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="side-card" aria-labelledby="evidence-language-heading">
+              <header class="side-heading">
+                <div class="panel-copy"><h2 id="evidence-language-heading">Nachweisvokabular</h2><p>Begriffe beschreiben die Grenze, nicht den Reifegrad einer Schaltfläche.</p></div>
+                <span class="badge badge-info">Lesen</span>
+              </header>
+              <div class="side-body">
+                <div class="evidence-card"><strong>Operational</strong><small>Begrenzte lokale Domänenmodule sind keine Reservierungs- oder Verfügbarkeitsfunktion.</small></div>
+                <div class="evidence-card"><strong>Prototyp</strong><small>Fiktiver Entwurf, lokale State-Switcher und Formularstruktur ohne Datenwirkung.</small></div>
+                <div class="evidence-card"><strong>Geplant / Unklar</strong><small>Browser/API, Quelle, Preis, Zimmer, Speicherung, RBAC, Audit und Integration brauchen eigene Verträge.</small></div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: validation failure ===== -->
+      <section id="state-validation" class="state-panel" aria-labelledby="validation-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="validation-heading">Fiktive Validierungsfehler vor einer Buchung</h2>
+            <p>Eine erforderliche Korrektur ist persistent, konkret und neben der späteren Aktion sichtbar. Sie wird nicht als stiller Leerzustand oder Erfolg dargestellt.</p>
+          </div>
+          <span class="badge badge-error">! 3 Angaben prüfen</span>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="validation-alert-heading">
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy">
+            <h3 id="validation-alert-heading">Der fiktive Entwurf kann nicht an einen späteren Prüfweg übergeben werden.</h3>
+            <p>Dieser Zustand illustriert eine mögliche künftige Fehlerantwort. Er prüft keine reale Person, keinen Zeitraum, keine Belegung, keine Rate, keine Zimmerquelle und keinen rechtlichen/vertraglichen Sachverhalt.</p>
+          </div>
+        </section>
+
+        <div class="validation-layout">
+          <section class="panel" aria-labelledby="validation-form-heading">
+            <header class="panel-heading">
+              <div class="panel-copy"><h2 id="validation-form-heading">Fiktive Korrekturfelder</h2><p>Fehlerzusammenfassung und Feldhinweise sind ein semantisches Muster, nicht eine ausgeführte Client- oder Servervalidierung.</p></div>
+              <span class="badge badge-prototype">Keine Validierung ausgeführt</span>
+            </header>
+            <div class="panel-body">
+              <form id="validation-reservation-form" class="validation-form" novalidate>
+                <nav class="error-summary" aria-label="Fehlerzusammenfassung für den fiktiven Reservierungsentwurf">
+                  <strong>3 Angaben vor einer späteren Verfügbarkeitsprüfung korrigieren</strong>
+                  <p>Die folgende Liste beschreibt nur die notwendige Reihenfolge einer künftigen Prüfung. Kein Feld wurde gelesen, akzeptiert, gespeichert oder übermittelt.</p>
+                  <ol>
+                    <li><a href="#validation-guest-name">Name der anfragenden Person ergänzen</a></li>
+                    <li><a href="#validation-arrival-date">Anreise vor der Abreise angeben</a></li>
+                    <li><a href="#validation-room-preference">Zimmerwunsch als unverbindliche Präferenz auswählen</a></li>
+                  </ol>
+                </nav>
+
+                <div class="form-grid two-columns">
+                  <div class="field-group">
+                    <label for="validation-guest-name">Name der anfragenden Person</label>
+                    <input id="validation-guest-name" name="validation-guest-name" class="invalid-input" type="text" value="" aria-invalid="true" aria-describedby="validation-guest-name-help validation-guest-name-error" autocomplete="off">
+                    <span id="validation-guest-name-help" class="field-help">Fiktives Pflichtfeld; keine Personen- oder Duplikatensuche wird durchgeführt.</span>
+                    <span id="validation-guest-name-error" class="field-error">Im fiktiven Szenario fehlt ein Name. Eine echte Prüfung benötigt datensparsame Quelle, Zweck und Berechtigung.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="validation-arrival-date">Gewünschte Anreise</label>
+                    <input id="validation-arrival-date" name="validation-arrival" class="invalid-input" type="date" value="2026-07-28" aria-invalid="true" aria-describedby="validation-arrival-help validation-arrival-error">
+                    <span id="validation-arrival-help" class="field-help">Fiktives Datumsbeispiel; keine Kalender-, Zimmer- oder Preisprüfung.</span>
+                    <span id="validation-arrival-error" class="field-error">Die fiktive Anreise liegt nach der angegebenen Abreise.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="validation-departure-date">Gewünschte Abreise</label>
+                    <input id="validation-departure-date" name="validation-departure" class="invalid-input" type="date" value="2026-07-24" aria-invalid="true" aria-describedby="validation-departure-help validation-departure-error">
+                    <span id="validation-departure-help" class="field-help">Eine spätere Regel muss Reisedauer, Mindestaufenthalt und Kanalbedingungen prüfen.</span>
+                    <span id="validation-departure-error" class="field-error">Die fiktive Abreise muss nach der Anreise liegen.</span>
+                  </div>
+                  <div class="field-group">
+                    <label for="validation-room-preference">Zimmerwunsch</label>
+                    <select id="validation-room-preference" name="validation-room-preference" class="invalid-input" aria-invalid="true" aria-describedby="validation-room-help validation-room-error">
+                      <option value="" selected>Bitte auswählen · fiktives Feld</option>
+                      <option value="single">Einzelzimmer · Wunsch</option>
+                      <option value="double">Doppelzimmer · Wunsch</option>
+                    </select>
+                    <span id="validation-room-help" class="field-help">Ein Zimmerwunsch ist nie eine aktuelle Zimmerverfügbarkeit.</span>
+                    <span id="validation-room-error" class="field-error">Im fiktiven Szenario fehlt die gewünschte Zimmerkategorie.</span>
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button class="btn-teal" type="submit">Fiktive Korrektur prüfen</button>
+                  <button type="button" disabled aria-describedby="validation-create-disabled-reason">Reservierung anlegen</button>
+                </div>
+                <p id="validation-create-disabled-reason" class="disabled-explanation">Anlegen deaktiviert: Die Beispielwerte sind nicht validiert. Darüber hinaus fehlen Quelle, Zimmer-/Preis-/Verfügbarkeitsvertrag, Duplikaten-/Konfliktmodell, Rollenprüfung, Transaktion, Persistenz, Audit und Integrationsfolgen.</p>
+              </form>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="validation-recovery-heading">
+            <span class="badge badge-warning">Sichere Korrektur</span>
+            <h2 id="validation-recovery-heading">Erst Daten korrigieren, dann Quelle fragen</h2>
+            <p>Eine künftige Anwendung zeigt Feldfehler, wahrt den Kontext und fragt erst danach eine autoritative Verfügbarkeit/Preisquelle ab. Sie darf keine Zimmerhaltung oder Buchung aus unvollständigen Werten ableiten.</p>
+            <button class="btn-warning" type="button" data-prototype-action="Der sichere Korrekturweg wurde lokal erläutert. Keine Validierung, Suche, Zimmerprüfung, Reservierung oder Speicherung wurde ausgeführt.">Korrekturweg erläutern</button>
+            <a class="button-link" href="guest_profile.html#state-duplicate">Dubletten-Schutzmuster lesen</a>
+          </aside>
+        </div>
+
+        <p class="page-note">Validierungszustand: Text, Feldbezug, Fehlerzusammenfassung und deaktivierte Aktion zeigen die Korrekturabsicht redundant. Sie beweisen keine Feldprüfung, Personenzuordnung, Verfügbarkeit, Preislogik, Speicherung oder rechtliche/vertragliche Buchbarkeit.</p>
+      </section>
+
+      <!-- ===== State: no availability ===== -->
+      <section id="state-unavailable" class="state-panel" aria-labelledby="unavailable-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="unavailable-heading">Keine passende Verfügbarkeit · fiktive Antwort</h2>
+            <p>Ein künftiger Verfügbarkeitsfehler bleibt von „kein Wunsch“ und von einer angeblich freien Zimmerzelle unterscheidbar. Er ist keine tatsächlich abgefragte Inventarantwort.</p>
+          </div>
+          <span class="badge badge-warning">! Keine Live-Verfügbarkeit</span>
+        </header>
+
+        <section class="persistent-alert unavailable-alert" role="alert" aria-labelledby="unavailable-alert-heading">
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy">
+            <h3 id="unavailable-alert-heading">Für die gezeigte fiktive Anfrage wurde kein passender Vorschlag dargestellt.</h3>
+            <p>Dieser Zustand simuliert ausschließlich, wie eine spätere autoritative Antwort erklärt werden könnte. Es gab keine Inventory-/PMS-/Channel-Abfrage, kein Zeitstempel, keine Preisberechnung, keine Alternative, keine Warteliste und keine Zimmerhaltung.</p>
+          </div>
+        </section>
+
+        <div class="unavailable-layout">
+          <section class="availability-card" aria-labelledby="unavailable-context-heading">
+            <header class="panel-heading">
+              <div class="panel-copy"><h2 id="unavailable-context-heading">Fiktiver Prüfkontext ohne Bestandsergebnis</h2><p>Gewünschte Werte und eine künftige Ergebnisform bleiben sichtbar, aber der Prototyp erfindet keine freie Kategorie oder Ersatzrate.</p></div>
+              <span class="badge badge-prototype">Keine Quelle abgefragt</span>
+            </header>
+            <div class="panel-body">
+              <div class="table-wrap" tabindex="0" aria-label="Fiktiver Verfügbarkeitskontext als Tabelle; horizontales Scrollen möglich">
+                <table>
+                  <caption>Fiktive Anfrageparameter und Grenzen. Kein Eintrag ist ein aktueller Zimmerbestand, Preis, Hold, Alternativangebot oder Buchungsergebnis.</caption>
+                  <thead>
+                    <tr><th scope="col">Prüfpunkt</th><th scope="col">Fiktiver Wunsch / Antwortkontext</th><th scope="col">Was weiterhin fehlt</th><th scope="col">Sichere Folge</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><strong>Zeitraum</strong></td><td>24.–28.07.2026 · 4 Nächte als fiktiver Wunsch</td><td>Autoritative Kalender-, Zeit-, Saison-, Mindestaufenthalts- und Quellenprüfung</td><td>Keine Buchung, kein Hold, kein Preis</td></tr>
+                    <tr><td><strong>Zimmerwunsch</strong></td><td>Doppelzimmer · 2 Erwachsene · nur Präferenz</td><td>Inventar, Belegung, Kapazität, Reinigung, Wartung, Sperre, Eignung und Zuteilung</td><td>Keine automatische Alternative auswählen</td></tr>
+                    <tr><td><strong>Verfügbarkeitsstatus</strong></td><td><span class="badge badge-warning">Nicht verfügbar · fiktive State-Darstellung</span></td><td>Response-Schema, Quelle, Aktualität, Preis/Rate, Channel-Konflikt, Lock/Idempotenz und Berechtigung</td><td>Prüfkontext erhalten oder später eskalieren</td></tr>
+                    <tr><td><strong>Bekannter Suite-Bezug</strong></td><td>Jana Müller-Kaya / <span class="draft-reference">RES-BO-2026-0716-014</span> / 16.–23.07.2026 / Zimmer 214</td><td>Keine Verbindung zwischen dem vorhandenen statischen Beispiel und diesem Entwurf</td><td>Nur lokale Dokumentreferenz lesen</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-availability-list" aria-label="Mobile Karten für den fiktiven Verfügbarkeitskontext">
+                <article class="mobile-availability-card"><span>Zeitraum</span><strong>24.–28.07.2026</strong><small>Fiktiver Wunsch; keine Kalender- oder Preisquelle abgefragt.</small></article>
+                <article class="mobile-availability-card"><span>Zimmerwunsch</span><strong>Doppelzimmer · 2 Erwachsene</strong><small>Keine Inventar-, Belegungs-, Reinigungs-, Sperr- oder Zuteilungsprüfung.</small></article>
+                <article class="mobile-availability-card"><span>Ergebnisform</span><strong>Nicht verfügbar · fiktiv</strong><small>Keine echte Antwort, Alternative, Warteliste oder Zimmerhaltung.</small></article>
+              </div>
+
+              <section class="availability-notice" aria-labelledby="no-auto-alternative-heading">
+                <span class="badge badge-warning">Keine automatische Alternative</span>
+                <h3 id="no-auto-alternative-heading">Nicht aus einer statischen Planung ableiten</h3>
+                <p>Eine scheinbar freie Kalenderzelle, ein anderer Zeitraum oder Zimmer 214 aus der statischen Suite sind keine zulässigen Ersatzvorschläge. Die spätere Lösung braucht eine autoritative Verfügbarkeit, Preis-/Regelprüfung, berechtigte Handlung, Lock/Transaktion und auditierbare Bestätigung.</p>
+                <div class="action-row">
+                  <a class="button-link" href="room_planning_calendar.html#state-list">Statische Zimmerliste lesen</a>
+                  <button class="btn-warning" type="button" data-prototype-action="Die No-Availability-Grenze wurde lokal erläutert. Es wurde keine Alternative berechnet, reserviert, an einen Kanal gesendet oder gespeichert.">Grenze erläutern</button>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="unavailable-recovery-heading">
+            <span class="badge badge-planned">Quelle / Entscheidung erforderlich</span>
+            <h2 id="unavailable-recovery-heading">Keine Zimmerhaltung erzeugen</h2>
+            <p>Ein späterer Workflow darf gezielt Zeitraum, Präferenz oder Daten korrigieren, aktuelle Quelle abfragen oder an eine berechtigte Rolle eskalieren. Er darf aus dieser State-Darstellung weder Platz noch Preis noch Kommunikation ableiten.</p>
+            <button class="btn-danger" type="button" disabled aria-describedby="unavailable-hold-reason">Zimmer halten</button>
+            <p id="unavailable-hold-reason" class="disabled-explanation">Haltung deaktiviert: kein Inventar, keine Verfügbarkeit, keine Rate, keine Quelle, keine Berechtigung, keine Lock-/Transaktionsregel, keine Persistenz und kein Audit.</p>
+            <a class="button-link" href="reservation_detail.html#state-conflict">Fiktiven Konfliktschutz lesen</a>
+          </aside>
+        </div>
+
+        <p class="page-note">Nicht-verfügbar-Zustand: Der sichtbare Status ist ein Prototypmuster für eine zukünftige Antwort. Er ist kein Nachweis für eine abgefragte Inventarquelle, Preis- oder Regelprüfung, Zimmerhaltung, Warteliste, Channel-Synchronisation, Reservierung, Audit oder Meldung.</p>
+      </section>
+
+      <!-- ===== State: unsaved draft ===== -->
+      <section id="state-draft" class="state-panel" aria-labelledby="draft-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="draft-heading">Ungesicherter Reservierungsentwurf</h2>
+            <p>Ein Unterbrechungszustand muss klar sagen, dass eine Person weiterarbeiten kann, ohne daraus eine gespeicherte Reservierung oder Wiederaufnahmegarantie abzuleiten.</p>
+          </div>
+          <span class="badge badge-warning">Nicht gespeichert</span>
+        </header>
+
+        <div class="draft-layout">
+          <section class="draft-card" aria-labelledby="draft-card-heading">
+            <header class="draft-heading">
+              <div class="draft-copy"><h2 id="draft-card-heading">Fiktiver Entwurf ohne dauerhaften Speicher</h2><p>Die sichtbare Zusammenfassung ist Teil dieses statischen Prototypzustands. Sie wird nicht in einem Browser- oder Backend-Speicher angelegt.</p></div>
+              <span class="badge badge-prototype">Lokale DOM-Darstellung</span>
+            </header>
+            <div class="draft-body">
+              <section class="draft-status-card" aria-labelledby="draft-status-heading">
+                <span class="badge badge-warning">Nicht gespeichert · keine Reservierung</span>
+                <h3 id="draft-status-heading">DRAFT-BO-2026-0724-001</h3>
+                <p>Mara König · 24.–28.07.2026 · 2 Erwachsene · Doppelzimmer als fiktiver Wunsch. Diese Werte sind weder ein reservierter Aufenthalt noch eine Preis-/Verfügbarkeitsantwort.</p>
+              </section>
+
+              <div class="draft-rows" aria-label="Fiktiver Entwurfsumfang">
+                <article class="summary-card"><span>Profilbezug</span><strong>Kein Gastprofil angelegt</strong><small>Keine Suche, Duplikatenprüfung, Einwilligung oder Kontaktübernahme</small></article>
+                <article class="summary-card"><span>Zimmer / Preis</span><strong>Keine Antwort</strong><small>Kein Inventar, kein Hold, keine Rate, keine Steuer oder Zahlung</small></article>
+                <article class="summary-card"><span>Wiederaufnahme</span><strong>Geplant</strong><small>Keine Session, kein Browser-Speicher, keine persistente Aufgaben- oder Entwurfs-ID</small></article>
+                <article class="summary-card"><span>Nachweis</span><strong>Kein Audit</strong><small>Kein authentifizierter Akteur, kein Zeitstempel, keine Historie und keine Bestätigung</small></article>
+              </div>
+
+              <form id="draft-reservation-form" class="draft-form" novalidate>
+                <div class="field-group">
+                  <label for="draft-reminder">Fiktiver Wiedervorlagehinweis</label>
+                  <textarea id="draft-reminder" name="draft-reminder" rows="3">Vor einer späteren Buchung: Person, Reisedaten, Zimmerwunsch, Preisquelle, Verfügbarkeit und Berechtigung prüfen.</textarea>
+                  <span class="field-help">Der Hinweis wird nur lokal als Formularmuster behandelt. Er erzeugt keine Aufgabe, Erinnerung, Nachricht, Warteliste oder Speicheroperation.</span>
+                </div>
+                <span class="check-row"><input id="draft-acknowledgement" name="draft-acknowledgement" type="checkbox"><label for="draft-acknowledgement">Ich erkenne im Prototyp an, dass keine Reservierung oder Entwurfsspeicherung erfolgt ist</label></span>
+                <div class="form-actions">
+                  <button class="btn-teal" type="submit">Entwurfsgrenze prüfen</button>
+                  <button type="button" disabled aria-describedby="draft-save-reason">Entwurf speichern</button>
+                </div>
+                <p id="draft-save-reason" class="disabled-explanation">Speichern deaktiviert: kein Entwurfsmodell, keine Sitzung, keine Person-/Reservierungsquelle, keine Validierung, keine Verfügbarkeits-/Preisquelle, keine Rollenprüfung, keine Persistenz, keine Wiederaufnahme, kein Audit und keine Fehler-/Konfliktsemantik vorhanden.</p>
+              </form>
+
+              <section class="section-divider" aria-labelledby="draft-requirements-heading">
+                <div class="panel-copy"><h3 id="draft-requirements-heading">Was ein späterer Entwurfsvertrag braucht</h3><p>Eine Unterbrechungssicherheit muss explizit modelliert und getestet werden, nicht aus einer Textanzeige abgeleitet werden.</p></div>
+                <ul class="draft-list">
+                  <li><span class="detail-label">Datenmodell</span><span>Entwurfs-ID, scoped owner/property/purpose, Feldversion, Ablauf/Retention, Status, relation to guest/stay, and safe deletion policy.</span></li>
+                  <li><span class="detail-label">Validierung / Konflikt</span><span>Serverseitige Regeln, Feldfehler, date/rate/availability response, duplicate/version/lock/idempotency semantics, and no silent overwrite.</span></li>
+                  <li><span class="detail-label">RBAC / Audit</span><span>Authenticated actor, least-privilege read/write/resume rights, access/change events, and non-disclosing denied states.</span></li>
+                  <li><span class="detail-label">Wiederaufnahme</span><span>Explicit resume/return scope, error handling, concurrency rules, clear unsaved/saved distinction, and tested focus/context restoration.</span></li>
+                </ul>
+              </section>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="draft-recovery-heading">
+            <span class="badge badge-warning">Unterbrechung sichtbar</span>
+            <h2 id="draft-recovery-heading">Keine versteckte Speicherung behaupten</h2>
+            <p>Die nächste sichere Designentscheidung ist die Entwurfsgrenze transparent zu machen, Werte später bewusst erneut einzugeben oder einen echten Entwurfsvertrag zu implementieren. Ein Reiter, eine sichtbare Referenz oder die State-Schaltung ist keine Wiederaufnahmefunktion.</p>
+            <button class="btn-warning" type="button" data-prototype-action="Die ungesicherte Entwurfsgrenze wurde lokal erläutert. Es wurde kein Entwurf verworfen, gespeichert, wiederhergestellt oder auditiert.">Entwurfsgrenze erläutern</button>
+            <a class="button-link" href="today_front_desk_dashboard.html">Zu statischem Arbeitskontext</a>
+          </aside>
+        </div>
+
+        <p class="page-note">Entwurfszustand: Das sichtbare `DRAFT-…`-Beispiel ist keine Browser-/Datenbank-/Sitzungsspeicherung. Diese Quellansicht verwendet weder Netzwerk noch Browser-Speicher noch eine Persistenz-/Wiederaufnahme-/Auditfunktion und behauptet keine Reservierung oder rechtliche/operative Wirkung.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Hotel-, Gast-, Reservierungs-, Zimmerwunsch- und Entwurfsdaten. Quellprüfungen können Tokens, Struktur, Zustände und lokale JavaScript-Logik belegen; sie beweisen keine gerenderte Layoutqualität, Tastatur- oder Screen-Reader-Verhalten, Kontrast, Zoom/Reflow, Zielgrößenmessung, WCAG/BFSG/EAA-Konformität, Suche, Personenzuordnung, Verfügbarkeit, Preislogik, Authentifizierung, RBAC, Speicherung, Audit, Integration, Buchung oder rechtliche/operative Endgültigkeit.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html">Anreisen</a>
+    <a href="#state-new" aria-current="page">Reservierung</a>
+    <a href="reservation_detail.html#state-detail">Detail</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <span class="switcher-label">Zustand</span>
+    <div class="switcher-controls">
+      <button id="state-button-new" type="button" data-state-target="state-new" aria-controls="state-new" aria-pressed="true">Entwurf</button>
+      <button id="state-button-validation" type="button" data-state-target="state-validation" aria-controls="state-validation" aria-pressed="false">Validierung</button>
+      <button id="state-button-unavailable" type="button" data-state-target="state-unavailable" aria-controls="state-unavailable" aria-pressed="false">Nicht verfügbar</button>
+      <button id="state-button-draft" type="button" data-state-target="state-draft" aria-controls="state-draft" aria-pressed="false">Ungesichert</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('new-reservation-context-form');
+      const reservationForm = document.getElementById('new-reservation-form');
+      const validationForm = document.getElementById('validation-reservation-form');
+      const draftForm = document.getElementById('draft-reservation-form');
+
+      const labels = {
+        'state-new': 'Standardansicht für eine fiktive neue Reservierung angezeigt.',
+        'state-validation': 'Fiktive Validierungsfehler vor einer späteren Reservierung angezeigt.',
+        'state-unavailable': 'Fiktiver Nicht-Verfügbar-Zustand angezeigt.',
+        'state-draft': 'Fiktiver ungesicherter Reservierungsentwurf angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      switcherControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Ursprung, Betrieb und Anfragezweck lokal aktualisiert. Es wurde keine Route, Suche, Reservierungsquelle, Berechtigungsprüfung oder Speicherung ausgeführt.';
+      });
+
+      reservationForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Reservierungsvorschlag lokal geprüft. Es wurde keine Person gesucht, kein Zeitraum validiert, keine Verfügbarkeit oder Rate abgefragt, kein Zimmer gehalten und keine Reservierung erstellt oder gespeichert.';
+      });
+
+      validationForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktive Korrekturfelder lokal geprüft. Es wurde keine tatsächliche Validierung, Suche, Verfügbarkeitsprüfung, Reservierung oder Übermittlung ausgeführt.';
+      });
+
+      draftForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktive Entwurfsgrenze lokal geprüft. Es wurde kein Entwurf gespeichert, wiederhergestellt, verworfen, reserviert oder auditiert.';
+      });
+    }());
+  </script>
+</body>
+</html>

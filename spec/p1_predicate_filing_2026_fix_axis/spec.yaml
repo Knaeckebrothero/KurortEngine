@@ -1,0 +1,312 @@
+# =============================================================================
+# spec.yaml — iter-12 P1 predicate_filing 2026 regression-lock cycle
+# (frozen marker for the prior 5-AC block)
+# =============================================================================
+# Iteration 12 · Developer role · Pattern F stale-kickoff re-launch (fresh
+# cycle: HEAD 7a5da641).
+#
+# This iteration extends the iter-11 frozen 5-AC block (CF-PF-2026-1+2+4+3
+# fix-axis regression-locks — all 4 fixes ALREADY SHIPPED on main HEAD
+# 4b682ddb) by adding 2 NEW acceptance criteria (AC-6 audit-regression-lock
+# + AC-7 kurpaket-regression-lock) that formalize the 2 pre-existing pytest
+# failures on main that block the done_when gate `pytest tests/ -q exits 0`.
+#
+# The 7-AC block below is the canonical lock for this cycle. It will be
+# copied byte-identical into spec.lock.md's PROTECTED ## Acceptance Criteria
+# section. Any drift = AC integrity violation.
+# =============================================================================
+
+feature: p1-predicate-filing-2026-regression-lock
+iteration: 12
+owner: developer
+created: 2026-07-14
+branch: main
+head_entry: 7a5da641
+predecessor: >-
+  iter-11 Critic verdict (job 968785c8) chose iter-9 Scholar Proposal #001
+  (predicate_filing 2026 fix-axis Tier-1, CF-PF-2026-1+2+4+3) as the
+  iter-12 Developer action. The 4 bug fixes were shipped on main HEAD
+  4b682ddb (verified by read_file of 2026_validate.py and 2026_attestation.py).
+  Per Pattern F stale-kickoff rule, this cycle formalizes the 4 fixes as
+  regression-locks (AC-1..AC-4) AND adds 2 new ACs (AC-6 audit + AC-7
+  kurpaket) for the 2 pre-existing pytest failures on main.
+
+# -----------------------------------------------------------------------------
+# intent — one-sentence purpose of the feature
+# -----------------------------------------------------------------------------
+intent: >-
+  Lock the 4 iter-11 SHIPPED bug fixes (CF-PF-2026-1 adult_rate Decimal
+  precision + CF-PF-2026-2 Beglaubigung unquoted-clause extraction +
+  CF-PF-2026-3 BFSGComplianceError diagnostic clarity + CF-PF-2026-4
+  period/reprdikatisierung_window tuple type-guard) as acceptance criteria
+  AC-1..AC-4 in `kurort_engine.predicate_filing.2026_{validate,attestation}`
+  AND formalize the 2 pre-existing pytest regressions on main (audit log
+  shared-state pollution from a11y.guest_pwa self-attest + kurpaket
+  compliance dict-payload AttributeError on .replace()) as AC-6 + AC-7,
+  so that all 7 contracts are verified by the existing + new pytest
+  repros in `output/repros/001..006_*.py` AND the full suite
+  `pytest tests/ -q` exits 0 with 163/163 tests passing.
+
+# -----------------------------------------------------------------------------
+# acceptance_criteria — 7 EARS-formatted ACs (the canonical lock block)
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+
+  - id: AC-1
+    bug: CF-PF-2026-2 (HIGH)
+    ears: >-
+      Where a Beglaubigung attestation clause contains unescaped embedded
+      quotes ("Kurarzt" attest with embedded "Beihilfe" quote), the
+      kurort_engine.predicate_filing.2026_validate.extract_2026_satzung_schema
+      function shall extract the clause without silent drop, returning the
+      unquoted clause text in the resulting schema dict's
+      beglaubigung_attestation_clauses list, and shall raise a
+      BFSGComplianceError with diagnostic mentioning "unquoted clause
+      extraction" if extraction fails.
+    test_oracle: >-
+      output/repros/002_beglaubigung_silent_drop_unescaped_clauses.py::test_repro_002a
+    spec_phase: spec
+    tdd_phase_origin: red
+    locked_status: not_started
+    notes: >-
+      Verifies the iter-11 SHIPPED fix at
+      repo/src/kurort_engine/predicate_filing/2026_validate.py:102-108
+      (regex accepts both quoted + unquoted Beglaubigung clauses).
+
+  - id: AC-2
+    bug: CF-PF-2026-4 (HIGH)
+    ears: >-
+      When kurort_engine.predicate_filing.2026_validate.load_2026_profile
+      is called with a profile whose period or reprdikatisierung_window
+      attribute is a string (rather than the expected tuple/list of date
+      strings), the function shall NOT bypass type validation; it shall
+      raise a BFSGComplianceError with diagnostic "period must be a tuple
+      of ISO date strings, not str" rather than silently coercing the
+      string into a 1-element tuple and continuing.
+    test_oracle: >-
+      output/repros/004_load_2026_profile_period_string_bypass.py::test_repro_004
+    spec_phase: spec
+    tdd_phase_origin: red
+    locked_status: not_started
+    notes: >-
+      Verifies the iter-11 SHIPPED fix at
+      repo/src/kurort_engine/predicate_filing/2026_validate.py:204-230
+      (full type-check on period + reprdikatisierung_window).
+
+  - id: AC-3
+    bug: CF-PF-2026-1 (HIGH)
+    ears: >-
+      Where a 2026 attestation template references an adult rate (EUR
+      amount) that is a Python float, the
+      kurort_engine.predicate_filing.2026_attestation.apply_2026_attestation_template
+      function shall format the rate as a 2-decimal-place string with
+      TRAILING-ZERO preservation (e.g., 199.0 → "199.00"), preserving full
+      Decimal precision rather than collapsing trailing zeros.
+    test_oracle: >-
+      output/repros/001_adult_rate_float_precision_loss.py::test_repro_001a
+    spec_phase: spec
+    tdd_phase_origin: red
+    locked_status: not_started
+    notes: >-
+      Verifies the iter-11 SHIPPED fix at
+      repo/src/kurort_engine/predicate_filing/2026_attestation.py:90
+      (returns f"{Decimal(str(rate)):.2f}" rather than the prior
+      f"{rate:.2f}" that collapsed trailing zeros).
+
+  - id: AC-4
+    bug: CF-PF-2026-3 (MEDIUM)
+    ears: >-
+      Where kurort_engine.predicate_filing.2026_attestation.compute_anti_drift_sha
+      raises a BFSGComplianceError due to a chain-extension module SHA
+      drift, the raised exception's diagnostic message shall be trimmed
+      (≤200 chars) and shall NOT include the full chain-extension module
+      names — only the short module identifier (the last path segment)
+      and the SHA — so that the error message is BFSG-AA-compliant and
+      not overwhelming for screen readers.
+    test_oracle: >-
+      output/repros/003_anti_drift_sha_misleading_diagnostic.py::test_repro_003
+    spec_phase: spec
+    tdd_phase_origin: red
+    locked_status: not_started
+    notes: >-
+      Verifies the iter-11 SHIPPED fix at
+      repo/src/kurort_engine/predicate_filing/2026_attestation.py:280-289
+      (BFSGComplianceError message trims to iter-33 chain-extension
+      modules last-segment only).
+
+  - id: AC-5
+    bug: "(structural — full-green-suite baseline)"
+    ears: >-
+      The full pytest suite
+      `cd repo && PYTHONPATH=src .venv/bin/python -m pytest tests/ -q
+      --override-ini="addopts=--tb=line"` shall exit 0 with all tests
+      passing (163 expected / 0 failed / 0 skipped after AC-6 + AC-7 fixes
+      ship), and the 6 SHA-preserved modules + 4 iter-33 SHIPPED
+      predicate_filing modules + the predicate_filing __init__ re-export
+      surface shall all remain byte-identical to their HEAD state.
+    test_oracle: >-
+      repo/tests/test_predicate_filing_2026.py::test_ac5_full_test_suite_green
+    spec_phase: spec
+    tdd_phase_origin: "(green — verification-only)"
+    locked_status: not_started
+    notes: >-
+      Structural baseline preservation. The 6 SHA modules are
+      kurort_engine.esg.__init__ (b00acc9e),
+      kurort_engine.esg.report.__init__ (d29f01c6),
+      kurort_engine.kurpaket_orchestrator (baa2e0ed),
+      kurort_engine.kurkarte_wallet.__init__ (1b4c3f80),
+      kurort_engine.spa_wellness.__init__ (28dc45e8),
+      kurort_engine.ev_charging.__init__ (e6b33f86). The 4 iter-33 SHIPPED
+      predicate_filing modules are predicate_packet_assembler,
+      kurgaste_health_data_aggregator, heilbad_2036_narrative_generator,
+      predicate_filing_export.
+
+  - id: AC-6
+    bug: "(regression — pre-existing on main HEAD 4b682ddb)"
+    ears: >-
+      Where the kurort_engine.audit.AuditLog class receives an
+      AuditLogEntry whose source module is
+      `kurort_engine.a11y.guest_pwa` emitting a self-attestation event
+      with a dict-shaped payload (e.g.,
+      {"attested": true, "schema": "BFSG-EAA-1.0"}), the AuditLog's
+      __iter__ / entries snapshot iteration shall return each entry with
+      its payload field preserved as the dict (not coerced to str), and
+      the AuditLog's record_sgb_v_event path shall NOT pre-emptively
+      filter dict-payload entries from prior tests, so that AC-7's
+      payload-shape test passes without AttributeError on .replace().
+    test_oracle: >-
+      repo/tests/test_audit.py::test_ac7_audit_log_appends_entry_and_preserves_order
+    spec_phase: spec
+    tdd_phase_origin: "(red — new repro: output/repros/005_audit_shared_state_pollution.py::test_repro_005a)"
+    locked_status: not_started
+    notes: >-
+      The AC-6 contract is: AuditLog accepts dict payloads from
+      record_sgb_v_event without breaking iteration; AuditLog's entries
+      snapshot returns dict-payload entries with the dict preserved.
+      The corresponding src fix is in
+      repo/src/kurort_engine/audit.py (≈5–10 LOC surgical).
+      A new pytest repro is added at
+      output/repros/005_audit_shared_state_pollution.py to verify the
+      contract. The repo/tests/ test_audit.py file is NOT modified
+      (per NI-8: tests are OBJECTIVE TRUTH).
+
+  - id: AC-7
+    bug: "(regression — pre-existing on main HEAD 4b682ddb)"
+    ears: >-
+      Where kurort_engine.kurpaket_compliance.code_path_AC9 iterates the
+      shared AuditLog to verify that an SGB V §23 audit event was written,
+      and encounters an entry whose payload is a dict (e.g., from
+      kurort_engine.a11y.guest_pwa self-attestation), the code path
+      shall coerce the dict payload to a JSON string (via json.dumps)
+      BEFORE calling .replace(), so that the test
+      test_ac9_sgb_v_23_audit_event_written_to_kurort_audit_log passes
+      without AttributeError on the dict payload.
+    test_oracle: >-
+      repo/tests/test_kurpaket_compliance.py::test_ac9_sgb_v_23_audit_event_written_to_kurort_audit_log
+    spec_phase: spec
+    tdd_phase_origin: "(red — new repro: output/repros/006_kurpaket_compliance_dict_payload_replace.py::test_repro_006a)"
+    locked_status: not_started
+    notes: >-
+      The AC-7 contract is: kurpaket_compliance code-path AC9 coerces
+      dict payloads to str before .replace() calls. The corresponding
+      src fix is in repo/src/kurort_engine/kurpaket_compliance.py
+      (≈3–5 LOC surgical). A new pytest repro is added at
+      output/repros/006_kurpaket_compliance_dict_payload_replace.py to
+      verify the contract. The repo/tests/ test_kurpaket_compliance.py
+      file is NOT modified (per NI-8: tests are OBJECTIVE TRUTH).
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries (anti-drift discipline)
+# -----------------------------------------------------------------------------
+not_included:
+  - id: NI-1
+    description: >-
+      Migration / renaming of repo/data/hessen_bad_orb.yaml — REJECTED.
+      Only repo/data/hessen_bad_orb_2026.yaml is in scope for
+      predicate_filing.
+  - id: NI-2
+    description: >-
+      Public API surface additions to kurort_engine.predicate_filing —
+      REJECTED. The 4 iter-11 bug-fixes are line-level surgical edits; no
+      new public functions, classes, or re-exports.
+  - id: NI-3
+    description: >-
+      DB / migration / DSGVO / AVV / partner-MOU / Lawyer sign-off —
+      REJECTED. Mix B is fully safe; no third-party cert required.
+  - id: NI-4
+    description: >-
+      Real Bad Orb Satzung 01.07.2026 PDF parsing — DEFERRED. iter-12
+      only locks the 4 iter-11 bug-fixes as regression contracts +
+      closes 2 pre-existing pytest failures.
+  - id: NI-5
+    description: >-
+      Resavio pricing/marketing analysis — REJECTED. Mix B safe; no
+      Resavio data ingested or analyzed.
+  - id: NI-6
+    description: >-
+      Resubmitting CF-PF-2026-1/2/4/3 bug fixes — REJECTED. The 4 fixes
+      are ALREADY SHIPPED on main at HEAD 4b682ddb (verified by read_file
+      of 2026_validate.py and 2026_attestation.py); iter-12 only
+      formalizes them as regression-lock ACs (AC-1..AC-4).
+  - id: NI-7
+    description: >-
+      Re-litigation of iter-11 Critic verdict or iter-9 Scholar Proposal
+      #001 — REJECTED. The chosen action is BIT-IDENTICAL across Scholar
+      §11 + Bughunter findings 001..004 + Critic iter-11. iter-12
+      re-affirms the choice; does not consider Proposal #002 or #003.
+  - id: NI-8
+    description: >-
+      Edits to repo/tests/test_predicate_filing_2026.py or
+      repo/tests/test_audit.py or repo/tests/test_kurpaket_compliance.py
+      — REJECTED. Tests are OBJECTIVE TRUTH (per pinned rule R8). Only
+      output/repros/*.py is writable for new regression-lock repros.
+
+# -----------------------------------------------------------------------------
+# done_when — exact commands that must pass
+# -----------------------------------------------------------------------------
+done_when:
+  - id: DW-1
+    command: >-
+      cd repo && PYTHONPATH=src .venv/bin/python -m pytest tests/ -q
+      --override-ini="addopts=--tb=line"
+    expected: >-
+      Exits 0 with `163 passed, 0 failed, 0 skipped` (was 151 passed +
+      4 failed before AC-6 + AC-7 fixes).
+  - id: DW-2
+    command: >-
+      cd repo && PYTHONPATH=src .venv/bin/python -m pytest
+      output/repros/001..004_*.py -v
+    expected: >-
+      Exits 0 with `4 files / ≥6 tests PASS` (the 4 CF-PF-2026
+      regression-locks remain GREEN at HEAD).
+  - id: DW-3
+    command: >-
+      cd repo && PYTHONPATH=src .venv/bin/python -m pytest
+      output/repros/005_audit_shared_state_pollution.py
+      output/repros/006_kurpaket_compliance_dict_payload_replace.py -v
+    expected: >-
+      Exits 0 with `2 files / ≥2 tests PASS` (AC-6 + AC-7 regression-
+      locks green after the src fixes).
+  - id: DW-4
+    command: >-
+      cd repo && git diff main..HEAD --stat
+    expected: >-
+      ≤30 src LOC delta scoped to
+      repo/src/kurort_engine/{audit,kurpaket_compliance}.py + spec/lock
+      files only. The 6 SHA-preserved modules + 4 iter-33 SHIPPED
+      predicate_filing modules + predicate_filing __init__ re-export
+      surface all byte-identical (0-line diff).
+  - id: DW-5
+    command: >-
+      cd repo && PYTHONPATH=src .venv/bin/python -c "from
+      kurort_engine.predicate_filing import assemble_predicate_packet,
+      validate_kurgaste_health_data, generate_heilbad_2036_narrative,
+      export_predicate_filing_bfsg_aa, aggregate_kurgaste_health_data,
+      extract_2026_satzung_schema, load_2026_profile,
+      apply_2026_attestation_template, compute_anti_drift_sha; from
+      kurort_engine.kurkarte_wallet import BFSGComplianceError; from
+      kurort_engine.kurpaket_orchestrator import SGBV23CertificateMissing;
+      print('SHIPPED OK')"
+    expected: >-
+      Prints the SHIPPED-OK line (no ImportError; predicate_filing
+      re-export surface intact).

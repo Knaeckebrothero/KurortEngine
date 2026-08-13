@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contemporary Hospitality Platform — Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: 0 0 0 1px var(--accent-color);
+    }
+
+    /* ===== Component Styles ===== */
+    .stage { min-height: 100vh; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 232px minmax(0, 1fr);
+      background: var(--app-bg);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 16px 12px;
+      border-right: 1px solid var(--border-color);
+      background: var(--panel-bg);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--surface-0);
+      color: var(--color-teal);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .brand-copy { display: grid; gap: 0; }
+    .brand-name { color: var(--text-primary); font-size: 15px; font-weight: 600; }
+    .brand-subtitle { color: var(--text-muted); font-size: 12px; }
+
+    .nav-group { display: grid; gap: 8px; }
+    .nav-label { padding: 0 12px; color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: 4px; list-style: none; }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border-left: 3px solid transparent;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link.active { border-left-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .nav-icon { width: 16px; color: var(--text-muted); text-align: center; }
+    .nav-link.active .nav-icon { color: var(--accent-color); }
+
+    .property-card {
+      display: grid;
+      gap: 8px;
+      margin-top: auto;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .property-card strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .property-card span { color: var(--text-secondary); font-size: 12px; }
+    .property-card small { color: var(--text-muted); font-size: 11px; }
+
+    .workspace { min-width: 0; display: flex; flex-direction: column; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-header-bg);
+    }
+
+    .topbar-title { display: grid; gap: 0; min-width: 0; }
+    .topbar-title h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; }
+    .topbar-title p { color: var(--text-secondary); font-size: 13px; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+    .btn-primary,
+    .btn-secondary,
+    .icon-button,
+    .filter-chip,
+    .row-action,
+    .mobile-tab {
+      min-height: 40px;
+      border-radius: 6px;
+      font: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+    }
+
+    .btn-primary {
+      padding: 8px 16px;
+      border: 1px solid var(--accent-color);
+      background: var(--accent-color);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
+    .btn-primary:active { border-color: var(--surface-2); background: var(--surface-2); transform: translateY(0); }
+
+    .btn-secondary {
+      padding: 8px 16px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .btn-secondary:hover, .icon-button:hover { background: var(--surface-0); color: var(--text-primary); }
+    .btn-secondary:active, .icon-button:active { background: var(--surface-2); transform: translateY(0); }
+
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      border-color: var(--border-color);
+      background: var(--surface-0);
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .content { display: grid; gap: 20px; padding: 24px; }
+
+    .day-context {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .context-copy { display: grid; gap: 0; margin-right: auto; }
+    .context-copy strong { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .context-copy span { color: var(--text-secondary); font-size: 12px; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    .filter-chip {
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .filter-chip:hover { background: var(--surface-0); color: var(--text-primary); }
+    .filter-chip:active { background: var(--surface-2); }
+    .filter-chip.active { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+
+    .warm-note { display: inline-flex; align-items: center; gap: 8px; color: var(--color-teal); font-size: 12px; white-space: nowrap; }
+    .warm-note-mark { width: 8px; height: 8px; border-radius: 4px; background: var(--color-teal); }
+
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr); gap: 20px; align-items: start; }
+    .left-stack, .right-stack { display: grid; gap: 20px; }
+
+    .panel {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-header-bg);
+    }
+
+    .panel-heading { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .panel-subtitle { color: var(--text-muted); font-size: 12px; }
+    .header-spacer { margin-left: auto; }
+    .panel-body { display: grid; gap: 12px; padding: 16px; }
+
+    .guest-summary {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 16px;
+      border: 1px solid var(--accent-color);
+      border-radius: 8px;
+      background: var(--surface-0);
+      box-shadow: 0 0 0 1px var(--accent-color);
+    }
+
+    .guest-initials {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+      color: var(--color-teal);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .guest-copy { display: grid; gap: 4px; min-width: 0; }
+    .guest-copy h2 { color: var(--text-primary); font-size: 18px; font-weight: 600; }
+    .guest-copy p { color: var(--text-secondary); font-size: 13px; }
+    .guest-copy small { color: var(--text-muted); font-size: 12px; }
+    .guest-action { align-self: center; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: fit-content;
+      padding: 2px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--surface-1);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+
+    .service-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .service-card {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .service-card:hover { border-color: var(--surface-1); background: var(--surface-0); }
+    .service-card h3 { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .service-card p { color: var(--text-secondary); font-size: 12px; }
+    .service-card .badge { margin-top: auto; }
+
+    .step-list { display: grid; gap: 8px; list-style: none; }
+    .step-item { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start; }
+    .step-marker {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--surface-0);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .step-marker.done { border-color: var(--color-green); color: var(--color-green); }
+    .step-marker.current { border-color: var(--color-peach); color: var(--color-peach); }
+    .step-copy { display: grid; gap: 0; }
+    .step-copy strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .step-copy span { color: var(--text-secondary); font-size: 12px; }
+
+    .evidence-details {
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+    }
+
+    .evidence-details summary {
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .evidence-details summary:hover { color: var(--text-primary); }
+    .evidence-list { display: grid; gap: 8px; padding-top: 12px; list-style: none; }
+    .evidence-list li { display: grid; gap: 4px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--timeline-bg); }
+    .evidence-list strong { color: var(--text-primary); font-size: 12px; font-weight: 600; }
+    .evidence-list span { color: var(--text-secondary); font-size: 12px; }
+
+    .arrival-table-wrap { overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--surface-0);
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-align: left;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); vertical-align: middle; }
+    tbody tr { cursor: pointer; transition: background 0.15s ease, box-shadow 0.15s ease; }
+    tbody tr:hover { background: var(--surface-0); }
+    tbody tr.selected { background: var(--surface-0); box-shadow: inset 3px 0 0 var(--accent-color); }
+    .time-cell { color: var(--color-teal); font-family: monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .guest-cell { display: grid; gap: 0; }
+    .guest-cell strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .guest-cell span { color: var(--text-muted); font-size: 11px; }
+    .arrival-note { color: var(--text-secondary); font-size: 12px; }
+    .arrival-note.attention { color: var(--color-peach); }
+
+    .row-action {
+      min-height: 32px;
+      padding: 4px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .row-action:hover { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+    .row-action:active { border-color: var(--surface-2); background: var(--surface-2); }
+
+    .mobile-arrivals { display: none; }
+    .arrival-card {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+
+    .arrival-card.selected { border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); }
+    .card-topline { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 8px; }
+    .card-topline strong { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .card-meta { color: var(--text-secondary); font-size: 12px; }
+    .card-action { width: 100%; min-height: 44px; }
+
+    .toast {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+
+    .toast-icon { color: var(--color-teal); font-size: 14px; text-align: center; }
+    .toast strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .toast p { color: var(--text-secondary); font-size: 12px; }
+    .toast button { min-height: 28px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: transparent; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+    .toast button:hover { background: var(--surface-1); color: var(--text-primary); }
+    .toast-error { border-left-color: var(--color-red); }
+    .toast-error .toast-icon { color: var(--color-red); }
+
+    .handoff-card {
+      display: grid;
+      gap: 8px;
+      padding: 12px 16px;
+      border: 1px solid var(--color-peach);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+
+    .handoff-card h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .handoff-card p { color: var(--text-secondary); font-size: 12px; }
+
+    .empty-state {
+      display: flex;
+      min-height: 440px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 48px 24px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .empty-icon { color: var(--color-teal); font-size: 48px; opacity: 0.6; }
+    .empty-state h2 { color: var(--text-secondary); font-size: 16px; font-weight: 500; }
+    .empty-state p { max-width: 360px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+
+    .error-banner {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 16px;
+      border: 1px solid var(--color-red);
+      border-left: 3px solid var(--color-red);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+
+    .error-icon { color: var(--color-red); font-size: 16px; text-align: center; }
+    .error-copy { display: grid; gap: 4px; }
+    .error-copy h2 { color: var(--text-primary); font-size: 18px; font-weight: 600; }
+    .error-copy p { color: var(--text-secondary); font-size: 13px; }
+    .error-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr); gap: 20px; align-items: start; }
+    .status-list { display: grid; gap: 8px; list-style: none; }
+    .status-list li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; padding: 8px; border-bottom: 1px solid var(--border-color); }
+    .status-mark { color: var(--color-red); font-weight: 600; text-align: center; }
+    .status-list strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .status-list span { color: var(--text-secondary); font-size: 12px; }
+
+    .skeleton-list { display: grid; gap: 8px; }
+    .skeleton-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) 112px; gap: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--surface-0); }
+    .skeleton-block { min-height: 16px; border-radius: 4px; background: var(--surface-1); animation: pulse 1.2s ease-in-out infinite; }
+    .skeleton-tall { min-height: 48px; }
+
+    .overflow-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr); gap: 20px; }
+    .priority-list { display: grid; gap: 8px; list-style: none; }
+    .priority-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+    .priority-row:hover { background: var(--surface-0); }
+    .priority-row time { color: var(--color-teal); font-family: monospace; font-size: 12px; font-weight: 600; }
+    .priority-row strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .priority-row span { color: var(--text-secondary); font-size: 12px; }
+    .overflow-note { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--color-peach); border-radius: 8px; background: var(--surface-0); }
+    .overflow-note strong { color: var(--color-peach); font-size: 13px; font-weight: 600; }
+    .overflow-note p { color: var(--text-secondary); font-size: 12px; }
+
+    .page-note { color: var(--text-muted); font-size: 11px; }
+    .mobile-tabs { display: none; }
+    .state-switcher { position: fixed; right: 16px; bottom: 16px; z-index: 9999; display: flex; flex-wrap: wrap; justify-content: end; gap: 4px; max-width: 360px; }
+    .state-switcher button { min-height: 28px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--surface-0); color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+    .state-switcher button:hover { background: var(--surface-1); color: var(--text-primary); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    @media (max-width: 1280px) and (min-width: 769px) {
+      .laptop-hide { display: none; }
+      .main-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr); }
+      .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: 72px minmax(0, 1fr); }
+      .sidebar { align-items: center; padding: 16px 8px; }
+      .brand-copy, .nav-label, .nav-text, .property-card { display: none; }
+      .brand { padding: 0; }
+      .nav-link { justify-content: center; width: 48px; padding: 8px; border-left: 0; border-bottom: 3px solid transparent; }
+      .nav-link.active { border-left-color: transparent; border-bottom-color: var(--accent-color); }
+      .main-grid, .error-grid, .overflow-grid { grid-template-columns: minmax(0, 1fr); }
+      .right-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .topbar { align-items: start; padding: 16px; }
+      .topbar-title h1 { font-size: 18px; }
+      .topbar-actions .btn-secondary, .topbar-actions .icon-button { display: none; }
+      .topbar-actions .btn-primary { min-height: 44px; }
+      .content { gap: 16px; padding: 16px; padding-bottom: calc(48px + 12px); }
+      .day-context { align-items: start; flex-direction: column; padding: 12px; }
+      .filter-chips { width: 100%; }
+      .filter-chip { min-height: 36px; }
+      .warm-note { white-space: normal; }
+      .main-grid, .left-stack, .right-stack, .error-grid, .overflow-grid { gap: 16px; }
+      .right-stack { grid-template-columns: minmax(0, 1fr); }
+      .panel-header { align-items: start; flex-wrap: wrap; }
+      .header-spacer { display: none; }
+      .guest-summary { grid-template-columns: 48px minmax(0, 1fr); padding: 12px; }
+      .guest-action { grid-column: 2; justify-self: start; min-height: 44px; }
+      .service-grid { grid-template-columns: minmax(0, 1fr); }
+      .arrival-table-wrap { display: none; }
+      .mobile-arrivals { display: grid; gap: 8px; }
+      .toast { grid-template-columns: 20px minmax(0, 1fr); }
+      .toast button { grid-column: 2; min-height: 40px; justify-self: start; }
+      .error-banner { grid-template-columns: 20px minmax(0, 1fr); }
+      .error-banner .badge { grid-column: 2; }
+      .skeleton-row { grid-template-columns: 48px minmax(0, 1fr); }
+      .skeleton-row .skeleton-block:last-child { display: none; }
+      .priority-row { grid-template-columns: 40px minmax(0, 1fr); }
+      .priority-row .row-action { grid-column: 2; min-height: 44px; justify-self: start; }
+      .mobile-tabs {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px 8px;
+        border-top: 1px solid var(--border-color);
+        background: var(--panel-bg);
+      }
+      .mobile-tab { min-height: 44px; padding: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 12px; }
+      .mobile-tab.active { border-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+      .state-switcher { right: 8px; bottom: 56px; max-width: 260px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .app-shell         -> HotelAppShellComponent (new prototype composition)
+    .sidebar           -> AppSidebarComponent (new; composes the existing navigation/list pattern)
+    .day-context       -> ReceptionDayContextComponent (new; reuses header/filter-chip pattern)
+    .guest-summary     -> SelectedGuestServiceCardComponent (new; reuses selected-card pattern)
+    .service-card      -> GuestServiceMomentComponent (new; reuses card/status-badge pattern)
+    .step-list         -> ArrivalReadinessStepperComponent (new; planned composition of list and badges)
+    .arrival-table-wrap -> ArrivalTableComponent (new; reuses dense table pattern)
+    .mobile-arrivals   -> ArrivalMobileCardListComponent (new; responsive alternative)
+    .evidence-details  -> ArrivalEvidenceDisclosureComponent (new; progressive disclosure)
+    .toast             -> reuse existing toast/notification pattern
+    .panel             -> reuse existing panel / panel-header / panel-body pattern
+    .state-switcher    -> prototype-only state switcher from the design-guide starter template
+  -->
+
+  <!-- ===== State: Default (populated) ===== -->
+  <section id="state-default" class="stage" aria-labelledby="today-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">R</span>
+          <span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span>
+        </div>
+
+        <nav class="nav-group" aria-label="Gästebereiche">
+          <p class="nav-label">Gäste begleiten</p>
+          <ul class="nav-list">
+            <li><a class="nav-link active" href="#today-title" aria-current="page"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-text">Heute</span></a></li>
+            <li><a class="nav-link" href="#arrival-list"><span class="nav-icon" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span></a></li>
+            <li><a class="nav-link" href="#selected-guest"><span class="nav-icon" aria-hidden="true">♡</span><span class="nav-text">Aufenthalte</span></a></li>
+            <li><a class="nav-link" href="#handoff"><span class="nav-icon" aria-hidden="true">✓</span><span class="nav-text">Übergaben</span></a></li>
+          </ul>
+        </nav>
+
+        <nav class="nav-group" aria-label="Verwaltungsbereiche">
+          <p class="nav-label">Überblick</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#evidence"><span class="nav-icon" aria-hidden="true">¤</span><span class="nav-text">Nachweise</span></a></li>
+            <li><a class="nav-link" href="#handoff"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-text">Schichtnotizen</span></a></li>
+          </ul>
+        </nav>
+
+        <section class="property-card" aria-label="Hotelkontext">
+          <strong>33 Zimmer · Bad Orb</strong>
+          <span>Heute: 28 belegt, 5 Anreisen</span>
+          <small>Beispieldaten im Designprototyp</small>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-title">
+            <h1 id="today-title">Gäste heute</h1>
+            <p>Dienstag, 18. November · persönlich vorbereitet, operativ klar</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn-secondary" type="button">⌘ K&nbsp; Suche</button>
+            <button class="icon-button" type="button" aria-label="Hinweise öffnen">♢</button>
+            <button class="btn-primary" type="button">Nächste Begrüßung</button>
+          </div>
+        </header>
+
+        <div class="content">
+          <section class="day-context" aria-label="Tageskontext und Filter">
+            <div class="context-copy"><strong>Fünf Anreisen, vier Abreisen, eine gespeicherte Wiederaufnahme</strong><span>Die Rezeption sieht zuerst das, was Gäste und Team jetzt brauchen.</span></div>
+            <div class="filter-chips" aria-label="Ankunftsfilter">
+              <button class="filter-chip active" type="button" aria-pressed="true">Heute 5</button>
+              <button class="filter-chip" type="button" aria-pressed="false">In Kürze 2</button>
+              <button class="filter-chip" type="button" aria-pressed="false">Hinweise 2</button>
+            </div>
+            <span class="warm-note"><span class="warm-note-mark" aria-hidden="true"></span>Empfangsschicht: Mara Keller</span>
+          </section>
+
+          <div class="main-grid">
+            <div class="left-stack">
+              <section class="panel" id="selected-guest" aria-labelledby="selected-guest-title">
+                <header class="panel-header">
+                  <div><h2 class="panel-heading" id="selected-guest-title">Nächste Begrüßung</h2><p class="panel-subtitle">Ein ruhiger, vollständiger Blick bevor das Gespräch beginnt</p></div>
+                  <span class="header-spacer"></span>
+                  <span class="badge badge-teal">10:30 · in 1 Std.</span>
+                </header>
+                <div class="panel-body">
+                  <article class="guest-summary">
+                    <span class="guest-initials" aria-hidden="true">AK</span>
+                    <div class="guest-copy">
+                      <h2>Anna Krämer</h2>
+                      <p>Zimmer 204 · Komfortzimmer · 3 Nächte · Reservierung R-24018</p>
+                      <small>Hinweis für den Empfang: Kurze Orientierung zur Kurkarte anbieten.</small>
+                    </div>
+                    <button class="btn-primary guest-action" type="button">Begrüßung vorbereiten</button>
+                  </article>
+
+                  <div class="service-grid" aria-label="Ankunftsstatus von Anna Krämer">
+                    <article class="service-card"><h3>Unterlagen</h3><p>Dokumentstatus vor dem Gespräch einsehbar.</p><span class="badge badge-success">✓ erzeugt</span></article>
+                    <article class="service-card"><h3>Kurkarte</h3><p>Eine Vorschau ist vorhanden; Ausgabe bleibt ein eigener Schritt.</p><span class="badge badge-teal">Vorschau</span></article>
+                    <article class="service-card"><h3>Aufenthalt</h3><p>Check-in beginnt erst nach der persönlichen Bestätigung.</p><span class="badge badge-info">bereit zur Prüfung</span></article>
+                  </div>
+
+                  <ol class="step-list" aria-label="Vorbereitungsfortschritt">
+                    <li class="step-item"><span class="step-marker done" aria-hidden="true">✓</span><span class="step-copy"><strong>Reservierung ansehen</strong><span>Zimmer und Aufenthalt sind für den Dialog sichtbar.</span></span></li>
+                    <li class="step-item"><span class="step-marker current" aria-hidden="true">2</span><span class="step-copy"><strong>Kurkarte gemeinsam prüfen</strong><span>Der Prototyp zeigt nur eine Vorschau, nicht die Geräteausgabe.</span></span></li>
+                    <li class="step-item"><span class="step-marker" aria-hidden="true">3</span><span class="step-copy"><strong>Check-in abschließen</strong><span>Erst nach einem späteren validierten Backend-Schritt.</span></span></li>
+                  </ol>
+
+                  <details class="evidence-details" id="evidence">
+                    <summary>Nachweise und Übergabe anzeigen</summary>
+                    <ul class="evidence-list">
+                      <li><strong>Meldeschein-Dokument</strong><span><span class="badge badge-success">Erzeugt</span> Ein lokaler Output ist angezeigt; eine externe Übermittlung ist hier nicht belegt.</span></li>
+                      <li><strong>Kurkarte</strong><span><span class="badge badge-teal">Vorschau</span> Die Vorschau ist keine Bestätigung einer Installation oder Zustellung.</span></li>
+                      <li><strong>Aufenthaltsstatus</strong><span><span class="badge badge-info">Backend erforderlich</span> Browser- und Persistenzvertrag fehlen im aktuellen Produktbestand.</span></li>
+                    </ul>
+                  </details>
+                </div>
+              </section>
+
+              <section class="panel" id="arrival-list" aria-labelledby="arrival-title">
+                <header class="panel-header">
+                  <div><h2 class="panel-heading" id="arrival-title">Weitere Anreisen</h2><p class="panel-subtitle">Servicehinweise bleiben neben dem operativen Status lesbar</p></div>
+                  <span class="header-spacer"></span>
+                  <button class="btn-secondary" type="button">Alle Anreisen</button>
+                </header>
+                <div class="arrival-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th scope="col">Zeit</th>
+                        <th scope="col">Gast</th>
+                        <th scope="col" class="laptop-hide">Aufenthalt</th>
+                        <th scope="col">Service &amp; Status</th>
+                        <th scope="col">Nächster Schritt</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="selected">
+                        <td class="time-cell">10:30</td>
+                        <td><span class="guest-cell"><strong>Anna Krämer</strong><span>R-24018 · Zimmer 204</span></span></td>
+                        <td class="laptop-hide">3 Nächte</td>
+                        <td><span class="arrival-note">Kurkarte gemeinsam ansehen · <span class="badge badge-teal">Vorschau</span></span></td>
+                        <td><button class="row-action" type="button">Vorbereiten</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell">12:00</td>
+                        <td><span class="guest-cell"><strong>Familie Vogt</strong><span>R-24022 · Zimmer 312</span></span></td>
+                        <td class="laptop-hide">2 Nächte</td>
+                        <td><span class="arrival-note attention">Kinderbett vermerkt · Kurtaxe vor Abschluss prüfen</span></td>
+                        <td><button class="row-action" type="button">Angaben prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell">16:30</td>
+                        <td><span class="guest-cell"><strong>Martin Heller</strong><span>R-24031 · Zimmer 117</span></span></td>
+                        <td class="laptop-hide">5 Nächte</td>
+                        <td><span class="arrival-note">Späte Anreise bestätigt · <span class="badge badge-info">Zeitfenster</span></span></td>
+                        <td><button class="row-action" type="button">Ankunft öffnen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell">18:00</td>
+                        <td><span class="guest-cell"><strong>Leonie Bender</strong><span>R-24035 · Zimmer 221</span></span></td>
+                        <td class="laptop-hide">4 Nächte</td>
+                        <td><span class="arrival-note attention">Befreiungsnachweis noch nicht geprüft</span></td>
+                        <td><button class="row-action" type="button">Nachweis prüfen</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="panel-body mobile-arrivals">
+                  <article class="arrival-card selected"><div class="card-topline"><strong>10:30 · Anna Krämer</strong><span class="badge badge-teal">Vorschau</span></div><span class="card-meta">Zimmer 204 · 3 Nächte · Kurkarte gemeinsam ansehen</span><button class="btn-primary card-action" type="button">Begrüßung vorbereiten</button></article>
+                  <article class="arrival-card"><div class="card-topline"><strong>12:00 · Familie Vogt</strong><span class="badge badge-warning">Prüfen</span></div><span class="card-meta">Zimmer 312 · Kinderbett vermerkt · Kurtaxe vor Abschluss prüfen</span><button class="btn-secondary card-action" type="button">Angaben prüfen</button></article>
+                  <article class="arrival-card"><div class="card-topline"><strong>16:30 · Martin Heller</strong><span class="badge badge-info">Zeitfenster</span></div><span class="card-meta">Zimmer 117 · 5 Nächte · späte Anreise bestätigt</span><button class="btn-secondary card-action" type="button">Ankunft öffnen</button></article>
+                </div>
+              </section>
+            </div>
+
+            <aside class="right-stack" aria-label="Empfangsunterstützung">
+              <section class="panel" aria-labelledby="today-note-title">
+                <header class="panel-header"><div><h2 class="panel-heading" id="today-note-title">Für den Tag im Blick</h2><p class="panel-subtitle">Kompakt, ohne einen separaten Kontrollraum</p></div></header>
+                <div class="panel-body">
+                  <ul class="step-list">
+                    <li class="step-item"><span class="step-marker done" aria-hidden="true">✓</span><span class="step-copy"><strong>Vier Abreisen begleitet</strong><span>Keine offene Übergabe im Beispieldatensatz.</span></span></li>
+                    <li class="step-item"><span class="step-marker current" aria-hidden="true">!</span><span class="step-copy"><strong>Zwei Hinweise vor Ankunft</strong><span>Kurtaxe- bzw. Nachweisprüfung sind bewusst sichtbar.</span></span></li>
+                    <li class="step-item"><span class="step-marker" aria-hidden="true">↻</span><span class="step-copy"><strong>Eine Wiederaufnahme</strong><span>Emil Wagner bleibt bei Schritt 2 gespeichert.</span></span></li>
+                  </ul>
+                  <button class="btn-secondary" type="button">Schichtnotiz öffnen</button>
+                </div>
+              </section>
+
+              <section class="handoff-card" id="handoff" aria-labelledby="handoff-title">
+                <span class="badge badge-peach">WIEDERAUFNAHME</span>
+                <h3 id="handoff-title">Ein Gespräch wartet auf Fortsetzung.</h3>
+                <p>Emil Wagner · R-24020 · Schritt 2 von 4. Der spätere Produktvertrag sollte Gast, Arbeitsschritt und Nachweisstatus dauerhaft speichern.</p>
+                <button class="btn-secondary" type="button">Fortsetzung öffnen</button>
+              </section>
+
+              <section class="toast" role="status" aria-live="polite" aria-label="Erfolgsnachricht">
+                <span class="toast-icon" aria-hidden="true">✓</span>
+                <div><strong>Schichtnotiz gespeichert</strong><p>„Kinderbett für Familie Vogt vor 12:00 bereitlegen“ ist als Beispielnotiz sichtbar.</p></div>
+                <button type="button">Schließen</button>
+              </section>
+            </aside>
+          </div>
+
+          <p class="page-note">Designprototyp mit synthetischen deutschen Hotel- und Gästedaten. „Erzeugt“, „Vorschau“ und „Backend erforderlich“ sind bewusste Nachweisgrenzen; sie bedeuten nicht eingereicht, zugestellt, installiert oder rechtlich final.</p>
+        </div>
+
+        <nav class="mobile-tabs" aria-label="Mobile Navigation">
+          <button class="mobile-tab active" type="button">Heute</button>
+          <button class="mobile-tab" type="button">Anreisen</button>
+          <button class="mobile-tab" type="button">Hinweise</button>
+        </nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Empty ===== -->
+  <section id="state-empty" class="stage" style="display: none;" aria-labelledby="empty-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Gästebereiche"><p class="nav-label">Gäste begleiten</p><ul class="nav-list"><li><a class="nav-link active" href="#empty-title" aria-current="page"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-text">Heute</span></a></li><li><a class="nav-link" href="#empty-title"><span class="nav-icon" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span></a></li></ul></nav></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1>Gäste heute</h1><p>Dienstag, 18. November · keine Anreisen erwartet</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Datum wechseln</button><button class="btn-primary" type="button">Morgen öffnen</button></div></header>
+        <div class="content">
+          <section class="day-context" aria-label="Tageskontext"><div class="context-copy"><strong>Ein ruhiger Tag am Empfang</strong><span>Der gewählte Zeitraum enthält keine Anreisen.</span></div><span class="warm-note"><span class="warm-note-mark" aria-hidden="true"></span>Empfangsschicht: Mara Keller</span></section>
+          <section class="empty-state" aria-labelledby="empty-title"><span class="empty-icon" aria-hidden="true">☼</span><h2 id="empty-title">Für heute sind keine Anreisen eingeplant.</h2><p>Der Zeitraum und die Navigation bleiben sichtbar. Öffnen Sie den nächsten Anreisetag oder prüfen Sie die Abreisen, ohne eine leere Liste erklären zu müssen.</p><button class="btn-primary" type="button">Morgige Anreisen ansehen</button></section>
+          <p class="page-note">Leerer Zustand: freundlicher Kontext, aber keine künstliche Erfolgsmeldung oder versteckte Arbeitsannahme.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Error (integration unavailable) ===== -->
+  <section id="state-error" class="stage" style="display: none;" aria-labelledby="integration-error-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Gästebereiche"><p class="nav-label">Gäste begleiten</p><ul class="nav-list"><li><a class="nav-link active" href="#integration-error-title" aria-current="page"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-text">Heute</span></a></li><li><a class="nav-link" href="#integration-status"><span class="nav-icon" aria-hidden="true">!</span><span class="nav-text">Hinweise</span></a></li></ul></nav><section class="property-card" aria-label="Hotelkontext"><strong>Statusquelle pausiert</strong><span>Keine aktuelle Integration verfügbar</span><small>Keine Live-Behauptung im Prototyp</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1>Gäste heute</h1><p>Aktuelle Ankunftsdaten sind nicht verfügbar</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Schichtnotiz</button><button class="btn-primary" type="button">Erneut versuchen</button></div></header>
+        <div class="content">
+          <section class="error-banner" role="alert" aria-labelledby="integration-error-title"><span class="error-icon" aria-hidden="true">!</span><div class="error-copy"><h2 id="integration-error-title">Die Ankunftsintegration ist derzeit nicht erreichbar.</h2><p>Zeigen Sie keine älteren Statuswerte als aktuell an. Die Empfangskraft kann Kontext prüfen, aber keine ausstehende Ausgabe oder Übergabe bestätigen.</p></div><span class="badge badge-error">Nicht verbunden</span></section>
+          <div class="error-grid">
+            <section class="panel" id="integration-status" aria-labelledby="safe-action-title"><header class="panel-header"><div><h2 class="panel-heading" id="safe-action-title">Sicher und freundlich weiterarbeiten</h2><p class="panel-subtitle">Der Gast bleibt im Mittelpunkt, die Datenlage bleibt ehrlich</p></div></header><div class="panel-body"><ul class="status-list"><li><span class="status-mark" aria-hidden="true">!</span><span><strong>Aktualisierte Ankunftsliste fehlt</strong><br><span><span class="badge badge-error">Nicht verbunden</span> Der künftige Integrationsvertrag hat keinen aktuellen Stand geliefert.</span></span></li><li><span class="status-mark" aria-hidden="true">!</span><span><strong>Dokument- und Kartenstatus unklar</strong><br><span><span class="badge badge-warning">Unklar</span> Kein erzeugter Output darf ohne lokale Prüfung behauptet werden.</span></span></li><li><span class="status-mark" aria-hidden="true">!</span><span><strong>Fortsetzung nur mit Kontext</strong><br><span><span class="badge badge-info">Schichtnotiz</span> Manuelle Notizen können helfen, ersetzen aber keinen validierten Reservierungsstatus.</span></span></li></ul><div class="filter-chips"><button class="btn-primary" type="button">Erneut versuchen</button><button class="btn-secondary" type="button">Schichtnotiz öffnen</button><button class="btn-secondary" type="button" disabled>Ausgabe nicht verfügbar</button></div></div></section>
+            <aside class="right-stack" aria-label="Integrationserklärung"><section class="panel"><header class="panel-header"><h2 class="panel-heading">Was später gebraucht wird</h2></header><div class="panel-body"><p class="page-note"><span class="badge badge-info">Backend erforderlich</span> Eine Umsetzung benötigt einen Status-/API-Vertrag, Authentifizierung, Persistenz, Fehlermeldung mit Zeitstempel und eine Auditentscheidung. Das Repository belegt diese Browser-Verträge nicht.</p></div></section><section class="toast toast-error" role="alert" aria-live="assertive"><span class="toast-icon" aria-hidden="true">!</span><div><strong>Aktualisierung fehlgeschlagen</strong><p>Keine aktuelle Ankunftsliste anzeigen, bevor ein erneuter Abruf erfolgreich und nachvollziehbar ist.</p></div><button type="button">Details</button></section></aside>
+          </div>
+          <p class="page-note">Fehlerzustand: Eine spätere Implementierung sollte den Fehler über eine Live-Region ankündigen, Fokus sinnvoll führen und den letzten verifizierten Stand klar von aktueller Live-Datenlage unterscheiden.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Loading ===== -->
+  <section id="state-loading" class="stage" style="display: none;" aria-labelledby="loading-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1 id="loading-title">Gäste heute</h1><p>Der Tageskontext wird vorbereitet</p></div></header>
+        <div class="content" aria-busy="true" aria-live="polite">
+          <section class="day-context" aria-label="Ladehinweis"><div class="context-copy"><strong>Ankunftsdaten werden geladen</strong><span>Navigation und Kontext bleiben sichtbar, während die spätere Statusquelle antwortet.</span></div><span class="badge badge-info">◷ lädt</span></section>
+          <div class="main-grid"><section class="panel" aria-label="Ladeplatzhalter für ausgewählten Gast"><header class="panel-header"><h2 class="panel-heading">Nächste Begrüßung</h2></header><div class="panel-body"><div class="skeleton-list"><div class="skeleton-row"><span class="skeleton-block skeleton-tall"></span><span class="skeleton-block skeleton-tall"></span><span class="skeleton-block skeleton-tall"></span></div><div class="skeleton-row"><span class="skeleton-block skeleton-tall"></span><span class="skeleton-block skeleton-tall"></span><span class="skeleton-block skeleton-tall"></span></div></div></div></section><aside class="right-stack" aria-label="Ladeplatzhalter"><section class="panel"><header class="panel-header"><h2 class="panel-heading">Für den Tag im Blick</h2></header><div class="panel-body"><div class="skeleton-list"><span class="skeleton-block"></span><span class="skeleton-block"></span><span class="skeleton-block"></span></div></div></section></aside></div>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Overflow ===== -->
+  <section id="state-overflow" class="stage" style="display: none;" aria-labelledby="overflow-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Gästebereiche"><p class="nav-label">Gäste begleiten</p><ul class="nav-list"><li><a class="nav-link active" href="#overflow-title" aria-current="page"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-text">Heute</span></a></li><li><a class="nav-link" href="#overflow-priority"><span class="nav-icon" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span></a></li></ul></nav></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1>Gäste heute</h1><p>Ankunftswelle · Gesprächsreihenfolge bleibt sichtbar</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Weitere 6</button><button class="btn-primary" type="button">Nächste Begrüßung</button></div></header>
+        <div class="content">
+          <section class="day-context" aria-labelledby="overflow-title"><div class="context-copy"><strong id="overflow-title">Sechs Gäste treffen im gleichen Zeitfenster ein.</strong><span>Die Ansicht priorisiert die jetzt anwesenden Gäste und hält spätere Anreisen kompakt im Kontext.</span></div><span class="badge badge-peach">Ankunftswelle</span></section>
+          <div class="overflow-grid"><section class="panel" id="overflow-priority" aria-labelledby="priority-title"><header class="panel-header"><div><h2 class="panel-heading" id="priority-title">Jetzt begrüßen</h2><p class="panel-subtitle">Ein nächster Schritt je Gast, ohne die Wartezeit aus dem Blick zu verlieren</p></div></header><div class="panel-body"><ol class="priority-list"><li class="priority-row"><time>12:45</time><span><strong>Leonie Bender</strong><br><span>R-24039 · Zimmer 204 · Befreiungsnachweis prüfen</span></span><button class="row-action" type="button">Prüfen</button></li><li class="priority-row"><time>12:50</time><span><strong>Robert Schneider</strong><br><span>R-24040 · Zimmer 116 · Dokument erzeugt</span></span><button class="row-action" type="button">Öffnen</button></li><li class="priority-row"><time>13:00</time><span><strong>Familie Neuhaus</strong><br><span>R-24041 · Zimmer 310 · Hinweis für Reisebett</span></span><button class="row-action" type="button">Vorbereiten</button></li><li class="priority-row"><time>13:10</time><span><strong>Christine Dahl</strong><br><span>R-24042 · Zimmer 109 · Nachweis fehlt</span></span><button class="row-action" type="button">Prüfen</button></li></ol></div></section><aside class="right-stack" aria-label="Überlaufhilfe"><section class="overflow-note"><strong>Weitere zwei Gäste ab 13:30</strong><p>Sie sind sichtbar, aber nicht über die aktuelle Gesprächsreihenfolge gelegt.</p><button class="btn-secondary" type="button">Spätere Anreisen öffnen</button></section><section class="handoff-card"><span class="badge badge-peach">ÜBERGABE</span><h3>Unterbrechen ohne Kontextverlust</h3><p>Der spätere Produktvertrag speichert in diesem Zustand den Gast, Zeitfenster, Arbeitsschritt und Nachweisstatus.</p><button class="btn-secondary" type="button">Unterbrechung markieren</button></section></aside></div>
+          <p class="page-note">Überlaufzustand: Nähe und Gastfreundschaft entstehen aus klarer Reihenfolge und Kontext, nicht aus dekorativen Großflächen.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- State switcher (for preview convenience) -->
+  <div class="state-switcher" style="position: fixed; bottom: 16px; right: 16px; display: flex; gap: 4px; z-index: 9999;" role="group" aria-label="Prototypzustand wechseln">
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-default').style.display=''">Standard</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-empty').style.display=''">Leer</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-error').style.display=''">Integration</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-loading').style.display=''">Lädt</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-overflow').style.display=''">Welle</button>
+  </div>
+
+</body>
+</html>

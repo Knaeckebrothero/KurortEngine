@@ -1,0 +1,189 @@
+feature: l13-004-channel-manager-minstay-2-way-sync
+intent: >-
+  Ship a `channel_manager_minstay` package that extends the SHIPPED L7-003
+  MinStay enforcement primitive (kurort_engine.rates.RateBand.min_stay +
+  kurort_engine.rates.load_profile) with channel-push capability for
+  Booking.com Connectivity (OTA_HotelAvailNotif XML envelope) and HRS
+  Channel Manager (per-rate-type LengthsOfStay matrix). The package
+  exposes a dry-run scheduler that emits the OTA XML envelopes to stdout
+  without performing any network IO, and a CLI entry point
+  (`python -m channel_manager_minstay push --profile hessen_bad_orb
+  --dry-run`) that exits 0 + emits the captured Booking.com XML envelope,
+  so Hotel Rheinland Bad Orb can compose + validate the channel push
+  payloads locally before a future Booking.com Connectivity Partner
+  onboarding (CF1) + HRS CM reseller agreement (CF2) unblock the
+  production push path.
+
+# -----------------------------------------------------------------------------
+# Acceptance criteria — 7 EARS-format ACs (Ubiquitous + Event-driven +
+# State-driven mix). Per pinned memory [5]: the authoritative truth is the
+# 7-AC decomposition encoded in repo/tests/test_channel_manager_minstay.py
+# (test_ac1..test_ac7) which are the SHIPPED contract surface — spec.yaml
+# MUST mirror the test_oracle paths verbatim.
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+  - id: AC-1
+    ears: >-
+      The channel_manager_minstay package shall expose a
+      `load_minlos_profile(bundesland: str, kurort: str) -> MinLosProfile`
+      function that loads a YAML profile from
+      `repo/src/channel_manager_minstay/profiles/<bundesland>_<kurort>_minlos.yaml`
+      and returns a `MinLosProfile` whose `rules` tuple contains exactly the
+      five canonical DHV Saison entries — `easter`, `whitsun`, `summer`,
+      `christmas`, plus one default `shoulder` rule — with each rule carrying
+      a `date_range: ("YYYY-MM-DD", "YYYY-MM-DD")` tuple, a `minlos: int`
+      nights count, and an `applies_to_ota: bool` flag, parsed via `PyYAML`'s
+      `safe_load` (NOT `yaml.load`) so that an untrusted profile cannot
+      execute arbitrary Python.
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac1_minlos_profile_loader_returns_5_dhv_saison_rules
+
+  - id: AC-2
+    ears: >-
+      When `BookingComConnector.exchange_token(client_id, client_secret)` is
+      invoked, the connector shall POST to the
+      `/connectivity/token-based-authentication/exchange` endpoint with
+      `application/x-www-form-urlencoded` body containing `client_id` +
+      `client_secret` and a `User-Agent: kurort_engine/<version>` header,
+      shall cache the returned bearer access token for the duration of the
+      process, and shall attach `Authorization: Bearer <token>` to every
+      subsequent Connectivity API call; if the HTTP transport is a stub that
+      returns a pre-canned `{"access_token": "fake-...", "expires_in": 3600}`
+      JSON body, the connector shall use the stubbed value verbatim (so the
+      test can assert the round-trip without real Booking.com credentials).
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac2_booking_com_oauth2_token_exchange_and_authorization_header
+
+  - id: AC-3
+    ears: >-
+      When `BookingComConnector.build_availnotif_envelope(minlos_rule,
+      rate_plan_codes: tuple[str, ...], inv_type_codes: tuple[str, ...])`
+      is invoked with a single MinLOS rule (e.g. `minlos=5`,
+      `date_range=("2026-04-03","2026-04-12")`), the connector shall return a
+      well-formed `OTA_HotelAvailNotif` XML envelope (parseable by
+      `xml.etree.ElementTree.fromstring`) that contains one
+      `<AvailStatusMessages>` block per RatePlan×InvType, one
+      `<LengthsOfStay>/<LengthOfStay>` element per rule with child elements
+      `<Time>{minlos}</Time>`, `<TimeUnit>Day</TimeUnit>`,
+      `<ArrivalDateBased>0</ArrivalDateBased>`,
+      `<MinMaxMessageType>SetMinLOS</MinMaxMessageType>`, and
+      `<RestrictionStatus>Active</RestrictionStatus>`, exactly matching the
+      OTA_HotelAvailNotif schema documented at
+      `developers.booking.com/connectivity/docs/ota-hotelavailnotif` (Source 1862).
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac3_booking_com_availnotif_xml_envelope_structure
+
+  - id: AC-4
+    ears: >-
+      While `HrsCmConnector.push_minlos(profile, rate_plans)` is invoked
+      with a `MinLosProfile`, the connector shall emit OTA-style XML pushes
+      ONLY for rate types in the `RateTypeFilter` (default =
+      `frozenset({"Special", "Hot deal", "Trade show"})`), shall silently skip
+      Weekend Rate and Seasonal Rate entries per Source 1863 (SmartHOTEL
+      connectguide) which documents that those rate types do NOT support
+      MinLOS push via channel manager; the connector shall additionally
+      attach an audit-trail record carrying `actor="hrs"`, the rate-type
+      list that was sent, and a `latency_estimate="next-update-cycle"`
+      marker per Source 1848 (Beds24 wiki) which documents that HRS
+      MinLOS pushes are queued, not real-time.
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac4_hrs_cm_connector_filters_rate_types_and_records_audit_latency
+
+  - id: AC-5
+    ears: >-
+      When `MinLosValidator.validate(profile, existing_reservations)` is
+      invoked with a `MinLosProfile` and a list of `kurort_engine.Reservation`
+      objects, the validator shall return a `MinLosValidationReport` whose
+      `violations` tuple lists one entry per (reservation, rule) pair where
+      the reservation's `length_of_stay = (departure - arrival).days` is
+      LESS than the matching profile rule's `minlos` for any date that
+      overlaps the rule's `date_range`, and whose `conflicts` tuple is empty
+      when no reservations violate; the validator shall compute
+      `length_of_stay` using the same `(departure - arrival).days` formula
+      that `kurort_engine.calculator` uses for Kurtaxe day-count, ensuring
+      consistency between the validator and the existing rate engine.
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac5_minlos_validator_flags_reservations_below_proposed_minlos
+
+  - id: AC-6
+    ears: >-
+      When `MinLosScheduler.push(profile, dry_run=True)` is invoked with
+      `dry_run=True`, the scheduler shall execute the full MinLOS-push
+      pipeline (load profile → build Booking.com envelope → build HRS
+      envelope → filter rate types → record audit entries) WITHOUT
+      performing any network IO (the connector HTTP transport is replaced
+      by a `DryRunTransport` that captures payloads in memory), shall
+      return a `DryRunResult` carrying the captured Booking.com XML
+      envelope, the captured HRS XML envelope, and a summary of the
+      audit-log entries that WOULD have been written, and shall NOT call
+      `urllib.request.urlopen` or any other network primitive (verified via
+      a `DryRunTransport` sentinel that raises if any network call is
+      attempted).
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac6_minlos_scheduler_dry_run_emits_xml_without_network_io
+
+  - id: AC-7
+    ears: >-
+      When `python -m channel_manager_minstay push --profile hessen_bad_orb
+      --dry-run` is invoked from the repository root (with `PYTHONPATH=src`
+      set so the package is importable), the CLI entry point shall exit 0
+      silently (no stdout/stderr from the library code), shall write the
+      captured Booking.com OTA_HotelAvailNotif XML envelope to stdout
+      (one XML document per RatePlan×InvType combination), and shall exit 1
+      with a structured error message on `--execute` mode if no
+      Booking.com machine-account credentials are configured (so the user
+      never accidentally pushes to a live OTA in CI).
+    test_oracle: >-
+      repo/tests/test_channel_manager_minstay.py::test_ac7_cli_push_dry_run_exit_zero_emits_booking_com_xml_envelope
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries (per pinned rule + iter-14 coverage
+# handoff + 4 carry-forwards CF1-CF4)
+# -----------------------------------------------------------------------------
+not_included:
+  - "CF1: Booking.com Connectivity Partner program onboarding (external ~1-2 wk approval via https://connect.booking.com/). The module implements the full Booking.com OTA connector but production deployment requires partner approval + OAuth2 credentials in deployment config."
+  - "CF2: HRS Channel Manager agreement via Beds24/SmartHOTEL reseller (~1-2 wk reseller contract). The module implements the full HRS OTA connector but HRS access is partner-mediated."
+  - "CF3: HRS-specific XML element names (`LengthsOfStay` block inside `OTA_HotelBookingRuleNotifRQ` per Source 1848/1863) for production push — DEFERRED until CF2 resolves (cannot test real HRS XML without partner credentials). The matrix is BUILT but NOT pushed without CF2 partner credentials."
+  - "CF4: Direct call to Kurverwaltung Bad Orb (+49 6052 83-0) for the authoritative 2027 peak-week calendar — DEFERRED to next iteration (Scholar/Developer follow-up). The hessen_bad_orb_minlos.yaml uses ESTIMATED DHV saison dates."
+  - "Re-implementation of kurort_engine primitives (Reservation, Guest, RateBand, Satzung, calculate_kurtaxe_for_reservation, generate_monthly_remittance_csv, build_badekur_rechnung, AuditEntry, AuditLog) — channel_manager_minstay CONSUMES these via parity-convention, does NOT replace."
+  - "HolidayCheck Business Center rate-push API (no public-facing XML; editorial-only channel)."
+  - "Booking.com `OTA_HotelCategoryCode` for Kurort-specific category (no such code exists in the 2026-Q4 PCT list; closest semantic fit = 30 Resort or 20 Hotel + 51 Charm sub-tag)."
+  - "OTA_HotelAvailNotif XSD schema validation against the Booking.com published XSD (lxml parses well-formed XML; full XSD validation is a Phase 2 hardening item)."
+  - "Real network IO (production push path). All network IO is gated on dry_run=True until CF1+CF2 unblock. CF1+CF2 are external blockers, not code gaps."
+
+# -----------------------------------------------------------------------------
+# done_when — 5 verification commands that MUST pass at phase 7 (integration)
+# -----------------------------------------------------------------------------
+done_when:
+  - "shasum -a 256 repo/spec/l13-004-channel-manager-minstay-2-way-sync/spec.yaml matches the SHA-256 recorded in repo/spec/l13-004-channel-manager-minstay-2-way-sync/spec.lock.md PROTECTED block (byte-identical)."
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/test_channel_manager_minstay.py -v --override-ini=\"addopts=--tb=line\" returns 7 passed, 0 failed (one test per AC-1..AC-7)."
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/ -q --override-ini=\"addopts=--tb=line\" returns 155 passed, 0 failed (baseline 148 + 7 channel_manager_minstay AC tests = 155 expected). Baseline preservation + 7 NEW = 155."
+  - ".venv/bin/python -m ruff check src/channel_manager_minstay/ exits 0 (line-length 100, target py311 per pyproject.toml:47-50; no lint regressions)."
+  - "PYTHONPATH=src .venv/bin/python -m channel_manager_minstay push --profile hessen_bad_orb --dry-run exits 0 and emits a well-formed <OTA_HotelAvailNotif> envelope to stdout (AC-7 contract)."
+  - "git diff HEAD --stat shows 0 lines changed in any of the 6 SHIPPED Pattern F anchors: kurort_engine/rates.py + kurort_engine/__init__.py + kurort_engine/calculator.py + kurort_engine/audit.py + kurort_engine/exemptions.py + kurort_engine/profiles/__init__.py (L7-003 MinStay + L4-004 SHIPPED primitives are preserved verbatim via git-diff discipline)."
+  - "Traceability matrix in spec_lock.md shows every L13-004-AC-* row mapped to its test_oracle path with status progressing not_started -> red (Phase 2) -> green (Phase 3) -> verified (Phase 7 integration)."
+
+# -----------------------------------------------------------------------------
+# assumptions — 7 binding assumptions (per iter-14 coverage handoff + L13-004
+# SHIPPED state + pinned rules)
+# -----------------------------------------------------------------------------
+assumptions:
+  - "L13-004 IS SHIPPED (per the channel-manager MinStay module-structure record: 8 files, responsibilities, test layout). The 8 source files + `tests/test_channel_manager_minstay.py` with 7 test_ac* functions exist on disk; 7/7 tests PASS at HEAD. This spec.yaml formalizes the regression-lock cycle for the SHIPPED contracts rather than re-running shipped work."
+  - "Spec location: repo/spec/l13-004-channel-manager-minstay-2-way-sync/spec.yaml per pinned memory [1] + q64/avv_kaskade precedent. The todo INSTRUCTION text said 'workspace root' but the authoritative repo convention is per-feature subdirectory under repo/spec/."
+  - "Spec AC count: 7 ACs (AC-1..AC-7), NOT 5 as the todo INSTRUCTION text suggested. The authoritative truth is the 7 test_ac* functions in repo/tests/test_channel_manager_minstay.py per the module-structure record §3.1 (AC mapping to files). Using 5 ACs would have orphaned AC-6 (scheduler dry-run) and AC-7 (CLI push --dry-run)."
+  - "MIX B fully safe per `lawyer-budget-gate-state-of-project-crossed-5-iteration-threshold-at-iter-26-was`: no Lawyer + no DSGVO/AVV + no partner-MOU + no third-party cert required. Channel_manager_minstay is non-personal-data compliance surface (only MinLOS peak-week rule metadata flows through it). CF1 (Booking.com partner approval) and CF2 (HRS reseller contract) are external blockers, not legal review items."
+  - "Baseline pytest: 148 passed at HEAD prior to this iter (per iter-38 shipped state + iter-27 verification; +7 channel_manager_minstay = 155 expected). No regressions introduced; the 7 channel_manager_minstay tests pass at HEAD per the Phase 1 verification (run_command output captured)."
+  - "Pattern F strict discipline: channel_manager_minstay EXTENDS the L7-003 SHIPPED MinStay primitive (RateBand.min_stay + load_profile) via parity-convention, NEVER re-implements. The 6 SHIPPED Pattern F anchors (kurort_engine/rates.py + 5 others) are preserved verbatim via git-diff discipline."
+  - "The locked AC block (7 ACs verbatim) is the PROTECTED `## Acceptance Criteria` section in `spec_lock.md`; SHA-256 of spec.yaml + SHA-256 of AC block are recorded in spec.lock.md lock metadata. Per pinned rule 5, the locked ACs cannot be rewritten to match what shipped — if the AC turns out to be wrong, surface it as BLOCKED or revise it in a strategic phase."
+
+# -----------------------------------------------------------------------------
+# traceability_summary — quick mapping of AC → test_oracle → src file
+# -----------------------------------------------------------------------------
+traceability_summary:
+  - {ac: AC-1, src_file: src/channel_manager_minstay/profile_loader.py, src_lines: "full module (~179 LOC) + profiles/hessen_bad_orb_minlos.yaml", test_oracle: tests/test_channel_manager_minstay.py::test_ac1_minlos_profile_loader_returns_5_dhv_saison_rules, cf_id: "kurort-vertical-DHV-Saison"}
+  - {ac: AC-2, src_file: src/channel_manager_minstay/booking_com.py, src_lines: "BookingComConnector.exchange_token + set_http_client (~347 LOC total)", test_oracle: tests/test_channel_manager_minstay.py::test_ac2_booking_com_oauth2_token_exchange_and_authorization_header, cf_id: "Booking.com Connectivity"}
+  - {ac: AC-3, src_file: src/channel_manager_minstay/booking_com.py, src_lines: "BookingComConnector.build_availnotif_envelope", test_oracle: tests/test_channel_manager_minstay.py::test_ac3_booking_com_availnotif_xml_envelope_structure, cf_id: "OTA_HotelAvailNotif"}
+  - {ac: AC-4, src_file: src/channel_manager_minstay/hrs.py, src_lines: "HrsCmConnector.push_minlos + RateTypeFilter (~177 LOC)", test_oracle: tests/test_channel_manager_minstay.py::test_ac4_hrs_cm_connector_filters_rate_types_and_records_audit_latency, cf_id: "HRS-CM"}
+  - {ac: AC-5, src_file: src/channel_manager_minstay/validator.py, src_lines: "MinLosValidator.validate + MinLosValidationReport (~154 LOC)", test_oracle: tests/test_channel_manager_minstay.py::test_ac5_minlos_validator_flags_reservations_below_proposed_minlos, cf_id: "Kurort-vertical-consistency"}
+  - {ac: AC-6, src_file: src/channel_manager_minstay/scheduler.py, src_lines: "MinLosScheduler.push + DryRunResult + DryRunTransport (~228 LOC)", test_oracle: tests/test_channel_manager_minstay.py::test_ac6_minlos_scheduler_dry_run_emits_xml_without_network_io, cf_id: "dry-run-safety"}
+  - {ac: AC-7, src_file: src/channel_manager_minstay/__main__.py, src_lines: "CLI entry point ~169 LOC", test_oracle: tests/test_channel_manager_minstay.py::test_ac7_cli_push_dry_run_exit_zero_emits_booking_com_xml_envelope, cf_id: "operator-facing-CLI"}

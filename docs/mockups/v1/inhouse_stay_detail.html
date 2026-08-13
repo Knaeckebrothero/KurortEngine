@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hausgast und Aufenthalt — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --detail-width: calc(var(--space-4xl) * 8);
+      --state-switcher-width: calc(var(--space-4xl) * 12);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select, textarea { font: inherit; }
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    /* ===== Shared shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .mobile-nav, .state-switcher, .stay-meta, .note-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      background: var(--surface-0);
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .brand-copy, .page-copy, .panel-copy, .state-copy, .notice-copy, .stay-copy, .summary-copy, .side-copy, .field-group, .activity-copy, .note-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .state-copy p, .notice-copy p, .stay-copy p, .summary-copy p, .side-copy p, .activity-copy p, .note-copy p, .field-help, .page-note, .disabled-reason { color: var(--text-secondary); font-size: 13px; }
+
+    .app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr); min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl))); }
+    .sidebar { display: flex; flex-direction: column; gap: var(--space-xl); padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: 1px solid var(--border-color); }
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .sidebar-boundary { display: grid; gap: var(--space-sm); margin-top: auto; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .sidebar-boundary h2 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+
+    main { display: grid; align-content: start; gap: var(--space-lg); min-width: var(--space-none); padding: var(--space-xl); padding-bottom: calc(var(--space-4xl) * 3); }
+    .context-strip { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); flex-wrap: wrap; }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+
+    /* ===== Shared primitives ===== */
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear, .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-0);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover, .button-link:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .panel, .side-card, .summary-card, .note-card, .comparison-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .panel-heading, .side-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .panel-body, .side-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-none) var(--space-xs); flex-wrap: wrap; }
+    .boundary-notice, .persistent-alert, .request-notice, .privacy-notice {
+      display: grid;
+      grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-peach);
+      border-radius: var(--radius-card);
+    }
+    .persistent-alert { border-left-color: var(--color-red); }
+    .request-notice { border-left-color: var(--color-yellow); }
+    .privacy-notice { border-left-color: var(--color-teal); }
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    .persistent-alert .notice-symbol { color: var(--color-red); }
+    .request-notice .notice-symbol { color: var(--color-yellow); }
+    .privacy-notice .notice-symbol { color: var(--color-teal); }
+    .layout-grid { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width)); gap: var(--space-lg); align-items: start; }
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .stay-record { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-lg); align-items: start; padding: var(--space-lg); background: var(--surface-0); border: 1px solid var(--accent-color); border-radius: var(--radius-card); box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color); }
+    .record-code, .mono { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .stay-status { display: grid; justify-items: end; gap: var(--space-xs); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card { display: grid; gap: var(--space-xs); padding: var(--space-md); background: var(--timeline-bg); border-radius: var(--radius-control); }
+    .summary-card span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small { color: var(--text-secondary); font-size: 12px; }
+    .detail-list, .activity-list, .return-links, .checklist { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child, .return-links li:last-child { border-bottom: var(--space-none); }
+    .detail-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+
+    /* ===== Normal in-house stay ===== */
+    .decision-card {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      gap: var(--space-md);
+      align-items: center;
+      padding: var(--space-lg);
+      background: var(--timeline-bg);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+    }
+    .decision-card p { color: var(--text-secondary); font-size: 13px; }
+    .stay-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 5), 1fr); gap: var(--space-lg); }
+    .context-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .context-list li { display: grid; grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr); gap: var(--space-sm); padding: var(--space-sm); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 12px; }
+    .context-symbol { color: var(--color-teal); text-align: center; }
+    .warning-symbol { color: var(--color-yellow); text-align: center; }
+    .activity-list li { display: grid; grid-template-columns: var(--space-3xl) minmax(var(--space-none), 1fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .activity-list li:last-child { border-bottom: var(--space-none); }
+    .activity-time { color: var(--text-muted); font-family: var(--font-mono); font-size: 11px; }
+    .activity-copy strong { color: var(--text-primary); font-size: 13px; }
+    .note-card { display: grid; gap: var(--space-md); padding: var(--space-md); background: var(--timeline-bg); border-left: 3px solid var(--color-teal); }
+    .note-card p { color: var(--text-secondary); font-size: 12px; }
+
+    /* ===== Extension and room-change states ===== */
+    .request-layout, .room-change-layout, .sensitive-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width)); gap: var(--space-lg); align-items: start; }
+    .request-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .request-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .request-card h3 { color: var(--text-primary); }
+    .request-card p { color: var(--text-secondary); font-size: 12px; }
+    .request-card.is-warning { border-left: 3px solid var(--color-yellow); }
+    .request-card.is-error { border-left: 3px solid var(--color-red); }
+    .request-card.is-info { border-left: 3px solid var(--color-blue); }
+    .request-card.is-teal { border-left: 3px solid var(--color-teal); }
+    .comparison-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 12); border-collapse: collapse; font-size: 12px; }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-comparison-list { display: none; }
+    .mobile-comparison-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--surface-0); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .mobile-comparison-card p { color: var(--text-secondary); font-size: 12px; }
+    .change-impact { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--color-yellow); border-radius: var(--radius-card); }
+    .change-impact p { color: var(--text-secondary); font-size: 13px; }
+
+    /* ===== Sensitive note state ===== */
+    .masked-note, .revealed-note {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .masked-note { border-left: 3px solid var(--color-teal); }
+    .revealed-note { border-color: var(--color-peach); border-left: 3px solid var(--color-peach); }
+    .masked-value { color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .revealed-value { color: var(--text-primary); font-size: 14px; overflow-wrap: anywhere; }
+    .privacy-status { color: var(--text-secondary); font-size: 13px; }
+    .requirement-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .requirement-list li { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .requirement-list li:last-child { border-bottom: var(--space-none); }
+
+    /* ===== Context and controls ===== */
+    .context-form { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr) auto; align-items: end; gap: var(--space-md); }
+    .field-group label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+    .field-group input, .field-group select, .field-group textarea { width: 100%; min-height: 40px; padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-primary); font-size: 14px; }
+    .field-group textarea { min-height: calc(var(--space-4xl) * 2); resize: vertical; }
+    .field-help { color: var(--text-muted); font-size: 12px; }
+    .context-boundary, .disabled-reason { padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-left: 3px solid var(--color-blue); border-radius: var(--radius-control); }
+    .context-boundary { color: var(--text-secondary); font-size: 13px; }
+    .context-boundary strong { color: var(--color-blue); }
+    .disabled-reason { color: var(--text-muted); font-size: 12px; }
+    .checklist li { display: grid; grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr); gap: var(--space-sm); padding: var(--space-sm); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 12px; }
+    .return-links li { display: grid; gap: var(--space-xs); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .return-links a { color: var(--accent-hover); font-size: 13px; overflow-wrap: anywhere; }
+    .return-links span { color: var(--text-muted); font-size: 12px; }
+
+    /* ===== Prototype switcher and responsive modes ===== */
+    .state-switcher { position: fixed; right: var(--space-lg); bottom: var(--space-lg); z-index: var(--z-state-switcher); max-width: var(--state-switcher-width); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      main { padding-right: var(--space-2xl); padding-left: var(--space-2xl); }
+      .layout-grid, .request-layout, .room-change-layout, .sensitive-layout { grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 7), var(--detail-width)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .nav-label, .nav-text, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .layout-grid, .request-layout, .room-change-layout, .sensitive-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .side-stack .wide-on-tablet { grid-column: 1 / -1; }
+      .context-form { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+      .context-form .action-row { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-divider, .context-value.is-secondary { display: none; }
+      .boundary-notice, .persistent-alert, .request-notice, .privacy-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .notice-symbol { display: none; }
+      .layout-grid, .request-layout, .room-change-layout, .sensitive-layout, .stay-layout, .context-form, .summary-grid, .request-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .stay-record, .decision-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .stay-status { justify-items: start; }
+      .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .detail-list li, .requirement-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .decision-card button { width: 100%; }
+      .comparison-wrap { display: none; }
+      .mobile-comparison-list { display: grid; gap: var(--space-sm); }
+      .context-form .action-row { display: grid; }
+      .context-form .action-row > * { width: 100%; }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); left: var(--space-sm); max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .mobile-nav { position: fixed; right: var(--space-none); bottom: var(--space-none); left: var(--space-none); z-index: var(--z-mobile-nav); display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: var(--panel-bg); border-top: 1px solid var(--border-color); }
+      .mobile-nav a { display: grid; place-items: center; min-height: var(--touch-target); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 11px; text-align: center; text-decoration: none; }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .button-link, .field-group input, .field-group select, .field-group textarea { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <!-- This is a static design prototype, not a browser route, PMS stay record, or production component path. -->
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Hausgäste und Aufenthalt</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Prototypgrenzen">
+      <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+      <span class="badge badge-planned">Aufenthaltsvertrag geplant</span>
+      <span class="badge badge-unclear">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <p class="nav-label">Rezeption</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="today_front_desk_dashboard.html"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">Beispiel</span></a></li>
+          <li><a class="nav-link" href="arrivals_queue.html#arrivals-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="departures_queue.html#departures-title"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="#state-normal" aria-current="page"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-text">Hausgast</span><span class="nav-count">G-03</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Aufenthaltskontext">
+        <p class="nav-label">Aufenthalt</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="reservation_detail.html#state-detail"><span class="nav-symbol" aria-hidden="true">◫</span><span class="nav-text">Reservierungsdetail</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="guest_profile.html#state-profile"><span class="nav-symbol" aria-hidden="true">◉</span><span class="nav-text">Gastprofil</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="room_planning_calendar.html#state-week"><span class="nav-symbol" aria-hidden="true">▦</span><span class="nav-text">Zimmerplanung</span><span class="nav-count">Unklar</span></a></li>
+          <li><a class="nav-link" href="checkin_overview.html#state-ready"><span class="nav-symbol" aria-hidden="true">✓</span><span class="nav-text">Check-in</span><span class="nav-count">K-01</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="inhouse-sidebar-boundary-title">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="inhouse-sidebar-boundary-title">Keine Live-Route</h2>
+        <p>Dateilinks teilen keine Session, Auswahl, Zimmermutation, Folio, Nachricht, Berechtigung oder Persistenz. Sie sind ausschließlich statische Prüfbezüge.</p>
+      </section>
+    </aside>
+
+    <main id="inhouse-workspace">
+      <section class="context-strip" aria-label="Fiktiver Hausgast-Kontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-18">18. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Rolle</span><span class="context-value is-secondary">Rezeption · Beispielrolle, keine Anmeldung</span>
+        </div>
+        <span class="badge badge-teal">Jana Müller-Kaya · synthetischer Hausgast-Kontext</span>
+      </section>
+
+      <section class="boundary-notice" aria-labelledby="inhouse-page-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <h1 id="inhouse-page-title">Hausgast und Aufenthalt</h1>
+          <p>Diese fiktive Detailansicht bündelt einen ausgewählten Aufenthaltskontext, einen nächsten menschlichen Schritt, sichtbare Folio- und Zimmergrenzen sowie sensible Hinweise. Sie behauptet keinen live ermittelten Hausgast, keine Zimmerzuteilung, Schlüsselsteuerung, Folio-Buchung, Nachricht, Berechtigung oder Persistenz.</p>
+          <div class="badge-row" aria-label="Grenzen des Hausgast-Prototyps">
+            <span class="badge badge-planned">Keine Live-Zimmermutation</span>
+            <span class="badge badge-planned">Kein Key- oder Nachrichtendienst</span>
+            <span class="badge badge-planned">Kein Folio-Ledger</span>
+            <span class="badge badge-unclear">RBAC unklar</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="inhouse-context-title">
+        <header class="panel-heading">
+          <div class="panel-copy"><h2 id="inhouse-context-title">Prüf- und Rückkehrkontext</h2><p>Die Controls zeigen die beabsichtigte Herkunft und Fokuswahl. Sie rufen keine Daten ab und speichern keine Präferenz, Auswahl oder Änderung.</p></div>
+          <span class="badge badge-info">Keine Live-Suche</span>
+        </header>
+        <div class="panel-body">
+          <form id="inhouse-context-form" class="context-form" novalidate>
+            <div class="field-group">
+              <label for="inhouse-origin">Statischer Einstieg</label>
+              <select id="inhouse-origin" name="origin">
+                <option value="today">Heute / Hausgäste · Beispiel</option>
+                <option value="reservation">Reservierungsdetail · Beispiel</option>
+                <option value="arrival">Anreisen / Check-in · Beispiel</option>
+              </select>
+              <span class="field-help">Keine Route, keine gemeinsame Session und keine wiederhergestellte Liste.</span>
+            </div>
+            <div class="field-group">
+              <label for="inhouse-focus">Fiktiver Arbeitsfokus</label>
+              <select id="inhouse-focus" name="focus">
+                <option value="stay">Aufenthaltskontext prüfen</option>
+                <option value="extension">Verlängerung bewerten</option>
+                <option value="room">Zimmerwechsel bewerten</option>
+                <option value="note">Sensible Notiz minimieren</option>
+              </select>
+              <span class="field-help">Der Fokus ist nur lokale Prototypcopy, keine Aufgabenzuordnung oder Nachricht.</span>
+            </div>
+            <div class="action-row" aria-label="Lokale Kontextaktionen">
+              <button class="btn-teal" type="submit">Kontext lokal erläutern</button>
+              <a class="button-link" href="reservation_detail.html#state-detail">Zum statischen Reservierungsdetail</a>
+            </div>
+          </form>
+          <p class="context-boundary"><strong>Geplant / Backend erforderlich:</strong> Hausgastquelle, Aufenthalt, Belegungs-/Raum-/Housekeepingstatus, Verlängerung, Zimmerwechsel, Schlüssel, Folio, Nachricht, Rollen- und Zweckprüfung, Persistenz, Konflikt/Lock, Audit und sichere Rückkehr sind nicht Teil dieser HTML-Datei.</p>
+        </div>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Normaler fiktiver Hausgast-Aufenthalt angezeigt.</p>
+
+      <!-- ===== State: Normal in-house stay detail ===== -->
+      <section id="state-normal" class="state-panel" aria-labelledby="normal-state-title">
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="normal-state-title">Normaler fiktiver Hausgast-Aufenthalt</h2><p>Aufenthaltskontext zuerst; Entscheidungen, Nachweise und Schutzgrenzen folgen als zweite Ebene. Der Status ist kein PMS- oder Check-in-Nachweis.</p></div>
+          <div class="badge-row"><span class="badge badge-teal">Kontext prüfen</span><span class="badge badge-prototype">Lokale Ansicht</span></div>
+        </header>
+
+        <div class="layout-grid">
+          <section class="panel" aria-labelledby="normal-stay-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="normal-stay-title">Aufenthaltsübersicht</h2><p>Ein fiktiver Aufenthalt mit minimalen Angaben und einer klaren nächsten Entscheidung für die Rezeption.</p></div><span class="badge badge-planned">Datenquelle geplant</span></header>
+            <div class="panel-body">
+              <section class="stay-record" aria-label="Ausgewählter fiktiver Hausgast-Aufenthalt">
+                <div class="stay-copy">
+                  <span class="badge badge-teal">Hausgast-Kontext · synthetisch</span>
+                  <h2>Jana Müller-Kaya</h2>
+                  <p class="record-code">RES-BO-2026-0716-014</p>
+                  <p>16.–23.07.2026 · 2 fiktive Gäste · Tag 3 von 7 · Zimmer 214 nur als ungeprüfter Beispielbezug</p>
+                </div>
+                <div class="stay-status">
+                  <span class="badge badge-warning">Zimmerstatus unklar</span>
+                  <span class="badge badge-unclear">Keine Session / RBAC unklar</span>
+                </div>
+              </section>
+
+              <div class="summary-grid" aria-label="Fiktive Kerninformationen zum Aufenthalt">
+                <article class="summary-card"><span>Aufenthalt</span><strong>16.–23.07.2026</strong><small>Keine bestätigte In-house-Quelle oder Verlängerung</small></article>
+                <article class="summary-card"><span>Zimmerbezug</span><strong>214 · Beispiel</strong><small>Keine Zuteilung, Reinigung, Sperre oder Schlüsselaktivierung</small></article>
+                <article class="summary-card"><span>Folio-Hinweis</span><strong>Nicht gebucht</strong><small>Kein Ledger, keine Zahlung, Rechnung oder Abschluss</small></article>
+              </div>
+
+              <section class="decision-card" aria-labelledby="normal-decision-title">
+                <div class="summary-copy"><span class="badge badge-planned">Geplante Browser-/Datenaktion</span><h3 id="normal-decision-title">Nächste menschliche Entscheidung: Aufenthaltskontext vor Änderung prüfen</h3><p>Eine spätere Anwendung müsste zuerst richtigen Gast-/Aufenthaltsbezug, Datenfrische, Zimmer-/Folioscope, Berechtigung und Konflikte prüfen, bevor eine Verlängerung, ein Zimmerwechsel oder eine Nachricht vorgeschlagen wird.</p></div>
+                <button class="btn-primary" type="button" data-prototype-action="Aufenthaltsprüfung als lokaler Prototyphinweis gezeigt. Es wurde kein Hausgast geladen, Zimmer geprüft, Folio gelesen, Nachricht gesendet oder Aufenthalt geändert.">Aufenthalt prüfen</button>
+              </section>
+
+              <div class="stay-layout">
+                <section class="panel" aria-labelledby="normal-context-list-title">
+                  <header class="panel-heading"><div class="panel-copy"><h3 id="normal-context-list-title">Aktueller Arbeitskontext</h3><p>Wenige, erklärende Hinweise statt einer behaupteten Echtzeit-Steuerung.</p></div></header>
+                  <div class="panel-body">
+                    <ul class="context-list">
+                      <li><span class="context-symbol" aria-hidden="true">•</span><span><strong>Check-in-Bezug:</strong> Eine statische Beziehung zu K-01 ist sichtbar; sie bestätigt keinen gespeicherten oder vollständig durchlaufenen Check-in.</span></li>
+                      <li><span class="context-symbol" aria-hidden="true">•</span><span><strong>Gäste:</strong> Eine Begleitperson wird nur als Anzahl dargestellt; keine Identitäts-, Kontakt- oder Gesundheitsdaten werden geöffnet.</span></li>
+                      <li><span class="warning-symbol" aria-hidden="true">!</span><span><strong>Zimmer / Schlüssel:</strong> Zimmer 214 ist kein Verfügbarkeits-, Reinigungs-, Übergabe-, Lock- oder Key-Status.</span></li>
+                      <li><span class="warning-symbol" aria-hidden="true">!</span><span><strong>Folio / Nachricht:</strong> Es gibt keine Buchung, Zahlung, Rechnung, Mitteilung, Zustellung oder Integrationsbestätigung.</span></li>
+                    </ul>
+                  </div>
+                </section>
+
+                <section class="panel" aria-labelledby="normal-note-title">
+                  <header class="panel-heading"><div class="panel-copy"><h3 id="normal-note-title">Sensible Servicenotiz minimiert</h3><p>Der Begriff bleibt für die Rezeption verständlich, der Inhalt standardmäßig verborgen.</p></div><span class="badge badge-teal">Verdeckt</span></header>
+                  <div class="panel-body">
+                    <div class="note-card"><span class="badge badge-unclear">RBAC unklar</span><strong class="masked-value">Servicehinweis: [verdeckt · fiktiver Kontext]</strong><p>Eine spätere Offenlegung braucht Datenklassifikation, Zweck, authentifizierte Rolle, Audit, sichere Darstellung und Remasking. Diese Karte zeigt keinen echten Notizwert.</p></div>
+                    <button class="btn-teal" type="button" data-state-target="state-sensitive" aria-controls="state-sensitive">Sensible Notiz sicher prüfen</button>
+                  </div>
+                </section>
+              </div>
+
+              <section class="panel" aria-labelledby="normal-activity-title">
+                <header class="panel-heading"><div class="panel-copy"><h3 id="normal-activity-title">Vorgeschlagene Aufenthaltsaktivität</h3><p>Die Zeilen beschreiben eine gewünschte Nachweisform, nicht eine gespeicherte Historie.</p></div><span class="badge badge-prototype">Keine Auditquelle</span></header>
+                <div class="panel-body">
+                  <ol class="activity-list">
+                    <li><time class="activity-time" datetime="2026-07-16T10:18">16.07.<br>10:18</time><div class="activity-copy"><strong>Fiktiver Check-in-Prüfkontext</strong><p><span class="badge badge-planned">Geplant</span> Die Verbindung zur Check-in-Übersicht ist ein lokaler Dokumentlink, keine persistierte Abschluss- oder Rückkehrinformation.</p></div></li>
+                    <li><time class="activity-time" datetime="2026-07-18T09:10">18.07.<br>09:10</time><div class="activity-copy"><strong>Fiktiver Hausgast-Kontext geöffnet</strong><p><span class="badge badge-prototype">Prototyp</span> Keine Abfrage, Sitzung, Rolle, Datenquelle oder Personenzuordnung wurde ausgeführt.</p></div></li>
+                    <li><time class="activity-time">—</time><div class="activity-copy"><strong>Verlängerung, Zimmerwechsel oder Servicenotiz</strong><p><span class="badge badge-unclear">Unklar</span> Jede Folgeentscheidung braucht separat source/time/version, Berechtigung, Wirkungsvorschau, Persistenz und Audit.</p></div></li>
+                  </ol>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Normaler Aufenthaltskontext: Grenzen und Querverweise">
+            <section class="side-card" aria-labelledby="normal-actions-title">
+              <header class="side-heading"><div class="side-copy"><h2 id="normal-actions-title">Mögliche nächste Prüfung</h2><p>Eine Aktion pro Bereich, ohne vorgetäuschte Mutationen.</p></div><span class="badge badge-peach">Entscheidung</span></header>
+              <div class="side-body">
+                <ul class="checklist">
+                  <li><span class="context-symbol" aria-hidden="true">1</span><span>Verlängerungsanfrage als Auswirkungsvorschau prüfen; nicht still in Aufenthalt, Preis oder Zimmer schreiben.</span></li>
+                  <li><span class="context-symbol" aria-hidden="true">2</span><span>Zimmerwechsel nur mit späterer Bestands-, Konflikt-, Rechte-, Key- und Housekeeping-Prüfung bewerten.</span></li>
+                  <li><span class="context-symbol" aria-hidden="true">3</span><span>Sensible Notiz nur mit datensparsamer Anzeige und explizitem späteren Reveal-/Auditvertrag behandeln.</span></li>
+                </ul>
+                <div class="action-row"><button class="btn-warning" type="button" data-state-target="state-extension" aria-controls="state-extension">Verlängerung ansehen</button><button class="btn-warning" type="button" data-state-target="state-room-change" aria-controls="state-room-change">Zimmerwechsel ansehen</button></div>
+              </div>
+            </section>
+            <section class="side-card wide-on-tablet" id="inhouse-return-links" aria-labelledby="normal-links-title">
+              <header class="side-heading"><div class="side-copy"><h2 id="normal-links-title">Statische Prüfbezüge</h2><p>Dateilinks sind keine Produktnavigation, Session oder Datenrelation.</p></div><span class="badge badge-info">Dateilinks</span></header>
+              <div class="side-body">
+                <ul class="return-links">
+                  <li><a href="reservation_detail.html#state-detail">Reservierungsdetail: Jana Müller-Kaya / RES-BO-2026-0716-014</a><span>Keine gemeinsame Auswahl, Live-Route, Persistenz oder Aufenthalthistorie.</span></li>
+                  <li><a href="guest_profile.html#state-profile">Gastprofil: minimierter fiktiver Profilkontext</a><span>Keine Profilquelle, Offenlegung, Änderung oder Rechteprüfung.</span></li>
+                  <li><a href="room_planning_calendar.html#state-week">Zimmerplanung: Zimmer 214 als fiktiven Kontext lesen</a><span>Keine Verfügbarkeit, Zuteilung, Sperre, Key- oder Housekeeping-Synchronisation.</span></li>
+                  <li><a href="departures_queue.html#departures-title">Abreisen: späterer Check-out- und Folio-Prüfkontext</a><span>Keine gemeinsame Folio- oder Check-out-Wahrheit und keine Rückkehrpersistenz.</span></li>
+                  <li><a href="checkin_overview.html#state-ready">Check-in-Übersicht: fiktive K-01-Schrittfolge</a><span>Keine Orchestrierung, Save/Resume oder Abschlussübernahme.</span></li>
+                </ul>
+              </div>
+            </section>
+          </aside>
+        </div>
+        <p class="page-note">Normalzustand: Quellprüfungen können semantische Struktur, lokale Zustände und Token-Verwendung belegen. Sie beweisen keine gerenderte Layoutqualität, Keyboard-/Screen-Reader-Verhalten, Kontrast, Zoom/Reflow, 44px-Gerätemessung, WCAG/BFSG/EAA-Konformität, Hausgastquelle, PMS, Zimmer-/Key-/Housekeepingstatus, Folio, Messaging, Authentifizierung, RBAC, Persistenz, Integrationen oder rechtliche Endgültigkeit.</p>
+      </section>
+
+      <!-- ===== State: extension request ===== -->
+      <section id="state-extension" class="state-panel" aria-labelledby="extension-state-title" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="extension-state-title">Verlängerungsanfrage: fiktive Auswirkungsvorschau</h2><p>Die Anfrage zeigt Zeitraum, offene Abhängigkeiten und einen sicheren Rückweg. Sie verlängert weder den Aufenthalt noch reserviert sie ein Zimmer, ändert einen Preis, bucht einen Folio-Posten oder sendet eine Nachricht.</p></div>
+          <div class="badge-row"><span class="badge badge-warning">Prüfung ausstehend</span><span class="badge badge-planned">Änderung geplant</span></div>
+        </header>
+
+        <section class="request-notice" aria-labelledby="extension-notice-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="extension-notice-title">Fiktive Anfrage: Aufenthalt bis 25. Juli 2026 verlängern</h3><p>Der aktuelle Beispielzeitraum endet am 23.07. Eine gewünschte Verlängerung bis 25.07. ist ein Gesprächs- und Prüfkontext, nicht eine bestätigte Verfügbarkeit, Zimmerreservierung, Preiszusage, Folio-Änderung oder gespeicherte Anfrage.</p></div>
+        </section>
+
+        <div class="request-layout">
+          <section class="panel" aria-labelledby="extension-detail-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="extension-detail-title">Prüfung vor einer möglichen Verlängerung</h2><p>Die Ansicht legt fachliche Abhängigkeiten offen, bevor eine spätere Änderung sichtbar werden dürfte.</p></div><span class="badge badge-warning">2 Nächte angefragt</span></header>
+            <div class="panel-body">
+              <section class="stay-record" aria-label="Fiktiver Aufenthaltskontext zur Verlängerung">
+                <div class="stay-copy"><span class="badge badge-prototype">Synthetischer Aufenthaltskontext</span><h2>Jana Müller-Kaya</h2><p class="record-code">RES-BO-2026-0716-014</p><p>Aktuell dargestellt: 16.–23.07.2026 · angefragt: 23.–25.07.2026 · Zimmer 214 als ungeprüfter Beispielbezug</p></div>
+                <div class="stay-status"><span class="badge badge-warning">Verfügbarkeit unklar</span><span class="badge badge-unclear">Preis / RBAC unklar</span></div>
+              </section>
+
+              <div class="request-grid" aria-label="Fiktive Verlängerungsbedingungen">
+                <article class="request-card is-teal"><span class="badge badge-teal">Kontext</span><h3>Aufenthalt</h3><p>Das gewünschte Ende und die Begleitperson sind nur im fiktiven Szenario sichtbar. Ein echter Aufenthalt braucht eine autoritative Quelle und Versionsstand.</p></article>
+                <article class="request-card is-warning"><span class="badge badge-warning">Unklar</span><h3>Zimmer und Belegung</h3><p>Zimmer 214 ist weder für den Verlängerungszeitraum frei noch gehalten, gereinigt, konfliktsicher, zugeteilt oder per Key erreichbar.</p></article>
+                <article class="request-card is-warning"><span class="badge badge-warning">Manuelle Prüfung</span><h3>Preis, Kurtaxe und Folio</h3><p>Kein Preis, keine Satzung, keine zusätzliche Kurtaxe, keine Foliozeile, Zahlung, Rechnung oder finanzielle Zustimmung wird abgeleitet.</p></article>
+                <article class="request-card is-info"><span class="badge badge-planned">Geplant</span><h3>Benachrichtigung und Audit</h3><p>Es gibt keine Nachricht an Gast, Housekeeping, Empfang oder Channel; kein Änderungsereignis und keinen Auditdatensatz.</p></article>
+              </div>
+
+              <section class="panel" aria-labelledby="extension-impact-title">
+                <header class="panel-heading"><div class="panel-copy"><h3 id="extension-impact-title">Wirkungsvorschau statt stiller Änderung</h3><p>Die spätere Umsetzung braucht Daten- und Wirkungstransparenz für jede Konsequenz.</p></div></header>
+                <div class="panel-body">
+                  <ul class="detail-list">
+                    <li><span class="detail-label">Quelle / Zeit / Version</span><span class="detail-value">Erforderlich für Aufenthalt, Zimmerbestand, Preis-/Satzungsstand und konkurrierende Änderungen; hier nicht vorhanden.</span></li>
+                    <li><span class="detail-label">Validierung</span><span class="detail-value">Datum, Mindest-/Höchstaufenthalt, Belegung, Zimmermerkmal, Begleitpersonen, lokale Regeln und Konflikte benötigen einen späteren Vertrag.</span></li>
+                    <li><span class="detail-label">Freigabe</span><span class="detail-value">Eine reale Änderung braucht Authentifizierung, RBAC, gegebenenfalls Management-Review und ein eindeutiges Ergebnis.</span></li>
+                    <li><span class="detail-label">Nebenfolgen</span><span class="detail-value">Room/Housekeeping, Key, Folio, Rechnung, Kurtaxe, Check-out, Nachricht, Channel und Audit sind getrennte, nicht vorhandene Integrationen.</span></li>
+                  </ul>
+                  <div class="action-row"><button class="btn-primary" type="button" disabled aria-describedby="extension-disabled-reason">Verlängerung übernehmen</button><button class="btn-warning" type="button" data-prototype-action="Verlängerungsprüfung als lokaler Prototyphinweis gezeigt. Es wurde kein Aufenthalt verlängert, Zimmer reserviert, Preis berechnet, Folio geändert oder Nachricht gesendet.">Prüfgrenze erläutern</button><button class="btn-secondary" type="button" data-state-target="state-normal" aria-controls="state-normal">Ohne Änderung zurück</button></div>
+                  <p id="extension-disabled-reason" class="disabled-reason">Deaktiviert: Hausgast-/Reservierungsquelle, Zimmerbestand, Preis/Satzung, Konflikt/Lock, Authentifizierung, RBAC, Transaktion, Persistenz, Nebenfolgen, Audit und sichere Rückmeldung sind Geplant oder Unklar.</p>
+                </div>
+              </section>
+            </div>
+          </section>
+          <aside class="side-stack" aria-label="Verlängerungs-Recovery">
+            <section class="side-card"><header class="side-heading"><div class="side-copy"><h2>Nur sichere nächste Schritte</h2><p>Die Recovery erklärt eine menschliche Entscheidung statt eine automatische Buchung.</p></div><span class="badge badge-peach">Rückkehr</span></header><div class="side-body"><ul class="checklist"><li><span class="warning-symbol" aria-hidden="true">1</span><span>Kontext und Wunschzeitraum mit einer späteren autoritativen Quelle vergleichen.</span></li><li><span class="warning-symbol" aria-hidden="true">2</span><span>Verfügbarkeit, Zimmerwechselbedarf, Preis-/Satzungswirkung und Rechte zuerst prüfen.</span></li><li><span class="warning-symbol" aria-hidden="true">3</span><span>Bei Konflikt oder fehlender Quelle offen bleiben, an Management eskalieren oder ohne Änderung zurückkehren.</span></li></ul><a class="button-link" href="room_planning_calendar.html#state-conflict">Fiktiven Zimmerkonflikt lesen</a></div></section>
+            <section class="side-card wide-on-tablet"><header class="side-heading"><div class="side-copy"><h2>Keine Nachricht behaupten</h2><p>Eine Verlängerung erzeugt nicht automatisch eine Gästemitteilung oder Arbeitsanweisung.</p></div><span class="badge badge-planned">Messaging geplant</span></header><div class="side-body"><p class="field-help">Zustellung, Einwilligung, Sprach-/Kontaktpräferenz, Kanal, Fehler, Retry, Empfänger, Zustandsrückmeldung und Audit benötigen eigene Verträge. Diese Datei sendet oder entwirft keine Nachricht.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Verlängerungszustand: Die fiktive Anfrage ist keine Reservation-CRUD-Operation, Verfügbarkeitsprüfung, Preiszusage, Room-Hold, Folio- oder Zahlungsaktion, Nachricht, Persistenz, Rollenentscheidung oder Auditereignis.</p>
+      </section>
+
+      <!-- ===== State: room change ===== -->
+      <section id="state-room-change" class="state-panel" aria-labelledby="room-change-state-title" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="room-change-state-title">Zimmerwechsel: fiktiver Konflikt- und Wirkungskontext</h2><p>Der Vergleich hält den aktuellen und gewünschten Zimmerbezug sichtbar. Er führt keinen Umzug, keine Sperre, keine Key-Änderung, kein Housekeeping-Signal, keine Gästemitteilung oder Speicherung aus.</p></div>
+          <div class="badge-row"><span class="badge badge-error">Nicht bestätigen</span><span class="badge badge-unclear">Quelle / Version unklar</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="room-change-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="room-change-alert-title">Fiktiver Wechselwunsch von Zimmer 214 zu Zimmer 215</h3><p>Zimmer 215 wird im statischen Planungskontext als potenziell konflikthaft dargestellt. Ohne autoritativen Bestand, Zeit-/Versionsinformation, Berechtigung und Folgenprüfung darf der Prototyp keinen Wechsel als sicher oder ausgeführt zeigen.</p></div>
+        </section>
+
+        <div class="room-change-layout">
+          <section class="panel" aria-labelledby="room-change-detail-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="room-change-detail-title">Vergleichen statt überschreiben</h2><p>Eine künftige Umsetzung braucht eine explizite Wirkungsvorschau und darf eine Zimmeränderung nicht aus einer Karten- oder Kalenderauswahl ableiten.</p></div><span class="badge badge-warning">Manuelle Prüfung erforderlich</span></header>
+            <div class="panel-body">
+              <section class="stay-record" aria-label="Fiktiver Aufenthaltskontext zum Zimmerwechsel">
+                <div class="stay-copy"><span class="badge badge-prototype">Synthetischer Konfliktkontext</span><h2>Jana Müller-Kaya</h2><p class="record-code">RES-BO-2026-0716-014</p><p>Aktueller Beispielbezug: Zimmer 214 · gewünschter Beispielbezug: Zimmer 215 · Aufenthalt 16.–23.07.2026</p></div>
+                <div class="stay-status"><span class="badge badge-error">Konflikt prüfen</span><span class="badge badge-unclear">Kein Lock nachgewiesen</span></div>
+              </section>
+
+              <div class="comparison-wrap" tabindex="0" aria-label="Vergleich zwischen aktuellem und gewünschtem fiktiven Zimmerbezug; horizontal scrollbar">
+                <table>
+                  <caption>Fiktiver Zimmerwechselvergleich. Keine Spalte stammt aus einem PMS, Zimmerinventar, Schlüssel-, Housekeeping-, Preis-, Folio- oder Messaging-System.</caption>
+                  <thead><tr><th scope="col">Prüfbereich</th><th scope="col">Zimmer 214 · aktueller Beispielbezug</th><th scope="col">Zimmer 215 · gewünschter Beispielbezug</th><th scope="col">Sichere Entscheidung</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Zeitraum</strong></td><td>16.–23.07.2026 · synthetischer Kontext</td><td>16.–23.07.2026 · gewünschter Kontext</td><td>Keine Verfügbarkeit oder Überschneidung ableiten.</td></tr>
+                    <tr><td><strong>Bestand / Bereitschaft</strong></td><td>Keine Reinigung, Wartung, Sperre oder Quelle bestätigt.</td><td>Im Planungsbeispiel Konflikthinweis; kein Live-Inventar.</td><td>Autoritative Raum-/Housekeepingquelle und Frische prüfen.</td></tr>
+                    <tr><td><strong>Schlüssel / Zugang</strong></td><td>Kein Key-Status oder Türsystem verbunden.</td><td>Keine Key-Ausgabe oder Rücknahme möglich.</td><td>Keine Schlüssel-/Zugangsfolge behaupten.</td></tr>
+                    <tr><td><strong>Folio / Nachricht</strong></td><td>Keine Folio-/Preis-/Rechnungsmutation.</td><td>Keine Nachricht an Gast oder Mitarbeitende.</td><td>Folgenvorschau und separate Integrationsverträge verlangen.</td></tr>
+                    <tr><td><strong>Konflikt / Audit</strong></td><td>Keine Version, Sperre oder Ereignishistorie.</td><td>Keine Override-Berechtigung oder Persistenz.</td><td>Vergleichen, eskalieren oder ohne Änderung zurückkehren.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-comparison-list" aria-label="Mobile fiktive Zimmerwechsel-Zusammenfassung">
+                <article class="mobile-comparison-card"><strong>Zimmer 214 · aktueller Bezug</strong><p>Keine bestätigte Zuteilung, Reinigung, Sperre, Key- oder Folioinformation.</p><span class="badge badge-unclear">Unklar</span></article>
+                <article class="mobile-comparison-card"><strong>Zimmer 215 · gewünschter Bezug</strong><p>Konflikthinweis im statischen Planungskontext; keine Live-Verfügbarkeit oder Alternative.</p><span class="badge badge-error">Prüfung nötig</span></article>
+                <article class="mobile-comparison-card"><strong>Sichere Folge</strong><p>Ohne autoritative Quelle, Version, Berechtigung und Wirkungsvorschau keine Änderung ausführen.</p><span class="badge badge-warning">Nicht bestätigen</span></article>
+              </div>
+
+              <section class="change-impact" aria-labelledby="room-change-impact-title">
+                <span class="badge badge-warning">Wirkungsvorschau erforderlich</span>
+                <h3 id="room-change-impact-title">Ein Zimmerwechsel hat mehr Folgen als ein neuer Zimmername</h3>
+                <p>Eine künftige Änderung muss Aufenthaltszeitraum, Zimmerbestand, Reinigung/Wartung, andere Bezüge, Preis/Folio, Schlüssel/Zugang, Gastkommunikation, Check-in/Check-out-Kontext, Kanalabgleich, Rechte, Transaktion, Audit und Fehler-/Rückkehrlogik bewusst behandeln. Diese Ansicht bestätigt nichts davon.</p>
+                <div class="action-row"><button class="btn-danger" type="button" disabled aria-describedby="room-change-disabled-reason">Zimmerwechsel bestätigen</button><button class="btn-warning" type="button" data-prototype-action="Zimmerwechselprüfung als lokaler Prototyphinweis gezeigt. Es wurde keine Verfügbarkeit abgefragt, kein Zimmer geändert, kein Schlüssel angepasst, keine Nachricht versendet und keine Persistenz ausgelöst.">Konfliktgrenze erläutern</button><button class="btn-secondary" type="button" data-state-target="state-normal" aria-controls="state-normal">Ohne Änderung zurück</button></div>
+                <p id="room-change-disabled-reason" class="disabled-reason">Deaktiviert: autoritativer Zimmerbestand, Zeit/Frische, Konflikt-/Lockmodell, Berechtigung, Wirkungs-/Preis-/Folio-/Key-/Housekeeping-/Messagingprüfung, Transaktion, Persistenz und Audit sind Geplant oder Unklar.</p>
+              </section>
+            </div>
+          </section>
+          <aside class="side-stack" aria-label="Zimmerwechsel-Recovery">
+            <section class="side-card"><header class="side-heading"><div class="side-copy"><h2>Sicherer Konfliktrückweg</h2><p>Ein Konflikt bleibt sichtbar, bis eine spätere Quelle und Regel eine sichere Entscheidung tragen.</p></div><span class="badge badge-peach">Eskalation</span></header><div class="side-body"><ul class="checklist"><li><span class="warning-symbol" aria-hidden="true">1</span><span>Den betroffenen Zeitraum und aktuellen Kontext erhalten, statt eine Auswahl als Wechsel zu deklarieren.</span></li><li><span class="warning-symbol" aria-hidden="true">2</span><span>Mit einer künftigen Zimmer-/Housekeeping-/Aufenthaltsquelle vergleichen und Zeit/Version anzeigen.</span></li><li><span class="warning-symbol" aria-hidden="true">3</span><span>Bei Konflikt, fehlender Freigabe oder fehlender Wirkungsvorschau an Management eskalieren oder ohne Änderung zurückkehren.</span></li></ul><a class="button-link" href="room_planning_calendar.html#state-conflict">Fiktiven Planungskonflikt öffnen</a></div></section>
+            <section class="side-card wide-on-tablet"><header class="side-heading"><div class="side-copy"><h2>Keine stille Gästemitteilung</h2><p>Der Wechsel erzeugt im Prototyp keine Kommunikation oder Serviceaufgabe.</p></div><span class="badge badge-planned">Messaging geplant</span></header><div class="side-body"><p class="field-help">Eine spätere Benachrichtigung braucht Empfänger, Kontakt-/Einwilligungsscope, Inhalt, Versandkanal, Ergebnis, Fehler, Retry, Protokollierung und Datenschutzprüfung. Sie darf nicht aus einem Zimmervergleich abgeleitet werden.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Zimmerwechsel-Zustand: Die Vergleichsfläche ist keine Live-Raumplanung, Lock-/Konfliktprüfung, Key-/Housekeeping-Aktion, Preis-/Folioänderung, Benachrichtigung, Persistenz oder Auditspur. Sie zeigt nur die zu klärenden Folgen.</p>
+      </section>
+
+      <!-- ===== State: sensitive note, hidden/revealed locally ===== -->
+      <section id="state-sensitive" class="state-panel" aria-labelledby="sensitive-state-title" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="sensitive-state-title">Sensible Servicenotiz: standardmäßig verdeckt</h2><p>Der lokale Schalter demonstriert eine ausdrücklich benannte Maskierungs- und Remasking-Behandlung mit fiktivem Inhalt. Er ist keine Zugriffskontrolle, Offenlegung, Autorisierung oder Auditierung.</p></div>
+          <div class="badge-row"><span class="badge badge-teal">Datenminimierung</span><span class="badge badge-unclear">RBAC unklar</span></div>
+        </header>
+
+        <section class="privacy-notice" aria-labelledby="sensitive-notice-title">
+          <span class="notice-symbol" aria-hidden="true">•</span>
+          <div class="notice-copy"><h3 id="sensitive-notice-title">Sensible Hinweise brauchen einen Schutzweg</h3><p>Der aktive Aufenthalt bleibt als minimaler Kontext sichtbar; der Notizinhalt bleibt verdeckt, bis eine spätere, zweckgebundene und auditierbare Offenlegung erlaubt wäre. Diese Datei enthält nur synthetischen Demonstrationstext.</p></div>
+        </section>
+
+        <div class="sensitive-layout">
+          <section class="panel" aria-labelledby="sensitive-note-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="sensitive-note-title">Fiktive Servicenotiz im Aufenthaltskontext</h2><p>Die Notiz ist kein frei sichtbares Profilfeld und keine umgehbare Tooltip-Information.</p></div><span class="badge badge-planned">Offenlegung geplant</span></header>
+            <div class="panel-body">
+              <section class="stay-record" aria-label="Minimaler fiktiver Kontext für eine sensible Notiz">
+                <div class="stay-copy"><span class="badge badge-teal">Minimaler Kontext</span><h2>Jana Müller-Kaya</h2><p class="record-code">RES-BO-2026-0716-014</p><p>Fiktiver Aufenthalt 16.–23.07.2026 · Zimmer 214 als ungeprüfter Beispielbezug · kein echter Note-/Profilabruf</p></div>
+                <div class="stay-status"><span class="badge badge-teal">Notiz verdeckt</span><span class="badge badge-unclear">Zweck / RBAC unklar</span></div>
+              </section>
+
+              <section id="inhouse-sensitive-masked" class="masked-note" aria-labelledby="masked-note-title">
+                <span class="badge badge-teal">Verdeckt · Standard</span>
+                <h3 id="masked-note-title">Servicenotiz nicht angezeigt</h3>
+                <strong class="masked-value">Hinweis: [verdeckt · fiktiver sensibler Kontext]</strong>
+                <p>Eine Maske allein ist kein Zugriffsschutz. Sie ersetzt weder Klassifikation, Zweckbindung, Authentifizierung, RBAC, Audit, sichere Darstellung, Zeitbegrenzung noch Remasking-Regel.</p>
+              </section>
+
+              <section id="inhouse-sensitive-revealed" class="revealed-note" aria-labelledby="revealed-note-title" hidden>
+                <span class="badge badge-prototype">Nur fiktive Ansicht</span>
+                <h3 id="revealed-note-title">Fiktiver Inhalt lokal erläutert</h3>
+                <strong class="revealed-value">„Bitte Servicewunsch im direkten Gespräch diskret klären.“</strong>
+                <p>Der Satz ist ausschließlich synthetischer Demotext. Seine lokale Sichtbarkeit ist keine Datenoffenlegung, kein Leserrecht, kein Zugriff auf eine Quelle, keine Speicherung, keine Nachricht und kein Auditereignis.</p>
+              </section>
+
+              <div class="note-actions">
+                <button id="sensitive-note-toggle" class="btn-teal" type="button" aria-controls="inhouse-sensitive-revealed" aria-expanded="false">Fiktive Notizansicht erläutern</button>
+                <button class="btn-secondary" type="button" data-state-target="state-normal" aria-controls="state-normal">Zum minimierten Aufenthalt zurück</button>
+              </div>
+              <p id="sensitive-note-status" class="privacy-status" role="status">Maskierte Ansicht aktiv. Keine sensible Information wurde abgerufen, autorisiert, übertragen, gespeichert, versendet oder protokolliert.</p>
+
+              <section class="panel" aria-labelledby="sensitive-requirements-title">
+                <header class="panel-heading"><div class="panel-copy"><h3 id="sensitive-requirements-title">Was eine spätere Offenlegung prüfen muss</h3><p>Die Schutzentscheidung ist ein eigener Arbeitsvertrag, keine Eigenschaft eines sichtbaren Buttons.</p></div></header>
+                <div class="panel-body">
+                  <ul class="requirement-list">
+                    <li><span class="detail-label">Klassifikation / Zweck</span><span class="detail-value">Datenklasse, notwendiger Servicezweck und minimaler Anzeigebereich müssen festgelegt und überprüfbar sein.</span></li>
+                    <li><span class="detail-label">Auth / RBAC</span><span class="detail-value">Authentifizierte Person, Rolle, Betrieb, Zweck, erforderliche Berechtigung und non-disclosing denial sind erforderlich.</span></li>
+                    <li><span class="detail-label">Audit / Remasking</span><span class="detail-value">Ein späterer Schutzweg braucht attributiertes Audit, sichere Anzeige, Zeit-/Kontextgrenze, Remasking und Fehlerverhalten.</span></li>
+                    <li><span class="detail-label">Keine Nebenwirkung</span><span class="detail-value">Offenlegen darf nicht automatisch eine Nachricht, Zimmeraktion, Folioänderung, Check-in-/Check-out-Status oder externe Weitergabe auslösen.</span></li>
+                  </ul>
+                </div>
+              </section>
+            </div>
+          </section>
+          <aside class="side-stack" aria-label="Grenzen für sensible Notizen">
+            <section class="side-card"><header class="side-heading"><div class="side-copy"><h2>Keine sichtbare Person = kein Zugriffstest</h2><p>Rollen- oder Seitentext kann keine Zustimmung oder Autorisierung ersetzen.</p></div><span class="badge badge-unclear">RBAC unklar</span></header><div class="side-body"><ul class="checklist"><li><span class="warning-symbol" aria-hidden="true">!</span><span>Kein Login, keine Sitzung, keine Rollen-/Zweckprüfung und kein Zugriffstoken liegen dem Prototyp zugrunde.</span></li><li><span class="warning-symbol" aria-hidden="true">!</span><span>Der Toggle zeigt keinen echten Notizwert, keine Übertragung, keine Speicherung und kein Audit.</span></li><li><span class="warning-symbol" aria-hidden="true">!</span><span>Eine künftige Denial-/Eskalationsfläche muss nicht-offenlegend bleiben.</span></li></ul><button class="btn-warning" type="button" data-prototype-action="Die Schutzgrenze für die fiktive Servicenotiz wurde lokal erläutert. Es wurde kein Reveal autorisiert oder geloggt.">Schutzgrenze erläutern</button></div></section>
+            <section class="side-card wide-on-tablet"><header class="side-heading"><div class="side-copy"><h2>Sicherer Rückkehrkontext</h2><p>Der Besuch der Notizseite soll nicht den Aufenthaltsbezug verlieren.</p></div><span class="badge badge-peach">Rückkehr geplant</span></header><div class="side-body"><a class="button-link" href="guest_profile.html#state-sensitive">Fiktives Profil-Sensitive-Reveal-Muster lesen</a><p class="field-help">Der Link lädt nur eine lokale HTML-Datei. Er teilt keine Datenschutzentscheidung, Ansicht, Session, Auswahl, Profilquelle oder Remasking-Status.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Sensitive-Note-Zustand: Die lokale Toggle-Interaktion dient nur der Designprüfung. Sie beweist keine Datenschutzkonformität, Datenklassifikation, Zweckbindung, Authentifizierung, RBAC, Audit, sichere Anzeige, Timeout, Remasking, Nachricht, Persistenz, Integration, WCAG/BFSG/EAA-Konformität oder rechtliche Grundlage.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Gast-, Aufenthalts-, Zimmer-, Folio- und Servicenotiz-Kontextdaten. Lokale Zustandsumschalter aktualisieren nur DOM-Abschnitte. Sie führen keine Route, Suche, API-Anfrage, Datenbankaktion, Hausgast-/Zimmer-/Key-/Housekeepingabfrage, Folio-/Zahlungsaktion, Nachricht, Authentifizierung, RBAC, Speicherung, Audit, Integration oder rechtlich wirksame Handlung aus.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html#arrivals-title">Anreisen</a>
+    <a href="#state-normal" aria-current="page">Hausgast</a>
+    <a href="departures_queue.html#departures-title">Abreisen</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <button id="state-button-normal" type="button" data-state-target="state-normal" aria-controls="state-normal" aria-pressed="true">Normal</button>
+    <button id="state-button-extension" type="button" data-state-target="state-extension" aria-controls="state-extension" aria-pressed="false">Verlängerung</button>
+    <button id="state-button-room-change" type="button" data-state-target="state-room-change" aria-controls="state-room-change" aria-pressed="false">Zimmerwechsel</button>
+    <button id="state-button-sensitive" type="button" data-state-target="state-sensitive" aria-controls="state-sensitive" aria-pressed="false">Sensible Notiz</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('inhouse-context-form');
+      const sensitiveToggle = document.getElementById('sensitive-note-toggle');
+      const maskedNote = document.getElementById('inhouse-sensitive-masked');
+      const revealedNote = document.getElementById('inhouse-sensitive-revealed');
+      const sensitiveStatus = document.getElementById('sensitive-note-status');
+      const labels = {
+        'state-normal': 'Normaler fiktiver Hausgast-Aufenthalt angezeigt.',
+        'state-extension': 'Fiktive Verlängerungsanfrage angezeigt.',
+        'state-room-change': 'Fiktiver Zimmerwechsel-Konfliktkontext angezeigt.',
+        'state-sensitive': 'Fiktive sensible Servicenotiz in der maskierten Standardansicht angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Hausgast-Kontext lokal erläutert. Es wurde keine Route, Suche, Hausgastquelle, Zimmer-/Key-/Folio-/Nachrichtenaktion, Berechtigungsprüfung oder Speicherung ausgeführt.';
+      });
+
+      sensitiveToggle.addEventListener('click', function () {
+        const isMasked = !maskedNote.hidden;
+        maskedNote.hidden = isMasked;
+        revealedNote.hidden = !isMasked;
+        sensitiveToggle.setAttribute('aria-expanded', String(isMasked));
+
+        if (isMasked) {
+          sensitiveToggle.textContent = 'Maskierte Notizansicht wiederherstellen';
+          sensitiveStatus.textContent = 'Fiktiver Notizinhalt lokal erläutert. Keine sensible Information wurde abgerufen, autorisiert, übertragen, gespeichert, versendet oder protokolliert.';
+          liveMessage.textContent = 'Fiktive sensible Notiz lokal erläutert. Kein echter Notizwert wurde offengelegt.';
+        } else {
+          sensitiveToggle.textContent = 'Fiktive Notizansicht erläutern';
+          sensitiveStatus.textContent = 'Maskierte Ansicht aktiv. Keine sensible Information wurde abgerufen, autorisiert, übertragen, gespeichert, versendet oder protokolliert.';
+          liveMessage.textContent = 'Maskierte fiktive Notizansicht wiederhergestellt. Kein Remasking- oder Auditvertrag wird dadurch belegt.';
+        }
+      });
+    }());
+  </script>
+</body>
+</html>

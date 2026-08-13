@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abreisen — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* ===== Established typography, geometry, and motion scale ===== */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-size-empty-icon: 48px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --line-height-compact: 1.4;
+      --line-height-empty: 1.6;
+      --letter-spacing-label: 0.5px;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --detail-width: calc(var(--space-4xl) * 8);
+      --state-switcher-width: calc(var(--space-4xl) * 10);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-sticky: 2;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+
+    /* ===== Shell and common primitives ===== */
+    .state { min-height: 100vh; }
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: 100vh;
+      background: var(--app-bg);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      min-height: var(--touch-target);
+      padding: var(--space-sm);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-2xl);
+      height: var(--space-2xl);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+      flex: 0 0 auto;
+    }
+
+    .brand-copy, .topbar-copy, .panel-title-group, .guest-copy, .status-stack, .alert-copy, .drawer-copy, .empty-copy, .recovery-copy, .mobile-card-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .brand-subtitle, .panel-subtitle, .helper, .page-note, .state-note, .drawer-note, .metadata { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label {
+      padding: var(--space-none) var(--space-md);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+    }
+    .nav-list, .artifact-list, .timeline-list, .recovery-list, .mobile-card-list, .keyboard-list { display: grid; gap: var(--space-xs); list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: none;
+      border: var(--border-width) solid var(--border-color);
+      border-left: var(--border-emphasis) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: var(--font-size-secondary);
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: var(--font-size-label); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .sidebar-context {
+      display: grid;
+      gap: var(--space-xs);
+      margin-top: auto;
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .sidebar-context strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .sidebar-context span { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .sidebar-context small { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .workspace { display: flex; flex-direction: column; min-width: var(--space-none); }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .topbar-copy h1 { color: var(--text-primary); font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    .topbar-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .topbar-actions, .context-strip, .chip-row, .button-row, .badge-row, .legend-row, .mobile-nav, .state-switcher, .folio-summary, .document-row, .timeline-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .topbar-actions { justify-content: flex-end; }
+
+    .context-strip {
+      padding: var(--space-sm) var(--space-xl);
+      background: var(--panel-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+    .context-label { color: var(--text-muted); font-size: var(--font-size-table-header); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .context-divider { color: var(--surface-2); }
+
+    button, input, select { font: inherit; }
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-lg);
+      background: none;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover { background: var(--surface-0); color: var(--text-primary); transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-secondary { background: none; border-color: var(--border-color); color: var(--text-secondary); }
+    .btn-warning { background: none; border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { background: none; border-color: var(--color-red); color: var(--color-red); }
+    .btn-quiet { background: var(--surface-0); border-color: var(--border-color); color: var(--text-secondary); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: var(--space-badge-y) var(--space-sm);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      line-height: var(--line-height-base);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+
+    .content { display: grid; gap: var(--space-lg); padding: var(--space-xl); }
+    .truth-banner, .alert-banner, .queue-context, .keyboard-intent, .overflow-note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      flex-wrap: wrap;
+    }
+    .truth-banner { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .alert-banner { border-left: var(--border-emphasis) solid var(--color-red); }
+    .keyboard-intent { background: var(--timeline-bg); border-left: var(--border-emphasis) solid var(--color-blue); }
+    .overflow-note { background: var(--timeline-bg); border-left: var(--border-emphasis) solid var(--color-peach); }
+    .truth-banner h2, .alert-banner h2, .keyboard-intent h2 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .truth-banner p, .alert-banner p, .keyboard-intent p, .overflow-note { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .truth-banner .badge-row, .alert-banner .badge-row { margin-left: auto; }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width));
+      align-items: start;
+      gap: var(--space-lg);
+    }
+    .panel {
+      display: grid;
+      min-width: var(--space-none);
+      overflow: hidden;
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .panel-title { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    .panel-body { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+    .side-stack { display: grid; gap: var(--space-lg); }
+
+    .filter-toolbar {
+      position: sticky;
+      top: var(--space-none);
+      z-index: var(--z-sticky);
+      display: grid;
+      grid-template-columns: minmax(calc(var(--space-4xl) * 4), 1fr) minmax(calc(var(--space-4xl) * 3), 1fr) auto;
+      align-items: end;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .field-group { display: grid; gap: var(--space-xs); }
+    .field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: var(--font-weight-medium); }
+    input[type="search"], select {
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-primary);
+      font-size: var(--font-size-body);
+      transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+    }
+    input[type="search"]::placeholder { color: var(--text-muted); }
+    .chip { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-badge); font-size: var(--font-size-dense); }
+    .chip[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .chip-count { color: inherit; font-size: var(--font-size-table-header); }
+
+    .queue-context { align-items: center; padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border-left: var(--border-emphasis) solid var(--color-peach); }
+    .queue-context strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .queue-context span:not(.badge) { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .table-wrap {
+      max-width: 100%;
+      overflow: auto;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+    }
+    .table-wrap:focus-visible { outline-offset: calc(var(--space-xs) * -1); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 20); border-collapse: collapse; font-size: var(--font-size-secondary); }
+    caption { padding: var(--space-sm) var(--space-md); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: var(--border-width) solid var(--border-color); text-align: left; vertical-align: top; }
+    th {
+      position: sticky;
+      top: var(--space-none);
+      z-index: var(--z-sticky);
+      background: var(--surface-0);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    tbody tr { transition: background var(--motion-fast), box-shadow var(--motion-fast); }
+    tbody tr:hover, tbody tr:focus-within { background: var(--surface-0); }
+    tbody tr.is-selected { background: var(--surface-0); box-shadow: inset var(--border-emphasis) var(--space-none) var(--space-none) var(--accent-color); }
+    tbody tr.is-blocked { box-shadow: inset var(--border-emphasis) var(--space-none) var(--space-none) var(--color-red); }
+    tbody tr.is-late { box-shadow: inset var(--border-emphasis) var(--space-none) var(--space-none) var(--color-peach); }
+    .time-cell { color: var(--text-primary); font-family: var(--font-mono); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); white-space: nowrap; }
+    .time-cell small { display: block; color: var(--text-muted); font-family: var(--font-sans); font-size: var(--font-size-dense); font-weight: var(--font-weight-regular); }
+    .guest-copy strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .guest-copy span { color: var(--text-muted); font-size: var(--font-size-label); }
+    .guest-copy .long-name { overflow-wrap: anywhere; }
+    .room-cell { color: var(--text-secondary); font-size: var(--font-size-label); white-space: nowrap; }
+    .status-stack { align-content: start; }
+    .status-stack .helper { max-width: calc(var(--space-4xl) * 4); line-height: var(--line-height-compact); }
+    .currency { color: var(--text-primary); font-family: var(--font-mono); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); white-space: nowrap; }
+    .table-action { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-dense); white-space: nowrap; }
+    .mono { color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--font-size-label); overflow-wrap: anywhere; }
+
+    .selected-stay {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--accent-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+    .selected-stay h3, .artifact-title, .drawer-title { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .selected-stay p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .key-values { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-sm) var(--space-md); }
+    .key-values dt { color: var(--text-muted); font-size: var(--font-size-label); }
+    .key-values dd { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .folio-summary {
+      align-items: stretch;
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+    .folio-summary > div { display: grid; gap: var(--space-xs); flex: 1; }
+    .folio-summary strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .folio-summary span { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .artifact-list { gap: var(--space-sm); }
+    .artifact-button {
+      display: grid;
+      gap: var(--space-xs);
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      text-align: left;
+    }
+    .artifact-button:hover { background: var(--surface-1); border-color: var(--surface-2); }
+    .artifact-proof { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--font-size-dense); overflow-wrap: anywhere; }
+
+    .evidence-drawer { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .evidence-drawer details { display: grid; gap: var(--space-sm); padding-top: var(--space-md); border-top: var(--border-width) solid var(--border-color); }
+    .evidence-drawer summary { color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    .timeline-list { gap: var(--space-sm); }
+    .timeline-list li { display: grid; grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr); gap: var(--space-sm); }
+    .timeline-time { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--font-size-dense); }
+    .timeline-copy { display: grid; gap: var(--space-xs); color: var(--text-secondary); font-size: var(--font-size-label); }
+    .timeline-copy strong { color: var(--text-primary); font-size: var(--font-size-label); font-weight: var(--font-weight-semibold); }
+
+    .keyboard-list { padding-left: var(--space-xl); color: var(--text-secondary); font-size: var(--font-size-label); }
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--space-lg-plus);
+      padding: var(--space-badge-y) var(--space-xs);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: var(--font-size-dense);
+      white-space: nowrap;
+    }
+
+    .mobile-card-list { display: none; }
+    .departure-card {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .departure-card.is-selected { border-color: var(--accent-color); box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color); }
+    .departure-card.is-blocked { border-left: var(--border-emphasis) solid var(--color-red); }
+    .departure-card.is-late { border-left: var(--border-emphasis) solid var(--color-peach); }
+    .card-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+    .card-topline strong { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .departure-card p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .departure-card button { width: 100%; }
+
+    /* ===== Empty, exception, and overflow supporting patterns ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-md);
+      min-height: calc(var(--space-4xl) * 9);
+      padding: var(--space-4xl) var(--space-xl);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      text-align: center;
+    }
+    .empty-icon { color: var(--color-teal); font-size: var(--font-size-empty-icon); }
+    .empty-state h2 { color: var(--text-secondary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-medium); }
+    .empty-state p { max-width: calc(var(--space-4xl) * 8); color: var(--text-muted); font-size: var(--font-size-secondary); line-height: var(--line-height-empty); }
+
+    .loading-state { display: grid; gap: var(--space-lg); }
+    .loading-copy { display: grid; gap: var(--space-xs); padding: var(--space-lg); background: var(--panel-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+    .loading-copy h2 { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    .loading-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .skeleton-list { display: grid; gap: var(--space-sm); padding: var(--space-lg); background: var(--panel-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+    .skeleton-row { display: grid; grid-template-columns: var(--space-2xl) minmax(var(--space-none), 2fr) minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 2), 1fr); align-items: center; gap: var(--space-md); padding: var(--space-compact) var(--space-md); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .skeleton-block { display: block; min-height: var(--space-lg-plus); background: var(--surface-0); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-badge); }
+    .skeleton-block.is-short { min-width: var(--space-2xl); }
+    .skeleton-block.is-action { min-width: calc(var(--space-4xl) * 2); }
+
+    .blocked-grid, .late-grid { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width)); gap: var(--space-lg); align-items: start; }
+    .folio-table { width: 100%; min-width: var(--space-none); }
+    .folio-table th { position: static; }
+    .folio-total { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md); background: var(--timeline-bg); border: var(--border-width) solid var(--color-red); border-radius: var(--radius-control); flex-wrap: wrap; }
+    .folio-total strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .folio-total span { color: var(--color-red); font-family: var(--font-mono); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .recovery-list { gap: var(--space-sm); }
+    .recovery-list li { display: grid; grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr); gap: var(--space-sm); padding: var(--space-sm); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .recovery-symbol { color: var(--color-yellow); text-align: center; }
+    .recovery-copy strong { color: var(--text-primary); font-size: var(--font-size-label); }
+    .recovery-copy span { color: var(--text-secondary); font-size: var(--font-size-dense); }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      max-width: var(--state-switcher-width);
+      padding: var(--space-xs);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); background: var(--surface-0); font-size: var(--font-size-dense); }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    /* ===== Desktop / laptop / tablet / focused mobile adaptations ===== */
+    @media (min-width: 1280px) {
+      .content { padding: var(--space-xl) var(--space-2xl); }
+      .work-grid { grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 7), var(--detail-width)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .brand { padding: var(--space-none); }
+      .brand-copy, .nav-label, .nav-text, .nav-count, .sidebar-context { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: var(--border-width) solid var(--border-color); border-bottom: var(--border-emphasis) solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .work-grid, .blocked-grid, .late-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .evidence-drawer { grid-column: span 2; }
+      .tablet-hide { display: none; }
+      .filter-toolbar { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+      .filter-toolbar .button-row { grid-column: span 2; }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .topbar { align-items: flex-start; padding: var(--space-md) var(--space-lg); }
+      .topbar-actions { width: 100%; }
+      .topbar-actions .btn-primary { flex: 1; }
+      .topbar-actions .btn-secondary { display: none; }
+      .context-strip { padding: var(--space-sm) var(--space-lg); }
+      .context-strip .context-divider, .context-strip .context-value.is-secondary { display: none; }
+      .content { padding: var(--space-lg); padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .truth-banner .badge-row, .alert-banner .badge-row { margin-left: var(--space-none); }
+      .work-grid, .blocked-grid, .late-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .evidence-drawer { grid-column: span 1; }
+      .panel-header { align-items: flex-start; }
+      .filter-toolbar { position: static; grid-template-columns: minmax(var(--space-none), 1fr); }
+      .filter-toolbar .button-row { grid-column: span 1; }
+      .filter-toolbar button { width: 100%; }
+      .table-wrap { display: none; }
+      .mobile-card-list { display: grid; gap: var(--space-sm); }
+      .queue-context { align-items: flex-start; }
+      .key-values { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .folio-summary { display: grid; grid-template-columns: minmax(var(--space-none), 1fr); }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-mobile-nav);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        background: var(--panel-bg);
+        border-top: var(--border-width) solid var(--border-color);
+      }
+      .mobile-nav a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--touch-target);
+        padding: var(--space-sm);
+        background: none;
+        border: var(--border-width) solid var(--border-color);
+        border-radius: var(--radius-control);
+        color: var(--text-secondary);
+        font-size: var(--font-size-label);
+        text-decoration: none;
+      }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); max-width: calc(100% - var(--space-lg)); }
+      .state-switcher button, button, input[type="search"], select { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto;
+        transition-duration: var(--space-none);
+        animation-duration: var(--space-none);
+        animation-iteration-count: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .app-shell             -> HotelApplicationShellComponent (new; proposed design contract)
+    .context-strip         -> PropertyDateShiftContextComponent (new)
+    .filter-toolbar        -> DepartureQueueFilterComponent (new)
+    .table-wrap / table    -> DeparturesQueueTableComponent (new; dense table pattern)
+    .departure-card        -> DeparturePriorityCardComponent (new; focused mobile alternative)
+    .selected-stay         -> CheckoutContextSummaryComponent (new)
+    .artifact-list         -> DepartureArtifactStripComponent (new)
+    .evidence-drawer       -> EvidenceDrawerComponent (new)
+    .folio-total           -> FolioBlockerSummaryComponent (new)
+    .state-switcher        -> prototype-only StateSwitcher; not a production control
+  -->
+
+  <!-- ===== State: Default / populated departure worklist ===== -->
+  <section class="state" id="state-default" aria-labelledby="departures-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · interne Arbeitsansicht</span></span></div>
+        <nav class="nav-group" aria-labelledby="departures-nav-label">
+          <p class="nav-label" id="departures-nav-label">Empfang</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#departures-context"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">19</span></a></li>
+            <li><a class="nav-link" href="#departures-queue-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li>
+            <li><a class="nav-link" href="#departures-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">9</span></a></li>
+          </ul>
+        </nav>
+        <nav class="nav-group" aria-labelledby="departures-support-label">
+          <p class="nav-label" id="departures-support-label">Arbeitskontext</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#departures-selected"><span class="nav-symbol" aria-hidden="true">▣</span><span class="nav-text">Folio &amp; Check-out</span><span class="nav-count">2</span></a></li>
+            <li><a class="nav-link" href="#departures-evidence"><span class="nav-symbol" aria-hidden="true">◇</span><span class="nav-text">Nachweise</span><span class="nav-count">4</span></a></li>
+            <li><a class="nav-link" href="#departures-keyboard"><span class="nav-symbol" aria-hidden="true">⌕</span><span class="nav-text">Suche</span><span class="nav-count">→</span></a></li>
+          </ul>
+        </nav>
+        <section class="sidebar-context" aria-label="Beispielhafter Schichtkontext"><strong>Frühschicht · 07:00–15:00</strong><span>Mara Keller · Beispielrolle Empfang</span><small>Die Rollenbezeichnung ist Kontext, keine nachgewiesene Anmeldung oder Berechtigung.</small></section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-copy"><h1 id="departures-title">Abreisen</h1><p>Check-out-Queue mit Folio-, Dokument- und Abreise-Meldung-Kontext · alle Personen und Beträge sind synthetisch</p></div>
+          <div class="topbar-actions"><button class="btn-secondary" type="button">Tagesabschluss ansehen</button><button class="btn-primary" type="button">Nächsten Check-out öffnen <span class="badge badge-planned">Geplant</span></button></div>
+        </header>
+
+        <section class="context-strip" id="departures-context" aria-label="Objekt-, Datums- und Schichtkontext">
+          <span class="context-label">Objekt</span><span class="context-value">Hotel Rheinland · Bad Orb</span><span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Datum</span><span class="context-value">Mittwoch, 16. Juli 2026</span><span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Schicht</span><span class="context-value is-secondary">Frühschicht · Beispielkontext</span>
+          <span class="badge badge-success">✓ Operational</span><span class="badge badge-prototype">◌ Prototyp</span><span class="badge badge-planned">→ Folio-API geplant</span><span class="badge badge-unclear">? Externes Sync unklar</span>
+        </section>
+
+        <div class="content">
+          <section class="truth-banner" aria-labelledby="departures-boundary-title">
+            <div class="alert-copy"><h2 id="departures-boundary-title">Check-out ist eine Entscheidungskette, keine Erfolgsanzeige.</h2><p><strong>Operational</strong> kennzeichnet nur eine enge lokale q64-Checkout-/Abreise-Meldung-Modulgrenze. Folio, Zahlung, Browseraktion, Persistenz, Auth/RBAC, sichere Dokumente und externe Kurverwaltungssynchronisation sind in dieser Ansicht <strong>Prototyp</strong>, <strong>Geplant</strong> oder <strong>Unklar</strong>.</p></div>
+            <div class="badge-row"><span class="badge badge-prototype">◌ Beispieldaten</span><span class="badge badge-planned">→ Keine Live-Integration</span></div>
+          </section>
+
+          <div class="work-grid">
+            <section class="panel" aria-labelledby="departures-queue-title">
+              <header class="panel-header">
+                <div class="panel-title-group"><h2 class="panel-title" id="departures-queue-title">Abreisequeue</h2><p class="panel-subtitle">Fälligkeit, Folio, Dokumentbereitschaft, Abreise-Meldung, Sync-Grenze und genau ein nächster Schritt.</p></div>
+                <div class="chip-row" aria-label="Beispielhafte Abreisefilter"><button class="chip" type="button" aria-pressed="true">Alle <span class="chip-count">9</span></button><button class="chip" type="button" aria-pressed="false">Heute <span class="chip-count">6</span></button><button class="chip" type="button" aria-pressed="false">Saldo offen <span class="chip-count">2</span></button><button class="chip" type="button" aria-pressed="false">Spät <span class="chip-count">1</span></button></div>
+              </header>
+              <div class="panel-body">
+                <form class="filter-toolbar" role="search" aria-describedby="departures-search-note">
+                  <div class="field-group"><label class="field-label" for="departures-query">Gast, Zimmer oder Reservierungsnummer filtern</label><input id="departures-query" type="search" placeholder="z. B. Baumann, 204 oder R-260709-14" aria-describedby="departures-search-note"><span class="helper" id="departures-search-note">Lokales Prototypfeld: Keine Live-Suche, keine Folioabfrage und keine Berechtigungsprüfung.</span></div>
+                  <div class="field-group"><label class="field-label" for="departures-sort">Reihenfolge</label><select id="departures-sort"><option>Fälligkeit zuerst</option><option>Offenen Saldo zuerst</option><option>Späten Check-out zuerst</option></select></div>
+                  <div class="button-row"><button class="btn-secondary" type="button">Ansicht aktualisieren <span class="badge badge-planned">Geplant</span></button></div>
+                </form>
+
+                <p class="queue-context"><strong>Fokus: Clara Baumann</strong><span>· Die ausgewählte Abreise behält später Filter, Datum und Rückkehrziel.</span><span class="badge badge-teal">● Dokumente prüfen</span></p>
+
+                <div class="table-wrap" tabindex="0" aria-label="Scrollbare dichte Tabelle mit neun synthetischen Abreisen">
+                  <table>
+                    <caption>Neun synthetische Abreisen am 16. Juli 2026 · Beträge sind keine Zahlungs- oder Buchungsdaten</caption>
+                    <thead>
+                      <tr><th scope="col">Fällig</th><th scope="col">Gast / Aufenthalt</th><th scope="col">Zimmer</th><th scope="col">Folio</th><th scope="col">Dokumente / Meldung</th><th scope="col">Sync / Blocker</th><th scope="col">Nächster Schritt</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr class="is-selected">
+                        <td class="time-cell"><time datetime="2026-07-16T09:30">09:30</time><small>fällig</small></td>
+                        <td><span class="guest-copy"><strong>Clara Baumann</strong><span>R-260709-14 · 7 Nächte · Kuraufenthalt</span></span></td>
+                        <td class="room-cell">204<br><span class="mono">09.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="0.00">0,00 €</data><span class="badge badge-teal">● Ausgleich prüfen</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-success">✓ Meldeschein geprüft</span><span class="badge badge-prototype">◌ Abreise-Meldung lokal</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-unclear">? Externes Sync unklar</span><span class="helper">Lokale Emission ist nicht als Einreichung oder Empfang bestätigt.</span></span></td>
+                        <td><button class="table-action btn-primary" type="button">Check-out prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T10:00">10:00</time><small>fällig</small></td>
+                        <td><span class="guest-copy"><strong>Heike und Rolf Stark</strong><span>R-260710-19 · Doppelzimmer</span></span></td>
+                        <td class="room-cell">215<br><span class="mono">10.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="78.40">78,40 €</data><span class="badge badge-error">! Unbezahlt</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Rechnungsvorschau</span><span class="badge badge-info">i Nicht eingereicht</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Offener Beispielsaldo blockiert eine künftige Abschlussaktion.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Folio prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T10:30">10:30</time><small>fällig</small></td>
+                        <td><span class="guest-copy"><strong>Martin Heller</strong><span>R-260711-03 · Einzelanreise</span></span></td>
+                        <td class="room-cell">117<br><span class="mono">11.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="0.00">0,00 €</data><span class="badge badge-success">✓ Keine Positionen</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Abreise-Meldung prüfen</span><span class="badge badge-prototype">◌ Testvertrag</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Lokaler Moduloutput sagt nichts über eine externe Annahme aus.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Meldung prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T11:00">11:00</time><small>fällig</small></td>
+                        <td><span class="guest-copy"><strong>Familie Vogt</strong><span>R-260714-22 · 2 Erwachsene, 1 Kind</span></span></td>
+                        <td class="room-cell">312<br><span class="mono">14.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="24.00">24,00 €</data><span class="badge badge-warning">! Position prüfen</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-success">✓ Dokumentvorschau</span><span class="badge badge-info">i Formatgrenze</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Kinderbettnotiz ist nicht als Folio- oder Housekeeping-Integration belegt.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Positionen prüfen</button></td>
+                      </tr>
+                      <tr class="is-late">
+                        <td class="time-cell"><time datetime="2026-07-16T12:00">12:00</time><small>Spätabreise 13:00</small></td>
+                        <td><span class="guest-copy"><strong>Emil Wagner</strong><span>R-260713-24 · Einzelanreise</span></span></td>
+                        <td class="room-cell">108<br><span class="mono">13.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="0.00">0,00 €</data><span class="badge badge-peach">↻ Spät</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-info">i Check-out-Vorschau</span><span class="badge badge-planned">→ Zimmerstatus</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Room-/Housekeeping-Übergabe ist nicht mit einem Backend verbunden.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Spätabreise begleiten</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T12:15">12:15</time><small>fällig</small></td>
+                        <td><span class="guest-copy"><strong>Elisabeth Möller</strong><span>R-260710-28 · Kurpaket Balance</span></span></td>
+                        <td class="room-cell">301<br><span class="mono">10.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="0.00">0,00 €</data><span class="badge badge-teal">● Bereit zur Prüfung</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Stub-Format</span><span class="badge badge-info">i Nicht eingereicht</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Dokument hat keine bestätigte Viewer-, Download- oder Einreichungsqualität.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Dokument prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T13:00">13:00</time><small>später</small></td>
+                        <td><span class="guest-copy"><strong>Henrik Møller</strong><span>R-260712-31 · internationale Anschrift</span></span></td>
+                        <td class="room-cell">110<br><span class="mono">12.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="42.00">42,00 €</data><span class="badge badge-warning">! Ausgleich offen</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-prototype">◌ Rechnungsvorschau</span><span class="badge badge-unclear">? Zahlung</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Zahlungsart und Folio-Persistenz werden nicht aus Beispieldaten abgeleitet.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Folio prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T14:00">14:00</time><small>später</small></td>
+                        <td><span class="guest-copy"><strong>Luise von Hohenfels</strong><span>R-260715-35 · Kurzaufenthalt</span></span></td>
+                        <td class="room-cell">302<br><span class="mono">15.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="0.00">0,00 €</data><span class="badge badge-success">✓ Keine Positionen</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-prototype">◌ Abreise-Meldung lokal</span><span class="badge badge-info">i Empfang offen</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Ein lokaler idempotenter Output ist keine kommunale Empfangsbestätigung.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Abreise prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="time-cell"><time datetime="2026-07-16T15:30">15:30</time><small>später</small></td>
+                        <td><span class="guest-copy"><strong>Samuel Bergmann</strong><span>R-260713-39 · Doppelzimmer</span></span></td>
+                        <td class="room-cell">218<br><span class="mono">13.–16.07.</span></td>
+                        <td><span class="status-stack"><data class="currency" value="0.00">0,00 €</data><span class="badge badge-info">i Folio unklar</span></span></td>
+                        <td><span class="status-stack"><span class="badge badge-error">! Nicht verbunden</span><span class="badge badge-planned">→ Sync</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Kein Live-Status für Dokumente oder externe Abreise-Meldung.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button" disabled>Warten auf Status</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mobile-card-list" aria-label="Priorisierte mobile Abreisekarten">
+                  <article class="departure-card is-selected"><div class="card-topline"><strong>09:30 · Clara Baumann</strong><span class="badge badge-teal">● Dokumente prüfen</span></div><p>Zimmer 204 · Folio 0,00 € · Abreise-Meldung nur als lokaler Prototypoutput.</p><div class="badge-row"><span class="badge badge-success">✓ Meldeschein geprüft</span><span class="badge badge-unclear">? Sync unklar</span></div><button class="btn-primary" type="button">Check-out prüfen</button></article>
+                  <article class="departure-card is-blocked"><div class="card-topline"><strong>10:00 · Heike und Rolf Stark</strong><span class="badge badge-error">! 78,40 € offen</span></div><p>Zimmer 215 · Unbezahlter Beispielsaldo blockiert den späteren Abschluss.</p><div class="badge-row"><span class="badge badge-warning">! Rechnungsvorschau</span></div><button class="btn-secondary" type="button">Folio prüfen</button></article>
+                  <article class="departure-card"><div class="card-topline"><strong>10:30 · Martin Heller</strong><span class="badge badge-warning">! Meldung prüfen</span></div><p>Zimmer 117 · Keine externe Annahme oder Einreichung ableiten.</p><button class="btn-secondary" type="button">Meldung prüfen</button></article>
+                  <article class="departure-card is-late"><div class="card-topline"><strong>12:00 · Emil Wagner</strong><span class="badge badge-peach">↻ Spätabreise</span></div><p>Zimmer 108 · Späte Abreise bis 13:00; Zimmer-/Housekeepingstatus ist geplant.</p><button class="btn-secondary" type="button">Spätabreise begleiten</button></article>
+                  <p class="state-note">5 weitere synthetische Abreisen bleiben über eine spätere, zugängliche Listenansicht erreichbar; die mobile Ansicht macht sie nicht unsichtbar oder erledigt.</p>
+                </div>
+              </div>
+            </section>
+
+            <aside class="side-stack" aria-label="Ausgewählter Check-out und Nachweis">
+              <section class="panel" id="departures-selected" aria-labelledby="departures-selected-title">
+                <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="departures-selected-title">Ausgewählter Check-out</h2><p class="panel-subtitle">Kontext bleibt im Queue-Rahmen erhalten.</p></div><span class="badge badge-prototype">◌ Beispiel</span></header>
+                <div class="panel-body">
+                  <article class="selected-stay">
+                    <div class="drawer-copy"><span class="badge badge-prototype">◌ Synthetischer Aufenthalt</span><h3>Clara Baumann · Zimmer 204</h3><p>R-260709-14 · 09.–16. Juli · sieben Nächte · Kuraufenthalt</p></div>
+                    <div class="folio-summary"><div><span>Folio</span><strong><data class="currency" value="0.00">0,00 €</data></strong></div><div><span>Dokumente</span><strong>1 von 2 mit Prüfhinweis</strong></div><div><span>Abreise-Meldung</span><strong>Lokaler Modulstatus</strong></div></div>
+                    <dl class="key-values"><dt>Fälligkeit</dt><dd><time datetime="2026-07-16T09:30">09:30</time></dd><dt>Aktiver Schritt</dt><dd>Folio und Dokumentgrenze vor dem geplanten Abschluss prüfen</dd><dt>Rückkehr</dt><dd>Filter „Alle 9“ und Queue-Auswahl sollen später erhalten bleiben</dd></dl>
+                    <div class="button-row"><button class="btn-primary" type="button">Check-out prüfen</button><button class="btn-secondary" type="button">Zur Queue zurück</button></div>
+                    <p class="drawer-note">Ein sichtbarer 0,00-€-Beispielwert ist keine Zahlungsfreigabe, kein Folioabschluss und kein persistierter Kontostand.</p>
+                  </article>
+                </div>
+              </section>
+
+              <section class="panel" aria-labelledby="departures-artifacts-title">
+                <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="departures-artifacts-title">Dokument- und Meldungsstatus</h2><p class="panel-subtitle">Lesbare Grenzen statt falscher Abschluss.</p></div></header>
+                <div class="panel-body">
+                  <ul class="artifact-list" aria-label="Abreise-Artefakte zu Clara Baumann">
+                    <li><button class="artifact-button" type="button"><span class="artifact-title">Checkout-Zusammenfassung</span><span class="badge badge-prototype">◌ Rechnungsvorschau</span><span class="artifact-proof">checkout_R-260709-14_preview.pdf</span></button></li>
+                    <li><button class="artifact-button" type="button"><span class="artifact-title">Abreise-Meldung Bad Orb</span><span class="badge badge-success">✓ Lokal erzeugt</span><span class="artifact-proof">dep-7f3a2c10 · idempotency key nur Beispiel</span></button></li>
+                    <li><button class="artifact-button" type="button"><span class="artifact-title">Kommunaler Empfang</span><span class="badge badge-info">i Nicht eingereicht</span><span class="artifact-proof">Kein externer Endpoint-/Receipt-Vertrag</span></button></li>
+                  </ul>
+                  <p class="state-note">„Lokal erzeugt“ ersetzt weder sichere Ablage noch Browserdownload, kommunale Übermittlung, Annahmebestätigung oder gesetzliche Finalität.</p>
+                </div>
+              </section>
+
+              <aside class="panel evidence-drawer" id="departures-evidence" aria-labelledby="departures-evidence-title">
+                <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="departures-evidence-title">Nachweis im Kontext</h2><p class="panel-subtitle">Proposed EvidenceDrawerComponent</p></div><span class="badge badge-teal">▣ Evidenz</span></header>
+                <div class="panel-body">
+                  <div class="drawer-copy"><strong class="drawer-title">q64-Abreise-Meldung · technische Grenze</strong><p class="drawer-note">Die vorhandene Python-Moduloberfläche beschreibt eine lokale idempotente Emission mit In-Memory-Cache und Audit-Append-Absicht. Sie beweist keine Browser-, Datenbank-, RBAC- oder externe Kurverwaltungsschnittstelle.</p></div>
+                  <dl class="key-values"><dt>Beobachteter lokaler Rahmen</dt><dd><span class="badge badge-success">Operational</span> enge Modulgrenze</dd><dt>Browserausführung</dt><dd><span class="badge badge-planned">Geplant</span> Route, API und Jobstatus</dd><dt>Externer Empfang</dt><dd><span class="badge badge-unclear">Unklar</span> kein Receipt/Sync bestätigt</dd></dl>
+                  <details><summary>Vorgesehene Ereignis- und Recovery-Informationen</summary><ul class="timeline-list"><li><span class="timeline-time">09:30</span><span class="timeline-copy"><strong>Check-out-Kontext ausgewählt</strong><span>Statische Prototypinteraktion; keine Persistenz oder Auditierung bewiesen.</span></span></li><li><span class="timeline-time">—</span><span class="timeline-copy"><strong>Abreise-Meldung</strong><span>Eine spätere UI zeigt Emission, Zeit, idempotente Wiederholung, Fehler und Scope als echte Daten.</span></span></li><li><span class="timeline-time">—</span><span class="timeline-copy"><strong>Kommunaler Sync</strong><span>Erfordert Endpoint, Authentifizierung, Retry/Timeout, Receipt, Rechte und rechtliche Prüfung.</span></span></li></ul></details>
+                  <button class="btn-secondary" type="button">Quellenrahmen ansehen <span class="badge badge-planned">Geplant</span></button>
+                </div>
+              </aside>
+            </aside>
+          </div>
+
+          <section class="keyboard-intent" id="departures-keyboard" aria-labelledby="departures-keyboard-title">
+            <div class="drawer-copy"><h2 id="departures-keyboard-title">Geplantes Tastatur- und Fokusmodell</h2><p>Die Hinweise sind eine spätere Implementierungsanforderung. Nur der State-Switcher dieser statischen Datei ist lokal aktiv.</p></div>
+            <ul class="keyboard-list"><li><kbd>Ctrl/⌘ K</kbd> Geplant: eine berechtigte Suche nach Gast, Aufenthalt oder Folio öffnen; keine Live-Suche im Prototyp.</li><li><kbd>↑ ↓</kbd> Geplant: Fokus und Auswahl in der Queue bewegen, ohne wesentliche Informationen nur bei Hover zu verstecken.</li><li><kbd>Enter</kbd> Geplant: die einzige sichtbare Zeilenaktion starten.</li><li><kbd>Esc</kbd> Geplant: Evidenzdetail schließen und Fokus zur auslösenden Check-out-Zeile zurückgeben.</li></ul>
+          </section>
+          <p class="page-note">Designprototyp mit synthetischen Gästen, Reservierungen, Zimmern, Foliozeilen und Eurobeträgen. Die Darstellung beweist keine Zahlungsverarbeitung, Buchhaltung, Speicherung, Dokumentausgabe, kommunale Einreichung, externe Synchronisation, Berechtigung oder Rechtswirksamkeit.</p>
+        </div>
+
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#departures-context">Heute</a><a href="#departures-title" aria-current="page">Abreisen</a><a href="#departures-evidence">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Empty / no departures in the selected scope ===== -->
+  <section class="state" id="state-empty" hidden aria-labelledby="departures-empty-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#departures-empty-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">0</span></a></li><li><a class="nav-link" href="#departures-empty-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li><li><a class="nav-link" href="#departures-empty-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">0</span></a></li></ul></nav><section class="sidebar-context" aria-label="Beispielhafter Schichtkontext"><strong>Spätschicht · 15:00–23:00</strong><span>Beispielkontext · Empfang</span><small>Keine Abreisen im gewählten Zeitraum.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="departures-empty-title">Abreisen</h1><p>Leerer Worklist-Zustand mit sichtbarem Datums- und Filterrahmen</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Datum wechseln</button><button class="btn-primary" type="button">Morgige Abreisen ansehen</button></div></header>
+        <section class="context-strip" aria-label="Aktueller leerer Abreise-Kontext"><span class="context-label">Datum</span><span class="context-value">Donnerstag, 17. Juli 2026</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Filter</span><span class="context-value">Check-out vor 12:00</span><span class="badge badge-prototype">◌ Beispieldaten</span><span class="badge badge-planned">→ Abfrage geplant</span></section>
+        <div class="content">
+          <section class="truth-banner" aria-labelledby="empty-boundary-title"><div class="alert-copy"><h2 id="empty-boundary-title">Keine sichtbaren Abreisen ist kein Beleg für einen abgeschlossenen Tagesbetrieb.</h2><p>Der Prototyp zeigt klar Datum und Filter. Eine künftige Queue muss Fehler, Datenfrische, Berechtigung und Vollständigkeit erklären, statt Abwesenheit still zu behaupten.</p></div><div class="badge-row"><span class="badge badge-unclear">? Datenquelle unklar</span></div></section>
+          <section class="empty-state" aria-labelledby="empty-message-title"><span class="empty-icon" aria-hidden="true">←</span><h2 id="empty-message-title">Keine Abreisen vor 12:00 am 17. Juli</h2><p>Für den ausgewählten Tag und Filter enthält die statische Musterliste keine synthetischen Check-out-Vorgänge. Dies sagt nichts über ein späteres Reservierungs-, Folio- oder Channel-System aus.</p><div class="chip-row" aria-label="Aktiver Kontext"><span class="badge badge-teal">● Datum 17.07.2026</span><span class="badge badge-info">i Vor 12:00</span></div><div class="button-row"><button class="btn-primary" type="button">Alle Abreisen zeigen <span class="badge badge-planned">Geplant</span></button><button class="btn-secondary" type="button">Nächsten Tag öffnen</button></div></section>
+          <p class="page-note">Leerer Zustand: Spätere Implementierung zeigt gewählten Filter, letzte erfolgreiche Aktualisierung und einen sicheren Weg zum nächsten relevanten Arbeitsschritt.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#departures-empty-title">Heute</a><a href="#departures-empty-title" aria-current="page">Abreisen</a><a href="#empty-boundary-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Loading / queue refresh pending ===== -->
+  <section class="state" id="state-loading" hidden aria-labelledby="departures-loading-title" aria-busy="true">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#departures-loading-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">—</span></a></li><li><a class="nav-link" href="#departures-loading-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">—</span></a></li><li><a class="nav-link" href="#departures-loading-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">…</span></a></li></ul></nav><section class="sidebar-context" aria-label="Ladegrenze"><strong>Queue-Aktualisierung · Beispiel</strong><span>Eine spätere Abfrage braucht Quelle, Berechtigung und Datenfrische.</span><small>Keine Netzwerkverbindung oder Hintergrundabfrage wird durch diesen Prototyp ausgelöst.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="departures-loading-title">Abreisen werden vorbereitet</h1><p>Der Ladezustand behält Rahmen, Kontext und sichere Rückkehr sichtbar.</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Vorherige Queue ansehen</button><button class="btn-primary" type="button" disabled>Aktualisierung läuft</button></div></header>
+        <section class="context-strip" aria-label="Ladekontext"><span class="context-label">Objekt</span><span class="context-value">Hotel Rheinland · Bad Orb</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Datum</span><span class="context-value">Mittwoch, 16. Juli 2026</span><span class="badge badge-planned">→ Datenquelle geplant</span><span class="badge badge-unclear">? Freshness unklar</span></section>
+        <div class="content">
+          <section class="truth-banner" aria-labelledby="loading-boundary-title"><div class="alert-copy"><h2 id="loading-boundary-title">Laden ist ein zukünftiger Datenzustand, kein Fortschrittsbeweis.</h2><p>Die Struktur wird bewusst nicht als fertige Queue ausgegeben. Eine spätere Implementierung muss Quelle, Startzeit, Zeitlimit, Berechtigung, Ergebniszahl, Fehler und Rückkehr zur vorherigen Liste liefern.</p></div><div class="badge-row"><span class="badge badge-prototype">◌ Statisches Skeleton</span><span class="badge badge-planned">→ API-/Jobvertrag</span></div></section>
+          <section class="loading-state" aria-labelledby="loading-list-title"><div class="loading-copy"><h2 id="loading-list-title">Abreisequeue wird aktualisiert</h2><p>Struktureller Platzhalter mit Textstatus; keine der Zeilen repräsentiert einen Gast, ein Folio oder eine tatsächliche Abfrage.</p></div><div class="skeleton-list" aria-label="Strukturelle Ladeplatzhalter"><div class="skeleton-row"><span class="skeleton-block is-short" aria-hidden="true"></span><span class="skeleton-block" aria-hidden="true"></span><span class="skeleton-block" aria-hidden="true"></span><span class="skeleton-block is-action" aria-hidden="true"></span></div><div class="skeleton-row"><span class="skeleton-block is-short" aria-hidden="true"></span><span class="skeleton-block" aria-hidden="true"></span><span class="skeleton-block" aria-hidden="true"></span><span class="skeleton-block is-action" aria-hidden="true"></span></div><div class="skeleton-row"><span class="skeleton-block is-short" aria-hidden="true"></span><span class="skeleton-block" aria-hidden="true"></span><span class="skeleton-block" aria-hidden="true"></span><span class="skeleton-block is-action" aria-hidden="true"></span></div></div><div class="button-row"><button class="btn-secondary" type="button" disabled>Abreisequeue wird aktualisiert</button><button class="btn-secondary" type="button">Zur vorherigen Liste zurück</button></div></section>
+          <p class="page-note">Loading-State: Die Skeletons zeigen nur erwartete Struktur. Sie behaupten weder eine bestehende Browseranfrage noch Anzahl, Gastdaten, Folio, Dokumentstatus oder kommunale Synchronisation.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#departures-loading-title">Heute</a><a href="#departures-loading-title" aria-current="page">Abreisen</a><a href="#loading-boundary-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Error / queue source unavailable ===== -->
+  <section class="state" id="state-error" hidden aria-labelledby="departures-error-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#departures-error-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">?</span></a></li><li><a class="nav-link" href="#departures-error-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">?</span></a></li><li><a class="nav-link" href="#departures-error-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">!</span></a></li></ul></nav><section class="sidebar-context" aria-label="Fehlerkontext"><strong>Abreisequeue nicht verfügbar</strong><span>Unbestätigte Datenquelle · Beispielzustand</span><small>Es wird keine Verbindung, Wiederholung oder Offline-Pufferung behauptet.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="departures-error-title">Abreisequeue nicht verfügbar</h1><p>Persistenter Fehler mit Datumsrahmen, Ursache und sicherer nächster Entscheidung</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Vorherige Liste ansehen</button><button class="btn-primary" type="button">Erneut versuchen <span class="badge badge-planned">Geplant</span></button></div></header>
+        <section class="context-strip" aria-label="Fehlerkontext für die Abreisequeue"><span class="context-label">Objekt</span><span class="context-value">Hotel Rheinland · Bad Orb</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Gewünschtes Datum</span><span class="context-value">Mittwoch, 16. Juli 2026</span><span class="badge badge-error">! Quelle nicht verfügbar</span><span class="badge badge-unclear">? Offline-Verhalten unklar</span></section>
+        <div class="content">
+          <section class="alert-banner" role="alert" aria-labelledby="departures-source-error-title"><div class="alert-copy"><h2 id="departures-source-error-title">Die künftige Abreisequelle konnte nicht bestätigt aktualisiert werden.</h2><p>Dieser Zustand unterscheidet bewusst Fehler von „keine Abreisen“. Die Ursache ist synthetisch; keine Browseranfrage, API-Antwort, Timeout, Credentials, Offline-Kopie oder Retry wurde ausgeführt.</p></div><div class="badge-row"><span class="badge badge-error">! Nicht verfügbar</span><span class="badge badge-prototype">◌ Fehlerbeispiel</span></div></section>
+          <div class="blocked-grid"><section class="panel" aria-labelledby="departures-error-recovery-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="departures-error-recovery-title">Sicher weiterarbeiten</h2><p class="panel-subtitle">Kein leerer Zustand und keine erfundene Restliste.</p></div><span class="badge badge-warning">! Manuelle Prüfung</span></header><div class="panel-body"><dl class="key-values"><dt>Betroffener Bereich</dt><dd>Abreisen · 16. Juli 2026</dd><dt>Gesicherter Bestand</dt><dd>Keiner in diesem Prototyp; „Vorherige Liste“ braucht später einen Datenspeicher-/Freshnessvertrag.</dd><dt>Vorgesehene Wiederholung</dt><dd>Mit Zeitstempel, Fehlercode, Idempotenz-/Retry-Regel und Nicht-Duplikationsschutz</dd><dt>Empfohlene Eskalation</dt><dd>Empfangsleitung oder Systemkontakt nach späterem Betriebsmodell</dd></dl><div class="button-row"><button class="btn-primary" type="button">Erneut versuchen <span class="badge badge-planned">Geplant</span></button><button class="btn-secondary" type="button">Manuelle Prüfung vormerken</button></div><p class="drawer-note">Ein Retry-Control ist nur ein Designvertrag. Es darf später keine zweite Zahlung, doppelte Meldung oder unklare Folioänderung verursachen.</p></div></section><aside class="side-stack" aria-label="Fehlernachweis"><aside class="panel evidence-drawer" aria-labelledby="departures-error-evidence-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="departures-error-evidence-title">Fehlernachweis</h2><p class="panel-subtitle">Was die spätere Oberfläche dokumentieren muss.</p></div></header><div class="panel-body"><ul class="recovery-list"><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Quelle und Abrufzeit</strong><span>Ohne Herkunft und Zeit kann keine Liste als aktuell, vollständig oder leer gelten.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Fehler und Recovery</strong><span>Ein späteres Fehlerobjekt braucht lesbaren Grund, technische Referenz und sichere Wiederholung.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Keine stillen Abschlussaktionen</strong><span>Folio, Dokumente und Abreise-Meldung bleiben bis zu einem echten Vertrag unverändert/unklar.</span></span></li></ul><span class="badge badge-planned">→ Fehler-/Retryvertrag erforderlich</span></div></aside></aside></div>
+          <p class="page-note">Error-State: Die Darstellung belegt keine Netzwerkerkennung, Offline-Speicherung, Berechtigungsprüfung, Datenfrische, Retry-Ausführung, Folio-/Payment-Sicherheit oder externe Abreise-Meldung.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#departures-error-title">Heute</a><a href="#departures-error-title" aria-current="page">Abreisen</a><a href="#departures-error-evidence-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Folio blocked / unpaid balance blocks checkout ===== -->
+  <section class="state" id="state-folio-blocked" hidden aria-labelledby="folio-blocked-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#folio-blocked-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">19</span></a></li><li><a class="nav-link" href="#folio-blocked-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li><li><a class="nav-link" href="#folio-blocked-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">9</span></a></li></ul></nav><section class="sidebar-context" aria-label="Blockierter Check-out"><strong>1 Folio-Blocker</strong><span>Heike und Rolf Stark · Zimmer 215</span><small>Zahlungs- und Foliozustand sind nur synthetische Beispiele.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="folio-blocked-title">Check-out blockiert</h1><p>Offener Foliosaldo wird vor der geplanten Abschlussaktion sichtbar und verständlich erklärt</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Zur Queue zurück</button><button class="btn-primary" type="button" disabled>Check-out abschließen</button></div></header>
+        <section class="context-strip" aria-label="Folio-Blocker-Kontext"><span class="context-label">Gast</span><span class="context-value">Heike und Rolf Stark · R-260710-19</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Zimmer</span><span class="context-value">215</span><span class="badge badge-error">! Abschluss blockiert</span><span class="badge badge-planned">→ Zahlungs-/Folio-API nötig</span></section>
+        <div class="content">
+          <section class="alert-banner" role="alert" aria-labelledby="folio-alert-title"><div class="alert-copy"><h2 id="folio-alert-title">Ein offener Beispielsaldos blockiert den Check-out.</h2><p>Der Betrag und die Positionen sind synthetische Designinhalte. Das Muster verhindert, dass eine künftige Abschlussaktion wie eine bestätigte Zahlung oder Buchung wirkt. Zahlungsabwicklung, Folio-Persistenz, Rechnung, Berechtigung und Audit benötigen eigene Verträge.</p></div><div class="badge-row"><span class="badge badge-error">! Unbezahlt</span><span class="badge badge-prototype">◌ Folio-Beispiel</span></div></section>
+          <div class="blocked-grid">
+            <section class="panel" aria-labelledby="folio-detail-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="folio-detail-title">Folio vor Check-out</h2><p class="panel-subtitle">Positionen sind zur Prüfung sichtbar, nicht als gebuchtes Finanzjournal.</p></div><span class="badge badge-warning">! Manuelle Prüfung</span></header><div class="panel-body"><div class="folio-summary"><div><span>Gast</span><strong>Heike und Rolf Stark</strong></div><div><span>Aufenthalt</span><strong>10.–16. Juli · Zimmer 215</strong></div><div><span>Offener Saldo</span><strong><data class="currency" value="78.40">78,40 €</data></strong></div></div><div class="table-wrap" tabindex="0" aria-label="Synthetische Folio-Positionen"><table class="folio-table"><caption>Beispielhafte Folio-Positionen · keine reale Buchhaltung oder Zahlungsabwicklung</caption><thead><tr><th scope="col">Datum</th><th scope="col">Position</th><th scope="col">Nachweisgrenze</th><th scope="col">Betrag</th></tr></thead><tbody><tr><td><time datetime="2026-07-12">12.07.</time></td><td>Kurbeitrag · 2 Personen · 5 Nächte</td><td><span class="badge badge-unclear">? Charge unklar</span></td><td><data class="currency" value="44.00">44,00 €</data></td></tr><tr><td><time datetime="2026-07-15">15.07.</time></td><td>Mineralwasser und Tee · Lobbybar</td><td><span class="badge badge-prototype">◌ Beispielposition</span></td><td><data class="currency" value="18.40">18,40 €</data></td></tr><tr><td><time datetime="2026-07-16">16.07.</time></td><td>Spätabreise-Anfrage</td><td><span class="badge badge-warning">! Preis prüfen</span></td><td><data class="currency" value="16.00">16,00 €</data></td></tr></tbody></table></div><div class="folio-total"><strong>Offener synthetischer Saldo vor der Abschlussaktion</strong><span><data value="78.40">78,40 €</data></span></div><div class="button-row"><button class="btn-primary" type="button" disabled>Check-out abschließen</button><button class="btn-secondary" type="button">Folio zur Prüfung öffnen <span class="badge badge-planned">Geplant</span></button></div></div></section>
+            <aside class="side-stack" aria-label="Blocker, Dokumente und Recovery"><section class="panel" aria-labelledby="folio-recovery-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="folio-recovery-title">Warum die Aktion gesperrt ist</h2><p class="panel-subtitle">Der Grund bleibt direkt bei der verfügbaren Alternative.</p></div></header><div class="panel-body"><ul class="recovery-list"><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Saldo nicht bestätigt ausgeglichen</strong><span>Die Beispielsumme ist keine Buchungs-, Zahlungs- oder Kartenfreigabe.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Rechnung nur als Vorschau</strong><span>Ein Dateiname oder eine Vorschau ist keine finale Rechnung oder Zustellung.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Abreise-Meldung noch nicht auslösen</strong><span>Die spätere Logik braucht klare Reihenfolge, Rechte, Audit und Fehlerbehandlung.</span></span></li></ul><div class="button-row"><button class="btn-warning" type="button">Manuelle Prüfung anfordern</button><button class="btn-secondary" type="button">Zur Queue zurück</button></div></div></section><aside class="panel evidence-drawer" aria-labelledby="folio-evidence-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="folio-evidence-title">Folio-Nachweisgrenze</h2><p class="panel-subtitle">Keine echte Zahlung oder Folio-Synchronisation.</p></div></header><div class="panel-body"><dl class="key-values"><dt>Foliostatus</dt><dd><span class="badge badge-prototype">Synthetischer Betrag</span></dd><dt>Payment</dt><dd><span class="badge badge-planned">Geplant</span> Gateway, Kasse und Berechtigung</dd><dt>Auditereignis</dt><dd>Vorgesehene spätere Check-out-/Zahlungsprüfung, nicht geschrieben</dd></dl><p class="drawer-note">Die UI macht den künftigen Sperrgrund nachvollziehbar, ohne eine Zahlung oder eine dauerhafte Folioänderung zu behaupten.</p></div></aside></aside>
+          </div>
+          <p class="page-note">Folio-blocked State: Der visuelle Sperrstatus ist ein Designvertrag. Er belegt keine Zahlungsregeln, Steuer-/Rechnungskonformität, Folio-Buchung, Rückerstattung, Berechtigung oder rechtliche Abschlussfähigkeit.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#folio-blocked-title">Heute</a><a href="#folio-blocked-title" aria-current="page">Abreisen</a><a href="#folio-recovery-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Late checkout / operational exception ===== -->
+  <section class="state" id="state-late-checkout" hidden aria-labelledby="late-checkout-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#late-checkout-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">19</span></a></li><li><a class="nav-link" href="#late-checkout-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li><li><a class="nav-link" href="#late-checkout-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">9</span></a></li></ul></nav><section class="sidebar-context" aria-label="Spätabreise-Kontext"><strong>Spätabreise bis 13:00</strong><span>Emil Wagner · R-260713-24</span><small>Zimmer-/Housekeepingstatus ist nicht integriert.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="late-checkout-title">Spätabreise begleiten</h1><p>Ausnahmefläche für die koordinierte, aber nicht automatisch integrierte Abreise</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Zur Queue zurück</button><button class="btn-primary" type="button">Check-out-Vorschau öffnen <span class="badge badge-planned">Geplant</span></button></div></header>
+        <section class="context-strip" aria-label="Spätabreise-Kontext"><span class="context-label">Gast</span><span class="context-value">Emil Wagner · R-260713-24</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Vereinbartes Ende</span><span class="context-value"><time datetime="2026-07-16T13:00">13:00</time></span><span class="badge badge-peach">↻ Spätabreise</span><span class="badge badge-unclear">? Zimmerstatus unklar</span></section>
+        <div class="content">
+          <section class="truth-banner" aria-labelledby="late-boundary-title"><div class="alert-copy"><h2 id="late-boundary-title">Spätabreise ist koordinierter Kontext, keine Raum- oder Housekeeping-Buchung.</h2><p>Das Muster zeigt Zeitfenster, Gast, Folio und Übergabeschritte. Es behauptet keine Verfügbarkeitsberechnung, Schlüsselverlängerung, Housekeeping-Dispatch, persistierte Vereinbarung oder externe Synchronisation.</p></div><div class="badge-row"><span class="badge badge-prototype">◌ Ausnahmebeispiel</span><span class="badge badge-planned">→ Zimmer-/Housekeeping-API</span></div></section>
+          <div class="late-grid">
+            <section class="panel" aria-labelledby="late-detail-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="late-detail-title">Spätabreise-Kontext</h2><p class="panel-subtitle">Ein gezielter Ausnahmefall statt einer unübersichtlichen Kalenderbehauptung.</p></div><span class="badge badge-peach">↻ bis 13:00</span></header><div class="panel-body"><article class="departure-card is-late"><div class="card-topline"><strong>Emil Wagner · Zimmer 108</strong><span class="badge badge-peach">Spätabreise</span></div><p>R-260713-24 · Anreise 13.07. · vereinbartes Check-out-Fenster bis 13:00 · synthetischer Vorgang</p><div class="badge-row"><span class="badge badge-teal">● Folio 0,00 € prüfen</span><span class="badge badge-info">i Check-out-Vorschau</span><span class="badge badge-unclear">? Zimmerstatus</span></div><button class="btn-primary" type="button">Check-out-Vorschau öffnen <span class="badge badge-planned">Geplant</span></button></article><dl class="key-values"><dt>Empfangsentscheidung</dt><dd>Gastkontext und Folio vor dem geplanten Abschluss prüfen</dd><dt>Übergabe</dt><dd>Zimmer-/Housekeeping-Hinweis später explizit bestätigen, nicht still ableiten</dd><dt>Dokumentstatus</dt><dd><span class="badge badge-prototype">Vorschau</span> keine finale Rechnung oder Meldung</dd><dt>Abreise-Meldung</dt><dd><span class="badge badge-planned">Geplant</span> erst nach einem echten Regel-/Berechtigungs-/Syncvertrag</dd></dl></div></section>
+            <aside class="side-stack" aria-label="Spätabreise-Warnungen und Nachweis"><section class="panel" aria-labelledby="late-alert-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="late-alert-title">Jetzt klären</h2><p class="panel-subtitle">Konkrete Aufgaben mit sichtbaren Grenzen.</p></div></header><div class="panel-body"><ul class="recovery-list"><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Zimmerstatus nicht automatisch bekannt</strong><span>Keine Verbindung zu Housekeeping, Schlüssel oder Raumplanung beweisen.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Folio ist nur ein Beispielrahmen</strong><span>0,00 € bedeutet nicht bezahlt, abgeschlossen oder persistiert.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Abreise-Meldung nicht still auslösen</strong><span>Lokale/kommunale Regeln, Authentifizierung, Audit und externe Annahme brauchen späteren Vertrag.</span></span></li></ul><div class="button-row"><button class="btn-warning" type="button">Übergabe vormerken</button><button class="btn-secondary" type="button">Zur Queue zurück</button></div></div></section><aside class="panel evidence-drawer" aria-labelledby="late-evidence-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="late-evidence-title">Ausnahme-Nachweis</h2><p class="panel-subtitle">Keine automatische Statuskette.</p></div></header><div class="panel-body"><dl class="key-values"><dt>Beispielzeit</dt><dd><time datetime="2026-07-16T12:00">12:00</time></dd><dt>Vorgesehene Recovery</dt><dd>Rückkehr zur Queue, manuelle Übergabe, späterer Statusabgleich</dd><dt>Intended audit event</dt><dd>Spätabreise als späteres Ereignis, hier nicht geschrieben</dd></dl><p class="drawer-note">Der Drawer macht Quelle, Zeit und fehlende Integration sichtbar. Er ist kein Audit Store und keine Statusschnittstelle.</p></div></aside></aside>
+          </div>
+          <p class="page-note">Spätabreise-State: Der Prototyp priorisiert eine verständliche Empfangsentscheidung. Er beweist keine Raumverfügbarkeit, Hand-off-Automation, Schlüsselkontrolle, Rechnung, Folio, Check-out-Abschluss oder externe Abreise-Meldung.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#late-checkout-title">Heute</a><a href="#late-checkout-title" aria-current="page">Abreisen</a><a href="#late-alert-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Overflow / dense checkout period ===== -->
+  <section class="state" id="state-overflow" hidden aria-labelledby="departures-overflow-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#departures-overflow-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">24</span></a></li><li><a class="nav-link" href="#departures-overflow-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li><li><a class="nav-link" href="#departures-overflow-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">14</span></a></li></ul></nav><section class="sidebar-context" aria-label="Dichter Abreisezeitraum"><strong>Abreisewelle · 09:30–13:30</strong><span>14 erwartete Check-outs</span><small>Status ist ein synthetisches Überlaufmuster, keine Live-Queue.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="departures-overflow-title">Abreisen · dichter Zeitraum</h1><p>14 erwartete Check-outs · Zeit, Gast, Folio, Dokumentstatus und ein nächster Schritt bleiben priorisiert</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Nur Blocker anzeigen</button><button class="btn-primary" type="button">Nächsten Check-out öffnen <span class="badge badge-planned">Geplant</span></button></div></header>
+        <section class="context-strip" aria-label="Überlauf-Kontext"><span class="context-label">Zeitfenster</span><span class="context-value">09:30–13:30</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Anzahl</span><span class="context-value">14 synthetische Abreisen</span><span class="badge badge-peach">↕ Überlauf</span><span class="badge badge-prototype">◌ Kein Live-Status</span></section>
+        <div class="content">
+          <section class="overflow-note" aria-labelledby="overflow-title"><span aria-hidden="true">↕</span><span><strong id="overflow-title">Wichtige Daten bleiben vor der Kürzung sichtbar.</strong> Die dichte Tabelle hat Sticky Header und eine klar bezeichnete Scrollfläche. Lange Namen oder Artefakte bleiben über eine spätere Detailansicht erreichbar; Blocker, Betrag und nächste Aktion werden nicht hinter einer Hover- oder Kürzlogik versteckt.</span><span class="badge badge-peach">14 Vorgänge</span></section>
+          <div class="work-grid">
+            <section class="panel" aria-labelledby="overflow-table-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="overflow-table-title">Check-outs im Zeitfenster</h2><p class="panel-subtitle">Für eine spätere Queue gilt: zuerst fällige oder blockierte Vorgänge, ohne spätere Zeilen zu verschweigen.</p></div><div class="chip-row" aria-label="Überlauffilter"><button class="chip" type="button" aria-pressed="true">Alle 14</button><button class="chip" type="button" aria-pressed="false">Jetzt 6</button><button class="chip" type="button" aria-pressed="false">Blockiert 3</button><button class="chip" type="button" aria-pressed="false">Spät 2</button></div></header><div class="panel-body"><div class="table-wrap" tabindex="0" aria-label="Scrollbare dichte Tabelle mit vierzehn synthetischen Check-outs"><table><caption>Dichter Abreisezeitraum · synthetische Beispiele · kein echter Folio-, Payment- oder Kurverwaltungsstatus</caption><thead><tr><th scope="col">Fällig</th><th scope="col">Gast / Reservierung</th><th scope="col">Zimmer</th><th scope="col">Folio</th><th scope="col">Dokumente / Meldung</th><th scope="col">Blocker</th><th scope="col">Nächster Schritt</th></tr></thead><tbody>
+                      <tr class="is-selected"><td class="time-cell"><time datetime="2026-07-16T09:30">09:30</time><small>jetzt</small></td><td><span class="guest-copy"><strong>Clara Baumann</strong><span>R-260709-14</span></span></td><td class="room-cell">204</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-prototype">◌ Lokal erzeugt</span><span class="badge badge-info">i Nicht eingereicht</span></span></td><td><span class="helper">Sync unklar</span></td><td><button class="table-action btn-primary" type="button">Check-out prüfen</button></td></tr>
+                      <tr class="is-blocked"><td class="time-cell"><time datetime="2026-07-16T09:45">09:45</time><small>jetzt</small></td><td><span class="guest-copy"><strong>Heike und Rolf Stark</strong><span>R-260710-19</span></span></td><td class="room-cell">215</td><td><data class="currency" value="78.40">78,40 €</data></td><td><span class="status-stack"><span class="badge badge-warning">! Rechnungsvorschau</span></span></td><td><span class="badge badge-error">! Unbezahlt</span></td><td><button class="table-action btn-secondary" type="button">Folio prüfen</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T10:00">10:00</time><small>jetzt</small></td><td><span class="guest-copy"><strong>Martin Heller</strong><span>R-260711-03</span></span></td><td class="room-cell">117</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-warning">! Meldung prüfen</span></span></td><td><span class="helper">Lokale Modulgrenze</span></td><td><button class="table-action btn-secondary" type="button">Meldung prüfen</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T10:15">10:15</time><small>jetzt</small></td><td><span class="guest-copy"><strong>Familie Vogt</strong><span>R-260714-22</span></span></td><td class="room-cell">312</td><td><data class="currency" value="24.00">24,00 €</data></td><td><span class="status-stack"><span class="badge badge-success">✓ Vorschau bereit</span></span></td><td><span class="helper">Position prüfen</span></td><td><button class="table-action btn-secondary" type="button">Positionen prüfen</button></td></tr>
+                      <tr class="is-late"><td class="time-cell"><time datetime="2026-07-16T10:30">10:30</time><small>bis 12:00</small></td><td><span class="guest-copy"><strong>Emil Wagner</strong><span>R-260713-24</span></span></td><td class="room-cell">108</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-info">i Vorschau</span></span></td><td><span class="badge badge-peach">↻ Spätabreise</span></td><td><button class="table-action btn-secondary" type="button">Begleiten</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T10:45">10:45</time><small>jetzt</small></td><td><span class="guest-copy"><strong>Elisabeth Möller</strong><span>R-260710-28</span></span></td><td class="room-cell">301</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-warning">! Stub-Format</span></span></td><td><span class="helper">Manuelle Prüfung</span></td><td><button class="table-action btn-secondary" type="button">Dokument prüfen</button></td></tr>
+                      <tr class="is-blocked"><td class="time-cell"><time datetime="2026-07-16T11:00">11:00</time><small>jetzt</small></td><td><span class="guest-copy"><strong>Henrik Møller</strong><span>R-260712-31</span></span></td><td class="room-cell">110</td><td><data class="currency" value="42.00">42,00 €</data></td><td><span class="status-stack"><span class="badge badge-prototype">◌ Rechnungsvorschau</span></span></td><td><span class="badge badge-warning">! Ausgleich offen</span></td><td><button class="table-action btn-secondary" type="button">Folio prüfen</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T11:15">11:15</time><small>danach</small></td><td><span class="guest-copy"><strong>Luise von Hohenfels</strong><span>R-260715-35</span></span></td><td class="room-cell">302</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-prototype">◌ Lokal erzeugt</span></span></td><td><span class="helper">Empfang nicht bestätigt</span></td><td><button class="table-action btn-secondary" type="button">Abreise prüfen</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T11:30">11:30</time><small>danach</small></td><td><span class="guest-copy"><strong>Samuel Bergmann</strong><span>R-260713-39</span></span></td><td class="room-cell">218</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-error">! Nicht verbunden</span></span></td><td><span class="helper">Kein Live-Sync</span></td><td><button class="table-action btn-secondary" type="button" disabled>Warten auf Status</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T11:45">11:45</time><small>danach</small></td><td><span class="guest-copy"><strong>Susanne Falk</strong><span>R-260712-42</span></span></td><td class="room-cell">107</td><td><data class="currency" value="16.00">16,00 €</data></td><td><span class="status-stack"><span class="badge badge-info">i Dokumentvorschau</span></span></td><td><span class="helper">Folio nur Beispiel</span></td><td><button class="table-action btn-secondary" type="button">Folio prüfen</button></td></tr>
+                      <tr class="is-late"><td class="time-cell"><time datetime="2026-07-16T12:00">12:00</time><small>bis 13:00</small></td><td><span class="guest-copy"><strong>Jutta und Bernd Lenz</strong><span>R-260711-47</span></span></td><td class="room-cell">211</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-info">i Zeitfenster</span></span></td><td><span class="badge badge-peach">↻ Spätabreise</span></td><td><button class="table-action btn-secondary" type="button">Begleiten</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T12:20">12:20</time><small>danach</small></td><td><span class="guest-copy"><strong>Marianne von der Lindenberg-Steinberg</strong><span>R-260712-51</span></span></td><td class="room-cell">313</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-warning">! Stub-Format</span></span></td><td><span class="helper">Langer Dokumentname im Detail</span></td><td><button class="table-action btn-secondary" type="button">Nachweis anzeigen</button></td></tr>
+                      <tr class="is-blocked"><td class="time-cell"><time datetime="2026-07-16T12:40">12:40</time><small>danach</small></td><td><span class="guest-copy"><strong>Samira Özdemir</strong><span>R-260709-56</span></span></td><td class="room-cell">203</td><td><data class="currency" value="56.00">56,00 €</data></td><td><span class="status-stack"><span class="badge badge-warning">! Nachweis fehlt</span></span></td><td><span class="badge badge-error">! Abschluss blockiert</span></td><td><button class="table-action btn-secondary" type="button">Nachweis prüfen</button></td></tr>
+                      <tr><td class="time-cell"><time datetime="2026-07-16T13:10">13:10</time><small>danach</small></td><td><span class="guest-copy"><strong>Tobias und Evelyn Stahl</strong><span>R-260714-63</span></span></td><td class="room-cell">219</td><td><data class="currency" value="0.00">0,00 €</data></td><td><span class="status-stack"><span class="badge badge-teal">● Bereit zur Prüfung</span></span></td><td><span class="helper">Keine externe Annahme</span></td><td><button class="table-action btn-secondary" type="button">Abreise prüfen</button></td></tr>
+                    </tbody></table></div>
+                <div class="mobile-card-list" aria-label="Priorisierte mobile Abreisekarten während der Abreisewelle"><article class="departure-card is-selected"><div class="card-topline"><strong>09:30 · Clara Baumann</strong><span class="badge badge-teal">● Prüfen</span></div><p>Zimmer 204 · Folio 0,00 € · lokaler Meldungsstatus nur als Beispiel.</p><button class="btn-primary" type="button">Check-out prüfen</button></article><article class="departure-card is-blocked"><div class="card-topline"><strong>09:45 · Heike und Rolf Stark</strong><span class="badge badge-error">! 78,40 € offen</span></div><p>Folio ist unbezahlt und blockiert den späteren Abschluss.</p><button class="btn-secondary" type="button">Folio prüfen</button></article><article class="departure-card is-late"><div class="card-topline"><strong>10:30 · Emil Wagner</strong><span class="badge badge-peach">↻ Spät</span></div><p>Spätabreise bis 12:00; Room-/Housekeepingstatus bleibt unklar.</p><button class="btn-secondary" type="button">Begleiten</button></article><article class="departure-card is-blocked"><div class="card-topline"><strong>12:40 · Samira Özdemir</strong><span class="badge badge-error">! Blockiert</span></div><p>Nachweis fehlt vor einer künftigen Abschlussaktion.</p><button class="btn-secondary" type="button">Nachweis prüfen</button></article><p class="state-note">10 weitere synthetische Abreisen bleiben über eine spätere, keyboard-reachable Listenansicht erreichbar; sie werden nicht still ausgeblendet.</p></div>
+              </div></section>
+            <aside class="side-stack" aria-label="Abreisewellenkontext"><section class="panel" aria-labelledby="overflow-priorities-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="overflow-priorities-title">Priorisierung erklären</h2><p class="panel-subtitle">Zeitkritische und blockierte Vorgänge vor späteren Fenstern.</p></div></header><div class="panel-body"><ul class="recovery-list"><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Jetzt: fällige Check-outs</strong><span>Die Reihenfolge ist eine Prototypregel und braucht später echte Queue-/Freshness-Semantik.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Blocker bleiben sichtbar</strong><span>Unbezahlter Beispielsaldos, Nachweis und Sync-Grenzen sind nicht durch Dichte verborgen.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Spätere Zeitfenster bleiben auffindbar</strong><span>Kein Vorgang wird als erledigt behandelt, nur weil er nicht an erster Stelle steht.</span></span></li></ul></div></section><aside class="panel evidence-drawer" aria-labelledby="overflow-evidence-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="overflow-evidence-title">Überlauf-Nachweis</h2><p class="panel-subtitle">Keine Live-Abfrage oder automatische Sortierung.</p></div></header><div class="panel-body"><p class="drawer-note">Eine spätere Anwendung muss die Sortiergrundlage, Zwischenergebnisanzahl, Filter, Datenfrische, Berechtigung, Lade-/Fehlerzustand und Fokus-Rückkehr beim Öffnen eines Details nachweisbar machen.</p><span class="badge badge-planned">→ Queue-/API-Vertrag erforderlich</span></div></aside></aside>
+          </div>
+          <p class="page-note">Überlauf-State: Der Prototyp zeigt visuelle Dichte und einen sicheren Informationsweg. Er beweist keine Sortierung, Datenvollständigkeit, externe Synchronisierung, Folio-/Payment-Logik, Dokumentverarbeitung oder belastbare Check-out-Auditspur.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#departures-overflow-title">Heute</a><a href="#departures-overflow-title" aria-current="page">Abreisen</a><a href="#overflow-priorities-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- State switcher (prototype-review control) -->
+  <nav class="state-switcher" aria-label="Prototypzustand wechseln">
+    <button type="button" data-state-button="default" aria-controls="state-default" aria-pressed="true" onclick="showState('default')">Queue</button>
+    <button type="button" data-state-button="empty" aria-controls="state-empty" aria-pressed="false" onclick="showState('empty')">Leer</button>
+    <button type="button" data-state-button="loading" aria-controls="state-loading" aria-pressed="false" onclick="showState('loading')">Laden</button>
+    <button type="button" data-state-button="error" aria-controls="state-error" aria-pressed="false" onclick="showState('error')">Fehler</button>
+    <button type="button" data-state-button="folio-blocked" aria-controls="state-folio-blocked" aria-pressed="false" onclick="showState('folio-blocked')">Folio blockiert</button>
+    <button type="button" data-state-button="late-checkout" aria-controls="state-late-checkout" aria-pressed="false" onclick="showState('late-checkout')">Spätabreise</button>
+    <button type="button" data-state-button="overflow" aria-controls="state-overflow" aria-pressed="false" onclick="showState('overflow')">Überlauf</button>
+  </nav>
+
+  <script>
+    const prototypeStates = ['default', 'empty', 'loading', 'error', 'folio-blocked', 'late-checkout', 'overflow'];
+
+    function showState(name) {
+      prototypeStates.forEach((stateName) => {
+        const state = document.getElementById('state-' + stateName);
+        state.hidden = stateName !== name;
+      });
+
+      document.querySelectorAll('[data-state-button]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.stateButton === name));
+      });
+
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  </script>
+</body>
+</html>

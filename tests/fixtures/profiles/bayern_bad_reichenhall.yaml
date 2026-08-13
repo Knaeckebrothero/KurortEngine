@@ -1,0 +1,30 @@
+# Synthetic Bad Reichenhall Kurbeitragssatzung profile used ONLY by the
+# AC-10 test_oracle at repo/tests/test_profiles.py to prove that
+# `kurort_engine.load_profile(bundesland, kurort)` is config-driven.
+#
+# Deliberately distinct from repo/src/kurort_engine/profiles/hessen_bad_orb.yaml:
+#   - different Bundesland + Kurort
+#   - different satzung_date
+#   - different adult rate (€3.00 vs €2.50)
+#   - only 2 bands (adult + child) — not 5
+#
+# If `load_profile` were hardcoded to the Hessen Bad Orb table, this test
+# would fail to resolve the second profile and the assertion on the
+# adult rate (3.00) and band count (2) would never be reached.
+bundesland: bayern
+kurort: bad_reichenhall
+predicate: heilbad
+satzung_date: "2020-01-01"
+bands:
+  - name: adult
+    min_age: 16
+    max_age: null
+    disability_pct_min: null
+    disability_pct_max: null
+    rate_per_day: "3.00"
+  - name: child
+    min_age: 0
+    max_age: 5
+    disability_pct_min: null
+    disability_pct_max: null
+    rate_per_day: "0.00"

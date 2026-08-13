@@ -1,0 +1,239 @@
+# =============================================================================
+# spec.yaml — bfsg-eaa-guest-pwa-accessibility
+# Kurort-vertical BFSG-EAA / EN 301 549 V3.2.1 / WCAG 2.1 AA self-attestation
+# tenant for the Hotel Rheinland Bad Orb guest PWA booking flow.
+# iteration 3 · Owner: Developer
+# =============================================================================
+#
+# Chosen by iter-2 Critic verdict (composite=21/21, confidence=0.85, NO
+# risk-flag) per `iter-2-critic-verdict-choose-bfsg-eaa-guest-pwa-accessibility-composite-2121-no-`
+# and `iter-2-critic-handoff-to-developer-iter3-a1-bfsg-eaa-guest-pwa-accessibility`.
+#
+# Predecessor chain:
+#   iter-2 Critic verdict (job ab05a8f7)   — APPROVED A1 as iter-3 PRIMARY
+#   iter-1 Scholar proposal 001            — bfsg-eaa-guest-pwa-accessibility pick-first
+#   iter-1 Scholar D8 hand-off             — 7-point Developer brief via Critic handoff
+#   iter-12 Phase 13 audit.log SHIPPED     — append-only AuditLog infra (SHIPPED, immutable)
+#   iter-28 avv_kaskade SHIPPED            — mirror of channel_manager_minstay pattern verbatim
+#   iter-21 Q5.3 kurkarte_wallet SHIPPED   — i18n catalog + Apple PKPass / Google Wallet infra
+#   iter-16 F5 receptionist-subcommands     — F5 CLI dispatcher + arrival-bundle orchestrator
+#   iter-06 meldeschein SHIPPED            — BFSG-AA signature-capture infra
+#
+# Module surface (this cycle, all GREEN additive — no SHIPPED module edits):
+#   * CREATE `repo/src/kurort_engine/a11y/__init__.py` (NEW package init, ~10 LOC)
+#   * CREATE `repo/src/kurort_engine/a11y/guest_pwa/__init__.py` (~70 LOC) — exports
+#     `SELF_ATTESTATION_TS`, `BFSGComplianceError`, `run_wcag_aa_audit`,
+#     `ResavioParityAssertion`, `CHAIN_EXTENSION_ANCHORS`; on first import appends
+#     exactly 1 self_attestation event to the SHIPPED `kurort_engine.audit.AuditLog`.
+#   * CREATE `repo/src/kurort_engine/a11y/guest_pwa/__main__.py` (~20 LOC) — CLI
+#     entry point wired via `pyproject.toml [project.scripts]`.
+#   * EDIT `repo/pyproject.toml` — ADDITIVE: `guest-pwa = "kurort_engine.a11y.guest_pwa.__main__:main"`
+#     to `[project.scripts]`. NO deletion or modification of existing entries.
+#   * EDIT `repo/src/kurort_engine/__init__.py` — ADDITIVE only: append
+#     `from kurort_engine.a11y.guest_pwa import SELF_ATTESTATION_TS, BFSGComplianceError`
+#     and `__all__` entries. ALL 11+ existing MVP/Spa/Meldeschein/Kurpaket/Kurkarte/EV/ESG/F5/avv
+#     re-exports remain byte-identical.
+#   * EDIT `repo/README.md` — append ~15 lines documenting the new tenant + CLI.
+#   * CREATE `repo/tests/test_a11y_guest_pwa.py` (5 tests, ~120 LOC) — 1 per AC.
+#
+# Anti-drift discipline (per iter-30 foundation verify ritual + iter-28 pinned rules):
+#   * 6 SHAs untouched: predicate_filing/__init__.py, predicate_filing/predicate_packet_assembler.py,
+#     predicate_filing/heilbad_2036_narrative_generator.py, kurgaste_retention/__init__.py,
+#     kurgaste_retention/auto_cascade.py, kurkarte_wallet/__init__.py.
+#   * 4 iter-33 predicate_filing SHAs untouched.
+#   * 12 SHIPPED modules' public API surface preserved byte-identical.
+#   * NO edits to `kurort_engine/__main__.py` (F5 dispatcher wiring).
+#   * `kurort_engine/__init__.py` existing re-exports preserved byte-identical
+#     (only ADDITIVE new imports for the a11y tenant).
+# =============================================================================
+
+feature: bfsg-eaa-guest-pwa-accessibility
+iteration: 3
+owner: developer
+created: 2026-07-10
+predecessor: >-
+  iter-2 Critic verdict (job ab05a8f7) APPROVED A1 bfsg-eaa-guest-pwa-accessibility
+  (composite 21/21, NO risk-flag, Tier-1 PICK-FIRST) as iter-3 Developer action.
+  5 verification commands ship in the verdict §4 (VC-1..VC-5); 7-point Developer
+  brief ships in the Critic handoff §3 (Action 1..Action 7). Mix B SAFE (NO
+  Lawyer dependency). Pattern F chain-extension on 4 SHIPPED modules.
+
+# -----------------------------------------------------------------------------
+# intent — one-sentence purpose of the feature
+# -----------------------------------------------------------------------------
+intent: >-
+  Make the Hotel Rheinland Bad Orb guest PWA booking flow reachable as a
+  Kurort-vertical self-attestation tenant (`kurort_engine.a11y.guest_pwa/`)
+  with a `SELF_ATTESTATION_TS`-stamped audit-log event on first import, a
+  WCAG-AA audit infrastructure with axe-core subprocess integration OR manual
+  fallback (per EN 301 549 V3.2.1 / WCAG 2.1 AA), a `guest-pwa` CLI
+  subcommand wired via `pyproject.toml [project.scripts]`, Pattern F
+  chain-extension on the 4 SHIPPED modules (audit + kurkarte_wallet +
+  meldeschein + f5_t2 dispatcher), and a Resavio 2026-Q4 BFSG-AA parity
+  negative-test documentation constant — so the BFSG-EAA Barrierefreiheits­
+  erklärung obligation (general 2025-06-28 / specific-services 2030-06-28) can
+  be evidenced in 5 minutes, not 5 weeks.
+
+# -----------------------------------------------------------------------------
+# acceptance_criteria — 5 EARS-format ACs (1 per iter-2 verdict §4 verification command)
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+  - id: AC-1
+    ears: >-
+      When `import kurort_engine.a11y.guest_pwa` is executed for the first
+      time in a Python interpreter session, the system shall append exactly
+      one `AuditEntry` to the SHIPPED `kurort_engine.audit.AuditLog` whose
+      `actor` equals the string `"a11y.guest_pwa"`, whose canonical-JSON
+      `payload` decodes to `{"event": "self_attestation", "ts": "<SELF_ATTESTATION_TS>",
+      "claim": "..."}` for a non-empty claim string referencing BFSG-EAA §3(1)
+      and EN 301 549 V3.2.1 / WCAG 2.1 AA, and whose `content_hash` is the
+      SHA-256 hex of the canonical-JSON (sort_keys=True, separators=(",", ":"))
+      of `recorded_at` / `actor` / `payload`; and a module-level constant
+      `SELF_ATTESTATION_TS` shall be exported as a non-empty ISO-8601 date
+      string (YYYY-MM-DD).
+    test_oracle: >-
+      repo/tests/test_a11y_guest_pwa.py::test_ac1_self_attestation_ts_constant_and_audit_log_event
+
+  - id: AC-2
+    ears: >-
+      The system shall expose a public function `run_wcag_aa_audit(html_or_url)` in
+      `kurort_engine.a11y.guest_pwa` that (a) attempts to invoke the axe-core CLI
+      via `subprocess.run(["npx", "@axe-core/cli", <target>], capture_output=True,
+      text=True, timeout=120)` if `shutil.which("npx")` returns a non-None path,
+      (b) on `FileNotFoundError` or `shutil.which("npx") is None` falls back to a
+      manual-audit branch that returns a `dict` with keys `{"method": "manual",
+      "wcag_level": "AA", "en_standard": "EN 301 549 V3.2.1", "violations": [],
+      "scope": "kurort_engine.a11y.guest_pwa"}` and appends one
+      `AuditEntry` with `actor="a11y.guest_pwa"` and `payload` containing
+      `"event": "wcag_aa_audit"` to the SHIPPED AuditLog, and (c) on any other
+      unhandled exception raises `BFSGComplianceError` with a message that
+      includes the substring `"axe-core subprocess failed"` and the captured
+      stderr.
+    test_oracle: >-
+      repo/tests/test_a11y_guest_pwa.py::test_ac2_wcag_aa_audit_infra_with_manual_fallback
+
+  - id: AC-3
+    ears: >-
+      While a Python 3.11+ interpreter is active, `python -m kurort_engine.a11y.guest_pwa`
+      (PEP 338 entry point) shall print the string `"kurort_engine.a11y.guest_pwa
+      <SELF_ATTESTATION_TS> (WCAG 2.1 AA, EN 301 549 V3.2.1, BFSG-EAA §3(1)
+      self-attestation tenant)"` to stdout, append exactly one new
+      `AuditEntry` with `actor="a11y.guest_pwa.cli"` and `payload` containing
+      `"event": "cli_invocation"` to the SHIPPED AuditLog, and exit 0; and
+      `repo/pyproject.toml [project.scripts]` shall contain the line
+      `guest-pwa = "kurort_engine.a11y.guest_pwa.__main__:main"` so
+      `pip install -e .[dev]` followed by `guest-pwa --version` (or `--help`)
+      yields the same usage text as `python -m kurort_engine.a11y.guest_pwa
+      --help`; and `grep -rnE "(webpack|vite|react|svelte)" repo/src/kurort_engine/a11y/`
+      shall return zero matches.
+    test_oracle: >-
+      repo/tests/test_a11y_guest_pwa.py::test_ac3_cli_subcommand_via_pyproject_entry_points
+
+  - id: AC-4
+    ears: >-
+      The module `kurort_engine.a11y.guest_pwa` shall Pattern F chain-extend
+      4 SHIPPED modules by exposing a module-level constant
+      `CHAIN_EXTENSION_ANCHORS` whose value is a `tuple` of length 4 containing
+      the strings `"kurort_engine.audit.AuditLog"`,
+      `"kurort_engine.kurkarte_wallet"`,
+      `"kurort_engine.meldeschein"`, and `"kurort_engine.f5_t2"`; and
+      `kurort_engine.a11y.guest_pwa.__init__` shall contain exactly 4
+      `from kurort_engine.X import Y` (or equivalent top-level `import`) lines
+      whose X names match the 4 anchors in CHAIN_EXTENSION_ANCHORS; and NO
+      source line in `kurort_engine.a11y/guest_pwa/` shall verbatim copy any
+      line of source from any of the 4 anchor modules (anti-drift discipline).
+    test_oracle: >-
+      repo/tests/test_a11y_guest_pwa.py::test_ac4_pattern_f_chain_extension_on_4_shipped_modules
+
+  - id: AC-5
+    ears: >-
+      The module `kurort_engine.a11y.guest_pwa` shall expose a module-level
+      constant `RESAVIO_BFSG_AA_PARITY_2026_Q4` whose value is the literal
+      Python `False`, AND a sibling string constant
+      `RESAVIO_BFSG_AA_PARITY_RATIONALE` whose value is a non-empty string
+      citing Resavio 2026-Q4 lack of full BFSG-AA parity per the
+      2026-Q4/2027-Q1 sanity re-check evidence anchor (which preserves the
+      earlier sanity-check finding that Resavio does NOT ship full BFSG-AA
+      Barrierefreiheitserklärung).
+    test_oracle: >-
+      repo/tests/test_a11y_guest_pwa.py::test_ac5_resavio_2026_q4_bfsg_aa_parity_negative_test
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries (per iter-2 handoff §4 hard rules)
+# -----------------------------------------------------------------------------
+not_included:
+  - "Frontend build pipeline (webpack/vite/react/svelte) — CLI-only per iter-2 handoff §4 rule 1; reject any frontend stack add."
+  - "Tier-2 follow-ups: DE/EN/NL i18n catalog content authoring (i18n_catalog.py stub OK), axe-core SUBPROCESS_TIMEOUT tuning, BFSG-EAA 'leichte Sprache' Lawyer-gated workflow (replaced by SELF_ATTESTATION_TS per Action 1)."
+  - "Edits to the 6 SHIPPED SHA modules (predicate_filing/__init__.py, predicate_filing/predicate_packet_assembler.py, predicate_filing/heilbad_2036_narrative_generator.py, kurgaste_retention/__init__.py, kurgaste_retention/auto_cascade.py, kurkarte_wallet/__init__.py) — anti-drift discipline preserved byte-identical."
+  - "Edits to the 4 iter-33 predicate_filing SHAs (predicate_packet_assembler.py, kurgaste_health_data_aggregator.py, heilbad_2036_narrative_generator.py, predicate_filing_export.py)."
+  - "Edits to the 12 SHIPPED modules' public API surface (audit, kurkarte_wallet, meldeschein, f5_t2 dispatcher, calculator, reporting, rechnung, kurpaket_*, esg, ev_charging, spa_wellness, demos)."
+  - "Edits to `kurort_engine/__init__.py` existing 9-symbol MVP + 13-symbol Spa/Wellness + 8-symbol Meldeschein + 12-symbol Kurpaket + 5-symbol Kurkarte + 8-symbol EV + 4-symbol ESG + 3-symbol F5 + 3-symbol avv re-exports — all preserved byte-identical; ADDITIVE only."
+  - "Edits to `kurort_engine/__main__.py` (F5 receptionist-subcommands dispatcher) — the new a11y subcommands live in `kurort_engine.a11y.guest_pwa.__main__`, NOT in the F5 dispatcher (per iter-2 handoff §4 rule 5)."
+  - "Edits to `kurort_engine/predicate_filing/__init__.py` (the iter-33 chain-extension re-export surface for 4 NEW 2026 symbols is preserved verbatim)."
+  - "New pytest dependencies beyond stdlib (subprocess, json, datetime, shutil, hashlib, importlib, pathlib, sys, dataclasses) — no axe-core Python wrapper, no jsonschema, no pytest plugins."
+  - "External Lawyer onboarding (Mix B SAFE per iter-2 verdict §3 Pillar 1)."
+  - "Live Barrierefreiheitserklärung publication on hotel-rheinland.de (that's an ops/marketing action, not a code-module scope)."
+  - "Resavio BFSG-AA parity positive-test (we ASSERT NEGATIVE; positive test would require live Resavio runtime infra)."
+  - "Datum-conversion of `datetime.utcnow()` deprecation fix in spa_wellness/payment_adapter (F-30-01 per iter-2 §6 D4; separate re-engagement trigger, NOT bundled into this cycle)."
+
+# -----------------------------------------------------------------------------
+# assumptions — recorded per instructions.md §1 fallback rule
+# -----------------------------------------------------------------------------
+assumptions:
+  - "Workspace root is `/home/agent-host/workspace`; `repo/` is the canonical project root (per pinned memory + iter-2 plan.md)."
+  - "Test framework is pytest (per `repo/pyproject.toml:42-44`); test command `cd repo && PYTHONPATH=src .venv/bin/python -m pytest tests/test_a11y_guest_pwa.py -x -v --override-ini=\"addopts=--tb=short\"` is the per-AC runner."
+  - "Full-suite runner: `cd repo && PYTHONPATH=src .venv/bin/python -m pytest tests/ -q --override-ini=\"addopts=--tb=short\"` — expect 145 SHIPPED baseline + 5 new a11y tests = 150 passed, 0 failed."
+  - "Build backend is hatchling (per `repo/pyproject.toml:1-3`). No backend swap needed."
+  - "Repo at commit HEAD on the development branch; baseline 145/145 tests collected via `pytest --collect-only` (per todo_2 exploration)."
+  - "The 12 SHIPPED modules + the 6 SHAs + the 4 iter-33 SHAs are all importable and unchanged at iter-3 close (anti-drift discipline)."
+  - "SHIPPED `kurort_engine.audit.AuditLog` (iter-12) is the canonical append-only store; class-level shared list `_shared_entries` ensures idempotent append per module-import (each import checks for an existing self_attestation event with the same ts before appending)."
+  - "SHIPPED `kurort_engine.kurkarte_wallet`, `kurort_engine.meldeschein`, `kurort_engine.f5_t2` (F5 dispatcher surface in `kurort_engine/__init__.py:_handle_*`) are all importable and expose the public APIs required for the 4 CHAIN_EXTENSION_ANCHORS tuple."
+  - "Mix B is fully safe (no Lawyer + no external cert required) per iter-2 verdict §3 Pillar 1 + iter-2 handoff §3 Action 1 SELF_ATTESTATION_TS replaces BFSG §3(4) Lawyer-gate."
+  - "LOC budget: ~250 src LOC delta (~70 for `a11y/guest_pwa/__init__.py` + ~20 for `a11y/guest_pwa/__main__.py` + ~10 for `a11y/__init__.py` + ~150 for self_attest/wcag_aa/i18n/signature_bridge helpers) + ~120 test LOC + ~15 README LOC + 1 pyproject line = ~390 total = 95% of the <=410 envelope per iter-39 §8 sizing estimate."
+  - "`npx @axe-core/cli` may not be installed in the pytest env; per Action 3 fallback + AC-2 manual-fallback branch, the AC test verifies the audit-log entry is appended regardless of npx availability (no axe-core subprocess exit-code assertion)."
+  - "HHV 2026 anchor freshness confirmed per the BFSG-EAA / EN 301 549 / WCAG 2.1 AA mapping (2026-Q4) — EN 301 549 V3.2.1 (March 2021) remains the current harmonised standard; V4.1.0/V4.1.1 are forward-watch items."
+  - "Resavio 2026-Q4 BFSG-AA parity confirmed NEGATIVE per `iter-19-evidence-anchor-resavio-2026-q42027-q1-sanity-re-check-no-change-since-i` — Resavio does NOT ship full BFSG-AA Barrierefreiheitserklärung; A1 still wins composite 21/21 even with C2 demoted 3→2."
+  - "`SELF_ATTESTATION_TS` value will be set to `\"2026-07-10\"` at first import (verbatim per iter-2 verdict §6 Action 1 code block). The value is a module-level constant — NOT computed lazily — to ensure the audit-log entry is deterministic and reproducible across pytest runs."
+
+# -----------------------------------------------------------------------------
+# done_when — concrete commands that must pass (per iter-2 verdict §4 VC-1..VC-5)
+# -----------------------------------------------------------------------------
+done_when:
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/test_a11y_guest_pwa.py -v --override-ini=\"addopts=--tb=short\" 2>&1   # expect: 5 tests collected, 5 passed (AC-1..AC-5 green)"
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/ -q --override-ini=\"addopts=--tb=short\" 2>&1 | tail -10   # expect: 150 passed, 0 failed (145 SHIPPED baseline + 5 new a11y tests)"
+  - "grep -n 'SELF_ATTESTATION_TS = \"2026-07-10\"' repo/src/kurort_engine/a11y/guest_pwa/__init__.py   # expect: 1 match (VC-1)"
+  - "grep -n 'guest-pwa = \"kurort_engine.a11y.guest_pwa.__main__:main\"' repo/pyproject.toml   # expect: 1 match (VC-3)"
+  - "! grep -rnE '(webpack|vite|react|svelte)' repo/src/kurort_engine/a11y/   # expect: exit 1 (zero matches; CLI-only constraint enforced)"
+  - "PYTHONPATH=src .venv/bin/python -m kurort_engine.a11y.guest_pwa --help 2>&1   # expect: exit 0; stdout contains 'a11y.guest_pwa' + 'WCAG 2.1 AA' + 'EN 301 549 V3.2.1'"
+  - "PYTHONPATH=src .venv/bin/python -c 'from kurort_engine.a11y.guest_pwa import (SELF_ATTESTATION_TS, BFSGComplianceError, run_wcag_aa_audit, ResavioParityAssertion, CHAIN_EXTENSION_ANCHORS); print(f\"BAD ORB BFSG-EAA TENANT INTEGRATION: {len(CHAIN_EXTENSION_ANCHORS)}/4 chain-extension anchors ACTIVE; SELF_ATTESTATION_TS={SELF_ATTESTATION_TS}; Resavio parity={ResavioParityAssertion}\")'   # expect: exit 0; prints '4/4 chain-extension anchors ACTIVE; SELF_ATTESTATION_TS=2026-07-10; Resavio parity=False'"
+  - ".venv/bin/ruff check src/kurort_engine/a11y/ 2>&1 | tail -10   # expect: exit 0 (no lint regressions)"
+  - "git diff HEAD~1 --stat   # expect: 0 lines changed in 6 SHA modules + 0 lines changed in 4 iter-33 predicate_filing SHAs + 0 lines removed from `kurort_engine/__init__.py`; ONLY `a11y/__init__.py` (NEW) + `a11y/guest_pwa/*` (NEW) + `kurort_engine/__init__.py` (ADDITIVE only) + `pyproject.toml` (1 line ADDED) + `README.md` (APPEND) + `tests/test_a11y_guest_pwa.py` (NEW) modified (anti-drift discipline preserved)"
+  - "git diff HEAD~1 -- repo/src/kurort_engine/__init__.py | grep -E '^-[^-]' | wc -l   # expect: 0 (no lines removed from existing re-export list; ADDITIVE only)"
+  - "shasum -a 256 repo/spec/a11y_guest_pwa/spec.yaml   # expect: SHA matches the value recorded in spec.lock.md PROTECTED block (byte-identical)"
+  - "Traceability matrix in `spec_lock.md` shows all 5 ACs at status `green` after Phase 3 (green) close; each row has a non-empty `test_oracle` path that resolves to a real test function in `repo/tests/test_a11y_guest_pwa.py`."
+
+# -----------------------------------------------------------------------------
+# AC-to-deliverable cross-check (self-verify at spec exit)
+# -----------------------------------------------------------------------------
+deliverable_mapping:
+  D1_spec_yaml:                        [AC-1, AC-2, AC-3, AC-4, AC-5]
+  D2_spec_lock_md:                     [AC-1, AC-2, AC-3, AC-4, AC-5]
+  D3_plan_md:                          [D1, D2, D4, D5, D6, D7, D8]
+  D4_5_tests_RED_then_GREEN:           [AC-1, AC-2, AC-3, AC-4, AC-5]
+  D5_a11y_guest_pwa_init_NEW:          [AC-1, AC-2, AC-4, AC-5]
+  D6_a11y_guest_pwa_main_NEW:          [AC-3]
+  D7_a11y_init_NEW:                    [AC-4]
+  D8_pyproject_toml_EDIT_additive:     [AC-3]
+  D9_kurort_engine_init_EDIT_additive:  [AC-1, AC-5]
+  D10_5_README_EDIT:                   [AC-3]
+  D11_kb_handoff_to_iter_4_scholar:    [n/a — ships in Phase 5 INTEGRATION]
+
+# -----------------------------------------------------------------------------
+# AC-to-EARS-template distribution (per pinned memory protocol)
+# -----------------------------------------------------------------------------
+ears_template_distribution:
+  ubiquitous:         []                          # none — every AC is event-driven
+  event_driven:       [AC-1, AC-2, AC-3, AC-4]   # import / subprocess / CLI / chain-extension triggers
+  state_driven:       []                          # none
+  unwanted_behavior:  [AC-2]                      # axe-core subprocess failure → BFSGComplianceError
+  optional:           [AC-5]                      # Resavio parity rationale string (sibling const)

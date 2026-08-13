@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in: Meldeschein — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --state-switcher-width: calc(var(--space-4xl) * 13);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select, textarea { font: inherit; }
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-control);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    /* ===== Operational shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .context-actions, .state-switcher, .mobile-nav, .step-badges, .artifact-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      background: var(--surface-0);
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .brand-copy, .page-copy, .panel-copy, .state-copy, .field-group, .record-copy, .notice-copy, .step-copy, .side-copy, .action-copy, .preview-copy, .artifact-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .state-copy p, .field-help, .notice-copy p, .record-copy p, .step-copy p, .side-copy p, .action-copy p, .preview-copy p, .artifact-copy p, .page-note, .disabled-reason { color: var(--text-secondary); font-size: 13px; }
+    .app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr); min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl))); }
+    .sidebar { display: flex; flex-direction: column; gap: var(--space-xl); padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: 1px solid var(--border-color); }
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .sidebar-boundary { display: grid; gap: var(--space-sm); margin-top: auto; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .sidebar-boundary h2 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+
+    main { display: grid; align-content: start; gap: var(--space-lg); min-width: var(--space-none); padding: var(--space-xl); padding-bottom: calc(var(--space-4xl) * 3); }
+    .context-strip { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); flex-wrap: wrap; }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+
+    /* ===== Primitives ===== */
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned, .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning, .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-0);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover, .button-link:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .panel, .side-card, .context-panel, .artifact-card, .preview-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .panel-heading, .side-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .panel-body, .side-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-none) var(--space-xs); flex-wrap: wrap; }
+    .boundary-notice, .persistent-alert, .context-boundary, .preview-boundary, .failure-notice {
+      display: grid;
+      grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-peach);
+      border-radius: var(--radius-card);
+    }
+    .persistent-alert, .failure-notice { border-left-color: var(--color-red); }
+    .context-boundary { border-left-color: var(--color-blue); }
+    .preview-boundary { border-left-color: var(--color-yellow); }
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    .persistent-alert .notice-symbol, .failure-notice .notice-symbol { color: var(--color-red); }
+    .context-boundary .notice-symbol { color: var(--color-blue); }
+    .preview-boundary .notice-symbol { color: var(--color-yellow); }
+    .notice-copy strong { color: var(--text-primary); }
+    .page-note { padding: var(--space-md); background: var(--timeline-bg); border-left: 3px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-muted); font-size: 12px; }
+    .mono { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+
+    /* ===== Context and stepper ===== */
+    .context-panel { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .context-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+    .context-form { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr) auto; align-items: end; gap: var(--space-md); }
+    .field-group { align-content: start; }
+    label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    input[readonly] { color: var(--text-secondary); }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    textarea { min-height: calc(var(--space-4xl) * 2); resize: vertical; }
+    .field-help { color: var(--text-muted); font-size: 12px; }
+    .context-boundary, .preview-boundary, .failure-notice { color: var(--text-secondary); font-size: 13px; }
+    .context-boundary strong { color: var(--color-blue); }
+    .preview-boundary strong { color: var(--color-yellow); }
+    .failure-notice strong { color: var(--color-red); }
+    .stepper { display: grid; grid-template-columns: repeat(5, minmax(var(--space-none), 1fr)); gap: var(--space-sm); list-style: none; }
+    .stepper li { display: grid; grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr); align-items: center; gap: var(--space-sm); min-height: calc(var(--space-4xl) + var(--space-lg)); padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-left: 3px solid var(--border-color); border-radius: var(--radius-card); }
+    .stepper li.is-complete { border-left-color: var(--color-green); }
+    .stepper li.is-current { background: var(--surface-0); border-color: var(--accent-color); border-left-color: var(--accent-color); }
+    .stepper li.is-pending { border-left-color: var(--color-yellow); }
+    .step-number { display: grid; place-items: center; width: var(--space-2xl); height: var(--space-2xl); border: 1px solid var(--border-color); border-radius: var(--radius-badge); color: var(--text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .is-complete .step-number { border-color: var(--color-green); color: var(--color-green); }
+    .is-current .step-number { border-color: var(--accent-color); color: var(--accent-color); }
+    .is-pending .step-number { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .step-copy h3 { color: var(--text-primary); }
+    .step-copy p { font-size: 12px; }
+    .step-badges { margin-top: var(--space-xs); }
+
+    /* ===== Workflow forms and evidence ===== */
+    .work-layout, .preview-layout, .failure-layout { display: grid; grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 6), 1fr); gap: var(--space-lg); align-items: start; }
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .record-card { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-lg); align-items: start; padding: var(--space-lg); background: var(--surface-0); border: 1px solid var(--accent-color); border-radius: var(--radius-card); box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color); }
+    .record-status { display: grid; justify-items: end; gap: var(--space-xs); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card, .guest-context-card, .evidence-card, .mobile-artifact-card {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .summary-card span, .guest-context-card span, .evidence-card span, .mobile-artifact-card span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong, .guest-context-card strong, .evidence-card strong, .mobile-artifact-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small, .guest-context-card small, .evidence-card small, .mobile-artifact-card small { color: var(--text-secondary); font-size: 12px; }
+    .guest-context-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .guest-context-card.is-primary { border-left: 3px solid var(--accent-color); }
+    .guest-context-card.is-companion { border-left: 3px solid var(--color-teal); }
+    .guest-context-card.is-source { border-left: 3px solid var(--color-peach); }
+    .form-workflow { display: grid; gap: var(--space-lg); }
+    .form-section { display: grid; gap: var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--border-color); }
+    .form-section:first-child { padding-top: var(--space-none); border-top: var(--space-none); }
+    .form-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .form-grid.two-columns { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+    .form-grid .full-span { grid-column: 1 / -1; }
+    .next-action { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--timeline-bg); border: 1px solid var(--accent-color); border-radius: var(--radius-card); }
+    .next-action p { color: var(--text-secondary); font-size: 13px; }
+    .detail-list, .return-links, .dependency-list, .artifact-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li, .return-links li, .dependency-list li, .artifact-list li { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child, .return-links li:last-child, .dependency-list li:last-child, .artifact-list li:last-child { border-bottom: var(--space-none); }
+    .detail-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value, .return-links a, .dependency-list span, .artifact-list span { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .return-links a { color: var(--accent-hover); }
+    .error-summary { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--color-red); border-radius: var(--radius-card); }
+    .error-summary strong { color: var(--color-red); }
+    .error-summary p, .error-summary a { color: var(--text-secondary); font-size: 13px; }
+    .error-summary ol { display: grid; gap: var(--space-xs); padding-left: var(--space-lg); }
+    .error-summary a { color: var(--color-red); }
+    .invalid-input { border-color: var(--color-red) !important; }
+    .field-error { color: var(--color-red); font-size: 12px; }
+    .disabled-reason { color: var(--text-muted); font-size: 12px; }
+
+    /* ===== Preview and output failure ===== */
+    .artifact-card, .preview-card { overflow: hidden; }
+    .artifact-card-header, .preview-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .artifact-card-body, .preview-card-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .artifact-strip { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: start; gap: var(--space-md); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .preview-sheet { display: grid; gap: var(--space-md); padding: var(--space-lg); background: var(--timeline-bg); border: 1px solid var(--color-yellow); border-radius: var(--radius-card); }
+    .preview-sheet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding-bottom: var(--space-md); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .preview-sheet h3 { color: var(--text-primary); }
+    .preview-sheet p { color: var(--text-secondary); font-size: 13px; }
+    .preview-facts { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .preview-fact { display: grid; gap: var(--space-xs); padding: var(--space-md); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); }
+    .preview-fact span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .preview-fact strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .preview-fact small { color: var(--text-secondary); font-size: 12px; }
+    .preview-sensitive { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .preview-sensitive strong { color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
+    .preview-sensitive p { color: var(--text-secondary); font-size: 12px; }
+    .output-table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 12); border-collapse: collapse; font-size: 12px; }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-artifact-list { display: none; }
+    .failure-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .failure-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .failure-card.is-failed { border-left: 3px solid var(--color-red); }
+    .failure-card.is-warning { border-left: 3px solid var(--color-yellow); }
+    .failure-card h3 { color: var(--text-primary); }
+    .failure-card p { color: var(--text-secondary); font-size: 12px; }
+
+    /* ===== State switcher and responsive task adaptation ===== */
+    .state-switcher { position: fixed; right: var(--space-lg); bottom: var(--space-lg); z-index: var(--z-state-switcher); max-width: var(--state-switcher-width); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      main { padding-right: var(--space-2xl); padding-left: var(--space-2xl); }
+      .work-layout, .preview-layout, .failure-layout { grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 7), calc(var(--space-4xl) * 8)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .nav-label, .nav-text, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .context-form { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+      .context-actions { grid-column: 1 / -1; }
+      .stepper { grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); }
+      .work-layout, .preview-layout, .failure-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .side-stack .wide-on-tablet { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-divider, .context-value.is-secondary { display: none; }
+      .boundary-notice, .persistent-alert, .context-boundary, .preview-boundary, .failure-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .notice-symbol { display: none; }
+      .context-form, .stepper, .work-layout, .preview-layout, .failure-layout, .summary-grid, .guest-context-grid, .form-grid, .form-grid.two-columns, .side-stack, .preview-facts, .failure-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-card, .artifact-strip { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-status { justify-items: start; }
+      .stepper li { grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr); }
+      .panel-body, .side-body, .context-panel, .artifact-card-body, .preview-card-body { padding: var(--space-md); }
+      .next-action { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .next-action button { width: 100%; }
+      .detail-list li, .return-links li, .dependency-list li, .artifact-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .output-table-wrap { display: none; }
+      .mobile-artifact-list { display: grid; gap: var(--space-sm); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); left: var(--space-sm); max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .mobile-nav { position: fixed; right: var(--space-none); bottom: var(--space-none); left: var(--space-none); z-index: var(--z-mobile-nav); display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: var(--panel-bg); border-top: 1px solid var(--border-color); }
+      .mobile-nav a { display: grid; place-items: center; min-height: var(--touch-target); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 11px; text-align: center; text-decoration: none; }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .button-link, input, select, textarea { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Proposed design composition only. MeldescheinStep, MeldescheinFormSurface,
+       MeldescheinPreview, ArtifactEvidence, and FormatFailureRecovery are descriptive
+       mockup names, not browser routes, API endpoints, source paths, or production components. -->
+  <a class="skip-link" href="#meldeschein-workspace">Zum Meldeschein springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Check-in-Arbeitsablauf</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisgrenzen des Meldeschein-Prototyps">
+      <span class="badge badge-prototype">Prototyp · Modulbezug</span>
+      <span class="badge badge-warning">Stub-Format</span>
+      <span class="badge badge-unclear">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <p class="nav-label">Rezeption</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="arrivals_queue.html#arrivals-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="reservation_detail.html#state-detail"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-text">Aufenthalt</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="checkin_overview.html#state-ready"><span class="nav-symbol" aria-hidden="true">✓</span><span class="nav-text">Check-in-Übersicht</span><span class="nav-count">K-01</span></a></li>
+          <li><a class="nav-link" href="checkin_guest_details.html#state-valid"><span class="nav-symbol" aria-hidden="true">◉</span><span class="nav-text">Gastdetails</span><span class="nav-count">Schritt 1</span></a></li>
+          <li><a class="nav-link" href="#state-valid" aria-current="page"><span class="nav-symbol" aria-hidden="true">▧</span><span class="nav-text">Meldeschein</span><span class="nav-count">Schritt 2</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Nachweise">
+        <p class="nav-label">Nachweise</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#state-preview"><span class="nav-symbol" aria-hidden="true">◫</span><span class="nav-text">Vorschau</span><span class="nav-count">Statisch</span></a></li>
+          <li><a class="nav-link" href="#meldeschein-return-links"><span class="nav-symbol" aria-hidden="true">↩</span><span class="nav-text">Prüfbezüge</span><span class="nav-count">Lokal</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="meldeschein-sidebar-boundary-title">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="meldeschein-sidebar-boundary-title">Keine sichere Dokumentkette</h2>
+        <p>Die lokalen Dateilinks teilen keine Sitzung, keine Eingaben, keinen Meldeschein, keine Berechtigung, keine Dateiablage und keinen Rückkehrstatus.</p>
+      </section>
+    </aside>
+
+    <main id="meldeschein-workspace">
+      <section class="context-strip" aria-label="Fiktiver Check-in-Kontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Rolle</span><span class="context-value is-secondary">Rezeption · Beispielrolle, keine Anmeldung</span>
+        </div>
+        <span class="badge badge-teal">Jana Müller-Kaya · synthetisch</span>
+      </section>
+
+      <section class="boundary-notice" aria-labelledby="meldeschein-page-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <h1 id="meldeschein-page-title">Check-in: Meldeschein erfassen und prüfen</h1>
+          <p>Schritt 2 macht BMG-orientierte Pflichtangaben, Korrektur, eine begrenzte Vorschau und eine Format-/Erzeugungsstörung sichtbar. Diese Seite führt keine rechtliche Meldung aus und ruft das lokale Modul nicht im Browser auf.</p>
+          <div class="badge-row" aria-label="Ausdrückliche Grenzen des Meldeschein-Prototyps">
+            <span class="badge badge-warning">Stub-Format · kein finales PDF</span>
+            <span class="badge badge-planned">Keine Speicherung</span>
+            <span class="badge badge-planned">Kein Download</span>
+            <span class="badge badge-error">Keine Einreichung</span>
+            <span class="badge badge-unclear">Keine rechtliche Finalität</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="context-panel" aria-labelledby="meldeschein-context-title">
+        <header class="context-heading">
+          <div class="page-copy">
+            <h2 id="meldeschein-context-title">Fiktiver Aufenthalts- und Rückkehrrahmen</h2>
+            <p>Die Controls erläutern, welchen Kontext ein späterer Check-in- und Dokumentvertrag weitergeben müsste. Sie laden keine Person, erstellen keinen Meldeschein und speichern keine Eingabe.</p>
+          </div>
+          <span class="badge badge-info">Keine Live-Quelle</span>
+        </header>
+        <form id="meldeschein-context-form" class="context-form" novalidate>
+          <div class="field-group">
+            <label for="meldeschein-origin">Statischer Einstieg</label>
+            <select id="meldeschein-origin" name="origin">
+              <option value="guest-details">Gastdetails · Schritt 1 · Beispiel</option>
+              <option value="checkin-overview">Check-in-Übersicht · Beispiel</option>
+              <option value="stay-detail">Reservierungsdetail · Beispiel</option>
+            </select>
+            <span class="field-help">Keine gemeinsame Browserroute, keine Sitzung und keine gespeicherte Auswahl.</span>
+          </div>
+          <div class="field-group">
+            <label for="meldeschein-return">Vorgesehene Rückkehr</label>
+            <select id="meldeschein-return" name="return-scope">
+              <option value="guest-details">Gastdetails · fiktiver Schritt 1</option>
+              <option value="checkin">Check-in-Übersicht · fiktiver Schritt 2</option>
+              <option value="arrivals">Anreisen · 16.07.2026 · fiktiver Filter</option>
+            </select>
+            <span class="field-help">Resume, Fehlerfokus, Audit und Kontextrestaurierung benötigen spätere Browser-/API-Verträge.</span>
+          </div>
+          <div class="context-actions" aria-label="Lokale Kontextaktionen">
+            <button class="btn-teal" type="submit">Kontext lokal erläutern</button>
+            <a class="button-link" href="checkin_guest_details.html#state-valid">Zu statischen Gastdetails</a>
+          </div>
+        </form>
+        <p class="context-boundary"><span class="notice-symbol" aria-hidden="true">i</span><span><strong>Geplant / Backend erforderlich:</strong> gescopter Aufenthalt, validierte Gast-/Adressdaten, Datenschutz- und Zweckkontext, Authentifizierung, RBAC, Output-Request/Fehlervertrag, Datenbank-/Aufbewahrung, Jobstatus, sichere Dateiablage, Viewer, Download, Einreichung, Quittung und Audit. Diese Datei führt keinen dieser Vorgänge aus.</span></p>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Gültiger fiktiver Meldeschein-Zustand angezeigt.</p>
+
+      <!-- ===== State: valid BMG-oriented form context ===== -->
+      <section id="state-valid" class="state-panel" aria-labelledby="valid-state-title" data-state-kind="valid">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="valid-state-title">Gültiger Beispielzustand: Pflichtangaben vor Vorschau prüfen</h2>
+            <p>Das Szenario zeigt ein vollständig wirkendes Formatraster für die spätere fachliche Prüfung. „Gültig“ ist nur eine statische Designzustandsbezeichnung, keine Live-Validierung und keine rechtswirksame Erklärung.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-teal">Kontext vollständig dargestellt</span><span class="badge badge-prototype">Modulbasiert · begrenzt</span></div>
+        </header>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge">
+          <li class="is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Primär-, Begleit- und Anschriftenkontext sichtbar.</p><div class="step-badges"><span class="badge badge-success">Kontext geprüft dargestellt</span></div></div></li>
+          <li class="is-current"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Pflichtangaben vor begrenzter Vorschau prüfen.</p><div class="step-badges"><span class="badge badge-prototype">Stub-Format</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Kein Folio oder keine Ausnahme ableiten.</p><div class="step-badges"><span class="badge badge-planned">Geplant</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Vorschau ist keine Zustellung.</p><div class="step-badges"><span class="badge badge-prototype">Prototyp</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview</h3><p>Keine Abschlusswirkung behaupten.</p><div class="step-badges"><span class="badge badge-planned">Geplant</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="valid-form-title">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="valid-form-title">BMG-orientierter Meldescheinrahmen · fiktiv</h2>
+                <p>Familienname, Vorname, Geburtsdatum, Staatsangehörigkeit, Anschrift, Anreise und Abreise entsprechen dem im lokalen Modul beobachteten Pflichtfeldumfang. Die optionale Ausweis-Seriennummer bleibt ein fiktives, sensibles Feld.</p>
+              </div>
+              <span class="badge badge-prototype">Keine Browser-Validierung</span>
+            </header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Ausgewählter synthetischer Aufenthaltskontext">
+                <div class="record-copy">
+                  <span class="badge badge-teal">Ausgewählt · lokal</span>
+                  <h2>Jana Müller-Kaya</h2>
+                  <p class="mono">RES-BO-2026-0716-014</p>
+                  <p>16.–23.07.2026 · 2 synthetische Gäste · Zimmer 214 als ungeprüfter Beispielkontext.</p>
+                </div>
+                <div class="record-status">
+                  <span class="badge badge-warning">Zimmerstatus unklar</span>
+                  <span class="badge badge-unclear">RBAC unklar</span>
+                </div>
+              </section>
+
+              <div class="summary-grid" aria-label="Fiktive Meldeschein-Kerndaten">
+                <article class="summary-card"><span>Aktueller Schritt</span><strong>Meldeschein · 2 von 5</strong><small>Vorschau erst nach einer späteren Prüfung</small></article>
+                <article class="summary-card"><span>Weitere Person</span><strong>Samir Kaya · fiktiv</strong><small>Eigener künftiger Pflichtkontext, keine automatische Zuordnung</small></article>
+                <article class="summary-card"><span>Ausgabegrenze</span><strong>Stub-Format</strong><small>Kein finales PDF, keine Ablage, kein Download</small></article>
+              </div>
+
+              <div class="guest-context-grid" aria-label="Fiktiver Personen-, Aufenthalts- und Modulkontext">
+                <article class="guest-context-card is-primary"><span>Hauptgast</span><strong>Jana Müller-Kaya</strong><small>Keine Profilquelle, Identitätsprüfung oder Speicherung.</small></article>
+                <article class="guest-context-card is-companion"><span>Weitere Person</span><strong>Samir Kaya · fiktiv</strong><small>Keine automatisch entstandene Meldung oder Personenverknüpfung.</small></article>
+                <article class="guest-context-card is-source"><span>Beobachteter Modulrahmen</span><strong>MeldescheinForm + render(form)</strong><small>Lokales Python-Modul, kein Browserendpunkt oder Dateiservice.</small></article>
+                <article class="guest-context-card"><span>Erwartete Byteform</span><strong>%PDF-1.4 · begrenzt</strong><small>Kein Struktur-, Viewer-, Barrierefreiheits- oder Finalitätsnachweis.</small></article>
+              </div>
+
+              <form id="valid-meldeschein-form" class="form-workflow" novalidate>
+                <section class="form-section" aria-labelledby="valid-person-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="valid-person-title">Person und Staatsangehörigkeit · fiktive Pflichtangaben</h3><p>Die Werte spiegeln nur eine statische Eingabeform. Sie sind nicht aus Gastdetails übernommen, nicht gespeichert und nicht gegen eine Identität geprüft.</p></div><span class="badge badge-teal">Pflichtkontext dargestellt</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="valid-family-name">Familienname</label><input id="valid-family-name" name="familienname" type="text" value="Müller-Kaya" aria-describedby="valid-family-name-help" autocomplete="off"><span id="valid-family-name-help" class="field-help">Fiktiver Wert; keine Personen- oder Dublettensuche.</span></div>
+                    <div class="field-group"><label for="valid-given-name">Vorname</label><input id="valid-given-name" name="vorname" type="text" value="Jana" aria-describedby="valid-given-name-help" autocomplete="off"><span id="valid-given-name-help" class="field-help">Keine Identitäts-, Quellen- oder Rechtsprüfung.</span></div>
+                    <div class="field-group"><label for="valid-birth-date">Geburtsdatum</label><input id="valid-birth-date" name="geburtsdatum" type="date" value="1989-02-11" aria-describedby="valid-birth-date-help"><span id="valid-birth-date-help" class="field-help">Keine Alters-, Melde- oder Aufbewahrungsprüfung.</span></div>
+                    <div class="field-group"><label for="valid-nationality">Staatsangehörigkeit</label><select id="valid-nationality" name="staatsangehoerigkeit" aria-describedby="valid-nationality-help"><option value="de" selected>Deutschland · fiktive Auswahl</option><option value="pt">Portugal · fiktive Auswahl</option><option value="other">Andere · fiktive Auswahl</option></select><span id="valid-nationality-help" class="field-help">Keine Dokumenten-, Länder- oder Gesetzesprüfung.</span></div>
+                    <div class="field-group"><label for="valid-id-serial">Ausweis-Seriennummer · optional</label><input id="valid-id-serial" name="ausweis-seriennummer" type="text" value="[verdeckt · fiktiv]" aria-describedby="valid-id-serial-help" autocomplete="off"><span id="valid-id-serial-help" class="field-help">Sensibler Beispielrahmen; keine Offenlegung, Prüfung, Speicherung oder Auditierung.</span></div>
+                    <div class="field-group"><label for="valid-purpose-context">Fiktiver Bearbeitungsrahmen</label><select id="valid-purpose-context" name="purpose-context" aria-describedby="valid-purpose-context-help"><option value="reception" selected>Rezeption · nur Beispielrolle</option><option value="review">Manuelle Prüfung · nur Beispiel</option></select><span id="valid-purpose-context-help" class="field-help">Keine Anmeldung, Zweckprüfung oder RBAC-Entscheidung.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="valid-address-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="valid-address-title">Anschrift und Zeitraum · fiktive Pflichtangaben</h3><p>Die zusammengefasste Anschrift und die Aufenthaltsdaten sind ein sichtbares Validierungsmuster, keine bereits validierten oder rechtlich verwendbaren Daten.</p></div><span class="badge badge-info">Struktur · nicht gespeichert</span></div>
+                  <div class="form-grid two-columns">
+                    <div class="field-group full-span"><label for="valid-address">Anschrift</label><textarea id="valid-address" name="anschrift" rows="3" aria-describedby="valid-address-help" autocomplete="off">Beispielweg 14
+63619 Bad Orb
+Deutschland</textarea><span id="valid-address-help" class="field-help">Keine Adressnormalisierung, keine postalische Prüfung und keine Speicherung.</span></div>
+                    <div class="field-group"><label for="valid-arrival-date">Anreisedatum</label><input id="valid-arrival-date" name="anreisedatum" type="date" value="2026-07-16" aria-describedby="valid-arrival-date-help"><span id="valid-arrival-date-help" class="field-help">Keine Verbindung zu einer Anreisequelle oder einem Zimmerstatus.</span></div>
+                    <div class="field-group"><label for="valid-departure-date">Abreisedatum</label><input id="valid-departure-date" name="abreisedatum" type="date" value="2026-07-23" aria-describedby="valid-departure-date-help"><span id="valid-departure-date-help" class="field-help">Keine Live-Datumslogik, keine Reservierungs- oder Kalenderprüfung.</span></div>
+                  </div>
+                </section>
+
+                <section class="next-action" aria-labelledby="valid-next-action-title">
+                  <div class="action-copy"><span class="badge badge-planned">Nächste menschliche Entscheidung</span><h3 id="valid-next-action-title">Begrenzte Vorschau nur als Prototyp erklären</h3><p>Die lokale Aktion zeigt nur die spätere Entscheidungskante: Pflichtdaten, Zugriff und Formatreview müssten vor einem echten Outputvertrag geklärt sein. Sie erzeugt weder Bytes noch eine Datei noch eine Meldung.</p></div><button class="btn-primary" type="submit">Vorschaugrenze erläutern</button>
+                </section>
+              </form>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Gültiger Meldeschein-Zustand: Grenzen und Quellen">
+            <section class="side-card" aria-labelledby="valid-evidence-title"><header class="side-heading"><div class="side-copy"><h2 id="valid-evidence-title">Beobachtete Modulgrenze</h2><p>Die lokale Python-Oberfläche stützt eine enge Form-/Byteform-Aussage, nicht eine Browser- oder Dokumentdienst-Aussage.</p></div><span class="badge badge-prototype">Modulbasiert</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Schema</span><span class="detail-value"><span class="mono">MeldescheinForm</span> verlangt sieben nicht-leere Pflichtwerte im beobachteten Python-Modul.</span></li><li><span class="detail-label">Ausgabe</span><span class="detail-value"><span class="mono">render(form)</span> gibt eine `%PDF-1.4`-präfixierte Byteform zurück.</span></li><li><span class="detail-label">Formatgrenze</span><span class="detail-value"><span class="badge badge-warning">Stub-Format</span> Kein final kompatibles PDF, keine Signatur, kein Viewer-, Download- oder Barrierefreiheitsnachweis.</span></li><li><span class="detail-label">Browsergrenze</span><span class="detail-value">Dieser HTML-Prototyp importiert oder ruft das Modul nicht auf und besitzt keinen API-, Job- oder Dateivertrag.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" id="meldeschein-return-links" aria-labelledby="valid-links-title"><header class="side-heading"><div class="side-copy"><h2 id="valid-links-title">Statische Prüfbezüge</h2><p>Lokale HTML-Dateien, keine gemeinsame Produktnavigation.</p></div><span class="badge badge-info">Dateilinks</span></header><div class="side-body"><ul class="return-links"><li><span class="detail-label">Gastdetails</span><span><a href="checkin_guest_details.html#state-valid">Fiktive Gastdetails vor Meldeschein lesen</a><br><span class="field-help">Keine Übernahme von Eingaben, keine Sitzung und keine Persistenz.</span></span></li><li><span class="detail-label">Check-in</span><span><a href="checkin_overview.html#state-ready">Check-in-Schrittfolge lesen</a><br><span class="field-help">Kein geleiteter Workflow oder gespeicherter Schritt.</span></span></li><li><span class="detail-label">Aufenthalt</span><span><a href="reservation_detail.html#state-detail">RES-BO-2026-0716-014 im Detail lesen</a><br><span class="field-help">Keine gemeinsame Auswahl, Quelle oder Meldeschein-Transaktion.</span></span></li><li><span class="detail-label">Profil</span><span><a href="guest_profile.html#state-profile">Jana Müller-Kaya im minimierten Gastprofil lesen</a><br><span class="field-help">Keine Profilquelle, Offenlegung oder RBAC-Prüfung.</span></span></li></ul></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Gültiger Beispielzustand: Der Prototyp zeigt BMG-orientierte Formstruktur, eine sichtbare Schrittfolge und lokale DOM-Interaktion. Er beweist keine echte Validierung, keine Speicherung, keine Anmeldung, keine RBAC-Entscheidung, keine sichere Verarbeitung, keine Modulausführung, kein finales PDF, keinen Download, keine Einreichung und keine rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: validation/correction ===== -->
+      <section id="state-validation" class="state-panel" aria-labelledby="validation-state-title" data-state-kind="validation" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="validation-state-title">Validierungsfehler: Angaben vor einer Vorschau korrigieren</h2><p>Feldfehler, eine deutsche Fehlerzusammenfassung und die gesperrte Folgeaktion bleiben gemeinsam sichtbar. Dieser Zustand führt weder Client- noch Servervalidierung aus.</p></div>
+          <div class="badge-row"><span class="badge badge-error">3 Angaben prüfen</span><span class="badge badge-warning">Keine Vorschau fortsetzen</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="validation-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="validation-alert-title">Meldeschein-Vorschau nicht als bereit behandeln</h3><p>Für Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span> sind im fiktiven Korrekturszenario Pflichtwerte oder die Datumsfolge unklar. Der Blocker ist eine statische Designdarstellung, kein rechtlicher Befund und keine persistierte Sperre.</p></div>
+        </section>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="validation-form-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="validation-form-title">Fiktive Korrekturfelder für den Meldeschein</h2><p>Die Links in der Fehlerzusammenfassung verweisen auf konkrete native Kontrollen. Fehlermeldungen sind mit den Feldern verbunden und bleiben zusätzlich sichtbar.</p></div><span class="badge badge-prototype">Keine Validierung ausgeführt</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver Meldeschein-Kontext mit fehlerhaften Angaben">
+                <div class="record-copy"><span class="badge badge-warning">Korrekturkontext · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · 2 synthetische Gäste · Meldeschein bleibt der aktive fiktive Schritt.</p></div>
+                <div class="record-status"><span class="badge badge-error">Pflichtwerte / Datum prüfen</span><span class="badge badge-unclear">Keine Quelle</span></div>
+              </section>
+
+              <form id="validation-meldeschein-form" class="form-workflow" novalidate>
+                <nav id="validation-error-summary" class="error-summary" aria-label="Fehlerzusammenfassung für den fiktiven Meldeschein">
+                  <strong>3 Angaben vor einer späteren Vorschau korrigieren</strong>
+                  <p>Die Liste beschreibt eine spätere Korrekturreihenfolge. Kein Wert wurde gelesen, validiert, gespeichert, an das Python-Modul übergeben oder an eine Stelle übermittelt.</p>
+                  <ol>
+                    <li><a href="#validation-nationality">Staatsangehörigkeit ergänzen</a></li>
+                    <li><a href="#validation-address">Anschrift ergänzen</a></li>
+                    <li><a href="#validation-departure-date">Abreise nach Anreise angeben</a></li>
+                  </ol>
+                </nav>
+
+                <section class="form-section" aria-labelledby="validation-person-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="validation-person-title">Person und Staatsangehörigkeit</h3><p>Der Name und das Geburtsdatum bleiben fiktive Kontextwerte. Die fehlende Staatsangehörigkeit ist als Korrekturbedarf beschrieben, nicht als echte Modulantwort.</p></div><span class="badge badge-error">Pflichtfeld</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="validation-family-name">Familienname</label><input id="validation-family-name" name="validation-familienname" type="text" value="Müller-Kaya" readonly aria-describedby="validation-family-name-help"><span id="validation-family-name-help" class="field-help">Fiktiver Kontext; keine Personensuche oder Identitätsquelle.</span></div>
+                    <div class="field-group"><label for="validation-given-name">Vorname</label><input id="validation-given-name" name="validation-vorname" type="text" value="Jana" readonly aria-describedby="validation-given-name-help"><span id="validation-given-name-help" class="field-help">Keine Rechts-, Quellen- oder Berechtigungsprüfung.</span></div>
+                    <div class="field-group"><label for="validation-birth-date">Geburtsdatum</label><input id="validation-birth-date" name="validation-geburtsdatum" type="date" value="1989-02-11" readonly aria-describedby="validation-birth-date-help"><span id="validation-birth-date-help" class="field-help">Keine Alters-, Identitäts- oder Meldeprüfung.</span></div>
+                    <div class="field-group"><label for="validation-nationality">Staatsangehörigkeit</label><select id="validation-nationality" name="validation-staatsangehoerigkeit" class="invalid-input" aria-invalid="true" aria-describedby="validation-nationality-help validation-nationality-error"><option value="" selected>Bitte ergänzen · fiktives Feld</option><option value="de">Deutschland · fiktive Auswahl</option><option value="other">Andere · fiktive Auswahl</option></select><span id="validation-nationality-help" class="field-help">Künftige Inhalts-, Daten- und Rechteprüfung erforderlich.</span><span id="validation-nationality-error" class="field-error">Pflichtangabe fehlt im fiktiven Szenario. Keine echte BMG-, Dokumenten- oder Modulvalidierung wurde ausgeführt.</span></div>
+                    <div class="field-group"><label for="validation-id-serial">Ausweis-Seriennummer · optional</label><input id="validation-id-serial" name="validation-ausweis-seriennummer" type="text" value="[verdeckt · fiktiv]" aria-describedby="validation-id-serial-help"><span id="validation-id-serial-help" class="field-help">Kein echter Ausweiswert, keine Offenlegung oder Speicherung.</span></div>
+                    <div class="field-group"><label for="validation-scope">Fiktiver Korrekturweg</label><select id="validation-scope" name="validation-scope" aria-describedby="validation-scope-help"><option value="reception" selected>Rezeption · fiktive Korrektur</option><option value="management">Management · fiktive Eskalation</option><option value="privacy">Datenschutzprüfung · nur bei Bedarf</option></select><span id="validation-scope-help" class="field-help">Keine Rolle, Anfrage, Aufgabe oder Auditspur.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="validation-address-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="validation-address-title">Anschrift und Datum</h3><p>Die fehlende Anschrift und die unplausible Datumsfolge werden sowohl in der Zusammenfassung als auch direkt am Feld erklärt.</p></div><span class="badge badge-error">Korrektur erforderlich</span></div>
+                  <div class="form-grid two-columns">
+                    <div class="field-group full-span"><label for="validation-address">Anschrift</label><textarea id="validation-address" name="validation-anschrift" class="invalid-input" rows="3" aria-invalid="true" aria-describedby="validation-address-help validation-address-error" autocomplete="off"></textarea><span id="validation-address-help" class="field-help">Keine Adressquelle, Formatregel oder postalische Prüfung.</span><span id="validation-address-error" class="field-error">Pflichtangabe fehlt im fiktiven Szenario. Die Darstellung darf nicht als gespeicherte oder verwendbare Anschrift verstanden werden.</span></div>
+                    <div class="field-group"><label for="validation-arrival-date">Anreisedatum</label><input id="validation-arrival-date" name="validation-anreisedatum" type="date" value="2026-07-23" aria-describedby="validation-arrival-date-help"><span id="validation-arrival-date-help" class="field-help">Fiktives Datumsbeispiel, keine Anreisequelle.</span></div>
+                    <div class="field-group"><label for="validation-departure-date">Abreisedatum</label><input id="validation-departure-date" name="validation-abreisedatum" class="invalid-input" type="date" value="2026-07-16" aria-invalid="true" aria-describedby="validation-departure-date-help validation-departure-date-error"><span id="validation-departure-date-help" class="field-help">Keine Kalender-, Aufenthalts- oder Rechtsregel ausgeführt.</span><span id="validation-departure-date-error" class="field-error">Die fiktive Abreise liegt vor der Anreise. Eine echte Datumslogik benötigt einen klaren Validierungsvertrag.</span></div>
+                  </div>
+                </section>
+
+                <section class="next-action" aria-labelledby="validation-next-action-title">
+                  <div class="action-copy"><span class="badge badge-warning">Korrektur zuerst</span><h3 id="validation-next-action-title">Keine Byteform oder Vorschau aus fehlerhaften Angaben ableiten</h3><p>Eine spätere Anwendung müsste erst Pflichtfelder, Datumslogik, Aufenthaltskontext, Zweck, Rechte und Fehlerantworten prüfen. Die deaktivierte Aktion startet keinen Job und speichert keinen Entwurf.</p></div><button class="btn-primary" type="button" disabled aria-describedby="validation-forward-reason">Vorschau vorbereiten</button>
+                </section>
+                <p id="validation-forward-reason" class="disabled-reason">Deaktiviert: Pflichtwerte, echte Datumslogik, Datenquelle, Authentifizierung, RBAC, Speicherung, Job-/Dateivertrag, sichere Ausgabe, Download, Einreichung und Audit sind nicht nachgewiesen.</p>
+              </form>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Validierungszustand: sichere Korrektur">
+            <section class="side-card" aria-labelledby="validation-recovery-title"><header class="side-heading"><div class="side-copy"><h2 id="validation-recovery-title">Sicherer Korrekturweg</h2><p>Eine fehlende Pflichtangabe wird nicht still ergänzt und kein Dokumentstatus vorweggenommen.</p></div><span class="badge badge-warning">Manuelle Prüfung</span></header><div class="side-body"><ul class="dependency-list"><li><span class="detail-label">1. Kontext</span><span>Fiktiven Hauptgast, Begleitperson, Anschrift und Zeitraum später datensparsam im autorisierten Kontext prüfen.</span></li><li><span class="detail-label">2. Korrektur</span><span>Formschema, serverseitige Fehlermeldungen und Datumslogik erst mit einem API-/Datenvertrag anwenden.</span></li><li><span class="detail-label">3. Output</span><span>Erst danach einen begrenzten Modul-/CLI-Output und eine Formatprüfung anbieten; nicht aus diesem statischen Zustand.</span></li></ul><button class="btn-warning" type="button" data-prototype-action="Fiktiver Meldeschein-Korrekturweg lokal erläutert. Es wurde kein Feld validiert, keine Quelle befragt, kein MeldescheinForm-Objekt erstellt und keine Ausgabe erzeugt.">Korrekturweg erläutern</button></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="validation-boundary-title"><header class="side-heading"><div class="side-copy"><h2 id="validation-boundary-title">Keine Live-Fehlerhülle</h2><p>Die sichtbare Fehlerform ist ein Designmuster, keine Antwort eines Browsers, Moduls oder Servers.</p></div><span class="badge badge-prototype">Statisch</span></header><div class="side-body"><p class="field-help">Es gibt keine clientseitige Schemaausführung, keinen API-Request, keine Servervalidierung, keine Datei-/Joberzeugung, keinen Rückgabe-/Fehlerstatus, keine Speicherung, keine Retry-Queue und keine dauerhafte Auditspur. Der statische Zustand zeigt nur die gewünschte Fehlerkorrekturfläche.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Validierungsfehler-Zustand: Fehlerzusammenfassung, Feldanker, `aria-invalid`, Feldtexte und deaktivierte Folgeaktion sind überprüfbare Designabsicht. Sie beweisen keine BMG-Prüfung, keine Rechtsauslegung, keine Korrektur, keine Speicherung, keine Berechtigung, keine Modulausführung, kein Dokument, keinen Download, keine Einreichung oder rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: bounded document preview ===== -->
+      <section id="state-preview" class="state-panel" aria-labelledby="preview-state-title" data-state-kind="preview" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="preview-state-title">Vorschau und Nachweis: begrenzte Byteform prüfen</h2><p>Diese Ansicht zeigt, welche Metadaten, Formatwarnungen und Grenzen vor einer späteren Dateiaktion sichtbar sein müssen. Das dunkle Preview-Feld ist keine PDF-Darstellung und keine sichere Dokumentansicht.</p></div>
+          <div class="badge-row"><span class="badge badge-prototype">Vorschau</span><span class="badge badge-warning">Stub-Format</span><span class="badge badge-info">Nicht eingereicht</span></div>
+        </header>
+
+        <section class="preview-boundary" aria-labelledby="preview-boundary-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="preview-boundary-title">Vorschau ist nicht final, gespeichert, herunterladbar oder eingereicht</h3><p><strong>Stub-Format:</strong> Die beobachtete `render(form)`-Funktion emittiert eine `%PDF-1.4`-präfixierte Byteform. Das belegt kein finales PDF, keine PDF-Struktur-/Viewer-Kompatibilität, keine Signatur, keine sichere Ablage, keinen Download, keine Zustellung, keine Einreichung und keine rechtliche Finalität.</p></div>
+        </section>
+
+        <div class="preview-layout">
+          <section class="preview-card" aria-labelledby="preview-card-title">
+            <header class="preview-card-header"><div class="preview-copy"><h2 id="preview-card-title">Fiktive Meldeschein-Vorschau · kein Dokumentviewer</h2><p>Eine kontrollierte Reviewfläche zeigt nur synthetischen Input, Ausgangsform und offene Grenzen.</p></div><span class="badge badge-warning">Vorschau · Stub-Format</span></header>
+            <div class="preview-card-body">
+              <section class="artifact-strip" aria-label="Fiktiver Artefaktstatus">
+                <div class="artifact-copy"><span class="badge badge-prototype">Modulbasiert · begrenzt</span><h3>Meldeschein für Jana Müller-Kaya</h3><p class="mono">meldeschein_RES-BO-2026-0716-014.pdf</p><p>Fiktiver Dateiname für eine begrenzte Prüfdarstellung; keine reale Dateiablage, keine Download-URL und kein persistenter Artefaktdatensatz.</p></div>
+                <div class="record-status"><span class="badge badge-warning">Stub-Format</span><span class="badge badge-info">Nicht eingereicht</span></div>
+              </section>
+
+              <section class="preview-sheet" aria-labelledby="preview-sheet-title">
+                <div class="preview-sheet-header"><div class="preview-copy"><span class="badge badge-prototype">Fiktiver Vorschautext</span><h3 id="preview-sheet-title">Meldeschein · synthetischer Prüfrahmen</h3><p>Die Inhalte sind keine gerenderte PDF-Seite, keine finale Meldeunterlage und keine rechtsgültige Erklärung.</p></div><span class="badge badge-warning">Kein finaler Renderer</span></div>
+                <div class="preview-facts" aria-label="Fiktiver Vorschauinhalt">
+                  <article class="preview-fact"><span>Familienname</span><strong>Müller-Kaya</strong><small>Fiktiver Wert, nicht aus einer Quelle geladen.</small></article>
+                  <article class="preview-fact"><span>Vorname</span><strong>Jana</strong><small>Keine Identitätsprüfung oder Speicherung.</small></article>
+                  <article class="preview-fact"><span>Geburtsdatum</span><strong>11.02.1989</strong><small>Keine Rechts-, Quellen- oder Aufbewahrungsentscheidung.</small></article>
+                  <article class="preview-fact"><span>Staatsangehörigkeit</span><strong>Deutschland · fiktiv</strong><small>Keine Dokumenten- oder Länderprüfung.</small></article>
+                  <article class="preview-fact"><span>Anschrift</span><strong>Beispielweg 14 · 63619 Bad Orb</strong><small>Keine postalische Prüfung oder Datenablage.</small></article>
+                  <article class="preview-fact"><span>Aufenthalt</span><strong>16.–23.07.2026</strong><small>Keine Reservation-/Anreisequelle oder Zimmerbestätigung.</small></article>
+                </div>
+                <section class="preview-sensitive" aria-labelledby="preview-sensitive-title"><span class="badge badge-teal">Sensibler Wert · Standard: verdeckt</span><h3 id="preview-sensitive-title">Optionale Ausweis-Seriennummer bleibt verborgen</h3><strong>Ausweis-Seriennummer: [verdeckt · fiktiv]</strong><p>Die Maskierung ist nur eine lokale Darstellung. Sie beweist keine Datenklassifikation, Authentifizierung, RBAC, Auditierung, sichere Anzeige, Timeout oder Remasking-Regel.</p><button class="btn-teal" type="button" data-prototype-action="Die fiktive Maskierungsgrenze wurde lokal erläutert. Kein Ausweiswert wurde abgerufen, offengelegt, übertragen, gespeichert oder protokolliert.">Maskierungsgrenze erläutern</button></section>
+              </section>
+
+              <section class="artifact-card" aria-labelledby="preview-evidence-title">
+                <header class="artifact-card-header"><div class="artifact-copy"><h3 id="preview-evidence-title">Ausgabe- und Nachweisrahmen</h3><p>Artefaktidentität, Quelle, Zeit, Inputs, Formatwarnung, Status und Recovery werden vor jeder späteren Dateiaktion getrennt sichtbar.</p></div><span class="badge badge-info">Proof before claim</span></header>
+                <div class="artifact-card-body">
+                  <div class="output-table-wrap">
+                    <table>
+                      <caption>Fiktive Meldeschein-Evidenz für RES-BO-2026-0716-014. Keine Zeile ist ein gespeicherter Job, ein sicherer Viewer, ein Download, eine Zustellung oder eine kommunale Einreichung.</caption>
+                      <thead><tr><th scope="col">Prüfpunkt</th><th scope="col">Fiktiver Nachweis</th><th scope="col">Grenze</th><th scope="col">Sichere Folge</th></tr></thead>
+                      <tbody>
+                        <tr><td><strong>Artefaktidentität</strong><br><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span></td><td>Lokaler Beispielname und Aufenthaltsschlüssel</td><td>Kein persistenter Dateirecord, keine sichere Location, kein Download-Link</td><td>Vorschau-/Metadaten erst mit späterem File-/Jobvertrag prüfen</td></tr>
+                        <tr><td><strong>Quelle / Input</strong><br><span class="mono">MeldescheinForm → render(form)</span></td><td>Lokaler Modulbezug mit sieben Pflichtfeldkategorien</td><td>Kein Browser-API-Aufruf, keine Benutzersitzung, keine Auth/RBAC-Prüfung</td><td>Fach- und Zugriffskontext separat implementieren</td></tr>
+                        <tr><td><strong>Byte-/Formatstatus</strong><br><span class="mono">%PDF-1.4 · Beispiel</span></td><td><span class="badge badge-warning">Stub-Format</span></td><td>Kein finales PDF, keine Struktur-/Viewer-/A11y-/Signaturnachweis</td><td>Manuelle Formatprüfung, kein Finalitätsclaim</td></tr>
+                        <tr><td><strong>Outputstatus</strong><br><span class="mono">Fiktive Anzeige</span></td><td><span class="badge badge-prototype">Vorschau</span><br><span class="badge badge-info">Nicht eingereicht</span></td><td>Keine Speicherung, kein Download, keine Zustellung, keine Einreichung oder Quittung</td><td>Keine Folgeaktion ohne sichere spätere Verträge</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mobile-artifact-list" aria-label="Mobile Meldeschein-Evidenzkarten">
+                    <article class="mobile-artifact-card"><span>Artefaktidentität</span><strong>meldeschein_RES-BO-2026-0716-014.pdf</strong><small>Nur Beispielname; keine Dateiablage, kein Viewer und kein Download.</small></article>
+                    <article class="mobile-artifact-card"><span>Quelle / Input</span><strong>MeldescheinForm → render(form)</strong><small>Lokaler Modulbezug; kein Browser-API-Aufruf oder RBAC.</small></article>
+                    <article class="mobile-artifact-card"><span>Byte-/Formatstatus</span><strong>Stub-Format · %PDF-1.4</strong><small>Kein finales PDF oder Viewer-/Signaturbeweis.</small></article>
+                    <article class="mobile-artifact-card"><span>Outputstatus</span><strong>Vorschau · Nicht eingereicht</strong><small>Keine Speicherung, kein Download und keine Einreichung.</small></article>
+                  </div>
+                  <div class="action-row"><button type="button" disabled aria-describedby="preview-download-reason">PDF herunterladen</button><button class="btn-danger" type="button" disabled aria-describedby="preview-submit-reason">Meldeschein einreichen</button><button class="btn-warning" type="button" data-prototype-action="Fiktive Vorschau- und Formatgrenze lokal erläutert. Es wurde keine Datei geöffnet, gespeichert, heruntergeladen, zugestellt oder eingereicht.">Vorschaugrenze erläutern</button></div>
+                  <p id="preview-download-reason" class="disabled-reason">Download deaktiviert: keine sichere Dateiablage, keine Browser-URL, keine Authentifizierung/RBAC, keine Retention, keine Viewer-/Formatprüfung und kein Auditvertrag.</p>
+                  <p id="preview-submit-reason" class="disabled-reason">Einreichung deaktiviert: keine kommunale Integration, keine Berechtigung, keine Signatur, keine Übermittlung, keine Quittung, keine Rechtsprüfung und keine rechtliche Finalität.</p>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Vorschau: Abhängigkeiten und sichere Rückkehr">
+            <section class="side-card" aria-labelledby="preview-limits-title"><header class="side-heading"><div class="side-copy"><h2 id="preview-limits-title">Was Vorschau nicht bedeutet</h2><p>Der Nachweisstatus bleibt direkt neben der fiktiven Darstellung sichtbar.</p></div><span class="badge badge-warning">Begrenzt</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Kein finales PDF</span><span class="detail-value">Kein Standard-, Struktur-, Renderer-, Viewer-, Signatur- oder barrierefreier Dokumentnachweis.</span></li><li><span class="detail-label">Keine Speicherung</span><span class="detail-value">Keine Datenbank, Dateiablage, Retention, Version, Historie oder Auditaufzeichnung.</span></li><li><span class="detail-label">Kein Download</span><span class="detail-value">Keine sichere URL, Berechtigungsprüfung, Dateiauslieferung, Protokollierung oder Browserintegration.</span></li><li><span class="detail-label">Keine Einreichung</span><span class="detail-value">Keine Behörde, Übertragung, Empfangsbestätigung, Quittung, Zustellung oder Rechtswirkung.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="preview-return-title"><header class="side-heading"><div class="side-copy"><h2 id="preview-return-title">Zur Korrektur oder zum Kontext zurück</h2><p>Eine spätere Dokumentkette muss die Ursache und den Rückkehrweg zeigen, statt einen „Erfolg“ zu behaupten.</p></div><span class="badge badge-planned">Jobvertrag erforderlich</span></header><div class="side-body"><a class="button-link" href="checkin_guest_details.html#state-valid">Fiktive Gastdetails lesen</a><button class="btn-secondary" type="button" data-state-target="state-validation" aria-controls="state-validation">Korrekturbeispiel lesen</button><p class="field-help">Diese lokalen Navigationen teilen keine Eingaben, keinen Meldeschein, keine Dateien, keine Sitzung und keinen Schrittstatus.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Vorschau-Zustand: Die dunkle Dokumentfläche und Artefaktmetadaten illustrieren eine spätere Reviewreihenfolge. Sie sind kein finaler Renderer, keine sichere Anzeige, kein gespeichertes Dokument, kein Download, keine Zustellung, keine Einreichung, keine Quittung und keine rechtsgültige Meldung.</p>
+      </section>
+
+      <!-- ===== State: generation or format failure ===== -->
+      <section id="state-generation-failure" class="state-panel" aria-labelledby="generation-failure-state-title" data-state-kind="generation-failure" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="generation-failure-state-title">Erzeugung oder Formatprüfung fehlgeschlagen · fiktiver Recoveryzustand</h2><p>Ein begrenzter Byteformbezug darf nicht wie ein erfolgreiches, finales Dokument wirken. Dieser Zustand zeigt einen persistenten Fehler, betroffene Ausgabe und sichere Folgen ohne eine echte Retry- oder Jobbehauptung.</p></div>
+          <div class="badge-row"><span class="badge badge-error">Fehlgeschlagen · fiktiv</span><span class="badge badge-warning">Stub-Format prüfen</span><span class="badge badge-info">Nicht eingereicht</span></div>
+        </header>
+
+        <section class="failure-notice" role="alert" aria-labelledby="generation-failure-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="generation-failure-alert-title">Keine finale oder einreichbare Meldeschein-Ausgabe behaupten</h3><p>Die fiktive Störung betrifft <span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span>. Sie bedeutet weder, dass eine Browsererzeugung versucht wurde, noch dass ein Backend-Job lief. Sie zeigt nur: Eine `%PDF-1.4`-präfixierte Byteform ist kein Nachweis für ein finales PDF oder eine erfolgreiche Formatprüfung.</p></div>
+        </section>
+
+        <div class="failure-layout">
+          <section class="panel" aria-labelledby="generation-failure-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="generation-failure-panel-title">Betroffene begrenzte Ausgabe und Recovery</h2><p>Fehlergrund, Formatgrenze, Quelle und sichere Folge bleiben sichtbar; kein transienter Erfolgston verdeckt die fehlende Produktionskette.</p></div><span class="badge badge-error">Kein fertiges Dokument</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver Aufenthalt mit Meldeschein-Ausgabestörung">
+                <div class="record-copy"><span class="badge badge-error">Ausgabeproblem · lokal dargestellt</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · Meldeschein als begrenzter Modul-/CLI-Kontext, kein Dokumentjob und keine übermittelte Meldung.</p></div>
+                <div class="record-status"><span class="badge badge-error">Fehlgeschlagen</span><span class="badge badge-info">Nicht eingereicht</span></div>
+              </section>
+
+              <div class="failure-grid" aria-label="Fiktive Ausgabeprobleme und Grenzen">
+                <article class="failure-card is-failed"><span class="badge badge-error">Ausgabezustand</span><h3>Keine finale Artefaktannahme</h3><p>Ein fiktives `fehlgeschlagen` benennt, dass kein sicheres, verwendbares Ergebnis behauptet werden darf. Es belegt keinen realen Request, Job oder Fehlercode.</p></article>
+                <article class="failure-card is-warning"><span class="badge badge-warning">Formatgrenze</span><h3>Stub-Format manuell prüfen</h3><p>Die beobachtete `%PDF-1.4`-Byteform beweist keine vollständige Struktur, PDF-Kompatibilität, Signatur, A11y, rechtliche Eignung oder Finalität.</p></article>
+                <article class="failure-card is-warning"><span class="badge badge-info">Einreichungsstatus</span><h3>Nicht eingereicht</h3><p>Es gab keine Behördenverbindung, Übertragung, Empfangsquittung, Zustellung oder rechtliche Entscheidung.</p></article>
+                <article class="failure-card is-failed"><span class="badge badge-planned">Recoveryvertrag fehlt</span><h3>Kein Retry ausführen</h3><p>Retry, Idempotenz, Timeout, Queue, Statuspolling, Dateiablage, Berechtigung und Audit brauchen eigene spätere Verträge.</p></article>
+              </div>
+
+              <section class="artifact-card" aria-labelledby="generation-failure-evidence-title">
+                <header class="artifact-card-header"><div class="artifact-copy"><h3 id="generation-failure-evidence-title">Fiktiver Evidence- und Korrekturrahmen</h3><p>Eine spätere Umsetzung muss Grund, Eingabenscope, Quelle, Zeitpunkt, betroffene Ausgabe und sichere Recovery strukturiert liefern.</p></div><span class="badge badge-peach">Manuelle Prüfung</span></header>
+                <div class="artifact-card-body"><ul class="artifact-list"><li><span class="detail-label">Betroffene Ausgabe</span><span><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span><br><span class="field-help">Fiktive Kennung; keine Datei, keine Ablage und kein Downloadobjekt.</span></span></li><li><span class="detail-label">Modulhinweis</span><span><span class="mono">MeldescheinForm → render(form)</span><br><span class="field-help">Enger lokaler Python-Bezug; kein Browser-, API- oder Jobvertrag.</span></span></li><li><span class="detail-label">Fiktive Ursache</span><span>Formatprüfung ausstehend / kein finaler Renderer belegt.<br><span class="field-help">Keine echte Fehlerdiagnose, kein Stacktrace und kein Jobprotokoll.</span></span></li><li><span class="detail-label">Sichere Folge</span><span>Pflichtangaben, Zugriff, Outputvertrag und manuelle Formatprüfung später klären.<br><span class="field-help">Keine automatische Wiederholung, Speicherung, Zustellung oder Einreichung.</span></span></li></ul><div class="action-row"><button class="btn-warning" type="button" data-prototype-action="Fiktive Format- und Recoverygrenze lokal erläutert. Es wurde kein Job gestartet, nicht erneut versucht, keine Datei erzeugt, gespeichert, heruntergeladen oder eingereicht.">Recoverygrenze erläutern</button><button type="button" disabled aria-describedby="generation-retry-reason">Erneut versuchen</button><button class="btn-danger" type="button" disabled aria-describedby="generation-submit-reason">Einreichen</button></div><p id="generation-retry-reason" class="disabled-reason">Retry deaktiviert: kein Browser-/API-Request, keine Job-ID, keine Statusquelle, keine Idempotenz, kein Timeout, keine Queue, keine Dateiablage und kein Audit.</p><p id="generation-submit-reason" class="disabled-reason">Einreichung deaktiviert: keine finale Ausgabe, keine sichere Datei, keine Berechtigung, keine Behördenintegration, keine Übermittlung, keine Quittung und keine rechtliche Finalität.</p></div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Generierungs- oder Formatfehler: Grenzen und Rückkehr">
+            <section class="side-card" aria-labelledby="generation-failure-safe-title"><header class="side-heading"><div class="side-copy"><h2 id="generation-failure-safe-title">Sichere Recovery statt Schein-Retry</h2><p>Ein Fehlerzustand braucht sichtbaren Kontext und manuelle Folge, ohne eine nicht vorhandene Ausführungsinfrastruktur anzudeuten.</p></div><span class="badge badge-warning">Keine Retry-Queue</span></header><div class="side-body"><ul class="dependency-list"><li><span class="detail-label">Felder</span><span>Später Pflichtangaben und Datumskontext prüfen, ohne Werte still zu überschreiben.</span></li><li><span class="detail-label">Zugriff</span><span>Zweck, Authentifizierung, RBAC und sensitive Ausgabe erst in einem künftigen Vertrag bestimmen.</span></li><li><span class="detail-label">Format</span><span>Renderer, vollständige Formatprüfung, Dokumentzugänglichkeit und rechtliche Inhaltsprüfung separat belegen.</span></li><li><span class="detail-label">Ausgabe</span><span>Dateiablage, Viewer, Download, Retention, Einreichung, Quittung und Audit nicht aus einer Byteform ableiten.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="generation-failure-return-title"><header class="side-heading"><div class="side-copy"><h2 id="generation-failure-return-title">Zur Korrektur oder Vorschau zurück</h2><p>Die nächste sichere Designentscheidung bleibt sichtbare Prüfung oder Rückkehr in den Aufenthalt.</p></div><span class="badge badge-planned">Keine Zustandswiederherstellung</span></header><div class="side-body"><div class="action-row"><button class="btn-secondary" type="button" data-state-target="state-validation" aria-controls="state-validation">Korrekturbeispiel lesen</button><button class="btn-secondary" type="button" data-state-target="state-preview" aria-controls="state-preview">Vorschaugrenze lesen</button></div><a class="button-link" href="checkin_overview.html#state-ready">Zur statischen Check-in-Übersicht</a><p class="field-help">Die Buttons ändern nur die lokale Reviewansicht. Der Link lädt nur ein lokales HTML-Dokument; nichts wird gespeichert, wiederhergestellt, weitergegeben oder eingereicht.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Erzeugungs-/Formatfehler-Zustand: Die sichtbare Störung beschreibt eine spätere Recoveryfläche. Sie beweist keinen Modulaufruf, keinen Browserrequest, keine Datei, keinen Job, keinen Retry, keine Speicherung, keinen Download, keine Zustellung, keine Einreichung, keine Quittung oder rechtliche Finalität.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Gast-, Aufenthalts-, Anschrifts-, Meldeschein- und Artefaktdaten. State-Switcher und lokale Aktionen ändern nur DOM-Hinweise. Sie führen keine Suche, Browserroute, API-Anfrage, Datenbankaktion, echte BMG-Validierung, Modulaufruf, Byteerzeugung, Speicherung, Resume, gemeinsame Sitzung, Authentifizierung, RBAC, Dateiablage, Viewer, Download, Job, Retry, Zustellung, Einreichung oder rechtliche Entscheidung aus.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html#arrivals-title">Anreisen</a>
+    <a href="checkin_guest_details.html#state-valid">Gastdetails</a>
+    <a href="#state-valid" aria-current="page">Meldeschein</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <button id="state-button-valid" type="button" data-state-target="state-valid" aria-controls="state-valid" aria-pressed="true">Gültig</button>
+    <button id="state-button-validation" type="button" data-state-target="state-validation" aria-controls="state-validation" aria-pressed="false">Fehler</button>
+    <button id="state-button-preview" type="button" data-state-target="state-preview" aria-controls="state-preview" aria-pressed="false">Vorschau</button>
+    <button id="state-button-generation-failure" type="button" data-state-target="state-generation-failure" aria-controls="state-generation-failure" aria-pressed="false">Formatfehler</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('meldeschein-context-form');
+      const validForm = document.getElementById('valid-meldeschein-form');
+      const validationForm = document.getElementById('validation-meldeschein-form');
+      const labels = {
+        'state-valid': 'Gültiger fiktiver Meldeschein-Zustand angezeigt.',
+        'state-validation': 'Fiktiver Meldeschein-Zustand mit Validierungsfehlern angezeigt.',
+        'state-preview': 'Fiktive Meldeschein-Vorschau mit Stub-Format angezeigt.',
+        'state-generation-failure': 'Fiktiver Erzeugungs- oder Formatfehler-Zustand angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Meldeschein-Kontext lokal erläutert. Es wurde keine Route, Suche, Datenquelle, Berechtigungsprüfung, Speicherung, Modulausführung oder Ausgabe ausgeführt.';
+      });
+
+      validForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktive Vorschaugrenze lokal erläutert. Es wurde kein MeldescheinForm-Objekt erstellt, keine Validierung ausgeführt, keine Byteform erzeugt, keine Datei gespeichert, kein Download angeboten und nichts eingereicht.';
+      });
+
+      validationForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktive Meldeschein-Korrektur lokal erläutert. Es wurde kein Feld validiert, kein Formular gespeichert, kein Modul aufgerufen und keine Vorschau oder Datei erzeugt.';
+      });
+    }());
+  </script>
+</body>
+</html>

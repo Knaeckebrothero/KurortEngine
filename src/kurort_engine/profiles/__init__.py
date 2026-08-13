@@ -1,0 +1,1 @@
+"""Built-in Satzung profile YAMLs for kurort_engine."""

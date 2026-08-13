@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Rheinland Anmeldung — Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* ===== Established geometry, typography, and motion scale ===== */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-size-empty-icon: 48px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --line-height-empty: 1.6;
+      --letter-spacing-label: 0.5px;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --auth-card-width: calc(var(--space-4xl) * 10);
+      --auth-copy-width: calc(var(--space-4xl) * 9);
+      --support-panel-width: calc(var(--space-4xl) * 11);
+      --overflow-panel-height: calc(var(--space-4xl) * 6);
+      --state-switcher-z: 1002;
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --motion-none: 0s;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+
+    /* ===== Shared authentication-entry structure ===== */
+    .auth-state {
+      min-height: 100vh;
+      background: var(--app-bg);
+    }
+
+    .auth-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .brand,
+    .topbar-status,
+    .badge-row,
+    .button-row,
+    .shortcut-row,
+    .security-row,
+    .state-switcher {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-2xl);
+      height: var(--space-2xl);
+      background: var(--surface-0);
+      color: var(--color-teal);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-card);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .brand-copy { display: grid; gap: var(--space-none); }
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .brand-subtitle { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: var(--space-badge-y) var(--space-sm);
+      color: var(--text-secondary);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      line-height: var(--line-height-base);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-success { color: var(--color-green); border-color: var(--color-green); }
+    .badge-warning { color: var(--color-yellow); border-color: var(--color-yellow); }
+    .badge-error { color: var(--color-red); border-color: var(--color-red); }
+    .badge-info { color: var(--color-blue); border-color: var(--color-blue); }
+    .badge-teal { color: var(--color-teal); border-color: var(--color-teal); }
+    .badge-peach { color: var(--color-peach); border-color: var(--color-peach); }
+    .badge-prototype { color: var(--color-peach); border-color: var(--color-peach); }
+    .badge-planned { color: var(--color-blue); border-color: var(--color-blue); }
+    .badge-unclear { color: var(--color-yellow); border-color: var(--color-yellow); }
+
+    .auth-shell {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr);
+      min-height: calc(100vh - var(--space-4xl));
+    }
+
+    .auth-context {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: var(--space-xl);
+      padding: var(--space-4xl) var(--space-3xl);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .auth-context-copy { display: grid; gap: var(--space-md); max-width: var(--auth-copy-width); }
+    .eyebrow,
+    .context-kicker,
+    .field-label,
+    .help-label,
+    .state-note {
+      color: var(--text-muted);
+      font-size: var(--font-size-label);
+    }
+
+    .eyebrow,
+    .context-kicker,
+    .help-label {
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+    }
+
+    .auth-context h1 { color: var(--text-primary); font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    .auth-context p { color: var(--text-secondary); }
+
+    .context-card,
+    .truth-card,
+    .auth-card,
+    .empty-state,
+    .loading-card,
+    .overflow-card {
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .context-card,
+    .truth-card,
+    .loading-card,
+    .overflow-card { display: grid; gap: var(--space-md); padding: var(--space-lg); max-width: var(--support-panel-width); }
+    .context-card { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .truth-card { border-left: var(--border-emphasis) solid var(--color-peach); }
+    .context-card h2,
+    .truth-card h2 { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .context-card p,
+    .truth-card p { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .context-list,
+    .truth-list,
+    .check-list {
+      display: grid;
+      gap: var(--space-sm);
+      list-style: none;
+    }
+
+    .context-list { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 2fr); }
+    .context-list dt { color: var(--text-muted); font-size: var(--font-size-label); }
+    .context-list dd { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .truth-list li,
+    .check-list li { display: grid; grid-template-columns: auto minmax(var(--space-none), 1fr); gap: var(--space-sm); color: var(--text-muted); font-size: var(--font-size-label); }
+    .truth-list strong,
+    .check-list strong { color: var(--text-secondary); font-weight: var(--font-weight-medium); }
+
+    .auth-main {
+      display: grid;
+      place-items: center;
+      padding: var(--space-4xl) var(--space-3xl);
+      background: var(--app-bg);
+    }
+
+    .auth-card {
+      display: grid;
+      gap: var(--space-lg);
+      width: min(var(--auth-card-width), 100%);
+      padding: var(--space-xl);
+      background: var(--panel-bg);
+    }
+
+    .auth-card-header { display: grid; gap: var(--space-sm); }
+    .auth-card-header h1 { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    .auth-card-header p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    form { display: grid; gap: var(--space-lg); }
+    .form-fields { display: grid; gap: var(--space-md); }
+    .field-group { display: grid; gap: var(--space-xs); }
+    .field-label { color: var(--text-secondary); font-weight: var(--font-weight-medium); }
+    .helper-text { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    input {
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-primary);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-body);
+      outline: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+    }
+
+    input::placeholder { color: var(--text-muted); }
+    input[aria-invalid="true"] { border-color: var(--color-red); }
+    input[disabled] { cursor: not-allowed; color: var(--text-muted); background: var(--surface-0); }
+
+    .password-control { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-sm); }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-lg);
+      color: var(--text-secondary);
+      background: transparent;
+      border: var(--border-width) solid transparent;
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover { transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { cursor: not-allowed; color: var(--text-muted); background: var(--surface-0); border-color: var(--border-color); }
+
+    .btn-primary { color: var(--timeline-bg); background: var(--accent-color); border-color: var(--accent-color); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-secondary { color: var(--text-secondary); background: transparent; border-color: var(--border-color); }
+    .btn-secondary:hover { color: var(--text-primary); background: var(--surface-0); }
+    .btn-quiet { color: var(--text-secondary); background: var(--surface-0); border-color: var(--border-color); }
+    .btn-quiet:hover { color: var(--text-primary); background: var(--surface-1); }
+    .password-toggle { min-width: var(--touch-target); padding: var(--space-sm); color: var(--text-secondary); background: var(--surface-0); border-color: var(--border-color); }
+    .password-toggle:hover { color: var(--text-primary); background: var(--surface-1); }
+
+    .form-actions { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-sm); }
+    .form-actions .btn-primary { width: 100%; }
+    .inline-error { color: var(--color-red); font-size: var(--font-size-label); }
+
+    .error-summary,
+    .service-alert,
+    .session-alert {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .error-summary { border-left: var(--border-emphasis) solid var(--color-red); }
+    .service-alert { border-left: var(--border-emphasis) solid var(--color-red); }
+    .session-alert { border-left: var(--border-emphasis) solid var(--color-yellow); }
+    .error-summary h2,
+    .service-alert h2,
+    .session-alert h2 { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .error-summary p,
+    .service-alert p,
+    .session-alert p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .error-summary ul { display: grid; gap: var(--space-xs); padding-left: var(--space-xl); }
+    .error-summary a { color: var(--accent-hover); font-size: var(--font-size-label); }
+    .error-summary a:hover { color: var(--text-primary); }
+
+    .security-note {
+      display: grid;
+      gap: var(--space-sm);
+      padding-top: var(--space-md);
+      border-top: var(--border-width) solid var(--border-color);
+    }
+
+    .security-note summary { color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-label); font-weight: var(--font-weight-medium); }
+    .security-note summary:hover { color: var(--text-primary); }
+    .security-note-content { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); color: var(--text-muted); font-size: var(--font-size-label); }
+    .security-note-content ul { display: grid; gap: var(--space-xs); padding-left: var(--space-xl); }
+
+    .auth-boundary {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .auth-boundary p { color: var(--text-muted); font-size: var(--font-size-label); }
+    .auth-boundary strong { color: var(--text-secondary); font-weight: var(--font-weight-medium); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-md);
+      min-height: var(--overflow-panel-height);
+      padding: var(--space-4xl) var(--space-xl);
+      text-align: center;
+      background: var(--panel-bg);
+    }
+
+    .empty-state-icon { color: var(--color-teal); font-size: var(--font-size-empty-icon); }
+    .empty-state h2 { color: var(--text-secondary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-medium); }
+    .empty-state p { max-width: var(--auth-card-width); color: var(--text-muted); font-size: var(--font-size-secondary); line-height: var(--line-height-empty); }
+
+    .loading-card { background: var(--panel-bg); }
+    .skeleton { min-height: var(--space-xl); background: var(--surface-0); border-radius: var(--radius-control); }
+    .skeleton.short { max-width: 50%; }
+    .skeleton.medium { max-width: 75%; }
+    .skeleton.tall { min-height: var(--touch-target); }
+
+    .overflow-card { background: var(--panel-bg); }
+    .overflow-scroll { display: grid; gap: var(--space-md); max-height: var(--overflow-panel-height); overflow: auto; padding-right: var(--space-xs); }
+    .overflow-scroll p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .overflow-scroll ul { display: grid; gap: var(--space-sm); padding-left: var(--space-xl); color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--state-switcher-z);
+      max-width: var(--auth-card-width);
+      padding: var(--space-xs);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); color: var(--text-secondary); background: var(--surface-0); border-color: var(--border-color); font-size: var(--font-size-dense); }
+    .state-switcher button:hover { color: var(--text-primary); background: var(--surface-1); }
+    .state-switcher button[aria-pressed="true"] { color: var(--timeline-bg); background: var(--accent-color); border-color: var(--accent-color); }
+
+    @media (min-width: 1280px) {
+      .auth-context { padding-right: var(--space-4xl); }
+      .auth-main { padding-left: var(--space-4xl); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .auth-context { padding: var(--space-2xl) var(--space-xl); }
+      .auth-main { padding: var(--space-2xl) var(--space-xl); }
+      .context-card,
+      .truth-card { max-width: 100%; }
+      .topbar-status { width: 100%; }
+    }
+
+    @media (max-width: 768px) {
+      .auth-topbar { padding: var(--space-md) var(--space-lg); }
+      .auth-topbar .topbar-status { width: 100%; }
+      .auth-shell { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .auth-context { gap: var(--space-lg); padding: var(--space-xl) var(--space-lg); border-right: var(--space-none); border-bottom: var(--border-width) solid var(--border-color); }
+      .auth-context h1 { font-size: var(--font-size-section-title); }
+      .truth-card { display: none; }
+      .auth-main { padding: var(--space-lg); padding-bottom: calc(var(--touch-target) + var(--space-3xl)); }
+      .auth-card { padding: var(--space-lg); }
+      .context-list { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .form-actions { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .form-actions .btn-secondary { width: 100%; }
+      .password-control { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .password-toggle { width: 100%; }
+      .state-switcher { right: var(--space-sm); bottom: var(--space-sm); max-width: calc(100% - var(--space-lg)); }
+      .state-switcher button { min-height: var(--touch-target); }
+      button,
+      input { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto;
+        transition-duration: var(--motion-none);
+        animation-duration: var(--motion-none);
+        animation-iteration-count: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .auth-topbar      -> AuthenticationEntryHeaderComponent (new; prototype-only)
+    .auth-context     -> AuthenticationContextPanelComponent (new; composes panel/card patterns)
+    .auth-card        -> LoginFormCardComponent (new; reuses card/field/button/badge patterns)
+    .error-summary    -> FormErrorSummaryComponent (new; reuses validation treatment)
+    .service-alert    -> AuthenticationServiceAlertComponent (new; alert pattern)
+    .security-note    -> AuthenticationPrivacyDisclosureComponent (new; native details pattern)
+    .state-switcher   -> prototype-only StateSwitcher; not a production control
+  -->
+
+  <!-- ===== State: Default / authentication-entry design intent ===== -->
+  <section class="auth-state" id="state-default" aria-labelledby="default-login-title">
+    <header class="auth-topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · interne Arbeitsansicht</span></span>
+      </div>
+      <div class="topbar-status" aria-label="Produktgrenzen dieser Anmeldung">
+        <span class="badge badge-prototype">◌ Prototyp</span>
+        <span class="badge badge-planned">→ Identität &amp; Sitzung geplant</span>
+      </div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="default-context-title">
+        <div class="auth-context-copy">
+          <p class="eyebrow">Schichtbeginn · Entwurfsansicht</p>
+          <h1 id="default-context-title">Ein klarer, zurückhaltender Einstieg für die Empfangsarbeit.</h1>
+          <p>Diese Oberfläche zeigt den vorgesehenen Zugang zur internen Arbeitsansicht. Sie prüft keine Arbeitskennung, verarbeitet kein Kennwort und erstellt keine Sitzung.</p>
+        </div>
+
+        <section class="context-card" aria-labelledby="default-context-card-title">
+          <p class="context-kicker">Beispielkontext</p>
+          <h2 id="default-context-card-title">Hotel Rheinland · Bad Orb</h2>
+          <dl class="context-list">
+            <dt>Arbeitsbereich</dt><dd>Empfang · Queue-first</dd>
+            <dt>Schicht</dt><dd>Frühschicht · synthetischer Kontext</dd>
+            <dt>Datensicherheit</dt><dd>Identitäts-, Sitzungs- und RBAC-Vertrag erforderlich</dd>
+          </dl>
+        </section>
+
+        <section class="truth-card" aria-labelledby="default-truth-title">
+          <p class="context-kicker">Wahrheitsgrenze</p>
+          <h2 id="default-truth-title">Was diese Eintrittsseite nicht behauptet</h2>
+          <ul class="truth-list">
+            <li><span aria-hidden="true">!</span><span><strong>Keine Anmeldung:</strong> Die sichtbaren Controls sind eine Designkonvention, kein Authentifizierungsdienst.</span></li>
+            <li><span aria-hidden="true">!</span><span><strong>Keine RBAC:</strong> Rollenbezeichnungen und spätere Berechtigungen sind noch nicht implementiert.</span></li>
+            <li><span aria-hidden="true">!</span><span><strong>Keine Speicherung:</strong> E-Mail, Kennwort, Sitzung und Login-Verlauf verlassen dieses statische HTML nicht.</span></li>
+          </ul>
+        </section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="default-login-title">
+        <article class="auth-card">
+          <header class="auth-card-header">
+            <div class="badge-row"><span class="badge badge-prototype">◌ Zugangsmuster</span><span class="badge badge-unclear">? RBAC unklar</span></div>
+            <h1 id="default-login-title" tabindex="-1">Zur Arbeitsansicht anmelden</h1>
+            <p>Geben Sie später eine zugewiesene Arbeitskennung und ein Kennwort ein. Die aktuelle Datei zeigt nur das Interface und führt keine Anmeldung aus.</p>
+          </header>
+
+          <form novalidate aria-describedby="default-form-note">
+            <div class="form-fields">
+              <div class="field-group">
+                <label class="field-label" for="default-username">Arbeitskennung oder E-Mail-Adresse</label>
+                <input id="default-username" name="username" type="email" autocomplete="username" placeholder="z. B. mara.keller@hotel-rheinland.example" aria-describedby="default-username-help">
+                <span id="default-username-help" class="helper-text">Beispielwert für die Gestaltung; keine Eingabe wird gespeichert oder übermittelt.</span>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="default-password">Kennwort</label>
+                <div class="password-control">
+                  <input id="default-password" name="password" type="password" autocomplete="current-password" placeholder="Kennwort eingeben" aria-describedby="default-password-help">
+                  <button id="default-password-toggle" class="password-toggle" type="button" aria-pressed="false" aria-controls="default-password" onclick="togglePassword('default-password', 'default-password-toggle')">Anzeigen</button>
+                </div>
+                <span id="default-password-help" class="helper-text">Sichtbarkeitswechsel ist hier nur lokal. Ein späteres Produkt braucht Schutz gegen unbefugte Einsicht und passende Auditregeln.</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary" type="button">Anmeldung anfragen</button>
+              <button class="btn-secondary" type="button">Zugangsweg verstehen</button>
+            </div>
+            <p id="default-form-note" class="state-note"><span class="badge badge-planned">→ Neuer API-Vertrag</span> Ein echter Zugang benötigt Identitätsanbieter, Passwort-/Passkey-Entscheidung, Rate Limits, Sitzung, MFA, Recovery, Audit und Rollenmodell.</p>
+          </form>
+
+          <details class="security-note">
+            <summary>Datenschutz- und Sicherheitshinweis für diesen Prototyp</summary>
+            <div class="security-note-content">
+              <p>Keine der dargestellten Kennungen ist ein realer Account. Der Prototyp sendet keine Daten und stellt keine Verbindung zu einer Anmeldung, einem Passwortspeicher oder einer Berechtigungsprüfung her.</p>
+              <ul>
+                <li>Keine persistente Sitzung oder „angemeldet bleiben“-Funktion.</li>
+                <li>Keine Aussage über Passwortregeln, MFA, Passkeys, Entsperrung oder Wiederherstellung.</li>
+                <li>Keine Aussage über Zugriff auf Gäste-, Gesundheits-, Dokument- oder Finanzdaten.</li>
+              </ul>
+            </div>
+          </details>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- ===== State: Error / invalid credentials ===== -->
+  <section class="auth-state" id="state-error" hidden aria-labelledby="invalid-login-title" data-auth-state="invalid-credentials">
+    <header class="auth-topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Zugangsmuster</span></span></div>
+      <div class="topbar-status"><span class="badge badge-error">! Ungültige Anmeldedaten</span><span class="badge badge-prototype">◌ Beispielzustand</span></div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="invalid-context-title">
+        <div class="auth-context-copy">
+          <p class="eyebrow">Fehlermuster vor Feldkorrektur</p>
+          <h1 id="invalid-context-title">Keine Details über eine mögliche Arbeitskennung preisgeben.</h1>
+          <p>Ein zukünftiger Zugang sollte die Eingabe freundlich und konkret korrigierbar machen, ohne zu bestätigen, ob eine Person, E-Mail-Adresse oder Rolle existiert.</p>
+        </div>
+        <section class="truth-card" aria-labelledby="invalid-truth-title">
+          <p class="context-kicker">Sicherheitsabsicht</p>
+          <h2 id="invalid-truth-title">Generisch, aber zugänglich</h2>
+          <ul class="check-list">
+            <li><span aria-hidden="true">✓</span><span><strong>Vor dem Formular:</strong> Fehlerübersicht steht vor den invaliden Feldern.</span></li>
+            <li><span aria-hidden="true">✓</span><span><strong>Mit Feldbezug:</strong> Hilfetext und `aria-invalid` erklären den Korrekturbedarf.</span></li>
+            <li><span aria-hidden="true">!</span><span><strong>Nicht implementiert:</strong> Validierungsregel, Rate Limit, Accountschutz und Protokollierung.</span></li>
+          </ul>
+        </section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="invalid-login-title">
+        <article class="auth-card">
+          <header class="auth-card-header"><div class="badge-row"><span class="badge badge-error">! Korrektur erforderlich</span><span class="badge badge-planned">→ Auth-Vertrag fehlt</span></div><h1 id="invalid-login-title" tabindex="-1">Anmeldung nicht bestätigt</h1><p>Dies ist ein synthetischer Fehlerzustand. In diesem HTML werden keine Kennungen oder Kennwörter geprüft.</p></header>
+
+          <section class="error-summary" role="alert" aria-labelledby="invalid-summary-title">
+            <h2 id="invalid-summary-title">Bitte Anmeldedaten erneut eingeben</h2>
+            <p>Die spätere Anwendung sollte nicht verraten, welche einzelne Eingabe falsch war. Die Übersicht verlinkt dennoch zu den Korrekturfeldern.</p>
+            <ul>
+              <li><a href="#invalid-username">Arbeitskennung oder E-Mail-Adresse prüfen</a></li>
+              <li><a href="#invalid-password">Kennwort erneut eingeben</a></li>
+            </ul>
+          </section>
+
+          <form novalidate aria-describedby="invalid-form-note">
+            <div class="form-fields">
+              <div class="field-group">
+                <label class="field-label" for="invalid-username">Arbeitskennung oder E-Mail-Adresse</label>
+                <input id="invalid-username" name="invalid-username" type="email" autocomplete="username" value="mara.keller@hotel-rheinland.example" aria-invalid="true" aria-describedby="invalid-username-error">
+                <span id="invalid-username-error" class="inline-error">Anmeldedaten konnten nicht bestätigt werden. Bitte beide Angaben erneut prüfen.</span>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="invalid-password">Kennwort</label>
+                <div class="password-control">
+                  <input id="invalid-password" name="invalid-password" type="password" autocomplete="current-password" placeholder="Kennwort erneut eingeben" aria-invalid="true" aria-describedby="invalid-password-error">
+                  <button id="invalid-password-toggle" class="password-toggle" type="button" aria-pressed="false" aria-controls="invalid-password" onclick="togglePassword('invalid-password', 'invalid-password-toggle')">Anzeigen</button>
+                </div>
+                <span id="invalid-password-error" class="inline-error">Kennwort bitte erneut eingeben; kein echter Vergleich findet im Prototyp statt.</span>
+              </div>
+            </div>
+            <div class="form-actions"><button class="btn-primary" type="button">Erneut anfragen</button><button class="btn-secondary" type="button">Zugangshilfe öffnen</button></div>
+            <p id="invalid-form-note" class="state-note"><span class="badge badge-prototype">◌ Fehlerbeispiel</span> Ein späteres Produkt muss Fehlerraten, Hilfestellung, Sperr-/Recovery-Wege und barrierefreie Fehlerankündigungen technisch definieren.</p>
+          </form>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- ===== State: Service unavailable ===== -->
+  <section class="auth-state" id="state-service-unavailable" hidden aria-labelledby="service-login-title" data-auth-state="service-unavailable">
+    <header class="auth-topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Zugangsmuster</span></span></div>
+      <div class="topbar-status"><span class="badge badge-error">! Dienst nicht verfügbar</span><span class="badge badge-planned">→ Servicevertrag geplant</span></div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="service-context-title">
+        <div class="auth-context-copy"><p class="eyebrow">Serviceausfall · Musterzustand</p><h1 id="service-context-title">Keine scheinbare Anmeldung zeigen, wenn ein zukünftiger Dienst nicht antwortet.</h1><p>Die Arbeitsansicht bleibt gesperrt, bis eine spätere technische Integration eine eindeutige, aktuelle Antwort liefert.</p></div>
+        <section class="context-card" aria-labelledby="service-context-card-title"><p class="context-kicker">Sicher weiterarbeiten</p><h2 id="service-context-card-title">Störung sichtbar machen</h2><ul class="check-list"><li><span aria-hidden="true">!</span><span><strong>Kein Fallback:</strong> Keine veraltete Sitzung oder lokale Rollenannahme als Zugriff ausgeben.</span></li><li><span aria-hidden="true">!</span><span><strong>Kein Retry-Versprechen:</strong> Die sichtbare Aktion ist nur ein Designmuster, kein echter Wiederholungsversuch.</span></li></ul></section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="service-login-title">
+        <article class="auth-card">
+          <header class="auth-card-header"><div class="badge-row"><span class="badge badge-error">! Nicht verbunden</span><span class="badge badge-prototype">◌ Modellzustand</span></div><h1 id="service-login-title" tabindex="-1">Anmeldedienst nicht erreichbar</h1><p>Das ist kein Laufzeitfehler dieses Prototyps. Es zeigt, wie ein späteres Produkt den Zugang transparent sperrt.</p></header>
+
+          <section class="service-alert" role="alert" aria-labelledby="service-alert-title">
+            <h2 id="service-alert-title">Der Zugriff kann derzeit nicht bestätigt werden.</h2>
+            <p>Prüfen Sie später die Verbindung oder den Systemstatus. Diese Datei startet keine Netzwerkprüfung und kennt keinen Authentifizierungsdienst.</p>
+            <div class="badge-row"><span class="badge badge-error">! Keine Sitzung</span><span class="badge badge-unclear">? Zeitstempel fehlt</span></div>
+          </section>
+
+          <form novalidate aria-describedby="service-form-note" aria-busy="false">
+            <div class="form-fields">
+              <div class="field-group"><label class="field-label" for="service-username">Arbeitskennung oder E-Mail-Adresse</label><input id="service-username" type="email" value="mara.keller@hotel-rheinland.example" disabled><span class="helper-text">Eingabe ist im Muster gesperrt, weil die spätere Prüfung nicht erreichbar wäre.</span></div>
+              <div class="field-group"><label class="field-label" for="service-password">Kennwort</label><input id="service-password" type="password" value="Beispielwert" disabled></div>
+            </div>
+            <div class="form-actions"><button class="btn-primary" type="button" disabled>Erneut versuchen</button><button class="btn-secondary" type="button">Systemhinweis verstehen</button></div>
+            <p id="service-form-note" class="state-note"><span class="badge badge-planned">→ Fehlervertrag erforderlich</span> Ein späterer Dienst braucht Zeitstempel, Offline-/Timeout-Semantik, Retry-Grenzen, Supportweg und eine nicht irreführende Fehlerantwort.</p>
+          </form>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- ===== State: Session expired ===== -->
+  <section class="auth-state" id="state-session-expired" hidden aria-labelledby="expired-login-title" data-auth-state="session-expired">
+    <header class="auth-topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Zugangsmuster</span></span></div>
+      <div class="topbar-status"><span class="badge badge-warning">! Sitzung abgelaufen</span><span class="badge badge-planned">→ Sitzung geplant</span></div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="expired-context-title">
+        <div class="auth-context-copy"><p class="eyebrow">Rückkehr nach Unterbrechung</p><h1 id="expired-context-title">Eine spätere Sitzung soll Arbeit schützen, ohne den Kontext zu verschleiern.</h1><p>Dieses Muster stellt keine bestehende Sitzung fest. Es dokumentiert nur die Copy, Felder und Rückkehrabsicht für eine zukünftige, sichere Implementierung.</p></div>
+        <section class="truth-card" aria-labelledby="expired-truth-title"><p class="context-kicker">Rückkehrabsicht</p><h2 id="expired-truth-title">Was später geklärt werden muss</h2><ul class="truth-list"><li><span aria-hidden="true">!</span><span><strong>Speichergrenze:</strong> Ob Queue, Filter oder Entwurf nach Re-Authentifizierung zurückkehren darf, braucht einen Datenschutz- und Persistenzvertrag.</span></li><li><span aria-hidden="true">!</span><span><strong>Fokus:</strong> Der Zugang sollte nach dem Login kontrolliert in die sichere Rückkehrposition führen.</span></li></ul></section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="expired-login-title">
+        <article class="auth-card">
+          <header class="auth-card-header"><div class="badge-row"><span class="badge badge-warning">! Sitzung abgelaufen</span><span class="badge badge-prototype">◌ Beispielszenario</span></div><h1 id="expired-login-title" tabindex="-1">Bitte erneut anmelden</h1><p>Diese Meldung ist ein Zustandsbeispiel. Der Prototyp besitzt keine Sitzung und prüft keine vorherige Anmeldung.</p></header>
+
+          <section class="session-alert" role="alert" aria-labelledby="session-alert-title"><h2 id="session-alert-title">Der sichere Arbeitszugang müsste erneuert werden.</h2><p>Eine spätere Implementierung erklärt, ob ungespeicherte Entwürfe verworfen, wiederhergestellt oder zur Prüfung markiert werden. Hier wird kein Kontext gespeichert.</p></section>
+
+          <form novalidate aria-describedby="expired-form-note">
+            <div class="form-fields">
+              <div class="field-group"><label class="field-label" for="expired-username">Arbeitskennung oder E-Mail-Adresse</label><input id="expired-username" type="email" autocomplete="username" value="mara.keller@hotel-rheinland.example"><span class="helper-text">Synthetische Arbeitskennung; keine Sitzung oder Identität wird daraus abgeleitet.</span></div>
+              <div class="field-group"><label class="field-label" for="expired-password">Kennwort</label><div class="password-control"><input id="expired-password" type="password" autocomplete="current-password" placeholder="Kennwort erneut eingeben"><button id="expired-password-toggle" class="password-toggle" type="button" aria-pressed="false" aria-controls="expired-password" onclick="togglePassword('expired-password', 'expired-password-toggle')">Anzeigen</button></div><span class="helper-text">Die Anzeigeaktion zeigt nur ein lokales Designmuster und keine reale Geheimnisverarbeitung.</span></div>
+            </div>
+            <div class="form-actions"><button class="btn-primary" type="button">Zugang erneut anfragen</button><button class="btn-secondary" type="button">Zurück zur Erklärung</button></div>
+            <p id="expired-form-note" class="state-note"><span class="badge badge-planned">→ Session-/Recovery-Vertrag</span> Re-Authentifizierung, Timeout, sichere Rückkehr, Entwurfsschutz und Audit sind Produkt-/Technikentscheidungen, nicht Teil dieser Datei.</p>
+          </form>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- ===== State: Loading / submitting and disabled ===== -->
+  <section class="auth-state" id="state-loading" hidden aria-labelledby="submitting-login-title" data-auth-state="submitting-disabled">
+    <header class="auth-topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Zugangsmuster</span></span></div>
+      <div class="topbar-status"><span class="badge badge-info">i Wird vorbereitet</span><span class="badge badge-prototype">◌ Kein Netzwerkaufruf</span></div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="submitting-context-title">
+        <div class="auth-context-copy"><p class="eyebrow">Senden &amp; Sperren</p><h1 id="submitting-context-title">Während einer späteren Prüfung bleibt der Zustand eindeutig und bedienbar.</h1><p>Das Ladebild verhindert doppelte Anfragen als Designabsicht. Es ruft keinen Dienst auf und wartet nicht auf eine reale Antwort.</p></div>
+        <section class="context-card" aria-labelledby="submitting-context-card-title"><p class="context-kicker">Erwartete spätere Regeln</p><h2 id="submitting-context-card-title">Keine unklare Zwischenlage</h2><ul class="check-list"><li><span aria-hidden="true">✓</span><span><strong>Sperren:</strong> doppelte Anfragen und widersprüchliche Buttons vermeiden.</span></li><li><span aria-hidden="true">✓</span><span><strong>Ankündigen:</strong> Ladeende, Fehler oder Erfolg später über passende Live-Region mitteilen.</span></li></ul></section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="submitting-login-title">
+        <article class="auth-card" aria-busy="true" aria-describedby="submitting-note">
+          <header class="auth-card-header"><div class="badge-row"><span class="badge badge-info">i Anmeldung wird vorbereitet</span><span class="badge badge-planned">→ Asynchroner Vertrag</span></div><h1 id="submitting-login-title" tabindex="-1">Eingabe wird geprüft</h1><p>Ein ausgegrauter Zustand mit sichtbarer Erklärung statt scheinbar erfolgreichem Zugriff.</p></header>
+
+          <div class="loading-card" aria-label="Ladeplatzhalter für den späteren Anmeldestatus"><span class="skeleton short"></span><span class="skeleton tall"></span><span class="skeleton tall"></span><span class="skeleton medium"></span></div>
+
+          <form novalidate aria-describedby="submitting-note">
+            <div class="form-fields">
+              <div class="field-group"><label class="field-label" for="submitting-username">Arbeitskennung oder E-Mail-Adresse</label><input id="submitting-username" type="email" value="mara.keller@hotel-rheinland.example" disabled></div>
+              <div class="field-group"><label class="field-label" for="submitting-password">Kennwort</label><input id="submitting-password" type="password" value="Beispielwert" disabled></div>
+            </div>
+            <div class="form-actions"><button class="btn-primary" type="button" disabled>◌ Anmeldung wird vorbereitet</button><button class="btn-secondary" type="button" disabled>Abbrechen</button></div>
+            <p id="submitting-note" class="state-note"><span class="badge badge-prototype">◌ Ladebeispiel</span> Ein späterer Zugang benötigt definierte Timeout-, Abbruch-, Fehler- und Erfolgssemantik; diese Datei verarbeitet nichts.</p>
+          </form>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- ===== State: Empty / no prefilled work identifier ===== -->
+  <section class="auth-state" id="state-empty" hidden aria-labelledby="empty-login-title" data-auth-state="empty-context">
+    <header class="auth-topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Zugangsmuster</span></span></div>
+      <div class="topbar-status"><span class="badge badge-teal">● Kein Vorwert</span><span class="badge badge-prototype">◌ Leerer Zustand</span></div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="empty-context-title">
+        <div class="auth-context-copy"><p class="eyebrow">Leerer Einstieg</p><h1 id="empty-context-title">Keine Arbeitskennung ist vorbefüllt.</h1><p>Ein neuer oder geteilter Arbeitsplatz sollte nicht ohne klare Entscheidung eine frühere Kennung oder Sitzung anzeigen. Der Prototyp speichert grundsätzlich nichts.</p></div>
+        <section class="truth-card" aria-labelledby="empty-truth-title"><p class="context-kicker">Datenschutzabsicht</p><h2 id="empty-truth-title">Kein impliziter Zugriff</h2><ul class="truth-list"><li><span aria-hidden="true">✓</span><span><strong>Leere Felder:</strong> keine gespeicherte Identität im Designzustand.</span></li><li><span aria-hidden="true">!</span><span><strong>Geplant:</strong> Zugangsbereitstellung und Geräte-/Session-Strategie müssen fachlich und technisch definiert werden.</span></li></ul></section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="empty-login-title">
+        <article class="auth-card">
+          <header class="auth-card-header"><div class="badge-row"><span class="badge badge-teal">● Leerer Kontext</span><span class="badge badge-planned">→ Zugangsverwaltung geplant</span></div><h1 id="empty-login-title" tabindex="-1">Arbeitskennung eingeben</h1><p>Es ist keine Kennung vorausgefüllt. Diese Erklärung ersetzt keine Zugangseinrichtung oder Kontoverwaltung.</p></header>
+          <section class="empty-state" aria-labelledby="empty-state-message-title">
+            <span class="empty-state-icon" aria-hidden="true">⌂</span>
+            <h2 id="empty-state-message-title">Kein gespeicherter Anmeldekontext</h2>
+            <p>Starten Sie später mit einer zugewiesenen Arbeitskennung. Ein zukünftiges System muss sicher erklären, wie Zugang, Passwort, Passkey, MFA oder Hilfe bereitgestellt werden.</p>
+            <div class="button-row"><button class="btn-primary" type="button">Arbeitskennung eingeben</button><button class="btn-secondary" type="button">Zugangsweg verstehen</button></div>
+            <span class="badge badge-prototype">◌ Keine lokale Speicherung</span>
+          </section>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- ===== State: Overflow / long privacy and support content ===== -->
+  <section class="auth-state" id="state-overflow" hidden aria-labelledby="overflow-login-title" data-auth-state="overflow-help">
+    <header class="auth-topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Zugangsmuster</span></span></div>
+      <div class="topbar-status"><span class="badge badge-peach">↕ Langer Hinweis</span><span class="badge badge-prototype">◌ Überlaufmuster</span></div>
+    </header>
+
+    <main class="auth-shell">
+      <aside class="auth-context" aria-labelledby="overflow-context-title">
+        <div class="auth-context-copy"><p class="eyebrow">Überlauf &amp; Hilfetext</p><h1 id="overflow-context-title">Sicherheits- und Datenschutzhinweise bleiben lesbar, ohne den Formularweg zu verdecken.</h1><p>Bei langen Richtlinien, Supportwegen oder rechtlichen Erläuterungen wird Inhalt innerhalb einer begrenzten Fläche scrollbar und behält einen klaren Rückweg zur Anmeldung.</p></div>
+        <section class="context-card" aria-labelledby="overflow-context-card-title"><p class="context-kicker">Gestaltungsregel</p><h2 id="overflow-context-card-title">Langer Text ist keine verdeckte Entscheidung</h2><p>Die wichtigste nächste Aktion bleibt sichtbar. Der spätere Inhalt muss in verständlichem Deutsch, mit semantischen Überschriften und ohne versteckte Einwilligung umgesetzt werden.</p></section>
+      </aside>
+
+      <section class="auth-main" aria-labelledby="overflow-login-title">
+        <article class="auth-card">
+          <header class="auth-card-header"><div class="badge-row"><span class="badge badge-peach">↕ Überlauf</span><span class="badge badge-planned">→ Richtlinieninhalt geplant</span></div><h1 id="overflow-login-title" tabindex="-1">Zugang und Schutz Ihrer Arbeitsdaten</h1><p>Beispiel für längere Sicherheits- und Supporthinweise vor einer späteren Anmeldung.</p></header>
+
+          <section class="overflow-card" aria-labelledby="overflow-card-title">
+            <div class="overflow-scroll" tabindex="0" aria-label="Scrollbarer Beispieltext zu Sicherheit und Zugang">
+              <h2 id="overflow-card-title" class="help-label">Langer Beispielhinweis</h2>
+              <p>Die spätere Zugangsseite sollte erklären, welche Daten für eine Anmeldung erforderlich sind, wie lange eine Sitzung besteht, wie ein gemeinsam genutzter Arbeitsplatz geschützt wird und wie Mitarbeitende bei verlorenem Zugang Unterstützung erhalten. Diese Datei erhebt, speichert oder versendet keine Daten.</p>
+              <p>Für Hotel Rheinland sind Zugangssituationen besonders sensibel, weil Empfangskräfte mit Gästedaten, Meldescheinangaben, Kurkarte, Kurtaxe, Dokumenten und potenziell gesundheitssensiblen Kurortinformationen arbeiten. Eine echte Implementierung muss daher Rollen, minimale Berechtigung, Session-Laufzeit, sichere Rückkehr nach Unterbrechung, Auditierung, Wiederherstellung, Rate Limits und klare Fehlerkommunikation als überprüfbare Verträge definieren.</p>
+              <ul>
+                <li>Keine automatische Behauptung, dass eine Person oder Rolle existiert.</li>
+                <li>Keine Anzeige oder Weitergabe eines Kennworts außerhalb eines expliziten, später geprüften Sicherheitskonzepts.</li>
+                <li>Keine Wiederherstellung von Queue, Entwurf oder Dokumentkontext ohne fachliche Datenschutzentscheidung.</li>
+                <li>Keine Aussage, dass MFA, Passkeys, Authentifizierung, RBAC oder Audit bereits implementiert sind.</li>
+                <li>Keine versteckte Zustimmungs- oder Speicherentscheidung in einer langen Hinweisfläche.</li>
+              </ul>
+              <p>Der Scrollbereich testet Content-Überlauf. Er ersetzt keine Informationssicherheitsrichtlinie, keine Datenschutzinformation, keine Betriebsvereinbarung und keine technische Prüfung.</p>
+            </div>
+            <div class="button-row"><button class="btn-primary" type="button">Zur Anmeldung zurück</button><button class="btn-secondary" type="button">Hinweis schließen</button></div>
+          </section>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <!-- State switcher (prototype-review control) -->
+  <nav class="state-switcher" aria-label="Prototypzustand wechseln">
+    <button type="button" data-state-button="default" aria-controls="state-default" aria-pressed="true" onclick="showLoginState('default', 'default-login-title')">Standard</button>
+    <button type="button" data-state-button="error" aria-controls="state-error" aria-pressed="false" onclick="showLoginState('error', 'invalid-login-title')">Ungültig</button>
+    <button type="button" data-state-button="service-unavailable" aria-controls="state-service-unavailable" aria-pressed="false" onclick="showLoginState('service-unavailable', 'service-login-title')">Dienst</button>
+    <button type="button" data-state-button="session-expired" aria-controls="state-session-expired" aria-pressed="false" onclick="showLoginState('session-expired', 'expired-login-title')">Sitzung</button>
+    <button type="button" data-state-button="loading" aria-controls="state-loading" aria-pressed="false" onclick="showLoginState('loading', 'submitting-login-title')">Senden</button>
+    <button type="button" data-state-button="empty" aria-controls="state-empty" aria-pressed="false" onclick="showLoginState('empty', 'empty-login-title')">Leer</button>
+    <button type="button" data-state-button="overflow" aria-controls="state-overflow" aria-pressed="false" onclick="showLoginState('overflow', 'overflow-login-title')">Überlauf</button>
+  </nav>
+
+  <script>
+    const loginStates = ['default', 'error', 'service-unavailable', 'session-expired', 'loading', 'empty', 'overflow'];
+
+    function showLoginState(name, focusTargetId) {
+      loginStates.forEach((stateName) => {
+        const state = document.getElementById('state-' + stateName);
+        state.hidden = stateName !== name;
+      });
+
+      document.querySelectorAll('[data-state-button]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.stateButton === name));
+      });
+
+      if (focusTargetId) {
+        window.requestAnimationFrame(() => {
+          const focusTarget = document.getElementById(focusTargetId);
+          if (focusTarget) focusTarget.focus();
+        });
+      }
+    }
+
+    function togglePassword(inputId, buttonId) {
+      const input = document.getElementById(inputId);
+      const button = document.getElementById(buttonId);
+      const isVisible = input.type === 'text';
+
+      input.type = isVisible ? 'password' : 'text';
+      button.setAttribute('aria-pressed', String(!isVisible));
+      button.textContent = isVisible ? 'Anzeigen' : 'Maskieren';
+    }
+  </script>
+</body>
+</html>

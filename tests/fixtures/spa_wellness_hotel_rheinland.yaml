@@ -1,0 +1,92 @@
+# spa_wellness_hotel_rheinland.yaml
+#
+# Hotel Rheinland Bad Orb — example Spa/Wellness property configuration
+# consumed by the kurort_engine.spa_wellness module (AC-1..AC-8).
+#
+# Sources (per the design records):
+#   - 33-room count: Hotel Rheinland Bad Orb operational deep-dive, 2026-Q4
+#   - Heilbad predicate: HHV [413] (Hessischer Heilbäderverband Bad Orb member profile)
+#   - Sauna operating hours: parameterised default (not documented; PHASE 5 outreach required)
+#   - Massage room count: 1 (parameterised default; not documented; PHASE 5 outreach required)
+#   - Kur-/Gästekarte discount: HHV [413] Heilbad convention 20% off Toskana Therme day-pass
+#
+# This fixture is consumed by the spa_wellness.report module + AC-8 RED test
+# (test_ac8_daily_spa_revenue_report_breakdown in tests/test_spa_wellness_report.py).
+# It is NOT pre-loaded by the package code — only the test refers to it by relative
+# path; the implementation will consume it at runtime via the standard kurort_engine
+# YAML search path convention.
+#
+# NOTE: this fixture ships during the RED phase for completeness + traceability,
+# not for the green phase to consume — the test will FAIL the helper gate even
+# with the fixture in place because the green phase source files don't exist yet.
+
+property:
+  name: "Hotel Rheinland"
+  city: "Bad Orb"
+  state: "Hessen"
+  postal_code: "63619"
+  country: "DE"
+  classification: "Heilbad"  # per HHV [413] / Hessian Landtag Prädikatisierung
+  rooms: 33                   # per loop-16 operational-deep-dive §3.1
+
+# ---------------------------------------------------------------------------
+# Spa/Wellness resources (parameterised; runtime-configurable per P1 §12)
+# ---------------------------------------------------------------------------
+spa_wellness:
+  kurort_vertical: true       # this is a Kurort (Heilbad predicate)
+  enabled: true
+
+  # Sauna — parameterised capacity (6 is the v1 default; PHASE 5 outreach may
+  # revise once Hotel Rheinland confirms in-house Sauna + actual operating hours)
+  sauna:
+    enabled: true
+    capacity_default: 6
+    operating_hours:
+      weekday: "14:00-22:00"   # Mo-Fr
+      weekend: "10:00-22:00"   # Sa-So + Hessian Feiertage
+    folio_price_eur: "8.00"    # Heilbad-standard per HHV Kurbeitragssatzung
+
+  # Massage — parameterised room count (1 is the v1 default)
+  massage:
+    enabled: true
+    rooms: 1
+    duration_minutes_default: 30
+    folio_price_eur: "35.00"   # Heilbad-standard 30-minute ambulante Vorsorge
+
+  # Toskana Therme cross-sell (parameterised; no live API per P1 §12)
+  toskana_therme:
+    adapter: parameterised_stub_v1
+    guest_discount_pct: 20     # per HHV [413] Kur-/Gästekarte benefit
+    ticket_types:
+      day_pass:
+        list_price_eur: "22.50"
+      evening_pass:
+        list_price_eur: "16.00"
+    manual_scan_fallback: true  # per P1 §12 Risk #1 — Hotel Rheinland is NOT
+                               # a formal Toskana partner; manual entry is the
+                               # v1 contract
+
+# ---------------------------------------------------------------------------
+# Kur-/Gästekarte integration (per HHV [413] + kurort_engine calc module)
+# ---------------------------------------------------------------------------
+kurkarte:
+  enabled: true
+  minimum_nights_for_discount: 3   # HHV [413] — Toskana discount applies
+                                   # only to guests staying >= 3 nights
+  benefits:
+    - city_bus
+    - library
+    - toskana_therme_discount
+
+# ---------------------------------------------------------------------------
+# Folio + payment conventions (per kurort_engine reporting.py:233 +
+# spa_wellness.payment_adapter.py AC-6)
+# ---------------------------------------------------------------------------
+folio:
+  currency: "EUR"
+  currency_format: "€{amount_eur:.2f}"   # 2 decimal places, EUR sign prefix
+
+payment_methods_allowed:
+  - cash
+  - sepa
+  - kurkarte

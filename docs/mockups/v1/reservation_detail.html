@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservierungsdetail — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+    }
+
+    /* ===== Reset, base, and accessibility foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    :focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: 0 0 0 1px var(--accent-color);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: -48px;
+      left: 16px;
+      z-index: 80;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      background: var(--accent-color);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: top 0.15s ease;
+    }
+
+    .skip-link:focus-visible { top: 16px; }
+
+    /* ===== Shared shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: calc(48px + 24px);
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-header-bg);
+    }
+
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .field-actions, .state-switcher, .mobile-nav, .link-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--surface-0);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .brand-copy, .page-copy, .panel-copy, .summary-copy, .state-copy, .notice-copy, .field-group, .activity-copy, .evidence-copy, .mobile-card-copy {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .summary-copy p, .state-copy p, .notice-copy p, .field-help, .activity-copy p, .evidence-copy p, .page-note, .muted-copy, .mobile-card-copy p { color: var(--text-secondary); font-size: 13px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: fit-content;
+      padding: 2px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-muted { color: var(--text-muted); }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+    }
+
+    button:not([disabled]):hover { border-color: var(--surface-1); background: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active { border-color: var(--surface-2); background: var(--surface-2); transform: translateY(0); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { border-color: var(--accent-hover); background: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-secondary { background: var(--panel-bg); }
+    a.btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+    }
+    a.btn-secondary:hover { border-color: var(--surface-1); background: var(--surface-1); color: var(--text-primary); }
+    a.btn-secondary:active { border-color: var(--surface-2); background: var(--surface-2); transform: translateY(0); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: calc(100vh - 72px);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 16px 12px;
+      border-right: 1px solid var(--border-color);
+      background: var(--panel-bg);
+    }
+
+    .nav-group { display: grid; gap: 8px; }
+    .nav-label { padding: 0 12px; color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: 4px; list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-link:hover { border-color: var(--surface-1); background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { border-left-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: 12px; text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+
+    .sidebar-boundary {
+      display: grid;
+      gap: 8px;
+      margin-top: auto;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .sidebar-boundary strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-muted); font-size: 12px; }
+
+    .workspace {
+      display: grid;
+      align-content: start;
+      gap: 16px;
+      min-width: 0;
+      padding: 24px;
+      padding-bottom: 96px;
+    }
+
+    .context-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .context-values { min-width: 0; }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+
+    .boundary-notice, .context-panel, .panel, .summary-panel, .state-card, .evidence-card, .side-card {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .boundary-notice {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 12px;
+      padding: 16px;
+      border-left: 3px solid var(--color-peach);
+    }
+
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+
+    /* ===== Search-return context ===== */
+    .section-heading, .panel-heading, .summary-heading, .state-heading, .side-heading, .mobile-card-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .context-panel { display: grid; gap: 16px; padding: 16px; }
+    .context-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field-group label { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+    .field-group input, .field-group select {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .field-help { color: var(--text-muted); font-size: 12px; }
+    .check-row { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+    .check-row input { width: 16px; height: 16px; accent-color: var(--accent-color); }
+    .check-row label { color: var(--text-secondary); font-size: 12px; }
+    .field-actions { align-self: end; }
+
+    .form-boundary {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .form-boundary strong { color: var(--color-peach); }
+
+    /* ===== General record-detail structures ===== */
+    .state-panel { display: grid; gap: 16px; min-width: 0; }
+    .state-heading { padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--panel-header-bg); }
+    .detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) 352px; gap: 16px; align-items: start; }
+    .panel, .summary-panel { overflow: hidden; }
+    .panel-heading, .summary-heading, .side-heading { padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: var(--panel-header-bg); }
+    .panel-body, .summary-body, .state-card-body, .side-body { display: grid; gap: 16px; padding: 16px; }
+
+    .record-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      padding: 16px;
+      border: 1px solid var(--accent-color);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+
+    .record-header h2 { margin-top: 4px; }
+    .record-header p { color: var(--text-secondary); font-size: 13px; }
+    .record-reference { color: var(--text-primary); font-family: monospace; font-size: 13px; overflow-wrap: anywhere; }
+    .record-state { display: grid; justify-items: end; gap: 8px; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+    }
+
+    .summary-card span { color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small { color: var(--text-secondary); font-size: 12px; }
+
+    .decision-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      border: 1px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .decision-card p { color: var(--text-secondary); font-size: 13px; }
+
+    .section-divider { padding-top: 16px; border-top: 1px solid var(--border-color); }
+    .section-divider h3 { margin-bottom: 4px; }
+    .section-divider > p { color: var(--text-secondary); font-size: 13px; }
+
+    .detail-list { display: grid; gap: 8px; list-style: none; }
+    .detail-list li { display: grid; grid-template-columns: minmax(120px, 0.5fr) minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child { border-bottom: 0; }
+    .detail-label { color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+
+    .evidence-table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 6px; }
+    table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 12px; }
+    caption { padding: 8px 12px; background: var(--timeline-bg); color: var(--text-muted); font-size: 12px; text-align: left; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    tbody tr:last-child td { border-bottom: 0; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    .table-note { color: var(--text-muted); font-size: 11px; }
+
+    .activity-list { display: grid; gap: 8px; list-style: none; }
+    .activity-list li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+    .activity-list li:last-child { border-bottom: 0; }
+    .activity-time { color: var(--text-muted); font-family: monospace; font-size: 11px; }
+    .activity-copy strong { color: var(--text-primary); font-size: 13px; }
+
+    .side-stack { display: grid; gap: 16px; }
+    .privacy-card { border-left: 3px solid var(--color-teal); }
+    .privacy-card p, .dependency-card p, .relationship-card p { color: var(--text-secondary); font-size: 13px; }
+    .masked-value {
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--timeline-bg);
+      color: var(--text-primary);
+      font-family: monospace;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .dependency-card { border-left: 3px solid var(--color-blue); }
+    .relationship-card { border-left: 3px solid var(--color-peach); }
+    .relationship-list { display: grid; gap: 8px; list-style: none; }
+    .relationship-list a { color: var(--accent-hover); font-size: 13px; overflow-wrap: anywhere; }
+    .relationship-list span { color: var(--text-muted); font-size: 12px; }
+    details { padding-top: 12px; border-top: 1px solid var(--border-color); }
+    summary { color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500; }
+    .details-copy { display: grid; gap: 8px; padding-top: 12px; color: var(--text-secondary); font-size: 12px; }
+    .details-copy code { color: var(--text-primary); font-family: monospace; overflow-wrap: anywhere; }
+
+    /* ===== State: incomplete record ===== */
+    .persistent-alert {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--color-red);
+      border-left: 3px solid var(--color-red);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .alert-symbol { color: var(--color-red); font-size: 20px; text-align: center; }
+    .alert-copy { display: grid; gap: 4px; }
+    .alert-copy p { color: var(--text-secondary); font-size: 13px; }
+
+    .incomplete-layout, .locked-layout, .conflict-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 352px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .error-form { display: grid; gap: 12px; }
+    .error-summary {
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+      border: 1px solid var(--color-yellow);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+    }
+
+    .error-summary strong { color: var(--color-yellow); font-size: 13px; }
+    .error-summary p { color: var(--text-secondary); font-size: 12px; }
+    .invalid-input { border-color: var(--color-red) !important; }
+    .field-error { color: var(--color-red); font-size: 12px; }
+    .disabled-explanation { color: var(--text-muted); font-size: 12px; }
+
+    .recovery-card, .lock-card, .conflict-side-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .recovery-card { border-color: var(--color-yellow); }
+    .lock-card { border-color: var(--color-teal); }
+    .conflict-side-card { border-color: var(--color-red); }
+    .recovery-card p, .lock-card p, .conflict-side-card p { color: var(--text-secondary); font-size: 13px; }
+
+    /* ===== State: locked/completed display ===== */
+    .completion-banner {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--color-teal);
+      border-left: 3px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .completion-symbol { color: var(--color-teal); font-size: 20px; text-align: center; }
+    .completion-copy { display: grid; gap: 4px; }
+    .completion-copy p { color: var(--text-secondary); font-size: 13px; }
+    .completion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+    /* ===== State: conflicting edit ===== */
+    .compare-table { width: 100%; min-width: 0; }
+    .compare-table th, .compare-table td { padding: 10px; }
+    .compare-table td:first-child { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .compare-table td:nth-child(2) { color: var(--text-secondary); }
+    .compare-table td:nth-child(3) { color: var(--text-primary); background: var(--surface-0); }
+    .conflict-note { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--color-yellow); border-radius: 6px; background: var(--timeline-bg); }
+    .conflict-note p { color: var(--text-secondary); font-size: 13px; }
+
+    /* ===== Fixed review controls ===== */
+    .state-switcher {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 60;
+      max-width: 520px;
+      justify-content: flex-end;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .switcher-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .state-switcher button { min-height: 32px; padding: 4px 8px; font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+
+    .mobile-record-cards { display: none; }
+    .mobile-nav { display: none; }
+    .page-note { color: var(--text-muted); font-size: 11px; }
+
+    /* ===== Laptop ===== */
+    @media (max-width: 1280px) and (min-width: 769px) {
+      .detail-layout, .incomplete-layout, .locked-layout, .conflict-layout { grid-template-columns: minmax(0, 1fr) 304px; }
+      .context-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .field-actions { grid-column: 1 / -1; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary-grid .summary-card:last-child { grid-column: 1 / -1; }
+    }
+
+    /* ===== Tablet ===== */
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: 72px minmax(0, 1fr); }
+      .sidebar { align-items: center; padding: 16px 8px; }
+      .nav-label, .nav-copy, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: 16px; justify-content: center; width: 48px; padding: 8px; border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .detail-layout, .incomplete-layout, .locked-layout, .conflict-layout { grid-template-columns: minmax(0, 1fr); }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side-stack .relationship-card { grid-column: 1 / -1; }
+      .context-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .field-actions { grid-column: 1 / -1; }
+    }
+
+    /* ===== Focused mobile task mode ===== */
+    @media (max-width: 768px) {
+      body { padding-bottom: 112px; }
+      .app-header { align-items: flex-start; min-height: 0; padding: 16px; }
+      .top-actions { justify-content: flex-start; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .workspace { gap: 16px; padding: 16px; padding-bottom: 128px; }
+      .context-strip { align-items: flex-start; }
+      .context-values { gap: 4px; }
+      .boundary-notice { grid-template-columns: minmax(0, 1fr); }
+      .notice-symbol { display: none; }
+      .context-form { grid-template-columns: minmax(0, 1fr); }
+      .field-actions { display: grid; }
+      .field-actions button { width: 100%; }
+      .context-panel { padding: 12px; }
+      .record-header { grid-template-columns: minmax(0, 1fr); }
+      .record-state { justify-items: start; }
+      .summary-grid { grid-template-columns: minmax(0, 1fr); }
+      .decision-card { grid-template-columns: minmax(0, 1fr); }
+      .decision-card button { width: 100%; }
+      .detail-list li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+      .evidence-table-wrap { display: none; }
+      .mobile-record-cards { display: grid; gap: 8px; }
+      .mobile-card {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--surface-0);
+      }
+      .mobile-card.is-warning { border-left: 3px solid var(--color-yellow); }
+      .mobile-card.is-info { border-left: 3px solid var(--color-blue); }
+      .side-stack { grid-template-columns: minmax(0, 1fr); }
+      .completion-grid { grid-template-columns: minmax(0, 1fr); }
+      .persistent-alert, .completion-banner { grid-template-columns: minmax(0, 1fr); }
+      .alert-symbol, .completion-symbol { display: none; }
+      .state-switcher { right: 8px; bottom: 56px; left: 8px; max-width: none; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; }
+      .state-switcher button { min-height: 44px; flex: 0 0 auto; }
+      .switcher-label { display: none; }
+      .mobile-nav {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px 8px;
+        border-top: 1px solid var(--border-color);
+        background: var(--panel-bg);
+      }
+      .mobile-nav a {
+        display: grid;
+        min-height: 44px;
+        place-items: center;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background: var(--panel-bg);
+        color: var(--text-secondary);
+        font-size: 11px;
+        text-align: center;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { border-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .field-group input, .field-group select { min-height: 44px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Proposed design composition only: ReservationDetailWorkspace,
+    StayEvidencePanel, ArtifactStatusList, and ActivityTimeline are not
+    production frontend paths, routes, data contracts, or implemented components.
+  -->
+  <a class="skip-link" href="#reservation-workspace">Zum Reservierungsdetail springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland ERP">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Betriebsarbeitsplatz · Bad Orb</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisstatus der Detailansicht">
+      <span class="badge badge-prototype">◈ Prototyp</span>
+      <span class="badge badge-planned">⌁ Backend erforderlich</span>
+      <span class="badge badge-unclear">? RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <div class="brand" aria-hidden="true">
+        <span class="brand-mark">HR</span>
+        <span class="brand-copy"><span class="brand-name">Arbeitsplatz</span></span>
+      </div>
+
+      <nav class="nav-group" aria-label="Tägliche Arbeit">
+        <p class="nav-label">Tägliche Arbeit</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="arrivals_queue.html"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-copy">Anreisen</span><span class="nav-count">8</span></a></li>
+          <li><a class="nav-link" href="reservation_search_results.html#state-results"><span class="nav-symbol" aria-hidden="true">⌕</span><span class="nav-copy">Suche &amp; Reservierungen</span><span class="nav-count">Beispiel</span></a></li>
+          <li><a class="nav-link" href="room_planning_calendar.html#state-week"><span class="nav-symbol" aria-hidden="true">▦</span><span class="nav-copy">Zimmerplanung</span><span class="nav-count">Woche</span></a></li>
+          <li><a class="nav-link" href="#reservation-workspace" aria-current="page"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-copy">Reservierungsdetail</span><span class="nav-count">aktiv</span></a></li>
+        </ul>
+      </nav>
+
+      <nav class="nav-group" aria-label="Nachweise und Hinweise">
+        <p class="nav-label">Nachweise</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#artifact-heading"><span class="nav-symbol" aria-hidden="true">◫</span><span class="nav-copy">Dokumente</span><span class="nav-count">3</span></a></li>
+          <li><a class="nav-link" href="#activity-heading"><span class="nav-symbol" aria-hidden="true">≡</span><span class="nav-copy">Aktivität</span><span class="nav-count">Beispiel</span></a></li>
+        </ul>
+      </nav>
+
+      <section class="sidebar-boundary" aria-label="Grenze der Detailansicht">
+        <span class="badge badge-unclear">Keine Datensatzquelle</span>
+        <strong>Auswahl nur lokal</strong>
+        <p>Eine Person, ein Aufenthalt, ein Zimmer, Dokumente und ein Verlauf werden nicht aus einer PMS-, API- oder Datenbankquelle geladen.</p>
+      </section>
+    </aside>
+
+    <main id="reservation-workspace" class="workspace">
+      <section class="context-strip" aria-label="Aktueller Arbeitskontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Auswahl</span><span class="context-value">Fiktiver Such- und Planungsbezug</span>
+        </div>
+        <span class="badge badge-teal">⊙ Synthetische Beispieldaten</span>
+      </section>
+
+      <section class="boundary-notice" aria-labelledby="detail-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <div class="section-heading">
+            <div class="page-copy">
+              <h1 id="detail-title">Reservierung und Aufenthalt</h1>
+              <p>Die Detailansicht zeigt einen fiktiven, datensparsamen Prüfkontext. Sie bestätigt keinen gespeicherten Gast, keine Zimmerzuteilung, keinen Status aus einer Datenbank, keine Berechtigung und keinen realen Check-in.</p>
+            </div>
+            <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+          </div>
+          <p><strong>Statische Dateibeziehung:</strong> <code>RES-BO-2026-0716-014</code> erscheint auch in der fiktiven Suche und Zimmerplanung. Die lokalen Links stellen keine Browserroute, keine gemeinsame Auswahl und keine persistente Rückkehr her.</p>
+        </div>
+      </section>
+
+      <section class="context-panel" aria-labelledby="return-context-title">
+        <div class="section-heading">
+          <div class="page-copy">
+            <h2 id="return-context-title">Prüf- und Rückkehrkontext</h2>
+            <p>Diese Controls dokumentieren die beabsichtigte Kontextübergabe; ihre Werte bleiben ausschließlich im statischen Prototyp.</p>
+          </div>
+          <span class="badge badge-info">Keine Live-Suche</span>
+        </div>
+
+        <form id="detail-context-form" class="context-form" novalidate>
+          <div class="field-group">
+            <label for="detail-origin">Fiktiver Einstieg</label>
+            <select id="detail-origin" name="origin">
+              <option value="search">Reservierungssuche · Beispiel</option>
+              <option value="arrivals">Anreisen · Beispiel</option>
+              <option value="planning">Zimmerplanung · Beispiel</option>
+            </select>
+            <span class="field-help">Kein echter Rückkehrpfad oder gespeicherter Filter.</span>
+          </div>
+          <div class="field-group">
+            <label for="detail-property">Betrieb</label>
+            <select id="detail-property" name="property">
+              <option value="rheinland">Hotel Rheinland · Bad Orb</option>
+              <option value="sample">Weiterer Betrieb · nur Beispiel</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <span class="detail-label">Datenschutzansicht</span>
+            <span class="check-row"><input id="minimize-sensitive" name="minimize-sensitive" type="checkbox" checked><label for="minimize-sensitive">Sensible Angaben minimiert anzeigen</label></span>
+          </div>
+          <div class="field-actions" aria-label="Lokale Kontextaktionen">
+            <button class="btn-secondary" type="submit">Beispielkontext aktualisieren</button>
+            <a class="btn-secondary" href="reservation_search_results.html#state-results">Zur fiktiven Suche</a>
+          </div>
+        </form>
+
+        <p class="form-boundary"><strong>Geplant / Backend erforderlich:</strong><span>Browserroute, Suchergebnis, Gast-/Reservierungs-/Aufenthaltsdaten, Auswahlwiederherstellung, Rollenprüfung, Zweckbindung, Fehlervertrag und dauerhafte Speicherung werden nicht durch diese Ansicht bereitgestellt.</span></p>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Normale fiktive Reservierungsdetailansicht angezeigt.</p>
+
+      <!-- ===== State: normal reservation detail ===== -->
+      <section id="state-detail" class="state-panel" aria-labelledby="state-detail-heading">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="state-detail-heading">Normaler fiktiver Aufenthaltskontext</h2>
+            <p>Aufenthalt zuerst, Nachweise und Grenzen danach. Die sichtbaren Werte dienen der Designprüfung und sind keine bestätigten PMS-Daten.</p>
+          </div>
+          <div class="badge-row">
+            <span class="badge badge-teal">Kontext prüfen</span>
+            <span class="badge badge-planned">Geplant · Browseraktion</span>
+          </div>
+        </header>
+
+        <div class="detail-layout">
+          <section class="panel" aria-labelledby="stay-summary-heading">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="stay-summary-heading">Aufenthaltsübersicht</h2>
+                <p>Eine ausgewählte fiktive Reservierung mit minimalen Angaben und einem klaren nächsten Prüfschritt.</p>
+              </div>
+              <span class="badge badge-prototype">Kein Datenbanklesevorgang</span>
+            </header>
+            <div class="panel-body">
+              <section class="record-header" aria-label="Ausgewählte fiktive Reservierung">
+                <div class="summary-copy">
+                  <span class="badge badge-teal">Ausgewählt · lokal</span>
+                  <h2>Jana Müller-Kaya</h2>
+                  <p class="record-reference">RES-BO-2026-0716-014</p>
+                  <p>16.–23.07.2026 · 2 fiktive Gäste · Anreise im Beispielkontext</p>
+                </div>
+                <div class="record-state">
+                  <span class="badge badge-warning">Prüfung ausstehend</span>
+                  <span class="badge badge-unclear">Zimmerstatus unklar</span>
+                </div>
+              </section>
+
+              <div class="summary-grid" aria-label="Fiktive Kerninformationen">
+                <article class="summary-card"><span>Aufenthalt</span><strong>16.–23.07.2026</strong><small>7 Nächte · fiktiver Zeitraum</small></article>
+                <article class="summary-card"><span>Zimmerbezug</span><strong>214 · Beispiel</strong><small>Keine Zuteilung oder Bereitschaft bestätigt</small></article>
+                <article class="summary-card"><span>Gäste</span><strong>2 Personen · Beispiel</strong><small>Keine Adress-, Ausweis- oder Gesundheitsdaten</small></article>
+              </div>
+
+              <section class="decision-card" aria-labelledby="next-decision-heading">
+                <div class="summary-copy">
+                  <span class="badge badge-planned">Geplant · Check-in-Fluss</span>
+                  <h3 id="next-decision-heading">Nächste menschliche Entscheidung: Vorbedingungen prüfen</h3>
+                  <p>Die spätere Anwendung müsste Aufenthalt, Pflichtangaben, Zimmerkontext, Berechtigung und Dokumentstatus sicher prüfen, bevor ein Check-in vorbereitet wird.</p>
+                </div>
+                <button class="btn-primary" type="button" data-prototype-action="Check-in vorbereiten ist nur eine geplante Browseraktion; es wurde kein Vorgang geöffnet oder geändert.">Check-in vorbereiten</button>
+              </section>
+
+              <section class="section-divider" aria-labelledby="reservation-facts-heading">
+                <h3 id="reservation-facts-heading">Fiktive Reservierungs- und Zimmerdaten</h3>
+                <p>Der Detailkontext reduziert persönliche Daten; jede Aussage über Verfügbarkeit, Zugangsfenster oder Zuteilung ist bewusst begrenzt.</p>
+                <ul class="detail-list">
+                  <li><span class="detail-label">Gastprofil</span><span class="detail-value">Name und Aufenthaltsbezug als fiktive Anzeige; keine Gastakte, keine Suche und keine gespeicherte Kontaktinformation.</span></li>
+                  <li><span class="detail-label">Begleitperson</span><span class="detail-value">Eine weitere fiktive Person ist nur als Anzahl sichtbar; Identität, Adresse und Erlaubnis zur Einsicht sind nicht verfügbar.</span></li>
+                  <li><span class="detail-label">Zimmer 214</span><span class="detail-value">Proposed room context · nicht als verfügbar, gereinigt, zugeteilt, schlüsselaktiv oder konfliktfrei bestätigt.</span></li>
+                  <li><span class="detail-label">Rückkehr</span><span class="detail-value">Suchbegriff, Filter, Planung und Auswahl würden später einen Browser-/API-/Persistenzvertrag benötigen.</span></li>
+                </ul>
+              </section>
+
+              <section class="section-divider" aria-labelledby="charge-heading">
+                <h3 id="charge-heading">Kurtaxe und Folio-Hinweis</h3>
+                <p>Der lokale Rechner kann einen begrenzten Betrag aus expliziten Eingaben berechnen. Diese Darstellung ist eine fiktive Prüfung, keine Finanzbuchung.</p>
+                <div class="evidence-table-wrap">
+                  <table>
+                    <caption>Fiktive Charge-/Folienhinweise. Kein Eintrag ist als gebucht, bezahlt, fakturiert, persistiert oder eingereicht dargestellt.</caption>
+                    <thead>
+                      <tr><th scope="col">Gegenstand</th><th scope="col">Beispielstatus</th><th scope="col">Quelle / Grenze</th><th scope="col">Nächster Schritt</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><strong>Kurtaxe · 36,00 EUR</strong><br><span class="table-note">Fiktiver Anzeige-/Prüfwert</span></td><td><span class="badge badge-prototype">Operational · begrenzt</span><br><span class="badge badge-warning">Nicht gebucht</span></td><td>Lokale Berechnung kennt explizite Reservierungsdaten; Satzung, Ausnahmebeleg, Folio, Zahlung, Persistenz und kommunale Meldung sind nicht verbunden.</td><td><button class="btn-warning" type="button" data-prototype-action="Die Kurtaxe-Ansicht ist ein begrenzter Prototypkontext. Es wurde keine Folio-Buchung, Zahlung oder Meldung ausgelöst.">Kurtaxe prüfen</button></td></tr>
+                      <tr><td><strong>Folio / Rechnung</strong><br><span class="table-note">Keine fiktive Foliozeile</span></td><td><span class="badge badge-planned">Backend erforderlich</span></td><td>Kein Ledger, keine Zahlung, keine Rechnung, kein TSE-/GoBD-/DATEV-Vertrag und keine Autorisierung nachgewiesen.</td><td><button class="btn-secondary" type="button" disabled aria-describedby="folio-disabled-reason">Nicht verfügbar</button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p id="folio-disabled-reason" class="disabled-explanation">Folioaktion deaktiviert: Finanzdaten, berechtigter Auftrag, Transaktion, Konflikt-/Idempotenzmodell, Audit und sichere Rückmeldung sind Geplant.</p>
+                <div class="mobile-record-cards" aria-label="Mobile Charge-Hinweise">
+                  <article class="mobile-card is-warning"><div class="mobile-card-copy"><strong>Kurtaxe · 36,00 EUR</strong><p>Fiktiver Prüfwert · Operational begrenzt · nicht gebucht, nicht bezahlt und nicht eingereicht.</p></div><button class="btn-warning" type="button" data-prototype-action="Der fiktive Kurtaxe-Prüfwert erzeugt keine Folio-Buchung oder Zahlung.">Prüfen</button></article>
+                  <article class="mobile-card"><div class="mobile-card-copy"><strong>Folio / Rechnung</strong><p>Kein Ledger, keine Rechnung und keine Berechtigung nachgewiesen.</p></div><span class="badge badge-planned">Backend erforderlich</span></article>
+                </div>
+              </section>
+
+              <section class="section-divider" aria-labelledby="artifact-heading">
+                <h3 id="artifact-heading">Dokumente und Ankunftsbündel</h3>
+                <p>Lokale Artefaktnamen und Ausgabeformen sind von einer späteren Datei-/Job-/Berechtigungs- und Auslieferungskette getrennt.</p>
+                <div class="evidence-table-wrap">
+                  <table>
+                    <caption>Fiktive Artefaktübersicht. Vorschau, Erzeugung, Download, Zustellung, Installation und Einreichung sind bewusst getrennt.</caption>
+                    <thead>
+                      <tr><th scope="col">Erwarteter Gegenstand</th><th scope="col">Fiktiver Status</th><th scope="col">Nachweisgrenze</th><th scope="col">Prüfaktion</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><strong>meldeschein_RES-BO-2026-0716-014.pdf</strong></td><td><span class="badge badge-warning">Vorschau · Stub-Format</span></td><td>Lokale Bytes/Dateiname können eine begrenzte Ausgabe zeigen; kein finaler PDF-Nachweis, keine Speicherung, kein Download, keine Zustellung und keine kommunale Einreichung.</td><td><button class="btn-secondary" type="button" data-prototype-action="Die Dokumentvorschau ist lokal dargestellt. Es wurde keine Datei geöffnet, gespeichert, heruntergeladen oder übermittelt.">Nachweis lesen</button></td></tr>
+                      <tr><td><strong>Kurkarte Apple / Google</strong></td><td><span class="badge badge-prototype">Prototyp · Payload</span></td><td>Test-/Fixture-Payload ist keine Signatur, Installation, Lieferung, Aktualisierung, Widerruf oder Tür-/Schlüsselkopplung.</td><td><button class="btn-secondary" type="button" data-prototype-action="Die Kurkartenanzeige bestätigt keine Lieferung, Installation oder Schlüsselkopplung.">Vorschau prüfen</button></td></tr>
+                      <tr><td><strong>Ankunftsbündel</strong></td><td><span class="badge badge-unclear">Unklar · Jobstatus</span></td><td>Die lokale Zusammenstellung ersetzt keine Auftrags-ID, Statusabfrage, Dateiablage, Retry-Semantik, sichere Freigabe oder Historie.</td><td><button class="btn-secondary" type="button" data-prototype-action="Die Ankunftsbündelanzeige startet keinen Job und führt keinen Retry aus.">Grenze anzeigen</button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mobile-record-cards" aria-label="Mobile Dokumenthinweise">
+                  <article class="mobile-card is-warning"><div class="mobile-card-copy"><strong>Meldeschein · Vorschau</strong><p>Stub-Format; keine finale Datei, Speicherung, Übermittlung oder rechtliche Endgültigkeit.</p></div><button type="button" data-prototype-action="Die Meldeschein-Vorschau ist keine finale oder eingereichte Datei.">Nachweis lesen</button></article>
+                  <article class="mobile-card is-info"><div class="mobile-card-copy"><strong>Kurkarte · Payload</strong><p>Prototyp; keine Signatur, Installation, Zustellung oder Tür-/Schlüsselkopplung.</p></div><span class="badge badge-prototype">Prototyp</span></article>
+                </div>
+              </section>
+
+              <section class="section-divider" aria-labelledby="activity-heading">
+                <h3 id="activity-heading">Vorgeschlagene Aktivität und Nachweis</h3>
+                <p>Die Zeilen machen die gewünschte Detailtiefe sichtbar. Sie sind keine dauerhaft gespeicherten, einer Sitzung zugeordneten oder rechtlich belastbaren Auditereignisse.</p>
+                <ol class="activity-list">
+                  <li><time class="activity-time" datetime="2026-07-16T08:42">08:42</time><div class="activity-copy"><strong>Fiktiver Suchkontext gewählt</strong><p><span class="badge badge-prototype">Prototyp</span> Suchergebnis/Detailbezug ist lokal; keine Live-Suche, Route oder Auswahlpersistenz.</p></div></li>
+                  <li><time class="activity-time" datetime="2026-07-16T08:45">08:45</time><div class="activity-copy"><strong>Vorgeschlagener Kurtaxe-Prüfhinweis</strong><p><span class="badge badge-teal">Operational · begrenzt</span> Berechnungskontext ist nicht gleich Folio, Zahlung, Rechnung oder Meldung.</p></div></li>
+                  <li><time class="activity-time" datetime="2026-07-16T08:47">08:47</time><div class="activity-copy"><strong>Dokument-/Wallet-Kontext sichtbar</strong><p><span class="badge badge-warning">Unklar</span> Kein Jobstatus, keine sichere Datei-/Pass-Auslieferung, kein tatsächlicher Empfang oder Auditbeweis.</p></div></li>
+                </ol>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Datenschutz, Abhängigkeiten und Querverweise">
+            <section class="side-card privacy-card" aria-labelledby="privacy-heading">
+              <header class="side-heading"><div class="panel-copy"><h2 id="privacy-heading">Datenminimierung</h2><p>Sensible Informationen bleiben standardmäßig verdeckt.</p></div><span class="badge badge-teal">Minimal</span></header>
+              <div class="side-body">
+                <p>Adresse, Geburtsdatum, Ausweis, Zahlungs- und Gesundheitsdaten sind in diesem fiktiven Detail nicht sichtbar.</p>
+                <div id="masked-contact" class="masked-value">Kontakt: [verdeckt · Prototyp]</div>
+                <button id="privacy-toggle" type="button" class="btn-secondary">Fiktive Maskierung erklären</button>
+                <p id="privacy-status" class="muted-copy" role="status">Eine spätere Offenlegung benötigt Zweckbindung, Authentifizierung, RBAC, Audit, sichere Darstellung und Remasking. Dieser Button zeigt keinen echten Wert.</p>
+              </div>
+            </section>
+
+            <section class="side-card dependency-card" aria-labelledby="dependency-heading">
+              <header class="side-heading"><div class="panel-copy"><h2 id="dependency-heading">Abhängigkeiten sichtbar halten</h2><p>Die elegante Detailfläche ersetzt keine Verträge.</p></div><span class="badge badge-planned">Geplant</span></header>
+              <div class="side-body">
+                <ul class="detail-list">
+                  <li><span class="detail-label">Browser / API</span><span class="detail-value">Route, Lesen, Validieren, Fehler, Rückkehr und Refresh fehlen.</span></li>
+                  <li><span class="detail-label">Daten / Konflikt</span><span class="detail-value">Reservierung, Gast, Aufenthalt, Zimmer, Version, Sperre und Persistenz sind nicht belegt.</span></li>
+                  <li><span class="detail-label">RBAC / Audit</span><span class="detail-value">Keine Sitzung, keine Rollenprüfung, keine sensible Offenlegung und keine dauerhafte Auditspur.</span></li>
+                  <li><span class="detail-label">Datei / Integration</span><span class="detail-value">Keine sichere Ablage, Anzeige, Lieferung, Wallet-, Gemeinde-, Zahlungs-, Schlüssel- oder Channel-Bestätigung.</span></li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="side-card relationship-card" aria-labelledby="relationship-heading">
+              <header class="side-heading"><div class="panel-copy"><h2 id="relationship-heading">Statische Prüfbezüge</h2><p>Die Dokumentlinks sind keine Produktnavigation.</p></div><span class="badge badge-info">Dateilinks</span></header>
+              <div class="side-body">
+                <ul class="relationship-list">
+                  <li><a href="reservation_search_results.html#state-results">Fiktive Suche: Jana Müller-Kaya / RES-BO-2026-0716-014</a><span>Keine gemeinsame Session, Suche oder Auswahl.</span></li>
+                  <li><a href="room_planning_calendar.html#state-week">Fiktive Zimmerplanung: Zimmerbezug 214</a><span>Keine Verfügbarkeit, Zuteilung, Sperre oder Synchronisation.</span></li>
+                  <li><a href="arrivals_queue.html">Fiktive Anreisequeue</a><span>Keine Ankunftsaufgabe, Check-in-Status oder Rückkehrpersistenz.</span></li>
+                </ul>
+                <details>
+                  <summary>Technischen Quellenhinweis anzeigen</summary>
+                  <div class="details-copy">
+                    <p><code>calculator.py</code> kennt explizite Reservierungsdaten und einen begrenzten Kurtaxe-Rechenweg; <code>guest_arrival.py</code> synthetisiert Fixture-Daten und lokale Ausgabedateien; <code>audit.py</code> beschreibt in-process Einträge. Keines dieser Module liefert eine vollständige Browser-Detailseite.</p>
+                    <p><span class="badge badge-unclear">Unklar / Geplant</span> Eine produktive Detailansicht braucht eigene Daten-, Berechtigungs-, Dateisicherheits-, Konflikt-, Job- und Integrationsverträge.</p>
+                  </div>
+                </details>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: incomplete reservation record ===== -->
+      <section id="state-incomplete" class="state-panel" aria-labelledby="incomplete-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="incomplete-heading">Unvollständiger fiktiver Datensatz</h2><p>Ein fehlender Pflichtwert wird als anhaltender Kontext sichtbar gemacht, nicht als stiller Erfolg oder leerer Raum.</p></div>
+          <span class="badge badge-error">! Angaben fehlen</span>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="incomplete-alert-heading">
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div class="alert-copy"><h3 id="incomplete-alert-heading">Staatsangehörigkeit der primären fiktiven Person ist nicht vorhanden.</h3><p>Ein späterer Check-in- oder Meldescheinfluss darf eine Pflichtangabe nicht einfach überspringen. Dieser Zustand prüft und speichert jedoch keine echten Daten und trifft keine rechtliche Entscheidung.</p></div>
+        </section>
+
+        <div class="incomplete-layout">
+          <section class="panel" aria-labelledby="incomplete-form-heading">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="incomplete-form-heading">Korrekturkontext</h2><p>Native Feldstruktur als Designmuster, nicht als gespeicherte Eingabe.</p></div><span class="badge badge-prototype">Keine Validierung ausgeführt</span></header>
+            <div class="panel-body">
+              <form id="incomplete-record-form" class="error-form" novalidate>
+                <div class="error-summary" id="incomplete-summary">
+                  <strong>1 Pflichtangabe prüfen</strong>
+                  <p>Für Jana Müller-Kaya / <code>RES-BO-2026-0716-014</code> ist die Staatsangehörigkeit im fiktiven Detailkontext nicht vorhanden. Die Adresse, das Geburtsdatum und Ausweisdaten bleiben bewusst nicht angezeigt.</p>
+                </div>
+                <div class="field-group">
+                  <label for="nationality-field">Staatsangehörigkeit</label>
+                  <input id="nationality-field" name="nationality" class="invalid-input" type="text" value="" aria-invalid="true" aria-describedby="nationality-help nationality-error" autocomplete="off">
+                  <span id="nationality-help" class="field-help">Nur fiktives Korrekturmuster: keine Eingabe wird geprüft, gespeichert oder an eine Stelle übermittelt.</span>
+                  <span id="nationality-error" class="field-error">Pflichtangabe im fiktiven Szenario fehlt. Eine echte Validierung benötigt einen Daten- und Rechts-/Inhaltsvertrag.</span>
+                </div>
+                <div class="field-group">
+                  <label for="correction-scope">Geplanter Korrekturweg</label>
+                  <select id="correction-scope" name="correction-scope">
+                    <option value="reception">Rezeption · fiktive Korrekturanfrage</option>
+                    <option value="manager">Front-office-Management · fiktive Eskalation</option>
+                    <option value="privacy">Datenschutzprüfung · nur bei Bedarf</option>
+                  </select>
+                </div>
+                <div class="action-row">
+                  <button class="btn-secondary" type="submit">Korrekturmuster prüfen</button>
+                  <button class="btn-primary" type="button" disabled aria-describedby="incomplete-disabled-reason">Check-in vorbereiten</button>
+                </div>
+                <p id="incomplete-disabled-reason" class="disabled-explanation">Deaktiviert: Pflichtwert, Datenquelle, Berechtigung, Validierungsregeln, Speicherung, Dokument-/Jobstatus und auditierbare Entscheidung sind nicht bestätigt.</p>
+              </form>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="incomplete-recovery-heading">
+            <span class="badge badge-warning">Manuelle Prüfung erforderlich</span>
+            <h2 id="incomplete-recovery-heading">Sicher zurück in den Kontext</h2>
+            <p>Die nächste sichere Designentscheidung ist die fehlende Angabe zu prüfen oder den Vorgang an eine spätere zuständige Rolle zurückzugeben. Es gibt kein automatisches Auffüllen und keinen versteckten Datensatzwechsel.</p>
+            <button class="btn-secondary" type="button" data-state-target="state-detail" aria-controls="state-detail">Zur Detailprüfung zurück</button>
+            <a class="btn-secondary" href="reservation_search_results.html#state-results">Fiktive Suche öffnen</a>
+          </aside>
+        </div>
+
+        <p class="page-note">Unvollständig-Zustand: Text, Status und deaktivierte Aktion zeigen den Blocker redundant. Er beweist keine Feldprüfung, Gesetzeskonformität, Speicherung oder reale Check-in-Sperre.</p>
+      </section>
+
+      <!-- ===== State: locked/completed display ===== -->
+      <section id="state-locked" class="state-panel" aria-labelledby="locked-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="locked-heading">Abgeschlossen und gesperrt · fiktive Anzeige</h2><p>Ein Abschlussbild kann eine spätere Rückkehrentscheidung verdeutlichen, ohne eine echte, irreversible oder persistierte Handlung zu behaupten.</p></div>
+          <span class="badge badge-teal">◈ Prototypstatus</span>
+        </header>
+
+        <section class="completion-banner" role="status" aria-labelledby="completion-heading">
+          <span class="completion-symbol" aria-hidden="true">✓</span>
+          <div class="completion-copy"><h3 id="completion-heading">Beispiel einer späteren Abschluss-/Sperranzeige</h3><p>Im fiktiven Szenario wurde die Detailansicht zur Nachschau „gesperrt“. Diese Anzeige ist kein gespeicherter Check-in, keine Zimmerübergabe, keine Schlüsselaktivierung, keine Zahlung, keine Dokumentzustellung und keine kommunale Einreichung.</p></div>
+        </section>
+
+        <div class="locked-layout">
+          <section class="panel" aria-labelledby="locked-summary-heading">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="locked-summary-heading">Begrenzte Abschlussübersicht</h2><p>Der Prototyp trennt fiktive Sichtbarkeit von tatsächlicher Finalität.</p></div><span class="badge badge-success">Darstellung abgeschlossen</span></header>
+            <div class="panel-body">
+              <div class="completion-grid">
+                <article class="summary-card"><span>Fiktiver Abschlusszeitpunkt</span><strong><time datetime="2026-07-16T09:18">16.07.2026 · 09:18</time></strong><small>Kein gespeicherter Serverzeitstempel</small></article>
+                <article class="summary-card"><span>Fiktiver Vorgang</span><strong>Check-in-Review</strong><small>Keine echte Check-in-Transaktion</small></article>
+                <article class="summary-card"><span>Vorgeschlagener Schutz</span><strong>Lesen ohne Bearbeitung</strong><small>Kein Lock, keine Session und kein RBAC-Nachweis</small></article>
+                <article class="summary-card"><span>Nachweise</span><strong>Vorschau / Unklar</strong><small>Keine sichere Datei, Zustellung oder Einreichung</small></article>
+              </div>
+              <section class="section-divider" aria-labelledby="locked-evidence-heading">
+                <h3 id="locked-evidence-heading">Was weiterhin separat geprüft werden müsste</h3>
+                <ul class="detail-list">
+                  <li><span class="detail-label">Dokumente</span><span class="detail-value">Meldeschein-/Wallet-/Bündelanzeige ist nicht gleich finaler Inhalt, Speicherung, Download, Lieferung, Installation oder Einreichung.</span></li>
+                  <li><span class="detail-label">Zimmer / Schlüssel</span><span class="detail-value">Keine Zuteilung, Reinigung, Schlüsselbindung, Zugangsfreigabe oder Rücknahme ist bewiesen.</span></li>
+                  <li><span class="detail-label">Finanzen</span><span class="detail-value">Keine Kurtaxe- oder Folio-Buchung, Zahlung, Rechnung, Fiskalisierung oder Abrechnung ist ausgelöst.</span></li>
+                  <li><span class="detail-label">Audit</span><span class="detail-value">Kein authentifizierter Akteur, keine dauerhafte Historie, keine Integritätssicherung über einen lokalen Prozess hinaus.</span></li>
+                </ul>
+              </section>
+            </div>
+          </section>
+
+          <aside class="lock-card" aria-labelledby="lock-action-heading">
+            <span class="badge badge-unclear">RBAC unklar</span>
+            <h2 id="lock-action-heading">Bearbeitung nicht freigeben</h2>
+            <p>Ein späterer gesperrter Vorgang braucht einen eindeutigen Lock-/Version-/Rechtevertrag. Diese statische Ansicht bietet nur eine sichere Rückkehr oder erneute Designprüfung.</p>
+            <button class="btn-secondary" type="button" disabled aria-describedby="locked-disabled-reason">Bearbeitung öffnen</button>
+            <p id="locked-disabled-reason" class="disabled-explanation">Deaktiviert: keine authentifizierte Sitzung, keine Rollenentscheidung, keine Sperre, kein Versionsvergleich und keine Persistenz vorhanden.</p>
+            <button class="btn-secondary" type="button" data-state-target="state-detail" aria-controls="state-detail">Zur fiktiven Detailansicht</button>
+          </aside>
+        </div>
+
+        <p class="page-note">Gesperrt-/Abgeschlossen-Zustand: Der sichtbare Status ist ein Prototype-Szenario. Er ist kein Nachweis für eine irreversible, rechtlich endgültige, sichere oder externe Operation.</p>
+      </section>
+
+      <!-- ===== State: conflicting edit ===== -->
+      <section id="state-conflict" class="state-panel" aria-labelledby="conflict-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="conflict-heading">Bearbeitungskonflikt · fiktives Beispiel</h2><p>Eine widersprüchliche Änderung erhält Kontext und einen sicheren Rückweg, statt still zu überschreiben oder einen erfundenen Erfolg zu zeigen.</p></div>
+          <span class="badge badge-error">! Konflikt</span>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="conflict-alert-heading">
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div class="alert-copy"><h3 id="conflict-alert-heading">Zimmer- und Aufenthaltskontext stimmen in zwei fiktiven Versionen nicht überein.</h3><p>Die lokale Ansicht zeigt ein Muster für einen späteren Versionskonflikt. Quelle, Zeitstempel, Versionsnummer, andere Bearbeitung und Auflösungsweg sind Beispielwerte; keine Datenbankabfrage oder Sperre hat stattgefunden.</p></div>
+        </section>
+
+        <div class="conflict-layout">
+          <section class="panel" aria-labelledby="compare-heading">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="compare-heading">Fiktiver Vergleich statt Überschreiben</h2><p>Vergleichbare Werte bleiben sichtbar, aber eine Änderung wird nicht automatisch zusammengeführt oder gespeichert.</p></div><span class="badge badge-unclear">Version unklar</span></header>
+            <div class="panel-body">
+              <div class="evidence-table-wrap">
+                <table class="compare-table">
+                  <caption>Fiktiver Konfliktvergleich für RES-BO-2026-0716-014. Beide Spalten sind statische Beispiele und keine abgerufenen Datenquellen.</caption>
+                  <thead><tr><th scope="col">Feld</th><th scope="col">Lokale Beispielansicht</th><th scope="col">Fiktive Gegenbearbeitung</th></tr></thead>
+                  <tbody>
+                    <tr><td>Zimmerbezug</td><td>214 · kein Zuteilungsnachweis</td><td>215 · Hinweis ab 16.07. · kein verifizierter Wechsel</td></tr>
+                    <tr><td>Aufenthalt</td><td>16.–23.07.2026</td><td>16.–24.07.2026 · Verlängerung unbestätigt</td></tr>
+                    <tr><td>Konfliktquelle</td><td>Lokale Prototypauswahl</td><td>„Version 8“ · fiktiver Zeitpunkt 08:51</td></tr>
+                    <tr><td>Folge</td><td>Keine Speicherung</td><td>Kein Merge, keine Zimmeränderung, keine Preis-/Folio-/Schlüssel-/Benachrichtigungsaktion</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <section class="conflict-note" aria-labelledby="conflict-safety-heading">
+                <span class="badge badge-warning">Manuelle Prüfung erforderlich</span>
+                <h3 id="conflict-safety-heading">Sichere Auflösung braucht einen späteren Vertrag</h3>
+                <p>Eine Umsetzung benötigt eine autoritative Reservierungs-/Zimmerquelle, Versions- oder Sperrmodell, Datenfrische, Vergleichsregeln, sichere Rechteprüfung, Folgenvorschau, Transaktion, Audit, Rückkehrkontext und Integration mit Zimmer/Schlüssel/Housekeeping/Channel/Benachrichtigung, soweit relevant.</p>
+                <div class="action-row"><a class="btn-secondary" href="room_planning_calendar.html#state-conflict">Fiktiven Zimmerkonflikt öffnen</a><button class="btn-secondary" type="button" data-state-target="state-detail" aria-controls="state-detail">Ohne Änderung zurück</button></div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="conflict-side-card" aria-labelledby="conflict-action-heading">
+            <span class="badge badge-error">Nicht überschreiben</span>
+            <h2 id="conflict-action-heading">Kein stiller Save</h2>
+            <p>Die exemplarischen Werte erlauben eine Diskussion über die nötige Entscheidungsunterstützung. Sie lösen weder eine Zuteilung noch eine Änderung oder eine externe Folge aus.</p>
+            <button class="btn-danger" type="button" disabled aria-describedby="conflict-disabled-reason">Änderung übernehmen</button>
+            <p id="conflict-disabled-reason" class="disabled-explanation">Deaktiviert: Quelle, Version, Sperre, Berechtigung, Validierung, Persistenz, Audit und Nebenfolgen sind nicht implementiert bzw. Unklar.</p>
+            <button class="btn-secondary" type="button" data-state-target="state-incomplete" aria-controls="state-incomplete">Pflichtangaben prüfen</button>
+            <a class="btn-secondary" href="reservation_search_results.html#state-duplicate">Zur fiktiven Suchprüfung</a>
+          </aside>
+        </div>
+
+        <p class="page-note">Konfliktzustand: Ein sichtbarer Vergleich ist weder ein echter Optimistic-Lock-Check noch eine Zusammenführung, Speicherung, Änderungshistorie, Rechteentscheidung oder dauerhafte Auditspur.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Hotel-, Reservierungs-, Zimmer-, Dokument- und Gastdaten. Quellprüfungen können Tokens, Struktur, Zustände und lokale JavaScript-Logik belegen; sie beweisen keine gerenderte Layoutqualität, Tastatur- oder Screen-Reader-Verhalten, Kontrast, Zoom/Reflow, Zielgrößenmessung, WCAG/BFSG/EAA-Konformität, Authentifizierung, RBAC, Persistenz, Konfliktkontrolle, Folio-/Dokumentwahrheit, sichere Dateiverarbeitung, Integration oder rechtliche Endgültigkeit.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html">Anreisen</a>
+    <a href="#reservation-workspace" aria-current="page">Detail</a>
+    <a href="room_planning_calendar.html#state-week">Planung</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <span class="switcher-label">Zustand</span>
+    <button id="state-button-detail" type="button" data-state-target="state-detail" aria-controls="state-detail" aria-pressed="true">Normal</button>
+    <button id="state-button-incomplete" type="button" data-state-target="state-incomplete" aria-controls="state-incomplete" aria-pressed="false">Unvollständig</button>
+    <button id="state-button-locked" type="button" data-state-target="state-locked" aria-controls="state-locked" aria-pressed="false">Gesperrt</button>
+    <button id="state-button-conflict" type="button" data-state-target="state-conflict" aria-controls="state-conflict" aria-pressed="false">Konflikt</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('detail-context-form');
+      const incompleteForm = document.getElementById('incomplete-record-form');
+      const privacyToggle = document.getElementById('privacy-toggle');
+      const maskedContact = document.getElementById('masked-contact');
+      const privacyStatus = document.getElementById('privacy-status');
+
+      const labels = {
+        'state-detail': 'Normaler fiktiver Aufenthaltskontext angezeigt.',
+        'state-incomplete': 'Unvollständiger fiktiver Datensatz angezeigt.',
+        'state-locked': 'Gesperrte oder abgeschlossene fiktive Anzeige dargestellt.',
+        'state-conflict': 'Fiktiver Bearbeitungskonflikt angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      Array.from(document.querySelectorAll('[data-prototype-action]')).forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Rückkehrkontext lokal aktualisiert. Es wurde keine Suche, Route, Datenbankabfrage, Berechtigungsprüfung oder Speicherung ausgeführt.';
+      });
+
+      incompleteForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktives Korrekturmuster geprüft. Es wurde keine Pflichtangabe validiert, gespeichert oder übermittelt.';
+      });
+
+      privacyToggle.addEventListener('click', function () {
+        const isMasked = maskedContact.textContent.indexOf('verdeckt') !== -1;
+        if (isMasked) {
+          maskedContact.textContent = 'Kontakt: Beispiel bleibt absichtlich nicht offengelegt';
+          privacyToggle.textContent = 'Maskierung wieder anzeigen';
+          privacyStatus.textContent = 'Auch die erläuternde lokale Umschaltung zeigt keinen echten Wert. Eine spätere Offenlegung benötigt Zweckbindung, Authentifizierung, RBAC, Audit, sichere Darstellung und Remasking.';
+        } else {
+          maskedContact.textContent = 'Kontakt: [verdeckt · Prototyp]';
+          privacyToggle.textContent = 'Fiktive Maskierung erklären';
+          privacyStatus.textContent = 'Eine spätere Offenlegung benötigt Zweckbindung, Authentifizierung, RBAC, Audit, sichere Darstellung und Remasking. Dieser Button zeigt keinen echten Wert.';
+        }
+        liveMessage.textContent = 'Lokale Maskierungserklärung geändert. Keine sensible Information wurde abgerufen oder offengelegt.';
+      });
+    }());
+  </script>
+</body>
+</html>

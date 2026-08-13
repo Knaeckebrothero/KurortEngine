@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anreisen — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* ===== Established typography, spacing, shape, and motion tokens ===== */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-size-empty-icon: 48px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --line-height-compact: 1.4;
+      --line-height-empty: 1.6;
+      --letter-spacing-label: 0.5px;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --detail-width: calc(var(--space-4xl) * 8);
+      --state-switcher-width: calc(var(--space-4xl) * 10);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-mobile-nav: 20;
+      --z-batch-bar: 30;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+
+    /* ===== Shared shell ===== */
+    .state { min-height: 100vh; }
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: 100vh;
+      background: var(--app-bg);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      min-height: var(--touch-target);
+      padding: var(--space-sm);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-2xl);
+      height: var(--space-2xl);
+      background: var(--surface-0);
+      color: var(--color-teal);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-card);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+      flex: 0 0 auto;
+    }
+
+    .brand-copy, .topbar-copy, .panel-title-group, .guest-copy, .status-stack, .drawer-copy, .card-copy, .empty-copy, .banner-copy, .skeleton-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .brand-subtitle, .panel-subtitle, .helper, .page-note, .metadata, .drawer-note, .state-note { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label {
+      padding: var(--space-none) var(--space-md);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+    }
+    .nav-list, .queue-list, .artifact-list, .timeline-list, .legend-list, .mobile-card-list { display: grid; gap: var(--space-xs); list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-secondary);
+      background: none;
+      border: var(--border-width) solid var(--border-color);
+      border-left: var(--border-emphasis) solid var(--border-color);
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-secondary);
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: var(--font-size-label); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .sidebar-context {
+      display: grid;
+      gap: var(--space-xs);
+      margin-top: auto;
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .sidebar-context strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .sidebar-context span { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .sidebar-context small { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .workspace { display: flex; flex-direction: column; min-width: var(--space-none); }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .topbar-copy h1 { color: var(--text-primary); font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    .topbar-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .topbar-actions, .chip-row, .context-strip, .legend-row, .button-row, .badge-row, .batch-actions, .mobile-nav, .state-switcher, .context-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .topbar-actions { justify-content: flex-end; }
+
+    .context-strip {
+      padding: var(--space-sm) var(--space-xl);
+      background: var(--panel-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+    .context-label { color: var(--text-muted); font-size: var(--font-size-table-header); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .context-divider { color: var(--surface-2); }
+
+    button, input, select { font: inherit; }
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-lg);
+      color: var(--text-secondary);
+      background: none;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover { background: var(--surface-0); color: var(--text-primary); transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-secondary { background: none; border-color: var(--border-color); color: var(--text-secondary); }
+    .btn-quiet { background: var(--surface-0); border-color: var(--border-color); color: var(--text-secondary); }
+    .btn-warning { background: none; border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { background: none; border-color: var(--color-red); color: var(--color-red); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: var(--space-badge-y) var(--space-sm);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      line-height: var(--line-height-base);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+
+    .content { display: grid; gap: var(--space-lg); padding: var(--space-xl); }
+    .truth-banner, .alert-banner, .batch-bar, .keyboard-intent, .queue-summary {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      flex-wrap: wrap;
+    }
+    .truth-banner { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .alert-banner { border-left: var(--border-emphasis) solid var(--color-red); }
+    .truth-banner h2, .alert-banner h2, .batch-bar h2 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .truth-banner p, .alert-banner p, .batch-bar p, .keyboard-intent p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .truth-banner .badge-row, .alert-banner .badge-row { margin-left: auto; }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width));
+      align-items: start;
+      gap: var(--space-lg);
+    }
+    .panel {
+      display: grid;
+      min-width: var(--space-none);
+      overflow: hidden;
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .panel-title { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    .panel-body { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+
+    .filter-form {
+      display: grid;
+      grid-template-columns: minmax(calc(var(--space-4xl) * 4), 1fr) auto;
+      align-items: end;
+      gap: var(--space-md);
+    }
+    .field-group { display: grid; gap: var(--space-xs); }
+    .field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: var(--font-weight-medium); }
+    input[type="search"], select {
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-primary);
+      font-size: var(--font-size-body);
+      transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+    }
+    input[type="search"]::placeholder { color: var(--text-muted); }
+    .chip {
+      min-height: var(--space-2xl);
+      padding: var(--space-xs) var(--space-sm);
+      background: none;
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+    }
+    .chip[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .chip-count { color: inherit; font-size: var(--font-size-table-header); }
+
+    .queue-summary { align-items: center; padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border-left: var(--border-emphasis) solid var(--color-peach); }
+    .queue-summary strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .queue-summary span:not(.badge) { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .table-wrap {
+      max-width: 100%;
+      overflow: auto;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+    }
+    .table-wrap:focus-visible { outline-offset: calc(var(--space-xs) * -1); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 20); border-collapse: collapse; font-size: var(--font-size-secondary); }
+    caption { padding: var(--space-sm) var(--space-md); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: var(--border-width) solid var(--border-color); text-align: left; vertical-align: top; }
+    th {
+      position: sticky;
+      top: var(--space-none);
+      z-index: var(--border-width);
+      background: var(--surface-0);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    tbody tr { transition: background var(--motion-fast), box-shadow var(--motion-fast); }
+    tbody tr:hover, tbody tr:focus-within { background: var(--surface-0); }
+    tbody tr.is-selected { background: var(--surface-0); box-shadow: inset var(--border-emphasis) var(--space-none) var(--space-none) var(--accent-color); }
+    tbody tr.is-stale { box-shadow: inset var(--border-emphasis) var(--space-none) var(--space-none) var(--color-yellow); }
+    .selection-cell { width: var(--touch-target); }
+    .selection-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: var(--touch-target);
+      min-height: var(--touch-target);
+      cursor: pointer;
+    }
+    .selection-control input { width: var(--space-lg); height: var(--space-lg); accent-color: var(--accent-color); }
+    .time-cell { color: var(--text-primary); font-family: var(--font-mono); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); white-space: nowrap; }
+    .time-cell small { display: block; color: var(--text-muted); font-family: var(--font-sans); font-size: var(--font-size-dense); font-weight: var(--font-weight-regular); }
+    .guest-copy strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .guest-copy span { color: var(--text-muted); font-size: var(--font-size-label); }
+    .guest-copy .long-name { overflow-wrap: anywhere; }
+    .room-cell { color: var(--text-secondary); font-size: var(--font-size-label); white-space: nowrap; }
+    .status-stack { align-content: start; }
+    .status-stack .helper { max-width: calc(var(--space-4xl) * 4); line-height: var(--line-height-compact); }
+    .table-action { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-dense); white-space: nowrap; }
+    .mono { color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--font-size-label); overflow-wrap: anywhere; }
+
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .selected-stay {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--accent-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+    .selected-stay h3, .drawer-title, .artifact-title { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .selected-stay p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .key-values { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-sm) var(--space-md); }
+    .key-values dt { color: var(--text-muted); font-size: var(--font-size-label); }
+    .key-values dd { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .artifact-list { gap: var(--space-sm); }
+    .artifact-button {
+      display: grid;
+      gap: var(--space-xs);
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      text-align: left;
+    }
+    .artifact-button:hover { background: var(--surface-1); border-color: var(--surface-2); }
+    .artifact-button .artifact-proof { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--font-size-dense); overflow-wrap: anywhere; }
+
+    .evidence-drawer { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .evidence-drawer details { display: grid; gap: var(--space-sm); padding-top: var(--space-md); border-top: var(--border-width) solid var(--border-color); }
+    .evidence-drawer summary { color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    .timeline-list { gap: var(--space-sm); }
+    .timeline-list li { display: grid; grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr); gap: var(--space-sm); }
+    .timeline-time { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--font-size-dense); }
+    .timeline-copy { display: grid; gap: var(--space-xs); color: var(--text-secondary); font-size: var(--font-size-label); }
+    .timeline-copy strong { color: var(--text-primary); font-size: var(--font-size-label); font-weight: var(--font-weight-semibold); }
+
+    .keyboard-intent { background: var(--timeline-bg); border-left: var(--border-emphasis) solid var(--color-blue); }
+    .keyboard-intent h2 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .keyboard-list { display: grid; gap: var(--space-xs); padding-left: var(--space-xl); color: var(--text-secondary); font-size: var(--font-size-label); }
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--space-lg-plus);
+      padding: var(--space-badge-y) var(--space-xs);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: var(--font-size-dense);
+      white-space: nowrap;
+    }
+
+    .mobile-card-list { display: none; }
+    .arrival-card {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .arrival-card.is-selected { border-color: var(--accent-color); box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color); }
+    .arrival-card.is-stale { border-left: var(--border-emphasis) solid var(--color-yellow); }
+    .arrival-topline { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+    .arrival-topline strong { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .arrival-card p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .arrival-card button { width: 100%; }
+
+    .mobile-nav { display: none; }
+
+    /* ===== Empty, loading, and partial/error states ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-md);
+      min-height: calc(var(--space-4xl) * 9);
+      padding: var(--space-4xl) var(--space-xl);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      text-align: center;
+    }
+    .empty-icon { color: var(--color-teal); font-size: var(--font-size-empty-icon); }
+    .empty-state h2 { color: var(--text-secondary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-medium); }
+    .empty-state p { max-width: calc(var(--space-4xl) * 8); color: var(--text-muted); font-size: var(--font-size-secondary); line-height: var(--line-height-empty); }
+
+    .loading-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width)); gap: var(--space-lg); }
+    .loading-panel { display: grid; gap: var(--space-md); padding: var(--space-lg); background: var(--panel-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+    .skeleton-row { display: grid; grid-template-columns: var(--touch-target) minmax(var(--space-none), 1fr) calc(var(--space-4xl) * 2); gap: var(--space-md); padding: var(--space-md); background: var(--surface-0); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+    .skeleton { min-height: var(--space-lg); background: var(--surface-1); border-radius: var(--radius-badge); }
+    .skeleton.tall { min-height: var(--touch-target); }
+    .skeleton.short { max-width: 50%; }
+    .skeleton.medium { max-width: 75%; }
+
+    .partial-grid { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width)); gap: var(--space-lg); align-items: start; }
+    .stale-table td { color: var(--text-muted); }
+    .stale-table .guest-copy strong { color: var(--text-secondary); }
+    .stale-table .table-action { color: var(--text-muted); }
+    .recovery-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .recovery-list li { display: grid; grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr); gap: var(--space-sm); padding: var(--space-sm); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .recovery-symbol { color: var(--color-yellow); text-align: center; }
+    .recovery-copy { display: grid; gap: var(--space-xs); }
+    .recovery-copy strong { color: var(--text-primary); font-size: var(--font-size-label); }
+    .recovery-copy span { color: var(--text-secondary); font-size: var(--font-size-dense); }
+
+    /* ===== Batch / overflow state ===== */
+    .batch-bar {
+      position: sticky;
+      bottom: var(--space-lg);
+      z-index: var(--z-batch-bar);
+      align-items: center;
+      background: var(--panel-bg);
+      border-color: var(--accent-color);
+      border-left: var(--border-emphasis) solid var(--accent-color);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+    .batch-copy { display: grid; gap: var(--space-xs); min-width: var(--space-none); flex: 1; }
+    .batch-copy strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .batch-copy span { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .batch-actions { margin-left: auto; }
+    .overflow-note { display: flex; align-items: flex-start; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-left: var(--border-emphasis) solid var(--color-peach); border-radius: var(--radius-control); color: var(--text-secondary); font-size: var(--font-size-label); flex-wrap: wrap; }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      max-width: var(--state-switcher-width);
+      padding: var(--space-xs);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); background: var(--surface-0); font-size: var(--font-size-dense); }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    /* ===== Desktop → tablet → focused mobile task adaptation ===== */
+    @media (min-width: 1280px) {
+      .content { padding: var(--space-xl) var(--space-2xl); }
+      .work-grid { grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 7), var(--detail-width)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .brand { padding: var(--space-none); }
+      .brand-copy, .nav-label, .nav-text, .nav-count, .sidebar-context { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: var(--border-width) solid var(--border-color); border-bottom: var(--border-emphasis) solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .work-grid, .loading-layout, .partial-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .evidence-drawer { grid-column: span 2; }
+      .tablet-hide { display: none; }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .topbar { align-items: flex-start; padding: var(--space-md) var(--space-lg); }
+      .topbar-actions { width: 100%; }
+      .topbar-actions .btn-primary { flex: 1; }
+      .topbar-actions .btn-secondary { display: none; }
+      .context-strip { padding: var(--space-sm) var(--space-lg); }
+      .context-strip .context-divider, .context-strip .context-value.is-secondary { display: none; }
+      .content { padding: var(--space-lg); padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .truth-banner .badge-row, .alert-banner .badge-row { margin-left: var(--space-none); }
+      .work-grid, .loading-layout, .partial-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .evidence-drawer { grid-column: span 1; }
+      .panel-header { align-items: flex-start; }
+      .filter-form { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .filter-form button { width: 100%; }
+      .table-wrap { display: none; }
+      .mobile-card-list { display: grid; gap: var(--space-sm); }
+      .queue-summary { align-items: flex-start; }
+      .key-values { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .loading-layout .loading-panel:last-child { display: none; }
+      .skeleton-row { grid-template-columns: var(--touch-target) minmax(var(--space-none), 1fr); }
+      .skeleton-row .skeleton:last-child { display: none; }
+      .batch-bar { bottom: calc(var(--touch-target) + var(--space-xl)); align-items: stretch; }
+      .batch-actions { width: 100%; margin-left: var(--space-none); }
+      .batch-actions button { flex: 1; min-width: calc(var(--touch-target) * 3); }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-mobile-nav);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        background: var(--panel-bg);
+        border-top: var(--border-width) solid var(--border-color);
+      }
+      .mobile-nav a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--touch-target);
+        padding: var(--space-sm);
+        background: none;
+        border: var(--border-width) solid var(--border-color);
+        border-radius: var(--radius-control);
+        color: var(--text-secondary);
+        font-size: var(--font-size-label);
+        text-decoration: none;
+      }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); max-width: calc(100% - var(--space-lg)); }
+      .state-switcher button, button, input[type="search"], select { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto;
+        transition-duration: var(--space-none);
+        animation-duration: var(--space-none);
+        animation-iteration-count: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .app-shell            -> HotelApplicationShellComponent (new; proposed design contract)
+    .context-strip        -> PropertyDateShiftContextComponent (new)
+    .filter-form          -> ShiftQueueFilterComponent (new)
+    .table-wrap / table   -> ArrivalsQueueTableComponent (new; dense table pattern)
+    .arrival-card         -> ArrivalPriorityCardComponent (new; focused mobile alternative)
+    .selected-stay        -> SelectedStaySummaryComponent (new)
+    .artifact-list        -> ArrivalArtifactStripComponent (new)
+    .evidence-drawer      -> EvidenceDrawerComponent (new)
+    .batch-bar            -> ArrivalBatchActionBarComponent (new; proposed batch contract)
+    .state-switcher       -> prototype-only StateSwitcher; not a production control
+  -->
+
+  <!-- ===== State: Default / populated arrivals queue ===== -->
+  <section class="state" id="state-default" aria-labelledby="arrivals-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">R</span>
+          <span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · interne Arbeitsansicht</span></span>
+        </div>
+
+        <nav class="nav-group" aria-labelledby="arrivals-nav-label">
+          <p class="nav-label" id="arrivals-nav-label">Empfang</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#arrivals-context"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">19</span></a></li>
+            <li><a class="nav-link" href="#arrivals-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li>
+            <li><a class="nav-link" href="#arrivals-evidence"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">7</span></a></li>
+          </ul>
+        </nav>
+
+        <nav class="nav-group" aria-labelledby="arrivals-support-label">
+          <p class="nav-label" id="arrivals-support-label">Arbeitskontext</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#arrivals-selected"><span class="nav-symbol" aria-hidden="true">▣</span><span class="nav-text">Wiederaufnahme</span><span class="nav-count">1</span></a></li>
+            <li><a class="nav-link" href="#arrivals-evidence"><span class="nav-symbol" aria-hidden="true">◇</span><span class="nav-text">Nachweise</span><span class="nav-count">3</span></a></li>
+            <li><a class="nav-link" href="#arrivals-keyboard"><span class="nav-symbol" aria-hidden="true">⌕</span><span class="nav-text">Suche</span><span class="nav-count">→</span></a></li>
+          </ul>
+        </nav>
+
+        <section class="sidebar-context" aria-label="Beispielhafter Schichtkontext">
+          <strong>Frühschicht · 07:00–15:00</strong>
+          <span>Mara Keller · Beispielrolle Empfang</span>
+          <small>Rollenname ist Kontext, keine nachgewiesene Anmeldung oder Berechtigung.</small>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-copy">
+            <h1 id="arrivals-title">Anreisen</h1>
+            <p>Zeitgeordnete Empfangsqueue · 12 synthetische Reservierungen · ein nächster Schritt pro Vorgang</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn-secondary" type="button">Schichtnotiz</button>
+            <button class="btn-primary" type="button">Nächste Ankunft öffnen <span class="badge badge-planned">Geplant</span></button>
+          </div>
+        </header>
+
+        <section class="context-strip" id="arrivals-context" aria-label="Objekt-, Datums- und Statuskontext">
+          <span class="context-label">Objekt</span><span class="context-value">Hotel Rheinland · Bad Orb</span><span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Datum</span><span class="context-value">Mittwoch, 16. Juli 2026</span><span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Schicht</span><span class="context-value is-secondary">Frühschicht · synthetischer Kontext</span>
+          <span class="badge badge-success">✓ Operational</span>
+          <span class="badge badge-prototype">◌ Prototyp</span>
+          <span class="badge badge-planned">→ Browser-API geplant</span>
+          <span class="badge badge-unclear">? Frische unklar</span>
+        </section>
+
+        <div class="content">
+          <section class="truth-banner" aria-labelledby="arrivals-boundary-title">
+            <div class="banner-copy">
+              <h2 id="arrivals-boundary-title">Arbeitsqueue mit sichtbarer Wahrheitsgrenze</h2>
+              <p><strong>Operational</strong> bezeichnet einen beobachteten lokalen Arbeits-/Modulkontext. Diese Browseransicht ist ein <strong>Prototyp</strong>; Suche, Auswahl, Speicherung, Dokumentjobs, Authentifizierung, Rollenprüfung und Integration sind <strong>geplant</strong> oder <strong>unklar</strong>.</p>
+            </div>
+            <div class="badge-row" aria-label="Evidenzgrenzen">
+              <span class="badge badge-prototype">◌ Beispieldaten</span>
+              <span class="badge badge-planned">→ Keine Live-Queue</span>
+            </div>
+          </section>
+
+          <div class="work-grid">
+            <section class="panel" aria-labelledby="arrivals-queue-title">
+              <header class="panel-header">
+                <div class="panel-title-group">
+                  <h2 class="panel-title" id="arrivals-queue-title">Ankunftsqueue</h2>
+                  <p class="panel-subtitle">Zeit, Gast, Aufenthaltskontext, Nachweisgrenze, Blocker und nächste Aktion bleiben sichtbar.</p>
+                </div>
+                <div class="chip-row" aria-label="Beispielhafte Ankunftsfilter">
+                  <button class="chip" type="button" aria-pressed="true">Alle <span class="chip-count">12</span></button>
+                  <button class="chip" type="button" aria-pressed="false">Jetzt <span class="chip-count">3</span></button>
+                  <button class="chip" type="button" aria-pressed="false">Prüfen <span class="chip-count">4</span></button>
+                  <button class="chip" type="button" aria-pressed="false">Fortsetzen <span class="chip-count">1</span></button>
+                </div>
+              </header>
+              <div class="panel-body">
+                <form class="filter-form" role="search" aria-describedby="arrivals-search-note">
+                  <div class="field-group">
+                    <label class="field-label" for="arrivals-query">Gast oder Reservierungsnummer filtern</label>
+                    <input id="arrivals-query" type="search" placeholder="z. B. Weber oder R-260716-08" aria-describedby="arrivals-search-note">
+                    <span class="helper" id="arrivals-search-note">Lokales Prototypfeld: Keine Live-Suche, kein Personenindex und keine Berechtigungsprüfung.</span>
+                  </div>
+                  <button class="btn-secondary" type="button">Filter anwenden <span class="badge badge-planned">Geplant</span></button>
+                </form>
+
+                <p class="queue-summary"><strong>Fokus: Lara Weber</strong><span>· Auswahl, Filter und Datum sollen bei einem späteren Detailwechsel erhalten bleiben.</span><span class="badge badge-peach">↻ Wiederaufnahme</span></p>
+
+                <div class="table-wrap" tabindex="0" aria-label="Scrollbare dichte Tabelle mit zwölf synthetischen Anreisen">
+                  <table>
+                    <caption>Zwölf synthetische Anreisen für Mittwoch, 16. Juli 2026 · keine Live-Reservierungsdaten</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Auswahl</th>
+                        <th scope="col">Zeit</th>
+                        <th scope="col">Gast / Reservierung</th>
+                        <th scope="col">Zimmer / Aufenthalt</th>
+                        <th scope="col">Nachweis &amp; Status</th>
+                        <th scope="col">Blocker / Kontext</th>
+                        <th scope="col">Nächster Schritt</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="is-selected">
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-lara"><input id="arrival-select-lara" type="checkbox" aria-label="Lara Weber auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T10:40">10:40</time><small>fällig in 18 Min.</small></td>
+                        <td><span class="guest-copy"><strong>Lara Weber mit Jürgen Weber</strong><span>R-260716-08 · Kurpaket Classic · 2 Gäste</span></span></td>
+                        <td class="room-cell">204 · 7 Nächte<br><span class="mono">16.–23.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Nachweis fehlt</span><span class="badge badge-prototype">◌ Meldeschein-Vorschau</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Begleitgast vor einer künftigen Dokumentvorschau prüfen.</span></span></td>
+                        <td><button class="table-action btn-primary" type="button">Ankunft öffnen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-sofia"><input id="arrival-select-sofia" type="checkbox" aria-label="Sofia Hartmann auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T11:05">11:05</time><small>heute</small></td>
+                        <td><span class="guest-copy"><strong>Sofia Hartmann</strong><span>R-260716-11 · Einzelanreise</span></span></td>
+                        <td class="room-cell">117 · 3 Nächte<br><span class="mono">16.–19.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-prototype">◌ Kurkarte Vorschau</span><span class="badge badge-info">i Ausgabe unklar</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Keine Wallet-Installation oder Zustellung belegt.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Nachweise prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-otto"><input id="arrival-select-otto" type="checkbox" aria-label="Otto und Brigitte Rehm auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T11:30">11:30</time><small>heute</small></td>
+                        <td><span class="guest-copy"><strong>Otto und Brigitte Rehm</strong><span>R-260716-13 · Badekur-Aufenthalt</span></span></td>
+                        <td class="room-cell">215 · 5 Nächte<br><span class="mono">16.–21.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Kurtaxe prüfen</span><span class="badge badge-unclear">? Charge unklar</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Befreiungsnachweis ist nicht bestätigt; keine Folio-Buchung ableiten.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Berechnung prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-erik"><input id="arrival-select-erik" type="checkbox" aria-label="Erik Neumann auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T12:20">12:20</time><small>später</small></td>
+                        <td><span class="guest-copy"><strong>Erik Neumann</strong><span>R-260716-17 · Einzelzimmer Komfort</span></span></td>
+                        <td class="room-cell">108 · 2 Nächte<br><span class="mono">16.–18.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-peach">↻ Fortsetzen</span><span class="badge badge-planned">→ Speichern geplant</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Schritt 2 ist ein beabsichtigter Wiederaufnahmekontext, nicht persistiert.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Schritt fortsetzen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-adelheid"><input id="arrival-select-adelheid" type="checkbox" aria-label="Adelheid König auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T12:45">12:45</time><small>später</small></td>
+                        <td><span class="guest-copy"><strong>Adelheid König</strong><span>R-260716-19 · Stammgast · 1 Begleitperson</span></span></td>
+                        <td class="room-cell">301 · 10 Nächte<br><span class="mono">16.–26.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-success">✓ Artefakt erzeugt</span><span class="badge badge-info">i Nicht eingereicht</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Erzeugt bedeutet weder kommunal eingereicht noch ausgeliefert.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Vorschau prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-henrik"><input id="arrival-select-henrik" type="checkbox" aria-label="Henrik Møller auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T13:10">13:10</time><small>später</small></td>
+                        <td><span class="guest-copy"><strong>Henrik Møller</strong><span>R-260716-21 · internationale Anschrift</span></span></td>
+                        <td class="room-cell">110 · 4 Nächte<br><span class="mono">16.–20.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Angaben prüfen</span><span class="badge badge-planned">→ Validierung</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Staatsangehörigkeit und Adresse sind nur Beispiele; kein Datenabgleich.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Angaben prüfen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-luise"><input id="arrival-select-luise" type="checkbox" aria-label="Luise von Hohenfels auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T16:10">16:10</time><small>spätes Fenster</small></td>
+                        <td><span class="guest-copy"><strong>Luise von Hohenfels</strong><span>R-260716-22 · Kurzaufenthalt</span></span></td>
+                        <td class="room-cell">302 · 1 Nacht<br><span class="mono">16.–17.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-info">i Zeitfenster</span><span class="badge badge-unclear">? Zimmerstatus</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Keine Zimmer- oder Schlüsselzusage im Prototyp.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Details vormerken</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-pia"><input id="arrival-select-pia" type="checkbox" aria-label="Pia und Lothar Ahrens auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T16:35">16:35</time><small>spätes Fenster</small></td>
+                        <td><span class="guest-copy"><strong>Pia und Lothar Ahrens</strong><span>R-260716-24 · Doppelzimmer Parkblick</span></span></td>
+                        <td class="room-cell">211 · 6 Nächte<br><span class="mono">16.–22.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-teal">● Bereit zur Prüfung</span><span class="badge badge-prototype">◌ Testvertrag</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Lokale Beispieldaten; Zahlungs- und Foliozustand sind nicht verbunden.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Ankunft vorbereiten</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-samira"><input id="arrival-select-samira" type="checkbox" aria-label="Samira Özdemir auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T17:00">17:00</time><small>spätes Fenster</small></td>
+                        <td><span class="guest-copy"><strong>Samira Özdemir</strong><span>R-260716-26 · Kurpaket Balance</span></span></td>
+                        <td class="room-cell">203 · 7 Nächte<br><span class="mono">16.–23.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-warning">! Nachweis fehlt</span><span class="badge badge-info">i Badekur-Kontext</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Gesundheitsbezogene Details bleiben maskiert; Prüfung ist später berechtigt.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Nachweis erfassen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-franz"><input id="arrival-select-franz" type="checkbox" aria-label="Franziska Kroll auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T17:25">17:25</time><small>spätes Fenster</small></td>
+                        <td><span class="guest-copy"><strong>Franziska Kroll</strong><span>R-260716-28 · Einzelanreise</span></span></td>
+                        <td class="room-cell">119 · 2 Nächte<br><span class="mono">16.–18.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-error">! Nicht verbunden</span><span class="badge badge-planned">→ Status-API</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Externer Kanalstatus ist nicht aktuell; keine automatische Wiederholung behauptet.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button" disabled>Warten auf Status</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-marianne"><input id="arrival-select-marianne" type="checkbox" aria-label="Marianne von der Lindenberg-Steinberg auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T18:05">18:05</time><small>spätes Fenster</small></td>
+                        <td><span class="guest-copy"><strong class="long-name">Marianne von der Lindenberg-Steinberg</strong><span>R-260716-30 · lange Namens- und Dokumentdaten</span></span></td>
+                        <td class="room-cell">312 · 3 Nächte<br><span class="mono">16.–19.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-prototype">◌ Stub-Format</span><span class="badge badge-warning">! Manuelle Prüfung</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Langer Artefaktname bleibt in der Evidenzdetailfläche vollständig erreichbar.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Nachweis anzeigen</button></td>
+                      </tr>
+                      <tr>
+                        <td class="selection-cell"><label class="selection-control" for="arrival-select-tobias"><input id="arrival-select-tobias" type="checkbox" aria-label="Tobias und Evelyn Stahl auswählen"></label></td>
+                        <td class="time-cell"><time datetime="2026-07-16T19:20">19:20</time><small>letzte Ankunft</small></td>
+                        <td><span class="guest-copy"><strong>Tobias und Evelyn Stahl</strong><span>R-260716-33 · Doppelzimmer · spätes Check-in-Fenster</span></span></td>
+                        <td class="room-cell">218 · 2 Nächte<br><span class="mono">16.–18.07.</span></td>
+                        <td><span class="status-stack"><span class="badge badge-info">i Vorgemerkt</span><span class="badge badge-planned">→ API nötig</span></span></td>
+                        <td><span class="status-stack"><span class="helper">Hinweis ist eine statische Arbeitsnotiz, keine gespeicherte Zusage.</span></span></td>
+                        <td><button class="table-action btn-secondary" type="button">Ankunft vormerken</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mobile-card-list" aria-label="Priorisierte mobile Ankunftskarten">
+                  <article class="arrival-card is-selected">
+                    <div class="arrival-topline"><strong>10:40 · Lara Weber</strong><span class="badge badge-warning">! Nachweis fehlt</span></div>
+                    <p>Zimmer 204 · R-260716-08 · Begleitgast vor Dokumentvorschau prüfen.</p>
+                    <div class="badge-row"><span class="badge badge-prototype">◌ Meldeschein-Vorschau</span><span class="badge badge-peach">↻ Auswahl</span></div>
+                    <button class="btn-primary" type="button">Ankunft öffnen</button>
+                  </article>
+                  <article class="arrival-card">
+                    <div class="arrival-topline"><strong>11:30 · Otto und Brigitte Rehm</strong><span class="badge badge-warning">! Kurtaxe prüfen</span></div>
+                    <p>Zimmer 215 · Befreiungsnachweis nicht bestätigt; keine Folio-Buchung ableiten.</p>
+                    <div class="badge-row"><span class="badge badge-unclear">? Charge unklar</span></div>
+                    <button class="btn-secondary" type="button">Berechnung prüfen</button>
+                  </article>
+                  <article class="arrival-card">
+                    <div class="arrival-topline"><strong>12:20 · Erik Neumann</strong><span class="badge badge-peach">↻ Fortsetzen</span></div>
+                    <p>Zimmer 108 · R-260716-17 · Schritt 2 ist als spätere Wiederaufnahme markiert.</p>
+                    <div class="badge-row"><span class="badge badge-planned">→ Speicherung geplant</span></div>
+                    <button class="btn-secondary" type="button">Schritt fortsetzen</button>
+                  </article>
+                  <article class="arrival-card">
+                    <div class="arrival-topline"><strong>16:10 · Luise von Hohenfels</strong><span class="badge badge-info">i Zeitfenster</span></div>
+                    <p>Zimmer 302 · späte Ankunft · keine Zimmer- oder Schlüsselzusage in diesem Prototyp.</p>
+                    <button class="btn-secondary" type="button">Details vormerken</button>
+                  </article>
+                  <p class="state-note">8 weitere synthetische Vorgänge bleiben über einen späteren, zugänglichen Detail-/Listenweg erreichbar; die mobile Ansicht versteckt sie nicht als erledigt.</p>
+                </div>
+              </div>
+            </section>
+
+            <aside class="side-stack" aria-label="Ausgewählter Aufenthalt und Evidenz">
+              <section class="panel" id="arrivals-selected" aria-labelledby="arrivals-selected-title">
+                <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="arrivals-selected-title">Ausgewählte Ankunft</h2><p class="panel-subtitle">Kontext bleibt neben der Queue, statt sie zu ersetzen.</p></div><span class="badge badge-peach">↻ 10:22</span></header>
+                <div class="panel-body">
+                  <article class="selected-stay">
+                    <div class="card-copy"><span class="badge badge-prototype">◌ Synthetischer Datensatz</span><h3>Lara Weber mit Jürgen Weber</h3><p>R-260716-08 · Zimmer 204 · 16.–23. Juli · Kurpaket Classic</p></div>
+                    <dl class="key-values">
+                      <dt>Aktueller Schritt</dt><dd>Meldeschein-Angaben prüfen</dd>
+                      <dt>Arbeitskontext</dt><dd>Filter „Alle 12“ · Queue-Datum 16.07.2026</dd>
+                      <dt>Schutzgrenze</dt><dd>Begleitgastdaten und Dokumentfelder standardmäßig nicht offenlegen</dd>
+                    </dl>
+                    <div class="button-row"><button class="btn-primary" type="button">Ankunft öffnen</button><button class="btn-secondary" type="button">Auswahl lösen</button></div>
+                    <p class="drawer-note">Ein späterer Detailwechsel muss Filter, Datum, Auswahl und eine sichere Fokus-Rückkehr zur Tabellenzeile erhalten. Diese Datei zeigt nur die Absicht.</p>
+                  </article>
+                </div>
+              </section>
+
+              <section class="panel" aria-labelledby="arrivals-artifacts-title">
+                <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="arrivals-artifacts-title">Artefakte</h2><p class="panel-subtitle">Erzeugt ist nicht zugestellt oder eingereicht.</p></div></header>
+                <div class="panel-body">
+                  <ul class="artifact-list" aria-label="Artefakte zu Lara Weber">
+                    <li><button class="artifact-button" type="button"><span class="artifact-title">Meldeschein</span><span class="badge badge-warning">! Stub-Format</span><span class="artifact-proof">meldeschein_R-260716-08.pdf</span></button></li>
+                    <li><button class="artifact-button" type="button"><span class="artifact-title">Kurkarte Apple</span><span class="badge badge-prototype">◌ Vorschau</span><span class="artifact-proof">kurkarte_apple_R-260716-08.pkpass</span></button></li>
+                    <li><button class="artifact-button" type="button"><span class="artifact-title">Google-Wallet-JSON</span><span class="badge badge-success">✓ Erzeugt</span><span class="artifact-proof">kurkarte_google_R-260716-08.json</span></button></li>
+                  </ul>
+                  <p class="state-note">Keine sichere Dateiablage, Browseransicht, Download, Zustellung, Wallet-Installation oder kommunale Einreichung ist nachgewiesen.</p>
+                </div>
+              </section>
+
+              <aside class="panel evidence-drawer" id="arrivals-evidence" aria-labelledby="arrivals-evidence-title">
+                <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="arrivals-evidence-title">Nachweis im Kontext</h2><p class="panel-subtitle">Proposed EvidenceDrawerComponent</p></div><span class="badge badge-teal">▣ Evidenz</span></header>
+                <div class="panel-body">
+                  <div class="drawer-copy"><strong class="drawer-title">R-260716-08 · Quellen- und Statusrahmen</strong><p class="drawer-note">Das Detail erklärt die Grenze der sichtbaren Badge, ohne daraus eine Live-Integration abzuleiten.</p></div>
+                  <dl class="key-values">
+                    <dt>Letzte Prüfung</dt><dd><time datetime="2026-07-16T10:22">10:22 · Beispielzeit</time></dd>
+                    <dt>Quelle</dt><dd>Lokaler CLI-/Testkontext · Browserstatus geplant</dd>
+                    <dt>Ausgabegrenze</dt><dd><span class="badge badge-warning">Stub-Format</span></dd>
+                  </dl>
+                  <details>
+                    <summary>Geplante Evidenz- und Recovery-Verträge</summary>
+                    <ul class="timeline-list">
+                      <li><span class="timeline-time">10:22</span><span class="timeline-copy"><strong>Auswahl gesetzt</strong><span>Prototypinteraktion; Persistenz und Audit sind geplant.</span></span></li>
+                      <li><span class="timeline-time">10:20</span><span class="timeline-copy"><strong>Meldeschein markiert</strong><span>Stub-Format benötigt Format-, Datenschutz- und Rechtsprüfung.</span></span></li>
+                      <li><span class="timeline-time">—</span><span class="timeline-copy"><strong>Retry / Eskalation</strong><span>Jobstatus, Idempotenz, Berechtigung und sichere Dateiwege benötigen einen Backendvertrag.</span></span></li>
+                    </ul>
+                  </details>
+                  <button class="btn-secondary" type="button">Quelle anzeigen <span class="badge badge-planned">Geplant</span></button>
+                </div>
+              </aside>
+            </aside>
+          </div>
+
+          <section class="keyboard-intent" id="arrivals-keyboard" aria-labelledby="arrivals-keyboard-title">
+            <div class="drawer-copy"><h2 id="arrivals-keyboard-title">Geplantes Tastaturmodell für die spätere Queue</h2><p>Die folgenden Hinweise sind bewusst als Implementierungsabsicht markiert. Nur der Zustandsumschalter dieser Prototypdatei ist lokal bedienbar.</p></div>
+            <ul class="keyboard-list">
+              <li><kbd>Ctrl/⌘ K</kbd> Geplant: eine berechtigte Gast-/Reservierungssuche öffnen; aktuell keine Live-Suche.</li>
+              <li><kbd>↑ ↓</kbd> Geplant: die aktive Queue-Zeile ändern, ohne essenzielle Information nur bei Hover zu zeigen.</li>
+              <li><kbd>Enter</kbd> Geplant: die sichtbare primäre Zeilenaktion auslösen.</li>
+              <li><kbd>Esc</kbd> Geplant: einen Drawer schließen und Fokus zur auslösenden Zeile zurückgeben.</li>
+            </ul>
+          </section>
+
+          <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Gästedaten. Die dargestellten Queue-, Filter-, Auswahl-, Artifact-, Such-, Job-, Berechtigungs- und Integrationsabläufe benötigen separate Browser-, API-, Persistenz-, Auth/RBAC-, Datenschutz- und Accessibility-Prüfungen.</p>
+        </div>
+
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche">
+          <a href="#arrivals-context">Heute</a>
+          <a href="#arrivals-title" aria-current="page">Anreisen</a>
+          <a href="#arrivals-evidence">Hinweise</a>
+        </nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Empty / no arrivals in the current scope ===== -->
+  <section class="state" id="state-empty" hidden aria-labelledby="arrivals-empty-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div>
+        <nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#arrivals-empty-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">0</span></a></li><li><a class="nav-link" href="#arrivals-empty-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">0</span></a></li><li><a class="nav-link" href="#arrivals-empty-title"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">7</span></a></li></ul></nav>
+        <section class="sidebar-context" aria-label="Beispielhafter Schichtkontext"><strong>Spätschicht · 15:00–23:00</strong><span>Beispielkontext · Empfang</span><small>Keine Anreisen im ausgewählten Filterbereich.</small></section>
+      </aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="arrivals-empty-title">Anreisen</h1><p>Leerer Queue-Zustand mit sichtbarem Datums- und Filterkontext</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Datum wechseln</button><button class="btn-primary" type="button">Morgige Anreisen ansehen</button></div></header>
+        <section class="context-strip" aria-label="Aktueller leerer Queue-Kontext"><span class="context-label">Datum</span><span class="context-value">Donnerstag, 17. Juli 2026</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Filter</span><span class="context-value">Anreisen vor 12:00</span><span class="badge badge-prototype">◌ Beispieldaten</span><span class="badge badge-planned">→ Abfrage geplant</span></section>
+        <div class="content">
+          <section class="truth-banner" aria-labelledby="empty-boundary-title"><div class="banner-copy"><h2 id="empty-boundary-title">Keine sichtbaren Vorgänge ist kein Nachweis für ein leeres Hotel.</h2><p>Der Prototyp erklärt den aktuellen Datums- und Filterrahmen. Eine spätere Datenabfrage muss Zeitstempel, Fehler, Berechtigung und Vollständigkeit transparent machen.</p></div><div class="badge-row"><span class="badge badge-unclear">? Datenquelle unklar</span></div></section>
+          <section class="empty-state" aria-labelledby="empty-message-title">
+            <span class="empty-icon" aria-hidden="true">↳</span>
+            <h2 id="empty-message-title">Keine Anreisen vor 12:00 am 17. Juli</h2>
+            <p>Für den gewählten Tag und Filter enthält diese statische Musterliste keine synthetischen Ankunftsvorgänge. Das bedeutet nicht, dass eine künftige Reservation-, Channel- oder Empfangsquelle keine Anreisen kennt.</p>
+            <div class="chip-row" aria-label="Aktiver Filter"><span class="badge badge-teal">● Datum 17.07.2026</span><span class="badge badge-info">i Vor 12:00</span></div>
+            <div class="button-row"><button class="btn-primary" type="button">Alle Anreisen zeigen <span class="badge badge-planned">Geplant</span></button><button class="btn-secondary" type="button">Nächsten Tag öffnen</button></div>
+          </section>
+          <p class="page-note">Leerer Zustand: Die spätere Anwendung sollte Filter, Datum und Zeitpunkt des letzten erfolgreichen Abrufs ausweisen. Diese Prototypdatei führt keine Abfrage aus.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#arrivals-empty-title">Heute</a><a href="#arrivals-empty-title" aria-current="page">Anreisen</a><a href="#empty-boundary-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Loading / queue retrieval is pending ===== -->
+  <section class="state" id="state-loading" hidden aria-labelledby="arrivals-loading-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="arrivals-loading-title">Anreisen</h1><p>Die Ankunftsqueue wird als späterer Datenabruf vorbereitet</p></div><div class="topbar-actions"><button class="btn-secondary" type="button" disabled>Filter nicht verfügbar</button><button class="btn-primary" type="button" disabled>Queue wird geladen</button></div></header>
+        <section class="context-strip" aria-label="Ladezustand"><span class="context-label">Datum</span><span class="context-value">Mittwoch, 16. Juli 2026</span><span class="badge badge-info">◷ Lädt</span><span class="badge badge-prototype">◌ Kein Live-Abruf</span></section>
+        <div class="content" aria-busy="true" aria-live="polite">
+          <section class="truth-banner" aria-labelledby="loading-boundary-title"><div class="banner-copy"><h2 id="loading-boundary-title">Ladeplatzhalter statt erfundener Queue-Anzahl</h2><p>Dieser Zustand zeigt eine spätere Warte- und Sperrbehandlung. Es findet keine Netzwerkabfrage statt und es wird keine Zahl möglicher Anreisen vorweggenommen.</p></div><div class="badge-row"><span class="badge badge-planned">→ Asynchroner Vertrag erforderlich</span></div></section>
+          <div class="loading-layout">
+            <section class="loading-panel" aria-label="Ladeplatzhalter für Ankunftszeilen"><div class="skeleton short"></div><div class="skeleton-row"><span class="skeleton tall"></span><span class="skeleton tall"></span><span class="skeleton tall"></span></div><div class="skeleton-row"><span class="skeleton tall"></span><span class="skeleton tall"></span><span class="skeleton tall"></span></div><div class="skeleton-row"><span class="skeleton tall"></span><span class="skeleton tall"></span><span class="skeleton tall"></span></div><div class="skeleton-row"><span class="skeleton tall"></span><span class="skeleton tall"></span><span class="skeleton tall"></span></div></section>
+            <aside class="loading-panel" aria-label="Ladeplatzhalter für Evidenzdetail"><div class="skeleton medium"></div><div class="skeleton tall"></div><div class="skeleton tall"></div><p class="state-note">Ein späterer Statusvertrag liefert Abschluss, Fehler, Zeitstempel, Retry-Grund und zugängliche Ankündigung.</p></aside>
+          </div>
+          <p class="page-note">Der Ladezustand ist visuelle und semantische Implementierungsabsicht; er beweist kein Polling, keine Live-Region, keine Timeout-Logik und keinen Hintergrundjob.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#arrivals-loading-title">Heute</a><a href="#arrivals-loading-title" aria-current="page">Anreisen</a><a href="#loading-boundary-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Error / partial or stale queue data ===== -->
+  <section class="state" id="state-error" hidden aria-labelledby="arrivals-error-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#arrivals-error-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">?</span></a></li><li><a class="nav-link" href="#arrivals-error-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">8?</span></a></li></ul></nav><section class="sidebar-context" aria-label="Störungsstatus"><strong>Queue-Quelle teilweise verfügbar</strong><span>Letzter Musterstand: 09:48</span><small>Aktualität und Vollständigkeit sind nicht bestätigt.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="arrivals-error-title">Anreisen</h1><p>Teilweise verfügbare oder veraltete Daten werden nicht als aktuelle Queue ausgegeben</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Schichtnotiz öffnen</button><button class="btn-primary" type="button">Erneut versuchen <span class="badge badge-planned">Geplant</span></button></div></header>
+        <section class="context-strip" aria-label="Teilstatuskontext"><span class="context-label">Letzte bestätigte Musterzeit</span><span class="context-value"><time datetime="2026-07-16T09:48">09:48</time></span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Frische</span><span class="context-value">Unklar</span><span class="badge badge-error">! Nicht verbunden</span><span class="badge badge-warning">! Teilbestand</span></section>
+        <div class="content">
+          <section class="alert-banner" role="alert" aria-labelledby="partial-alert-title">
+            <div class="banner-copy"><h2 id="partial-alert-title">Die aktuelle Ankunftsqueue ist nur teilweise oder veraltet verfügbar.</h2><p>Die sichtbaren Musterzeilen stammen aus einem Beispielstand von 09:48. Sie dürfen nicht als aktuelle Reservierungs-, Zimmer-, Dokument- oder Integrationswahrheit verwendet werden. Check-in- und Batch-Aktionen bleiben bewusst gesperrt.</p></div>
+            <div class="badge-row"><span class="badge badge-error">! Nicht verbunden</span><span class="badge badge-unclear">? Frische unklar</span></div>
+          </section>
+
+          <div class="partial-grid">
+            <section class="panel" aria-labelledby="partial-table-title">
+              <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="partial-table-title">Letzter bekannter Beispielstand</h2><p class="panel-subtitle">Nur für die Erkennbarkeit von Staleness; keine Wiederverwendung als aktuelle Liste.</p></div><span class="badge badge-warning">! 8 von 12 unbestätigt</span></header>
+              <div class="panel-body">
+                <div class="table-wrap" tabindex="0" aria-label="Teilweise veraltete synthetische Ankunftstabelle">
+                  <table class="stale-table">
+                    <caption>Statischer Beispielstand von 09:48 · nicht als aktuelle Ankunftsquelle verwenden</caption>
+                    <thead><tr><th scope="col">Zeit</th><th scope="col">Gast / Reservierung</th><th scope="col">Letzter sichtbarer Status</th><th scope="col">Sichere Handlung</th></tr></thead>
+                    <tbody>
+                      <tr class="is-stale"><td class="time-cell"><time datetime="2026-07-16T10:40">10:40</time><small>unbestätigt</small></td><td><span class="guest-copy"><strong>Lara Weber</strong><span>R-260716-08</span></span></td><td><span class="badge badge-warning">! Nachweisstatus veraltet</span></td><td><button class="table-action btn-secondary" type="button">Nachweisrahmen lesen</button></td></tr>
+                      <tr class="is-stale"><td class="time-cell"><time datetime="2026-07-16T11:05">11:05</time><small>unbestätigt</small></td><td><span class="guest-copy"><strong>Sofia Hartmann</strong><span>R-260716-11</span></span></td><td><span class="badge badge-unclear">? Kurkartenstatus unklar</span></td><td><button class="table-action btn-secondary" type="button">Nicht als aktuell behandeln</button></td></tr>
+                      <tr class="is-stale"><td class="time-cell"><time datetime="2026-07-16T11:30">11:30</time><small>unbestätigt</small></td><td><span class="guest-copy"><strong>Otto und Brigitte Rehm</strong><span>R-260716-13</span></span></td><td><span class="badge badge-warning">! Kurtaxe prüfen</span></td><td><button class="table-action btn-secondary" type="button">Manuell nachfragen</button></td></tr>
+                      <tr class="is-stale"><td class="time-cell"><time datetime="2026-07-16T12:20">12:20</time><small>unbestätigt</small></td><td><span class="guest-copy"><strong>Erik Neumann</strong><span>R-260716-17</span></span></td><td><span class="badge badge-peach">↻ Wiederaufnahme unklar</span></td><td><button class="table-action btn-secondary" type="button">Keinen Schritt fortsetzen</button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mobile-card-list" aria-label="Mobile Karten für unbestätigte Daten"><article class="arrival-card is-stale"><div class="arrival-topline"><strong>10:40 · Lara Weber</strong><span class="badge badge-warning">! veraltet</span></div><p>R-260716-08 · Nachweisstatus ist nicht bestätigt; keine Check-in-Aktion zeigen.</p><button class="btn-secondary" type="button">Nachweisrahmen lesen</button></article><article class="arrival-card is-stale"><div class="arrival-topline"><strong>11:30 · Otto und Brigitte Rehm</strong><span class="badge badge-unclear">? unklar</span></div><p>Kurtaxe-/Befreiungsstatus kann nicht als aktuell gelten.</p><button class="btn-secondary" type="button">Manuell nachfragen</button></article></div>
+              </div>
+            </section>
+
+            <aside class="side-stack" aria-label="Recovery und Evidenz zum Teilstatus">
+              <section class="panel" aria-labelledby="partial-recovery-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="partial-recovery-title">Sicher weiterarbeiten</h2><p class="panel-subtitle">Keine alten Werte als Live-Status ausgeben.</p></div></header><div class="panel-body"><ul class="recovery-list"><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Aktualität sichtbar halten</strong><span>Quelle, Prüfzeit und betroffener Umfang bleiben neben der Queue.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Verarbeitung blockieren</strong><span>Check-in, Dokumentjob und Batch-Start verlangen später einen validen Daten-/Berechtigungsstatus.</span></span></li><li><span class="recovery-symbol" aria-hidden="true">!</span><span class="recovery-copy"><strong>Eskalation erklären</strong><span>Ein künftiger Retry benötigt API-, Timeout-, Audit- und Idempotenzsemantik.</span></span></li></ul><div class="button-row"><button class="btn-primary" type="button">Erneut versuchen <span class="badge badge-planned">Geplant</span></button><button class="btn-secondary" type="button">Schichtübergabe notieren</button></div></div></section>
+              <aside class="panel evidence-drawer" aria-labelledby="partial-evidence-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="partial-evidence-title">Teilstatus-Nachweis</h2><p class="panel-subtitle">Keine aktive Integration im Prototyp.</p></div></header><div class="panel-body"><dl class="key-values"><dt>Betroffener Bereich</dt><dd>Queue, Dokumentstatus, Zimmer-/Ankunftskontext</dd><dt>Externe Verbindung</dt><dd><span class="badge badge-error">Nicht verbunden</span></dd><dt>Beobachtete Grenze</dt><dd><span class="badge badge-prototype">Prototyp</span> mit statischem Beispielzeitstempel</dd></dl><p class="drawer-note">Eine spätere Implementierung zeigt echte Fehlerursache, Zeitmarke, Retry-Richtlinie, Berechtigung und eine zugängliche Live-Region. Diese Daten sind hier nicht vorhanden.</p></div></aside>
+            </aside>
+          </div>
+          <p class="page-note">Partial-/Stale-State: Eine statische Darstellung kann keine Datenfrische, Offlinefähigkeit, Synchronisationslogik oder eine sichere manuelle Fallback-Prozedur nachweisen.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#arrivals-error-title">Heute</a><a href="#arrivals-error-title" aria-current="page">Anreisen</a><a href="#partial-recovery-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Overflow / three selected rows and batch bar ===== -->
+  <section class="state" id="state-overflow" hidden aria-labelledby="arrivals-batch-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · Empfang</span></span></div><nav class="nav-group" aria-label="Empfangsbereiche"><p class="nav-label">Empfang</p><ul class="nav-list"><li><a class="nav-link" href="#arrivals-batch-title"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">19</span></a></li><li><a class="nav-link" href="#arrivals-batch-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">12</span></a></li><li><a class="nav-link" href="#arrivals-batch-title"><span class="nav-symbol" aria-hidden="true">◇</span><span class="nav-text">Nachweise</span><span class="nav-count">3</span></a></li></ul></nav><section class="sidebar-context" aria-label="Mehrfachauswahl-Kontext"><strong>3 Anreisen ausgewählt</strong><span>Beispiel für eine spätere Batch-Prüfung</span><small>Keine Batch-Verarbeitung, Speicherung oder Berechtigung vorhanden.</small></section></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-copy"><h1 id="arrivals-batch-title">Anreisen · Auswahl prüfen</h1><p>Überlauf- und Batch-Zustand mit drei bewusst ausgewählten synthetischen Vorgängen</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Filter ändern</button><button class="btn-primary" type="button">Auswahl prüfen <span class="badge badge-planned">Geplant</span></button></div></header>
+        <section class="context-strip" aria-label="Mehrfachauswahl-Kontext"><span class="context-label">Umfang</span><span class="context-value">3 von 12 Beispielvorgängen ausgewählt</span><span class="context-divider" aria-hidden="true">·</span><span class="context-label">Grenze</span><span class="context-value">Keine Batch-Persistenz</span><span class="badge badge-prototype">◌ Prototyp</span><span class="badge badge-planned">→ Jobvertrag</span></section>
+        <div class="content">
+          <section class="overflow-note" aria-labelledby="overflow-note-title"><span aria-hidden="true">↕</span><span><strong id="overflow-note-title">Überlauf bleibt erklärbar.</strong> Die Tabelle zeigt zwölf Vorgänge in einem keyboard-reachable Scrollbereich. Lange Namen und Artefakte bleiben über eine spätere Detailansicht erreichbar; Blocker und Primäraktion werden nicht abgeschnitten.</span><span class="badge badge-peach">↕ Überlauf</span></section>
+          <div class="work-grid">
+            <section class="panel" aria-labelledby="batch-table-title">
+              <header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="batch-table-title">Ausgewählte Anreisen</h2><p class="panel-subtitle">Drei Zeilen bleiben als Auswahl sichtbar; die übrigen neun Vorgänge bleiben im gleichen scrollbaren Kontext.</p></div><div class="chip-row" aria-label="Filter im Batch-Beispiel"><button class="chip" type="button" aria-pressed="true">Alle 12</button><button class="chip" type="button" aria-pressed="false">Ausgewählt 3</button><button class="chip" type="button" aria-pressed="false">Prüfen 4</button></div></header>
+              <div class="panel-body">
+                <div class="table-wrap" tabindex="0" aria-label="Scrollbare Mehrfachauswahl mit zwölf synthetischen Anreisen">
+                  <table>
+                    <caption>Mehrfachauswahl ist ein Prototypmuster; geprüfte Aktionen benötigen später eine Berechtigungs-, Job- und Auditsemantik.</caption>
+                    <thead><tr><th scope="col">Auswahl</th><th scope="col">Zeit</th><th scope="col">Gast / Reservierung</th><th scope="col">Artefaktstatus</th><th scope="col">Prüfkontext</th><th scope="col">Nächster Schritt</th></tr></thead>
+                    <tbody>
+                      <tr class="is-selected"><td class="selection-cell"><label class="selection-control" for="batch-select-lara"><input id="batch-select-lara" type="checkbox" checked aria-label="Lara Weber ausgewählt"></label></td><td class="time-cell"><time datetime="2026-07-16T10:40">10:40</time><small>ausgewählt</small></td><td><span class="guest-copy"><strong>Lara Weber mit Jürgen Weber</strong><span>R-260716-08 · Zimmer 204</span></span></td><td><span class="status-stack"><span class="badge badge-warning">! Stub-Format</span><span class="badge badge-prototype">◌ Vorschau</span></span></td><td><span class="helper">Meldeschein-Begleitgast vor einer Vorschau prüfen.</span></td><td><button class="table-action btn-secondary" type="button">Einzeln prüfen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-sofia"><input id="batch-select-sofia" type="checkbox" aria-label="Sofia Hartmann auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T11:05">11:05</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Sofia Hartmann</strong><span>R-260716-11 · Zimmer 117</span></span></td><td><span class="status-stack"><span class="badge badge-prototype">◌ Kurkarte Vorschau</span></span></td><td><span class="helper">Keine Zustellung oder Installation bestätigt.</span></td><td><button class="table-action btn-secondary" type="button">Einzeln prüfen</button></td></tr>
+                      <tr class="is-selected"><td class="selection-cell"><label class="selection-control" for="batch-select-otto"><input id="batch-select-otto" type="checkbox" checked aria-label="Otto und Brigitte Rehm ausgewählt"></label></td><td class="time-cell"><time datetime="2026-07-16T11:30">11:30</time><small>ausgewählt</small></td><td><span class="guest-copy"><strong>Otto und Brigitte Rehm</strong><span>R-260716-13 · Zimmer 215</span></span></td><td><span class="status-stack"><span class="badge badge-warning">! Kurtaxe prüfen</span><span class="badge badge-unclear">? Charge</span></span></td><td><span class="helper">Befreiungsnachweis ist unbestätigt.</span></td><td><button class="table-action btn-secondary" type="button">Einzeln prüfen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-erik"><input id="batch-select-erik" type="checkbox" aria-label="Erik Neumann auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T12:20">12:20</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Erik Neumann</strong><span>R-260716-17 · Zimmer 108</span></span></td><td><span class="status-stack"><span class="badge badge-peach">↻ Fortsetzen</span></span></td><td><span class="helper">Wiederaufnahme braucht spätere Persistenz.</span></td><td><button class="table-action btn-secondary" type="button">Fortsetzen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-adelheid"><input id="batch-select-adelheid" type="checkbox" aria-label="Adelheid König auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T12:45">12:45</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Adelheid König</strong><span>R-260716-19 · Zimmer 301</span></span></td><td><span class="status-stack"><span class="badge badge-success">✓ Erzeugt</span><span class="badge badge-info">i Nicht eingereicht</span></span></td><td><span class="helper">Lokaler Output ist keine kommunale Übermittlung.</span></td><td><button class="table-action btn-secondary" type="button">Vorschau prüfen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-henrik"><input id="batch-select-henrik" type="checkbox" aria-label="Henrik Møller auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T13:10">13:10</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Henrik Møller</strong><span>R-260716-21 · Zimmer 110</span></span></td><td><span class="status-stack"><span class="badge badge-warning">! Angaben prüfen</span></span></td><td><span class="helper">Beispielwerte statt Live-Gastdaten.</span></td><td><button class="table-action btn-secondary" type="button">Angaben prüfen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-luise"><input id="batch-select-luise" type="checkbox" aria-label="Luise von Hohenfels auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T16:10">16:10</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Luise von Hohenfels</strong><span>R-260716-22 · Zimmer 302</span></span></td><td><span class="status-stack"><span class="badge badge-info">i Zeitfenster</span></span></td><td><span class="helper">Keine Zimmer- oder Schlüsselzusage.</span></td><td><button class="table-action btn-secondary" type="button">Vormerken</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-pia"><input id="batch-select-pia" type="checkbox" aria-label="Pia und Lothar Ahrens auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T16:35">16:35</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Pia und Lothar Ahrens</strong><span>R-260716-24 · Zimmer 211</span></span></td><td><span class="status-stack"><span class="badge badge-teal">● Bereit zur Prüfung</span></span></td><td><span class="helper">Lokaler Kontext ohne Folio-/Payment-Vertrag.</span></td><td><button class="table-action btn-secondary" type="button">Vorbereiten</button></td></tr>
+                      <tr class="is-selected"><td class="selection-cell"><label class="selection-control" for="batch-select-samira"><input id="batch-select-samira" type="checkbox" checked aria-label="Samira Özdemir ausgewählt"></label></td><td class="time-cell"><time datetime="2026-07-16T17:00">17:00</time><small>ausgewählt</small></td><td><span class="guest-copy"><strong>Samira Özdemir</strong><span>R-260716-26 · Zimmer 203</span></span></td><td><span class="status-stack"><span class="badge badge-warning">! Nachweis fehlt</span><span class="badge badge-info">i Badekur-Kontext</span></span></td><td><span class="helper">Sensible Details standardmäßig maskiert.</span></td><td><button class="table-action btn-secondary" type="button">Einzeln prüfen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-franz"><input id="batch-select-franz" type="checkbox" aria-label="Franziska Kroll auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T17:25">17:25</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Franziska Kroll</strong><span>R-260716-28 · Zimmer 119</span></span></td><td><span class="status-stack"><span class="badge badge-error">! Nicht verbunden</span></span></td><td><span class="helper">Keine automatische Wiederholung behaupten.</span></td><td><button class="table-action btn-secondary" type="button" disabled>Warten auf Status</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-marianne"><input id="batch-select-marianne" type="checkbox" aria-label="Marianne von der Lindenberg-Steinberg auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T18:05">18:05</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong class="long-name">Marianne von der Lindenberg-Steinberg</strong><span>R-260716-30 · Zimmer 312</span></span></td><td><span class="status-stack"><span class="badge badge-prototype">◌ Stub-Format</span></span></td><td><span class="helper">Langer Nachweisname bleibt später im Detail zugänglich.</span></td><td><button class="table-action btn-secondary" type="button">Nachweis anzeigen</button></td></tr>
+                      <tr><td class="selection-cell"><label class="selection-control" for="batch-select-tobias"><input id="batch-select-tobias" type="checkbox" aria-label="Tobias und Evelyn Stahl auswählen"></label></td><td class="time-cell"><time datetime="2026-07-16T19:20">19:20</time><small>nicht gewählt</small></td><td><span class="guest-copy"><strong>Tobias und Evelyn Stahl</strong><span>R-260716-33 · Zimmer 218</span></span></td><td><span class="status-stack"><span class="badge badge-info">i Vorgemerkt</span></span></td><td><span class="helper">Statische Notiz, keine persistierte Zusage.</span></td><td><button class="table-action btn-secondary" type="button">Vormerken</button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mobile-card-list" aria-label="Mobile Batch-Auswahlkarten"><article class="arrival-card is-selected"><div class="arrival-topline"><strong>10:40 · Lara Weber</strong><span class="badge badge-peach">✓ ausgewählt</span></div><p>R-260716-08 · Stub-Format und Meldeschein-Vorschau nur gesammelt prüfen.</p><button class="btn-secondary" type="button">Einzeln prüfen</button></article><article class="arrival-card is-selected"><div class="arrival-topline"><strong>11:30 · Otto und Brigitte Rehm</strong><span class="badge badge-peach">✓ ausgewählt</span></div><p>R-260716-13 · Befreiungsnachweis unbestätigt.</p><button class="btn-secondary" type="button">Einzeln prüfen</button></article><article class="arrival-card is-selected"><div class="arrival-topline"><strong>17:00 · Samira Özdemir</strong><span class="badge badge-peach">✓ ausgewählt</span></div><p>R-260716-26 · Sensible Details bleiben maskiert.</p><button class="btn-secondary" type="button">Einzeln prüfen</button></article><p class="state-note">9 weitere Vorgänge sind nicht gelöscht oder abgeschlossen; sie bleiben in der späteren, zugänglichen Liste erreichbar.</p></div>
+                <section class="batch-bar" aria-labelledby="batch-bar-title"><div class="batch-copy"><strong id="batch-bar-title">3 Anreisen ausgewählt</strong><span>Lara Weber, Otto und Brigitte Rehm, Samira Özdemir · Auswahl ist nur im Prototyp sichtbar und nicht gespeichert.</span></div><div class="batch-actions"><button class="btn-primary" type="button">Prüfvorschau öffnen <span class="badge badge-planned">Geplant</span></button><button class="btn-secondary" type="button">Auswahl aufheben</button></div></section>
+              </div>
+            </section>
+            <aside class="side-stack" aria-label="Mehrfachauswahl und Batch-Evidenz"><section class="panel" aria-labelledby="batch-boundary-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="batch-boundary-title">Batch-Grenze</h2><p class="panel-subtitle">Ein Batch darf nie eine Einzelprüfung verschleiern.</p></div></header><div class="panel-body"><dl class="key-values"><dt>Auswahl</dt><dd>3 synthetische Ankünfte</dd><dt>Vorgesehene Aktion</dt><dd>Prüfvorschau, keine Ausführung</dd><dt>Erforderlich</dt><dd>API, Auth/RBAC, Jobstatus, Audit, Idempotenz, Rückmeldung</dd></dl><p class="drawer-note">Die sichtbaren Buttons ändern keine Daten. Eine reale Batch-Verarbeitung muss per Zeile Gründe, Teilfehler, Berechtigung und Ergebnis ausweisen.</p></div></section><aside class="panel evidence-drawer" aria-labelledby="batch-evidence-title"><header class="panel-header"><div class="panel-title-group"><h2 class="panel-title" id="batch-evidence-title">Batch-Nachweis</h2><p class="panel-subtitle">Vorschau statt stiller Verarbeitung</p></div></header><div class="panel-body"><span class="badge badge-prototype">◌ Prototypzustand</span><p class="drawer-note">Ein künftiger Batch-Dienst zeigt Zielobjekte, ausgeschlossene Vorgänge, Prüfzeit, Teilfehler, Retry-Grund und intended audit event. Keine dieser Eigenschaften wird hier behauptet.</p><button class="btn-secondary" type="button">Voraussetzungen ansehen</button></div></aside></aside>
+          </div>
+          <p class="page-note">Batch-/Überlaufzustand: Die sticky, umbrechende Batchleiste ist ein Responsive-Muster. Sie ist keine Implementierung von Mehrfachauswahl, Berechtigungsprüfung, Dokumenterzeugung, Persistenz, Audit oder Hintergrundverarbeitung.</p>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche"><a href="#arrivals-batch-title">Heute</a><a href="#arrivals-batch-title" aria-current="page">Anreisen</a><a href="#batch-boundary-title">Hinweise</a></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- State switcher (prototype-review control) -->
+  <nav class="state-switcher" aria-label="Prototypzustand wechseln">
+    <button type="button" data-state-button="default" aria-controls="state-default" aria-pressed="true" onclick="showState('default')">Queue</button>
+    <button type="button" data-state-button="empty" aria-controls="state-empty" aria-pressed="false" onclick="showState('empty')">Leer</button>
+    <button type="button" data-state-button="loading" aria-controls="state-loading" aria-pressed="false" onclick="showState('loading')">Lädt</button>
+    <button type="button" data-state-button="error" aria-controls="state-error" aria-pressed="false" onclick="showState('error')">Teilbestand</button>
+    <button type="button" data-state-button="overflow" aria-controls="state-overflow" aria-pressed="false" onclick="showState('overflow')">3 ausgewählt</button>
+  </nav>
+
+  <script>
+    const prototypeStates = ['default', 'empty', 'loading', 'error', 'overflow'];
+
+    function showState(name) {
+      prototypeStates.forEach((stateName) => {
+        const state = document.getElementById('state-' + stateName);
+        state.hidden = stateName !== name;
+      });
+
+      document.querySelectorAll('[data-state-button]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.stateButton === name));
+      });
+
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  </script>
+</body>
+</html>

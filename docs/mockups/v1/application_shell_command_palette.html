@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Rheinland Anwendungsschale und Befehlspalette — Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* ===== Established geometry and typography scale ===== */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-size-empty-icon: 48px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --line-height-empty: 1.6;
+      --letter-spacing-label: 0.5px;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --collapsed-sidebar-width: calc(var(--touch-target) + var(--space-xl));
+      --dialog-width: calc(var(--space-4xl) * 10);
+      --dialog-max-height: calc(100vh - var(--space-4xl));
+      --result-list-height: calc(var(--space-4xl) * 5);
+      --overflow-list-height: calc(var(--space-4xl) * 6);
+      --overlay-opacity: 0.5;
+      --z-overlay: 1000;
+      --z-switcher: 1001;
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --motion-none: 0s;
+      --z-state-switcher: 1002;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+
+    /* ===== Shared application-shell primitives ===== */
+    .state { min-height: 100vh; }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: 100vh;
+      background: var(--app-bg);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      min-height: var(--touch-target);
+      padding: var(--space-sm);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-2xl);
+      height: var(--space-2xl);
+      flex: 0 0 auto;
+      background: var(--surface-0);
+      color: var(--color-teal);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-card);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .brand-copy { display: grid; gap: var(--space-none); min-width: var(--space-none); }
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .brand-subtitle { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label {
+      padding: var(--space-none) var(--space-md);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+    }
+
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-secondary);
+      background: transparent;
+      border: var(--border-width) solid transparent;
+      border-left: var(--border-emphasis) solid transparent;
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-secondary);
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: var(--font-size-label); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .sidebar-context {
+      display: grid;
+      gap: var(--space-xs);
+      margin-top: auto;
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .sidebar-context strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .sidebar-context span { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .sidebar-context small { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .workspace { display: flex; flex-direction: column; min-width: var(--space-none); }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .topbar-copy { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .topbar-copy h1 { color: var(--text-primary); font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    .topbar-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .topbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); flex-wrap: wrap; }
+
+    .context-strip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      padding: var(--space-sm) var(--space-xl);
+      background: var(--panel-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+
+    .context-label,
+    .helper-text,
+    .page-note,
+    .result-meta,
+    .dialog-note,
+    .focus-intent,
+    .state-note {
+      color: var(--text-muted);
+      font-size: var(--font-size-label);
+    }
+
+    .context-label { letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .context-divider { color: var(--surface-2); }
+
+    button,
+    input,
+    select,
+    textarea { font: inherit; }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-lg);
+      color: var(--text-secondary);
+      background: transparent;
+      border: var(--border-width) solid transparent;
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover { transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { cursor: not-allowed; background: var(--surface-0); border-color: var(--border-color); color: var(--text-muted); }
+
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-secondary { background: transparent; border-color: var(--border-color); color: var(--text-secondary); }
+    .btn-secondary:hover { background: var(--surface-0); color: var(--text-primary); }
+    .btn-quiet { background: var(--surface-0); border-color: var(--border-color); color: var(--text-secondary); }
+    .btn-quiet:hover { background: var(--surface-1); color: var(--text-primary); }
+
+    .kbd,
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--space-lg-plus);
+      padding: var(--space-badge-y) var(--space-xs);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      font-family: var(--font-mono);
+      font-size: var(--font-size-dense);
+      line-height: var(--line-height-base);
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: var(--space-badge-y) var(--space-sm);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      line-height: var(--line-height-base);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+
+    .content {
+      display: grid;
+      gap: var(--space-lg);
+      padding: var(--space-xl);
+    }
+
+    .command-trigger {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-secondary);
+      background: var(--panel-bg);
+      border-color: var(--border-color);
+      text-align: left;
+    }
+
+    .command-trigger:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .command-trigger-copy { display: grid; gap: var(--space-none); min-width: var(--space-none); }
+    .command-trigger-copy strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    .command-trigger-copy span { color: var(--text-muted); font-size: var(--font-size-label); }
+    .shortcut-stack { display: flex; align-items: center; gap: var(--space-xs); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 3fr) minmax(calc(var(--space-4xl) * 6), 1fr);
+      align-items: start;
+      gap: var(--space-lg);
+    }
+
+    .panel,
+    .card,
+    .empty-state,
+    .permission-notice,
+    .loading-card {
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .panel { display: grid; min-width: var(--space-none); overflow: hidden; }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .panel-header-copy { display: grid; gap: var(--space-xs); }
+    .panel-title { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    .panel-subtitle { color: var(--text-muted); font-size: var(--font-size-label); }
+    .panel-body { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+
+    .chip-row { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
+    .chip {
+      min-height: var(--space-2xl);
+      padding: var(--space-xs) var(--space-sm);
+      background: transparent;
+      border-color: var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+    }
+
+    .chip:hover { background: var(--surface-0); color: var(--text-primary); }
+    .chip[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    .queue-summary {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      color: var(--text-secondary);
+      font-size: var(--font-size-label);
+    }
+
+    .queue-summary strong { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
+    .queue-list { display: grid; gap: var(--space-sm); list-style: none; }
+
+    .queue-row {
+      display: grid;
+      grid-template-columns: minmax(calc(var(--space-4xl) + var(--space-sm)), 1fr) minmax(var(--space-none), 3fr) minmax(var(--space-none), 2fr) auto;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      transition: background var(--motion-fast), border-color var(--motion-fast);
+    }
+
+    .queue-row:hover { background: var(--surface-1); border-color: var(--surface-1); }
+    .queue-row.is-selected { border-left: var(--border-emphasis) solid var(--accent-color); }
+    .queue-time { display: grid; gap: var(--space-xs); color: var(--text-muted); font-size: var(--font-size-label); }
+    .queue-time time { color: var(--text-primary); font-family: var(--font-mono); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .queue-identity { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .queue-identity strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .queue-identity span { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .queue-status { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .queue-status .helper-text { line-height: var(--line-height-base); }
+    .queue-action { justify-self: end; }
+
+    .exception-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .exception-item {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr);
+      gap: var(--space-sm);
+      padding: var(--space-sm);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .exception-symbol { color: var(--color-yellow); font-size: var(--font-size-secondary); text-align: center; }
+    .exception-symbol.error { color: var(--color-red); }
+    .exception-symbol.info { color: var(--color-blue); }
+    .exception-copy { display: grid; gap: var(--space-xs); }
+    .exception-copy strong { color: var(--text-primary); font-size: var(--font-size-label); font-weight: var(--font-weight-semibold); }
+    .exception-copy span { color: var(--text-secondary); font-size: var(--font-size-dense); }
+
+    .truth-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--surface-0); border: var(--border-width) solid var(--border-color); border-left: var(--border-emphasis) solid var(--color-teal); border-radius: var(--radius-card); }
+    .truth-card h3 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .truth-card p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .truth-card ul { display: grid; gap: var(--space-xs); color: var(--text-muted); font-size: var(--font-size-dense); list-style: none; }
+
+    .planned-shortcuts { display: grid; gap: var(--space-sm); }
+    .planned-shortcuts li { display: grid; grid-template-columns: auto minmax(var(--space-none), 1fr); align-items: center; gap: var(--space-sm); color: var(--text-secondary); font-size: var(--font-size-label); list-style: none; }
+
+    .mobile-nav { display: none; }
+
+    /* ===== Palette overlay shared by palette-related states ===== */
+    .palette-state { min-height: 100vh; }
+    .palette-echo {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: 100vh;
+      color: var(--text-muted);
+      background: var(--app-bg);
+    }
+
+    .echo-sidebar { padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: var(--border-width) solid var(--border-color); }
+    .echo-lines { display: grid; gap: var(--space-md); }
+    .echo-line { min-height: var(--space-2xl); background: var(--surface-0); border-radius: var(--radius-control); }
+    .echo-line.short { max-width: calc(var(--space-4xl) * 2); }
+    .echo-line.medium { max-width: calc(var(--space-4xl) * 3); }
+    .echo-main { display: grid; gap: var(--space-lg); padding: var(--space-xl); }
+    .echo-header { min-height: var(--space-4xl); background: var(--panel-header-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+    .echo-card { min-height: calc(var(--space-4xl) * 3); background: var(--panel-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+
+    .palette-scrim {
+      position: fixed;
+      inset: var(--space-none);
+      z-index: var(--z-overlay);
+      background: var(--timeline-bg);
+      opacity: var(--overlay-opacity);
+    }
+
+    dialog.command-dialog {
+      position: fixed;
+      inset: var(--space-none);
+      z-index: var(--z-switcher);
+      display: grid;
+      align-content: start;
+      width: min(var(--dialog-width), calc(100% - var(--space-xl)));
+      max-height: var(--dialog-max-height);
+      margin: auto;
+      padding: var(--space-none);
+      overflow: auto;
+      color: var(--text-primary);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-modal);
+      box-shadow: var(--space-none) var(--space-lg) var(--space-2xl) var(--timeline-bg);
+    }
+
+    dialog.command-dialog::backdrop { background: transparent; }
+
+    .dialog-header {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-lg) var(--space-lg-plus);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+
+    .dialog-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); }
+    .dialog-title-copy { display: grid; gap: var(--space-xs); }
+    .dialog-kicker { color: var(--text-muted); font-size: var(--font-size-dense); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .dialog-title { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+
+    .icon-button {
+      width: var(--touch-target);
+      min-width: var(--touch-target);
+      padding: var(--space-sm);
+      background: transparent;
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .icon-button:hover { background: var(--surface-0); color: var(--text-primary); }
+
+    .command-search { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; gap: var(--space-sm); }
+    .field-group { display: grid; gap: var(--space-xs); }
+    .field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: var(--font-weight-medium); }
+
+    .command-search input {
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-primary);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-body);
+      outline: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast);
+    }
+
+    .command-search input[disabled] { cursor: not-allowed; color: var(--text-muted); background: var(--surface-0); }
+
+    .dialog-body { display: grid; gap: var(--space-lg); padding: var(--space-lg-plus); }
+    .result-group { display: grid; gap: var(--space-sm); }
+    .result-group-heading { color: var(--text-muted); font-size: var(--font-size-dense); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .command-result-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .command-result-list.is-scrollable { max-height: var(--overflow-list-height); overflow: auto; padding-right: var(--space-xs); }
+
+    .command-result {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-md);
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-md);
+      color: var(--text-secondary);
+      background: var(--surface-0);
+      border-color: var(--border-color);
+      border-radius: var(--radius-control);
+      text-align: left;
+    }
+
+    .command-result:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    .command-result.is-selected { border-left: var(--border-emphasis) solid var(--accent-color); box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color); }
+    .command-result[disabled] { opacity: 1; text-align: left; }
+    .result-copy { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .result-primary { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    .result-meta { line-height: var(--line-height-base); }
+    .result-badges { display: flex; justify-content: flex-end; gap: var(--space-xs); flex-wrap: wrap; }
+
+    .dialog-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-lg) var(--space-lg-plus);
+      background: var(--panel-header-bg);
+      border-top: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .shortcut-legend { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; color: var(--text-muted); font-size: var(--font-size-dense); }
+    .focus-intent { max-width: var(--dialog-width); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-md);
+      min-height: var(--result-list-height);
+      padding: var(--space-4xl) var(--space-xl);
+      text-align: center;
+    }
+
+    .empty-state-icon { color: var(--color-teal); font-size: var(--font-size-empty-icon); }
+    .empty-state h2 { color: var(--text-secondary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-medium); }
+    .empty-state p { max-width: var(--dialog-width); color: var(--text-muted); font-size: var(--font-size-secondary); line-height: var(--line-height-empty); }
+
+    .loading-card { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+    .skeleton { min-height: var(--space-xl); background: var(--surface-0); border-radius: var(--radius-control); }
+    .skeleton.short { max-width: 50%; }
+    .skeleton.medium { max-width: 75%; }
+    .skeleton.tall { min-height: var(--touch-target); }
+
+    .permission-notice {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      border-left: var(--border-emphasis) solid var(--color-yellow);
+      background: var(--surface-0);
+    }
+
+    .permission-notice h2 { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    .permission-notice p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .permission-notice ul { display: grid; gap: var(--space-xs); padding-left: var(--space-xl); color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .overflow-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      color: var(--text-secondary);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-left: var(--border-emphasis) solid var(--color-peach);
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-label);
+      flex-wrap: wrap;
+    }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      max-width: calc(var(--dialog-width) + var(--space-4xl));
+      padding: var(--space-xs);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+      flex-wrap: wrap;
+    }
+
+    .state-switcher button {
+      min-height: var(--space-2xl);
+      padding: var(--space-xs) var(--space-sm);
+      background: var(--surface-0);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+    }
+
+    .state-switcher button:hover { background: var(--surface-1); color: var(--text-primary); }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    @keyframes command-pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* ===== Responsive adaptation: full desktop → collapsed tablet → focused mobile ===== */
+    @media (min-width: 1280px) {
+      .content { padding: var(--space-xl) var(--space-2xl); }
+      .main-grid { grid-template-columns: minmax(var(--space-none), 3fr) minmax(calc(var(--space-4xl) * 7), 1fr); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--collapsed-sidebar-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .brand { padding: var(--space-none); }
+      .brand-copy,
+      .nav-label,
+      .nav-text,
+      .nav-count,
+      .sidebar-context { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: var(--border-width) solid transparent; border-bottom: var(--border-emphasis) solid transparent; }
+      .nav-link[aria-current="page"] { border-left-color: transparent; border-bottom-color: var(--accent-color); }
+      .main-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .palette-echo { grid-template-columns: var(--collapsed-sidebar-width) minmax(var(--space-none), 1fr); }
+      .echo-sidebar { padding: var(--space-lg) var(--space-sm); }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .topbar { align-items: flex-start; padding: var(--space-md) var(--space-lg); }
+      .topbar-actions { width: 100%; justify-content: stretch; }
+      .topbar-actions .btn-secondary { display: none; }
+      .topbar-actions .btn-primary { flex: 1; }
+      .context-strip { padding: var(--space-sm) var(--space-lg); }
+      .context-strip .context-divider,
+      .context-strip .context-value.is-secondary { display: none; }
+      .content { padding: var(--space-lg); padding-bottom: calc(var(--touch-target) + var(--space-3xl)); }
+      .main-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .panel-header { align-items: flex-start; }
+      .queue-row { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-sm); }
+      .queue-action { justify-self: stretch; }
+      .queue-action button { width: 100%; }
+      .queue-row:nth-child(n + 4) { display: none; }
+      .truth-card { display: none; }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-overlay);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        background: var(--panel-bg);
+        border-top: var(--border-width) solid var(--border-color);
+      }
+      .mobile-nav a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--touch-target);
+        padding: var(--space-sm);
+        color: var(--text-secondary);
+        background: transparent;
+        border: var(--border-width) solid transparent;
+        border-radius: var(--radius-control);
+        font-size: var(--font-size-label);
+        text-decoration: none;
+      }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .palette-echo { display: block; }
+      .echo-sidebar { display: none; }
+      .echo-main { padding: var(--space-lg); }
+      dialog.command-dialog { width: calc(100% - var(--space-lg)); max-height: calc(100vh - var(--space-xl)); }
+      .dialog-header,
+      .dialog-body,
+      .dialog-footer { padding: var(--space-lg); }
+      .command-search { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .dialog-footer { align-items: flex-start; }
+      .result-badges { justify-content: flex-start; }
+      .command-result { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-lg)); max-width: calc(100% - var(--space-lg)); }
+      .state-switcher button { min-height: var(--touch-target); }
+      button,
+      .chip,
+      .mobile-nav a,
+      .command-search input { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto;
+        transition-duration: var(--space-none);
+        animation-duration: var(--space-none);
+        animation-iteration-count: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .app-shell           -> HotelApplicationShellComponent (new; design-only composition)
+    .sidebar             -> ApplicationSidebarComponent (new; composes active-list pattern)
+    .context-strip       -> PropertyDateShiftContextComponent (new)
+    .queue-row           -> TodayQueueRowComponent (new; composes card, badge, action patterns)
+    .command-trigger     -> GlobalCommandTriggerComponent (new)
+    dialog.command-dialog -> CommandPaletteDialogComponent (new; native dialog intent)
+    .command-result      -> CommandPaletteResultComponent (new; button/list pattern)
+    .state-switcher      -> prototype-only StateSwitcher; not a production control
+  -->
+
+  <!-- ===== State: Default / populated canonical shell ===== -->
+  <section class="state" id="state-default" aria-labelledby="shell-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Arbeitsbereiche nach Rollenprofil">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">R</span>
+          <span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Bad Orb · interne Arbeitsansicht</span></span>
+        </div>
+
+        <nav class="nav-group" aria-labelledby="nav-reception-label">
+          <p class="nav-label" id="nav-reception-label">Empfang</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#shell-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">8</span></a></li>
+            <li><a class="nav-link" href="#shell-arrivals"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">5</span></a></li>
+            <li><a class="nav-link" href="#shell-arrivals"><span class="nav-symbol" aria-hidden="true">←</span><span class="nav-text">Abreisen</span><span class="nav-count">3</span></a></li>
+          </ul>
+        </nav>
+
+        <nav class="nav-group" aria-labelledby="nav-management-label">
+          <p class="nav-label" id="nav-management-label">Leitung &amp; Finanzen</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#shell-alerts"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-text">Kurort-Ausnahmen</span><span class="nav-count">2</span></a></li>
+            <li><a class="nav-link" href="#shell-truth"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-text">Berichte</span><span class="nav-count">→</span></a></li>
+          </ul>
+        </nav>
+
+        <nav class="nav-group" aria-labelledby="nav-compliance-label">
+          <p class="nav-label" id="nav-compliance-label">Datenschutz &amp; Administration</p>
+          <ul class="nav-list">
+            <li><a class="nav-link" href="#shell-truth"><span class="nav-symbol" aria-hidden="true">◇</span><span class="nav-text">Nachweise</span><span class="nav-count">?</span></a></li>
+            <li><a class="nav-link" href="#shell-truth"><span class="nav-symbol" aria-hidden="true">⚙</span><span class="nav-text">System</span><span class="nav-count">→</span></a></li>
+          </ul>
+        </nav>
+
+        <section class="sidebar-context" aria-label="Beispielhafter Arbeitskontext">
+          <strong>Frühschicht · 07:00–15:00</strong>
+          <span>Mara Keller · Beispielrolle Empfang</span>
+          <small>Rollenname ist Navigation, keine nachgewiesene Anmeldung oder Berechtigung.</small>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-copy">
+            <h1 id="shell-title">Heute an der Rezeption</h1>
+            <p>Queue-first Arbeitsansicht · synthetische Beispieldaten · nicht als Live-Betrieb lesbar</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn-secondary" type="button">Schichtnotiz</button>
+            <button id="shell-search-trigger" class="btn-primary" type="button" aria-haspopup="dialog" aria-controls="palette-dialog" onclick="openPalette('shell-search-trigger')">⌕ Suche &amp; Befehl <kbd>⌘ K · geplant</kbd></button>
+          </div>
+        </header>
+
+        <section class="context-strip" aria-label="Objekt-, Datums- und Schichtkontext">
+          <span class="context-label">Objekt</span><span class="context-value">Hotel Rheinland · Bad Orb</span><span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Datum</span><span class="context-value">Mittwoch, 16. Juli 2026</span><span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Schicht</span><span class="context-value is-secondary">Frühschicht · Beispielkontext</span>
+          <span class="badge badge-prototype">◌ Prototyp</span>
+          <span class="badge badge-planned">→ Suche geplant</span>
+        </section>
+
+        <div class="content">
+          <section aria-labelledby="command-trigger-title">
+            <button id="command-trigger" class="command-trigger" type="button" aria-haspopup="dialog" aria-controls="palette-dialog" onclick="openPalette('command-trigger')">
+              <span class="command-trigger-copy"><strong id="command-trigger-title">Gast, Reservierung oder Aktion finden</strong><span>Öffnet die Befehlspalette im Prototyp per Klick; Keine Live-Suche, keine Anmeldung und keine Speicherung.</span></span>
+              <span class="shortcut-stack"><kbd>Ctrl/⌘ K · geplant</kbd></span>
+            </button>
+          </section>
+
+          <div class="main-grid">
+            <section class="panel" id="shell-arrivals" aria-labelledby="arrivals-title">
+              <header class="panel-header">
+                <div class="panel-header-copy">
+                  <h2 class="panel-title" id="arrivals-title">Ankunftsqueue</h2>
+                  <p class="panel-subtitle">Ein nächster Schritt pro Vorgang · Reihenfolge und Besitz benötigen später einen Persistenzvertrag.</p>
+                </div>
+                <div class="chip-row" aria-label="Beispielhafte Filter der Ankunftsqueue">
+                  <button class="chip" type="button" aria-pressed="true">Alle 5</button>
+                  <button class="chip" type="button" aria-pressed="false">Jetzt 2</button>
+                  <button class="chip" type="button" aria-pressed="false">Prüfen 2</button>
+                </div>
+              </header>
+              <div class="panel-body">
+                <p class="queue-summary"><strong>10:22</strong><span>·</span><span>Die Auswahl bleibt beim späteren Öffnen eines Details erhalten.</span><span class="badge badge-unclear">? Status-API unklar</span></p>
+                <ol class="queue-list">
+                  <li>
+                    <article class="queue-row is-selected" aria-labelledby="queue-lara-title">
+                      <div class="queue-time"><time datetime="2026-07-16T10:40">10:40</time><span>fällig in 18 Min.</span></div>
+                      <div class="queue-identity"><strong id="queue-lara-title">Lara Weber mit Jürgen Weber</strong><span>R-260716-08 · 7 Nächte · Kurpaket Classic · Beispieldaten</span></div>
+                      <div class="queue-status"><span class="badge badge-warning">! Nachweis fehlt</span><span class="helper-text">Begleitgast vor der Dokumentvorschau prüfen</span></div>
+                      <div class="queue-action"><button class="btn-primary" type="button">Ankunft öffnen</button></div>
+                    </article>
+                  </li>
+                  <li>
+                    <article class="queue-row" aria-labelledby="queue-sofia-title">
+                      <div class="queue-time"><time datetime="2026-07-16T11:05">11:05</time><span>heute</span></div>
+                      <div class="queue-identity"><strong id="queue-sofia-title">Sofia Hartmann</strong><span>R-260716-11 · 3 Nächte · Einzelanreise</span></div>
+                      <div class="queue-status"><span class="badge badge-prototype">◌ Vorschau</span><span class="helper-text">Kurkarte nicht als Zustellung bestätigt</span></div>
+                      <div class="queue-action"><button class="btn-secondary" type="button">Nachweise prüfen</button></div>
+                    </article>
+                  </li>
+                  <li>
+                    <article class="queue-row" aria-labelledby="queue-otto-title">
+                      <div class="queue-time"><time datetime="2026-07-16T11:30">11:30</time><span>heute</span></div>
+                      <div class="queue-identity"><strong id="queue-otto-title">Otto und Brigitte Rehm</strong><span>R-260716-13 · 5 Nächte · Badekur-Aufenthalt</span></div>
+                      <div class="queue-status"><span class="badge badge-warning">! Kurtaxe prüfen</span><span class="helper-text">Befreiungsnachweis ist nicht bestätigt</span></div>
+                      <div class="queue-action"><button class="btn-secondary" type="button">Berechnung prüfen</button></div>
+                    </article>
+                  </li>
+                  <li>
+                    <article class="queue-row" aria-labelledby="queue-erik-title">
+                      <div class="queue-time"><time datetime="2026-07-16T12:20">12:20</time><span>später</span></div>
+                      <div class="queue-identity"><strong id="queue-erik-title">Erik Neumann</strong><span>R-260716-17 · 2 Nächte · Beispielreservierung</span></div>
+                      <div class="queue-status"><span class="badge badge-peach">↻ Fortsetzen</span><span class="helper-text">Schritt 2 als künftiger Wiederaufnahmekontext</span></div>
+                      <div class="queue-action"><button class="btn-secondary" type="button">Schritt fortsetzen</button></div>
+                    </article>
+                  </li>
+                  <li>
+                    <article class="queue-row" aria-labelledby="queue-luise-title">
+                      <div class="queue-time"><time datetime="2026-07-16T16:10">16:10</time><span>später</span></div>
+                      <div class="queue-identity"><strong id="queue-luise-title">Luise von Hohenfels</strong><span>R-260716-22 · 1 Nacht · spätes Zeitfenster</span></div>
+                      <div class="queue-status"><span class="badge badge-info">i Zeitfenster</span><span class="helper-text">Keine Zimmer- oder Schlüsselzusage im Prototyp</span></div>
+                      <div class="queue-action"><button class="btn-secondary" type="button">Details vormerken</button></div>
+                    </article>
+                  </li>
+                </ol>
+              </div>
+            </section>
+
+            <aside class="panel" id="shell-alerts" aria-labelledby="alerts-title">
+              <header class="panel-header">
+                <div class="panel-header-copy"><h2 class="panel-title" id="alerts-title">Jetzt sichtbar</h2><p class="panel-subtitle">Kleine Ausnahmefläche statt generischem Command Center</p></div>
+              </header>
+              <div class="panel-body">
+                <ul class="exception-list">
+                  <li class="exception-item"><span class="exception-symbol" aria-hidden="true">!</span><span class="exception-copy"><strong>R-260716-08 · Meldeschein</strong><span><span class="badge badge-warning">Nachweis fehlt</span> Vor der künftigen Dokumentvorschau prüfen.</span></span></li>
+                  <li class="exception-item"><span class="exception-symbol" aria-hidden="true">!</span><span class="exception-copy"><strong>R-260716-13 · Kurtaxe</strong><span><span class="badge badge-unclear">Unklar</span> Lokale Berechnung ist nicht als Folio-Buchung belegt.</span></span></li>
+                  <li class="exception-item"><span class="exception-symbol info" aria-hidden="true">i</span><span class="exception-copy"><strong>Globale Suche</strong><span><span class="badge badge-planned">Geplant</span> Befehlspalette hat keinen Browser-/API-Vertrag.</span></span></li>
+                </ul>
+                <button class="btn-secondary" type="button">Ausnahmen im Kontext öffnen</button>
+              </div>
+            </aside>
+          </div>
+
+          <section class="truth-card" id="shell-truth" aria-labelledby="truth-title">
+            <h3 id="truth-title">Befehlspalette: Interaktions- und Wahrheitsgrenze</h3>
+            <p>Die Schale gruppiert Arbeitsbereiche nach Aufgabenprofilen. Sie beweist weder eine Anmeldung, Rollenprüfung, gespeicherte Suche noch einen Live-Reservierungsindex.</p>
+            <ul class="planned-shortcuts" aria-label="Geplante Tastaturinteraktionen">
+              <li><kbd>Ctrl/⌘ K</kbd><span><strong>Geplant:</strong> Palette öffnen und Fokus in die Suche setzen.</span></li>
+              <li><kbd>↑ ↓</kbd><span><strong>Geplant:</strong> Ergebnisse auswählen; keine Tastaturbindung in dieser HTML-Datei.</span></li>
+              <li><kbd>Enter</kbd><span><strong>Geplant:</strong> künftige Navigation/Aktion auslösen.</span></li>
+              <li><kbd>Esc</kbd><span><strong>Geplant:</strong> Palette schließen und Fokus zum auslösenden Trigger bzw. zur Queue-Zeile zurückgeben.</span></li>
+            </ul>
+          </section>
+
+          <p class="page-note">Designprototyp mit synthetischen Gästen und Reservierungskennungen. Alle Datenquellen, Suche, Navigation, Rollenprüfung, Speicherung und Rückkehrkontexte benötigen neue Browser-/API-/Persistenzverträge.</p>
+        </div>
+
+        <nav class="mobile-nav" aria-label="Mobile Arbeitsbereiche">
+          <a href="#shell-title" aria-current="page">Heute</a>
+          <a href="#shell-arrivals">Anreisen</a>
+          <a href="#shell-alerts">Hinweise</a>
+        </nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Command palette / matching guest, reservation, action results ===== -->
+  <section class="state palette-state" id="state-palette" hidden aria-labelledby="palette-title">
+    <div class="palette-echo" aria-hidden="true">
+      <aside class="echo-sidebar"><div class="echo-lines"><div class="echo-line short"></div><div class="echo-line medium"></div><div class="echo-line medium"></div><div class="echo-line short"></div></div></aside>
+      <div class="echo-main"><div class="echo-header"></div><div class="echo-card"></div><div class="echo-card"></div></div>
+    </div>
+    <div class="palette-scrim" aria-hidden="true"></div>
+    <dialog class="command-dialog" id="palette-dialog" open aria-modal="true" aria-labelledby="palette-title" aria-describedby="palette-description">
+      <header class="dialog-header">
+        <div class="dialog-title-row">
+          <div class="dialog-title-copy"><p class="dialog-kicker">GlobalCommandPaletteComponent · lokale Prototypinteraktion</p><h1 class="dialog-title" id="palette-title">Suche &amp; Befehl</h1></div>
+          <button class="icon-button" type="button" aria-label="Befehlspalette schließen und Fokus zurückgeben" onclick="closePalette()">×</button>
+        </div>
+        <form class="command-search" role="search" aria-describedby="palette-description">
+          <div class="field-group"><label class="field-label" for="palette-query">Gast, Reservierung oder Aktion</label><input id="palette-query" type="search" value="Weber" aria-describedby="palette-description"></div>
+          <button class="btn-secondary" type="button">Muster suchen</button>
+        </form>
+        <p class="dialog-note" id="palette-description">Statische Ergebnisliste für die Entwurfsprüfung. Die Eingabe startet keine Live-Suche und liest keine Reservierungs- oder Personendaten.</p>
+      </header>
+
+      <div class="dialog-body" aria-live="polite">
+        <section class="result-group" aria-labelledby="guest-results-title">
+          <h2 class="result-group-heading" id="guest-results-title">Gäste &amp; Reservierungen · 2 Beispieltreffer</h2>
+          <ul class="command-result-list">
+            <li><button class="command-result is-selected" type="button" aria-current="true"><span class="result-copy"><span class="result-primary">Lara Weber · R-260716-08</span><span class="result-meta">Anreise heute · 7 Nächte · Kurpaket Classic · synthetischer Datensatz</span></span><span class="result-badges"><span class="badge badge-planned">→ Detail geplant</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Jürgen Weber · R-260716-08</span><span class="result-meta">Begleitgast · Dokumentangaben noch nicht vollständig · Beispieldaten</span></span><span class="result-badges"><span class="badge badge-warning">! Prüfen</span></span></button></li>
+          </ul>
+        </section>
+
+        <section class="result-group" aria-labelledby="action-results-title">
+          <h2 class="result-group-heading" id="action-results-title">Aktionen · sichtbare Vertragsgrenzen</h2>
+          <ul class="command-result-list">
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Ankunft R-260716-08 öffnen</span><span class="result-meta">Künftige Queue-zu-Detail-Navigation; Auswahl und Filter sollen später erhalten bleiben.</span></span><span class="result-badges"><span class="badge badge-planned">→ API nötig</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Meldeschein-Vorschau vorbereiten</span><span class="result-meta">Orientiert sich an einem CLI-/Testvertrag; PDF-Format und Zustellung sind nicht final bestätigt.</span></span><span class="result-badges"><span class="badge badge-prototype">◌ CLI</span><span class="badge badge-warning">Stub</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Kurtaxe für R-260716-08 berechnen</span><span class="result-meta">Begrenzte lokale Berechnungslogik ist nicht gleich Folio-Buchung, Zahlung oder kommunale Meldung.</span></span><span class="result-badges"><span class="badge badge-success">✓ Modul</span><span class="badge badge-planned">UI geplant</span></span></button></li>
+          </ul>
+        </section>
+
+        <section class="result-group" aria-labelledby="navigation-results-title">
+          <h2 class="result-group-heading" id="navigation-results-title">Navigation</h2>
+          <ul class="command-result-list">
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Kurort-Ausnahmen öffnen</span><span class="result-meta">Wechselt später in eine gefilterte Arbeitsfläche für Meldeschein-, Kurtaxe- und Artefakthinweise.</span></span><span class="result-badges"><span class="badge badge-prototype">◌ Struktur</span></span></button></li>
+          </ul>
+        </section>
+      </div>
+
+      <footer class="dialog-footer">
+        <div class="shortcut-legend" aria-label="Geplante Tastaturhinweise"><span class="badge badge-planned">Geplant · nicht gebunden</span><kbd>↑ ↓</kbd><span>Auswahl</span><kbd>Enter</kbd><span>Öffnen</span><kbd>Esc</kbd><span>Schließen</span></div>
+        <p class="focus-intent"><strong>Fokusabsicht:</strong> Öffnen setzt später den Fokus auf die Suche; Schließen kehrt zum auslösenden Trigger oder zur auslösenden Queue-Zeile zurück. Der Schließen-Button demonstriert dies nur lokal im Prototyp.</p>
+      </footer>
+    </dialog>
+  </section>
+
+  <!-- ===== State: Empty / command palette has no mock-data result ===== -->
+  <section class="state palette-state" id="state-empty" hidden aria-labelledby="empty-palette-title">
+    <div class="palette-echo" aria-hidden="true"><aside class="echo-sidebar"><div class="echo-lines"><div class="echo-line short"></div><div class="echo-line medium"></div></div></aside><div class="echo-main"><div class="echo-header"></div><div class="echo-card"></div></div></div>
+    <div class="palette-scrim" aria-hidden="true"></div>
+    <dialog class="command-dialog" open aria-modal="true" aria-labelledby="empty-palette-title" aria-describedby="empty-palette-description">
+      <header class="dialog-header">
+        <div class="dialog-title-row"><div class="dialog-title-copy"><p class="dialog-kicker">Leerer Suchzustand</p><h1 class="dialog-title" id="empty-palette-title">Keine Beispieltreffer</h1></div><button class="icon-button" type="button" aria-label="Zur Anwendungsschale zurück" onclick="closePalette()">×</button></div>
+        <form class="command-search" role="search"><div class="field-group"><label class="field-label" for="empty-query">Gast, Reservierung oder Aktion</label><input id="empty-query" type="search" value="Hohenfeld" aria-describedby="empty-palette-description"></div><button class="btn-secondary" type="button">Muster suchen</button></form>
+      </header>
+      <div class="dialog-body" aria-live="polite">
+        <section class="empty-state" aria-labelledby="empty-palette-message-title">
+          <span class="empty-state-icon" aria-hidden="true">⌕</span>
+          <h2 id="empty-palette-message-title">Keine Treffer in der statischen Musterliste</h2>
+          <p id="empty-palette-description">Ein leerer Prototypzustand beweist nicht, dass kein Gast, keine Reservierung oder kein Vorgang existiert. Ein zukünftiger Suchdienst benötigt Index-, Datenschutz-, Berechtigungs- und Fehlerverträge.</p>
+          <div class="chip-row"><span class="badge badge-prototype">◌ Beispieldaten</span><span class="badge badge-planned">→ Such-API erforderlich</span></div>
+          <div class="chip-row"><button class="btn-primary" type="button">Suchbegriff anpassen</button><button class="btn-secondary" type="button" onclick="closePalette()">Zur heutigen Queue</button></div>
+        </section>
+      </div>
+      <footer class="dialog-footer"><div class="shortcut-legend"><span class="badge badge-planned">Geplant · keine Shortcut-Bindung</span><kbd>Esc</kbd><span>Schließen und Fokus zurückgeben</span></div><p class="focus-intent">Die spätere Anwendung gibt beim Schließen den Fokus zum auslösenden Element zurück; dieser Prototyp zeigt nur den vorgesehenen Ablauf.</p></footer>
+    </dialog>
+  </section>
+
+  <!-- ===== State: Loading / command palette retrieval is pending ===== -->
+  <section class="state palette-state" id="state-loading" hidden aria-labelledby="loading-palette-title">
+    <div class="palette-echo" aria-hidden="true"><aside class="echo-sidebar"><div class="echo-lines"><div class="echo-line short"></div><div class="echo-line medium"></div></div></aside><div class="echo-main"><div class="echo-header"></div><div class="echo-card"></div></div></div>
+    <div class="palette-scrim" aria-hidden="true"></div>
+    <dialog class="command-dialog" open aria-modal="true" aria-labelledby="loading-palette-title" aria-describedby="loading-palette-description">
+      <header class="dialog-header">
+        <div class="dialog-title-row"><div class="dialog-title-copy"><p class="dialog-kicker">Lade- und Sperrzustand</p><h1 class="dialog-title" id="loading-palette-title">Suche wird vorbereitet</h1></div><button class="icon-button" type="button" disabled aria-label="Während des Ladebeispiels nicht verfügbar">×</button></div>
+        <form class="command-search" role="search"><div class="field-group"><label class="field-label" for="loading-query">Gast, Reservierung oder Aktion</label><input id="loading-query" type="search" value="Weber" disabled aria-describedby="loading-palette-description"></div><button class="btn-secondary" type="button" disabled>Suche läuft</button></form>
+        <p class="dialog-note" id="loading-palette-description">Kein Netzwerkzugriff findet statt. Das Skelett beschreibt nur die spätere Warte- und Sperrbehandlung einer Suchschnittstelle.</p>
+      </header>
+      <div class="dialog-body" aria-busy="true" aria-live="polite">
+        <section class="loading-card" aria-label="Ladeplatzhalter für Suchergebnisse"><span class="skeleton short"></span><span class="skeleton tall"></span><span class="skeleton tall"></span><span class="skeleton medium"></span></section>
+        <p class="state-note"><span class="badge badge-planned">→ Asynchroner Vertrag erforderlich</span> Ein späteres Produkt meldet Ende, Anzahl, Timeout und Fehlermeldung nachvollziehbar; dieser Prototyp meldet keine tatsächliche Anfrage.</p>
+      </div>
+      <footer class="dialog-footer"><div class="shortcut-legend"><span class="badge badge-prototype">◌ Ladebeispiel</span><kbd>Esc</kbd><span>Später: Abbrechen oder schließen</span></div><p class="focus-intent">Die Fokuswiederherstellung ist eine Implementierungsanforderung, keine nachgewiesene Laufzeitfunktion.</p></footer>
+    </dialog>
+  </section>
+
+  <!-- ===== State: Error / permission-restricted command ===== -->
+  <section class="state palette-state" id="state-error" hidden aria-labelledby="permission-palette-title">
+    <div class="palette-echo" aria-hidden="true"><aside class="echo-sidebar"><div class="echo-lines"><div class="echo-line short"></div><div class="echo-line medium"></div></div></aside><div class="echo-main"><div class="echo-header"></div><div class="echo-card"></div></div></div>
+    <div class="palette-scrim" aria-hidden="true"></div>
+    <dialog class="command-dialog" open aria-modal="true" aria-labelledby="permission-palette-title" aria-describedby="permission-palette-description">
+      <header class="dialog-header">
+        <div class="dialog-title-row"><div class="dialog-title-copy"><p class="dialog-kicker">Geschützter Befehl · Modellzustand</p><h1 class="dialog-title" id="permission-palette-title">Zugriff nicht bestätigt</h1></div><button class="icon-button" type="button" aria-label="Zur Anwendungsschale zurück" onclick="closePalette()">×</button></div>
+        <form class="command-search" role="search"><div class="field-group"><label class="field-label" for="permission-query">Gast, Reservierung oder Aktion</label><input id="permission-query" type="search" value="AVV Nachweis" aria-describedby="permission-palette-description"></div><button class="btn-secondary" type="button">Muster suchen</button></form>
+      </header>
+      <div class="dialog-body">
+        <section class="permission-notice" role="alert" aria-labelledby="permission-notice-title">
+          <span class="badge badge-warning">! RBAC unklar</span>
+          <h2 id="permission-notice-title">„AVV-Nachweis öffnen“ ist als mögliche spätere Rollenbegrenzung dargestellt.</h2>
+          <p id="permission-palette-description">Diese Ansicht hat keine Identität, Sitzung oder Berechtigung geprüft. Sie verhindert bewusst die Behauptung, dass eine Rolle oder ein Audit bereits durchgesetzt wird.</p>
+          <ul>
+            <li>Die aktuelle Quelle enthält keinen nachgewiesenen Login-, Session- oder RBAC-Vertrag.</li>
+            <li>Ein späterer Zugriff braucht Zweck, Rolle, Audit, sichere Dateiauslieferung und eine sichere Rückkehr zum Auslöser.</li>
+            <li>Die gesperrte Aktion soll keine sensiblen Inhalte im Suchergebnis offenlegen.</li>
+          </ul>
+        </section>
+
+        <section class="result-group" aria-labelledby="restricted-command-title">
+          <h2 class="result-group-heading" id="restricted-command-title">Befehl mit künftiger Zugriffsvoraussetzung</h2>
+          <ul class="command-result-list">
+            <li><button class="command-result" type="button" disabled><span class="result-copy"><span class="result-primary">AVV-Nachweis zu cm-booking-com öffnen</span><span class="result-meta">Nur Beschriftung und Grund werden gezeigt; Inhalt, Hash, Download und Bearbeitung bleiben verborgen.</span></span><span class="result-badges"><span class="badge badge-unclear">? Keine RBAC</span><span class="badge badge-planned">→ Vertrag nötig</span></span></button></li>
+          </ul>
+        </section>
+        <div class="chip-row"><button class="btn-primary" type="button" onclick="closePalette()">Zur heutigen Queue zurück</button><button class="btn-secondary" type="button">Implementierungsbedarf ansehen</button></div>
+      </div>
+      <footer class="dialog-footer"><div class="shortcut-legend"><span class="badge badge-planned">Geplant · Zugriffskonzept</span><kbd>Esc</kbd><span>Schließen</span></div><p class="focus-intent">Nach einem späteren Denial kehrt der Fokus zum auslösenden Suchresultat zurück; der aktuelle HTML-Prototyp demonstriert nur den Rückweg zur Schale.</p></footer>
+    </dialog>
+  </section>
+
+  <!-- ===== State: Overflow / many plausible command results ===== -->
+  <section class="state palette-state" id="state-overflow" hidden aria-labelledby="overflow-palette-title">
+    <div class="palette-echo" aria-hidden="true"><aside class="echo-sidebar"><div class="echo-lines"><div class="echo-line short"></div><div class="echo-line medium"></div></div></aside><div class="echo-main"><div class="echo-header"></div><div class="echo-card"></div></div></div>
+    <div class="palette-scrim" aria-hidden="true"></div>
+    <dialog class="command-dialog" open aria-modal="true" aria-labelledby="overflow-palette-title" aria-describedby="overflow-palette-description">
+      <header class="dialog-header">
+        <div class="dialog-title-row"><div class="dialog-title-copy"><p class="dialog-kicker">Überlaufzustand · Suchmuster</p><h1 class="dialog-title" id="overflow-palette-title">Viele mögliche Treffer</h1></div><button class="icon-button" type="button" aria-label="Zur Anwendungsschale zurück" onclick="closePalette()">×</button></div>
+        <form class="command-search" role="search"><div class="field-group"><label class="field-label" for="overflow-query">Gast, Reservierung oder Aktion</label><input id="overflow-query" type="search" value="An" aria-describedby="overflow-palette-description"></div><button class="btn-secondary" type="button">Muster suchen</button></form>
+        <p class="dialog-note" id="overflow-palette-description">Die Rangfolge, Vollständigkeit und Datengrundlage sind bewusst nicht behauptet. Das Muster zeigt ausschließlich Scroll-, Auswahl- und Priorisierungsverhalten.</p>
+      </header>
+      <div class="dialog-body">
+        <div class="overflow-summary"><span><strong>5 sichtbare Beispieltreffer</strong> · weitere Treffer müssten später sortierbar, erklärbar und berechtigt sein.</span><span class="badge badge-peach">↕ Überlauf</span></div>
+        <section class="result-group" aria-labelledby="overflow-results-title">
+          <h2 class="result-group-heading" id="overflow-results-title">Musterergebnisse mit scrollbarer Liste</h2>
+          <ul class="command-result-list is-scrollable">
+            <li><button class="command-result is-selected" type="button" aria-current="true"><span class="result-copy"><span class="result-primary">Ankunft R-260716-08 · Lara Weber</span><span class="result-meta">Heute · Queue-Kontext als Designabsicht</span></span><span class="result-badges"><span class="badge badge-planned">→ Öffnen geplant</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Ankunft R-260716-11 · Sofia Hartmann</span><span class="result-meta">Heute · Kurkarte nur als Vorschau gekennzeichnet</span></span><span class="result-badges"><span class="badge badge-prototype">◌ Vorschau</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Anreisen · heutige Queue</span><span class="result-meta">Navigation mit künftigem Datums- und Filterkontext</span></span><span class="result-badges"><span class="badge badge-planned">→ Route</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Ankunftsbündel für R-260716-08 vorbereiten</span><span class="result-meta">CLI-orientiertes Artefaktmuster, nicht als Lieferung oder Speichern zu lesen</span></span><span class="result-badges"><span class="badge badge-prototype">◌ CLI</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Annahme einer Kurkarten-Ausnahme prüfen</span><span class="result-meta">Kontextuelle Ausnahme; kein rechtlicher oder kommunaler Abschluss</span></span><span class="result-badges"><span class="badge badge-unclear">? Prüfung</span></span></button></li>
+            <li><button class="command-result" type="button"><span class="result-copy"><span class="result-primary">Anforderungen an Rollenmodell anzeigen</span><span class="result-meta">Dokumentationsweg, keine Administrationsfunktion</span></span><span class="result-badges"><span class="badge badge-planned">→ RBAC</span></span></button></li>
+          </ul>
+        </section>
+      </div>
+      <footer class="dialog-footer"><div class="shortcut-legend"><span class="badge badge-planned">Geplant · Tastaturmodell</span><kbd>↑ ↓</kbd><span>durch Ergebnisse</span><kbd>Enter</kbd><span>Auswahl</span></div><p class="focus-intent">Auf schmalen Bildschirmen bleibt nur die priorisierte mobile Aufgabe sichtbar; eine spätere Suche bewahrt ihre Query beim Wechsel oder erklärt ihren Verlust.</p></footer>
+    </dialog>
+  </section>
+
+  <!-- State switcher (prototype-review control) -->
+  <nav class="state-switcher" aria-label="Prototypzustand wechseln">
+    <button type="button" data-state-button="default" aria-controls="state-default" aria-pressed="true" onclick="showState('default')">Schale</button>
+    <button type="button" data-state-button="palette" aria-controls="state-palette" aria-pressed="false" onclick="showState('palette', 'palette-query')">Treffer</button>
+    <button type="button" data-state-button="empty" aria-controls="state-empty" aria-pressed="false" onclick="showState('empty', 'empty-query')">Keine Treffer</button>
+    <button type="button" data-state-button="loading" aria-controls="state-loading" aria-pressed="false" onclick="showState('loading', 'loading-query')">Laden</button>
+    <button type="button" data-state-button="error" aria-controls="state-error" aria-pressed="false" onclick="showState('error', 'permission-query')">Zugriff</button>
+    <button type="button" data-state-button="overflow" aria-controls="state-overflow" aria-pressed="false" onclick="showState('overflow', 'overflow-query')">Überlauf</button>
+  </nav>
+
+  <script>
+    const prototypeStates = ['default', 'palette', 'empty', 'loading', 'error', 'overflow'];
+    let paletteOpener = null;
+
+    function showState(name, focusTargetId) {
+      prototypeStates.forEach((stateName) => {
+        const state = document.getElementById('state-' + stateName);
+        state.hidden = stateName !== name;
+      });
+
+      document.querySelectorAll('[data-state-button]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.stateButton === name));
+      });
+
+      if (focusTargetId) {
+        window.requestAnimationFrame(() => {
+          const focusTarget = document.getElementById(focusTargetId);
+          if (focusTarget) focusTarget.focus();
+        });
+      }
+    }
+
+    function openPalette(openerId) {
+      paletteOpener = document.getElementById(openerId) || document.activeElement;
+      showState('palette', 'palette-query');
+    }
+
+    function closePalette() {
+      showState('default');
+      window.requestAnimationFrame(() => {
+        const fallback = document.getElementById('shell-search-trigger');
+        const returnTarget = paletteOpener && document.contains(paletteOpener) ? paletteOpener : fallback;
+        if (returnTarget) returnTarget.focus();
+      });
+    }
+  </script>
+</body>
+</html>

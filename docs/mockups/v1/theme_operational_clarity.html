@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operational Clarity — Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: 0 0 0 1px var(--accent-color);
+    }
+
+    /* ===== Component Styles ===== */
+    .stage { min-height: 100vh; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 216px minmax(0, 1fr);
+      background: var(--app-bg);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 12px;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 4px 8px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      background: var(--surface-0);
+      color: var(--accent-color);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .brand-copy { display: grid; gap: 0; }
+    .brand-name { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .brand-subtitle { color: var(--text-muted); font-size: 11px; }
+
+    .nav-section { display: grid; gap: 4px; }
+    .nav-label { padding: 0 8px; color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: 2px; list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-height: 36px;
+      padding: 8px;
+      border-left: 3px solid transparent;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link.active { border-left-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: 12px; text-align: center; }
+    .nav-link.active .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .nav-link.active .nav-count { color: var(--accent-hover); }
+
+    .queue-rail {
+      display: grid;
+      gap: 2px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .queue-rail button {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      width: 100%;
+      min-height: 32px;
+      padding: 8px;
+      border: 1px solid transparent;
+      border-left: 3px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      font: inherit;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .queue-rail button:hover { background: var(--surface-0); color: var(--text-primary); }
+    .queue-rail button.active { border-left-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .queue-rail button:active { background: var(--surface-2); }
+    .queue-count { color: var(--text-muted); font-size: 11px; }
+
+    .shift-meta {
+      display: grid;
+      gap: 4px;
+      margin-top: auto;
+      padding: 8px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .shift-meta strong { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+
+    .workspace { min-width: 0; display: flex; flex-direction: column; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .topbar-title { display: grid; gap: 0; min-width: 0; }
+    .topbar-title h1 { color: var(--text-primary); font-size: 18px; font-weight: 600; }
+    .topbar-title p { color: var(--text-muted); font-size: 12px; }
+    .topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+    .btn-primary,
+    .btn-secondary,
+    .icon-button,
+    .filter-chip,
+    .table-action,
+    .mobile-tab {
+      min-height: 32px;
+      border-radius: 6px;
+      font: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+    }
+
+    .btn-primary {
+      padding: 8px 12px;
+      border: 1px solid var(--accent-color);
+      background: var(--accent-color);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-primary:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(0); }
+
+    .btn-secondary {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .btn-secondary:hover, .icon-button:hover { background: var(--surface-0); color: var(--text-primary); }
+    .btn-secondary:active, .icon-button:active { background: var(--surface-2); transform: translateY(0); }
+
+    .icon-button {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      padding: 4px;
+      border: 1px solid var(--border-color);
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      border-color: var(--border-color);
+      background: var(--surface-0);
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    .content { display: grid; gap: 12px; padding: 16px; }
+
+    .command-strip {
+      display: grid;
+      grid-template-columns: minmax(240px, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .search-control { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .search-control input {
+      min-height: 36px;
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+      color: var(--text-primary);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .search-control input::placeholder { color: var(--text-muted); }
+    .key-hint {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      padding: 2px 4px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--surface-0);
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 20px;
+      padding: 2px 4px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      font-family: monospace;
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .shortcut-inline { display: flex; align-items: center; gap: 4px; color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+
+    .panel {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .panel-title { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .panel-subtitle { color: var(--text-muted); font-size: 12px; }
+    .header-grow { margin-left: auto; }
+    .filter-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    .filter-chip {
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .filter-chip:hover { background: var(--surface-0); color: var(--text-primary); }
+    .filter-chip:active { background: var(--surface-2); }
+    .filter-chip.active { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+
+    .panel-body { display: grid; gap: 12px; padding: 12px; }
+
+    .status-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .status-line strong { color: var(--text-primary); font-weight: 600; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: fit-content;
+      padding: 2px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--surface-1);
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 288px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .table-wrap { overflow: auto; max-height: 560px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--surface-0);
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-align: left;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+
+    tbody tr { cursor: pointer; transition: background 0.15s ease, box-shadow 0.15s ease; }
+    tbody tr:hover { background: var(--surface-0); }
+    tbody tr.selected { background: var(--surface-0); box-shadow: inset 3px 0 0 var(--accent-color); }
+    tbody tr:focus-within { background: var(--surface-0); box-shadow: inset 3px 0 0 var(--accent-color); }
+    .time-cell { color: var(--text-primary); font-family: monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .guest-cell { display: grid; gap: 0; min-width: 176px; }
+    .guest-cell strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .guest-cell span { color: var(--text-muted); font-size: 11px; }
+    .room-cell { color: var(--text-primary); white-space: nowrap; }
+    .proof-stack { display: flex; flex-wrap: wrap; gap: 4px; min-width: 168px; }
+    .blocker-copy { color: var(--text-secondary); font-size: 11px; line-height: 1.35; min-width: 120px; }
+    .blocker-copy.attention { color: var(--color-yellow); }
+    .blocker-copy.urgent { color: var(--color-red); }
+
+    .table-action {
+      min-height: 28px;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .table-action:hover { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+    .table-action:active { background: var(--surface-2); border-color: var(--surface-2); }
+
+    .side-stack { display: grid; gap: 12px; }
+    .exception-list { display: grid; gap: 8px; list-style: none; }
+    .exception-item {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+    }
+
+    .exception-mark { font-size: 12px; text-align: center; }
+    .exception-mark.warning { color: var(--color-yellow); }
+    .exception-mark.error { color: var(--color-red); }
+    .exception-mark.info { color: var(--color-blue); }
+    .exception-copy { display: grid; gap: 4px; }
+    .exception-copy strong { color: var(--text-primary); font-size: 12px; font-weight: 600; }
+    .exception-copy span { color: var(--text-secondary); font-size: 11px; }
+
+    .selected-context { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--accent-color); border-radius: 8px; background: var(--surface-0); }
+    .selected-context h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .selected-context p { color: var(--text-secondary); font-size: 12px; }
+    .selected-context .action-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .shortcut-list { display: grid; gap: 8px; list-style: none; }
+    .shortcut-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; color: var(--text-secondary); font-size: 12px; }
+
+    .workflow-note { color: var(--text-muted); font-size: 11px; }
+
+    .mobile-arrivals { display: none; }
+    .arrival-card {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+    .arrival-card.selected { border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); }
+    .card-topline { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+    .card-topline strong { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .card-meta { color: var(--text-secondary); font-size: 12px; }
+    .card-action { min-height: 44px; width: 100%; }
+
+    .empty-state {
+      display: flex;
+      min-height: 440px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 48px 24px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .empty-icon { color: var(--accent-color); font-size: 48px; opacity: 0.5; }
+    .empty-state h2 { color: var(--text-secondary); font-size: 16px; font-weight: 500; }
+    .empty-state p { max-width: 360px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+
+    .error-summary {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--color-red);
+      border-left: 3px solid var(--color-red);
+      border-radius: 8px;
+      background: var(--surface-0);
+    }
+
+    .error-icon { color: var(--color-red); font-size: 16px; }
+    .error-summary h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .error-summary p { color: var(--text-secondary); font-size: 13px; }
+
+    .skeleton-list { display: grid; gap: 8px; }
+    .skeleton-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) 96px; gap: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--surface-0); }
+    .skeleton-block { min-height: 16px; border-radius: 4px; background: var(--surface-1); animation: pulse 1.2s ease-in-out infinite; }
+    .skeleton-block.tall { min-height: 40px; }
+
+    .overflow-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 1px solid var(--color-peach);
+      border-radius: 8px;
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .overflow-strip strong { color: var(--color-peach); font-weight: 600; }
+    .page-note { color: var(--text-muted); font-size: 11px; }
+
+    .mobile-tabs { display: none; }
+    .state-switcher { position: fixed; right: 16px; bottom: 16px; z-index: 9999; display: flex; flex-wrap: wrap; justify-content: end; gap: 4px; max-width: 360px; }
+    .state-switcher button { min-height: 28px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--surface-0); color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+    .state-switcher button:hover { background: var(--surface-1); color: var(--text-primary); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    @media (max-width: 1280px) and (min-width: 769px) {
+      .laptop-hide { display: none; }
+      .main-grid { grid-template-columns: minmax(0, 1fr) 248px; }
+      .topbar-actions .btn-secondary { display: none; }
+    }
+
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: 64px minmax(0, 1fr); }
+      .sidebar { align-items: center; padding: 12px 8px; }
+      .brand-copy, .nav-label, .nav-text, .nav-count, .queue-rail, .shift-meta { display: none; }
+      .brand { padding: 0; }
+      .nav-link { grid-template-columns: 16px; justify-content: center; width: 40px; padding: 8px; border-left: 0; border-bottom: 3px solid transparent; }
+      .nav-link.active { border-left-color: transparent; border-bottom-color: var(--accent-color); }
+      .main-grid { grid-template-columns: minmax(0, 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 768px) {
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .topbar { align-items: start; padding: 12px 16px; }
+      .topbar-actions .btn-secondary, .topbar-actions .icon-button { display: none; }
+      .topbar-title h1 { font-size: 18px; }
+      .topbar-actions .btn-primary { min-height: 44px; }
+      .content { gap: 16px; padding: 16px; padding-bottom: calc(48px + 12px); }
+      .command-strip { grid-template-columns: minmax(0, 1fr) auto; padding: 8px; }
+      .command-strip .shortcut-inline { display: none; }
+      .command-strip .btn-secondary { min-height: 44px; }
+      .panel-header { align-items: start; flex-wrap: wrap; }
+      .header-grow { display: none; }
+      .filter-chips { width: 100%; }
+      .filter-chip { min-height: 36px; }
+      .desktop-table { display: none; }
+      .mobile-arrivals { display: grid; gap: 8px; }
+      .side-stack { grid-template-columns: minmax(0, 1fr); }
+      .selected-context .btn-primary, .selected-context .btn-secondary { min-height: 44px; flex: 1; }
+      .error-summary { grid-template-columns: 20px minmax(0, 1fr); }
+      .error-summary .btn-secondary { grid-column: 2; min-height: 44px; }
+      .skeleton-row { grid-template-columns: 40px minmax(0, 1fr); }
+      .skeleton-row .skeleton-block:last-child { display: none; }
+      .mobile-tabs {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px 8px;
+        border-top: 1px solid var(--border-color);
+        background: var(--panel-bg);
+      }
+      .mobile-tab { min-height: 44px; padding: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 12px; }
+      .mobile-tab.active { border-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+      .state-switcher { right: 8px; bottom: 56px; max-width: 260px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .app-shell          -> HotelAppShellComponent (new prototype composition)
+    .sidebar            -> AppSidebarComponent (new; uses active-list rail pattern)
+    .queue-rail         -> ReceptionQueueFilterComponent (new; reuses list-item active pattern)
+    .command-strip      -> ReceptionCommandBarComponent (new; keyboard-first search/action surface)
+    .panel              -> reuse existing panel / panel-header / panel-body pattern
+    .filter-chips       -> reuse existing compact filter-chip pattern
+    .desktop-table      -> ArrivalQueueTableComponent (new; reuses sticky dense table pattern)
+    .arrival-card       -> ArrivalQueueMobileCardComponent (new; responsive alternative to table)
+    .exception-list     -> KurortExceptionListComponent (new; proof-labelled status badge composition)
+    .selected-context   -> ArrivalContextPanelComponent (new; reuses selected-card pattern)
+    .state-switcher     -> prototype-only state switcher from the design-guide starter template
+  -->
+
+  <!-- ===== State: Default (populated / busy shift) ===== -->
+  <section id="state-default" class="stage" aria-labelledby="busy-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation und Warteschlangen">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">R</span>
+          <span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Empfang · Bad Orb</span></span>
+        </div>
+
+        <nav class="nav-section" aria-label="Arbeitsbereiche">
+          <p class="nav-label">Arbeitsbereiche</p>
+          <ul class="nav-list">
+            <li><a class="nav-link active" href="#busy-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">16</span></a></li>
+            <li><a class="nav-link" href="#arrival-queue"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">11</span></a></li>
+            <li><a class="nav-link" href="#exceptions"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-text">Ausnahmen</span><span class="nav-count">4</span></a></li>
+            <li><a class="nav-link" href="#shortcuts"><span class="nav-symbol" aria-hidden="true">⌘</span><span class="nav-text">Arbeitsabläufe</span><span class="nav-count">6</span></a></li>
+          </ul>
+        </nav>
+
+        <section class="queue-rail" aria-labelledby="queue-rail-title">
+          <p class="nav-label" id="queue-rail-title">Ankunftslisten</p>
+          <button class="active" type="button" aria-pressed="true"><span>Alle Anreisen</span><span class="queue-count">11</span></button>
+          <button type="button" aria-pressed="false"><span>Jetzt am Empfang</span><span class="queue-count">3</span></button>
+          <button type="button" aria-pressed="false"><span>Mit Blocker</span><span class="queue-count">4</span></button>
+          <button type="button" aria-pressed="false"><span>Vorbereitet</span><span class="queue-count">5</span></button>
+          <button type="button" aria-pressed="false"><span>Wiederaufnahme</span><span class="queue-count">1</span></button>
+        </section>
+
+        <div class="shift-meta">
+          <span>Schicht: 08:00–14:30</span>
+          <strong>Mara Keller · Empfang</strong>
+          <span>Navigation: ↑ ↓ · Öffnen: Enter</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div class="topbar-title">
+            <h1 id="busy-title">Ankünfte · heute</h1>
+            <p>Dienstag, 18. November · 11 erwartet · 4 benötigen Aufmerksamkeit</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn-secondary" type="button">Schichtnotiz</button>
+            <button class="icon-button" type="button" aria-label="Hinweise öffnen">!</button>
+            <button class="btn-primary" type="button">Nächste Ankunft <span aria-hidden="true">↵</span></button>
+          </div>
+        </header>
+
+        <div class="content">
+          <form class="command-strip" aria-label="Ankunft suchen">
+            <div class="search-control">
+              <label class="sr-only" for="arrival-search">Reservierung, Name oder Zimmer suchen</label>
+              <input id="arrival-search" type="search" placeholder="Reservierung, Name oder Zimmer suchen">
+              <span class="key-hint" aria-hidden="true">⌘ K</span>
+            </div>
+            <button class="btn-secondary" type="button">F2 · Suche</button>
+            <span class="shortcut-inline"><kbd>F8</kbd> Nachweise</span>
+          </form>
+
+          <section class="panel" id="arrival-queue" aria-labelledby="arrival-title">
+            <header class="panel-header">
+              <div>
+                <h2 class="panel-title" id="arrival-title">Warteschlange nach Zeitfenster</h2>
+                <p class="panel-subtitle">Ein nächster Schritt pro Zeile · Status ist kein Übermittlungsnachweis</p>
+              </div>
+              <span class="header-grow"></span>
+              <div class="filter-chips" aria-label="Filter für die Ankunftsliste">
+                <button class="filter-chip active" type="button" aria-pressed="true">Alle 11</button>
+                <button class="filter-chip" type="button" aria-pressed="false">Blocker 4</button>
+                <button class="filter-chip" type="button" aria-pressed="false">Jetzt 3</button>
+                <button class="filter-chip" type="button" aria-pressed="false">Fertig 2</button>
+              </div>
+            </header>
+            <div class="panel-body">
+              <p class="status-line"><strong>08:42</strong><span>·</span><span>Fokus liegt auf <span class="badge badge-warning">Kurtaxe prüfen</span> und <span class="badge badge-error">Nachweis fehlt</span>.</span></p>
+
+              <div class="table-wrap desktop-table" tabindex="0" aria-label="Dichte Ankunftstabelle; Tastaturfokus möglich">
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Zeit</th>
+                      <th scope="col">Gast / Reservierung</th>
+                      <th scope="col">Zimmer</th>
+                      <th scope="col" class="laptop-hide">Aufenthalt</th>
+                      <th scope="col">Nachweise</th>
+                      <th scope="col">Blocker</th>
+                      <th scope="col">Nächster Schritt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="selected">
+                      <td class="time-cell">09:10</td>
+                      <td><span class="guest-cell"><strong>Ingrid Faber</strong><span>R-24011 · Einzelanreise</span></span></td>
+                      <td class="room-cell">104</td>
+                      <td class="laptop-hide">3 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-success">✓ PDF erzeugt</span><span class="badge badge-info">Vorschau</span></span></td>
+                      <td class="blocker-copy">Kein Blocker</td>
+                      <td><button class="table-action" type="button">Check-in öffnen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">09:25</td>
+                      <td><span class="guest-cell"><strong>Heike und Rolf Stark</strong><span>R-24012 · Doppelzimmer</span></span></td>
+                      <td class="room-cell">205</td>
+                      <td class="laptop-hide">7 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-success">✓ Formular</span><span class="badge badge-warning">Prüfen</span></span></td>
+                      <td class="blocker-copy attention">Befreiungsnachweis fehlt</td>
+                      <td><button class="table-action" type="button">Kurtaxe prüfen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">09:40</td>
+                      <td><span class="guest-cell"><strong>Lea Bender</strong><span>R-24013 · Parkblick</span></span></td>
+                      <td class="room-cell">117</td>
+                      <td class="laptop-hide">2 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-teal">✓ Paket erzeugt</span><span class="badge badge-info">Trockenlauf</span></span></td>
+                      <td class="blocker-copy">Keine Zustellung belegt</td>
+                      <td><button class="table-action" type="button">Nachweise öffnen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">10:00</td>
+                      <td><span class="guest-cell"><strong>Martin Heller</strong><span>R-24014 · Kuraufenthalt</span></span></td>
+                      <td class="room-cell">221</td>
+                      <td class="laptop-hide">5 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-warning">! Daten prüfen</span></span></td>
+                      <td class="blocker-copy attention">Herkunftsland nicht erfasst</td>
+                      <td><button class="table-action" type="button">Angaben prüfen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">10:15</td>
+                      <td><span class="guest-cell"><strong>Familie Vogt</strong><span>R-24015 · 2 Erwachsene, 1 Kind</span></span></td>
+                      <td class="room-cell">312</td>
+                      <td class="laptop-hide">2 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-success">✓ PDF erzeugt</span><span class="badge badge-warning">Vorschau</span></span></td>
+                      <td class="blocker-copy attention">Kinderbett notiert</td>
+                      <td><button class="table-action" type="button">Ankunft vorbereiten</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">10:30</td>
+                      <td><span class="guest-cell"><strong>Paul Neumann</strong><span>R-24016 · Spessart-Woche</span></span></td>
+                      <td class="room-cell">108</td>
+                      <td class="laptop-hide">6 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-error">! Teilweise</span><span class="badge badge-info">CLI-/Testvertrag</span></span></td>
+                      <td class="blocker-copy urgent">Ein Artefakt fehlt</td>
+                      <td><button class="table-action" type="button">Bündel prüfen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">11:00</td>
+                      <td><span class="guest-cell"><strong>Sabine Kern</strong><span>R-24017 · Einzelanreise</span></span></td>
+                      <td class="room-cell">114</td>
+                      <td class="laptop-hide">1 Nacht</td>
+                      <td><span class="proof-stack"><span class="badge badge-success">✓ Formular</span><span class="badge badge-teal">✓ Vorschau</span></span></td>
+                      <td class="blocker-copy">Kein Blocker</td>
+                      <td><button class="table-action" type="button">Check-in öffnen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">11:20</td>
+                      <td><span class="guest-cell"><strong>Jonas Krämer</strong><span>R-24018 · Seminargruppe</span></span></td>
+                      <td class="room-cell">207</td>
+                      <td class="laptop-hide">2 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-info">○ Offen</span></span></td>
+                      <td class="blocker-copy">Ankunftszeit unklar</td>
+                      <td><button class="table-action" type="button">Kontaktstatus prüfen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">12:00</td>
+                      <td><span class="guest-cell"><strong>Claudia Reuter</strong><span>R-24019 · Komfortzimmer</span></span></td>
+                      <td class="room-cell">209</td>
+                      <td class="laptop-hide">4 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-warning">! Nachweis fehlt</span></span></td>
+                      <td class="blocker-copy attention">Befreiungsgrund offen</td>
+                      <td><button class="table-action" type="button">Nachweis erfassen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">12:30</td>
+                      <td><span class="guest-cell"><strong>Emil Wagner</strong><span>R-24020 · Einzelanreise</span></span></td>
+                      <td class="room-cell">116</td>
+                      <td class="laptop-hide">3 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-info">↻ Wiederholung</span></span></td>
+                      <td class="blocker-copy">Unterbrochen bei Schritt 2</td>
+                      <td><button class="table-action" type="button">Fortsetzen</button></td>
+                    </tr>
+                    <tr>
+                      <td class="time-cell">16:30</td>
+                      <td><span class="guest-cell"><strong>Andrea Wirth</strong><span>R-24021 · späte Anreise</span></span></td>
+                      <td class="room-cell">302</td>
+                      <td class="laptop-hide">5 Nächte</td>
+                      <td><span class="proof-stack"><span class="badge badge-info">◷ Zeit bestätigt</span><span class="badge badge-teal">Vorschau</span></span></td>
+                      <td class="blocker-copy">Kein Blocker</td>
+                      <td><button class="table-action" type="button">Details öffnen</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <ol class="mobile-arrivals" aria-label="Mobile Auswahl der aktuellen Ankünfte">
+                <li class="arrival-card selected"><div class="card-topline"><strong>09:10 · Ingrid Faber</strong><span class="badge badge-success">PDF erzeugt</span></div><span class="card-meta">Zimmer 104 · 3 Nächte · R-24011</span><div class="proof-stack"><span class="badge badge-info">Vorschau</span><span class="badge badge-teal">kein Blocker</span></div><button class="btn-primary card-action" type="button">Check-in öffnen</button></li>
+                <li class="arrival-card"><div class="card-topline"><strong>09:25 · Heike und Rolf Stark</strong><span class="badge badge-warning">Befreiung fehlt</span></div><span class="card-meta">Zimmer 205 · 7 Nächte · R-24012</span><div class="proof-stack"><span class="badge badge-success">Formular</span><span class="badge badge-warning">Prüfen</span></div><button class="btn-secondary card-action" type="button">Kurtaxe prüfen</button></li>
+                <li class="arrival-card"><div class="card-topline"><strong>10:00 · Martin Heller</strong><span class="badge badge-warning">Daten prüfen</span></div><span class="card-meta">Zimmer 221 · 5 Nächte · R-24014</span><div class="proof-stack"><span class="badge badge-warning">Herkunftsland offen</span></div><button class="btn-secondary card-action" type="button">Angaben prüfen</button></li>
+                <li class="arrival-card"><div class="card-topline"><strong>10:30 · Paul Neumann</strong><span class="badge badge-error">Teilweise</span></div><span class="card-meta">Zimmer 108 · 6 Nächte · R-24016</span><div class="proof-stack"><span class="badge badge-info">CLI-/Testvertrag</span><span class="badge badge-error">Artefakt fehlt</span></div><button class="btn-secondary card-action" type="button">Bündel prüfen</button></li>
+              </ol>
+            </div>
+          </section>
+
+          <div class="main-grid">
+            <aside class="side-stack" aria-label="Ausnahmen und Tastaturhilfe">
+              <section class="panel" id="exceptions" aria-labelledby="exceptions-title">
+                <header class="panel-header"><div><h2 class="panel-title" id="exceptions-title">Diese Schicht</h2><p class="panel-subtitle">Priorisiert nach Auswirkung</p></div></header>
+                <div class="panel-body">
+                  <ul class="exception-list">
+                    <li class="exception-item"><span class="exception-mark error" aria-hidden="true">!</span><span class="exception-copy"><strong>Paul Neumann · Bündel teilweise</strong><span><span class="badge badge-error">Nachweis fehlt</span> Ein erwartetes Artefakt ist nicht sichtbar.</span></span></li>
+                    <li class="exception-item"><span class="exception-mark warning" aria-hidden="true">!</span><span class="exception-copy"><strong>Heike und Rolf Stark · Kurtaxe</strong><span><span class="badge badge-warning">Prüfen</span> Befreiungsnachweis vor Abschluss erforderlich.</span></span></li>
+                    <li class="exception-item"><span class="exception-mark warning" aria-hidden="true">!</span><span class="exception-copy"><strong>Martin Heller · Pflichtangabe</strong><span><span class="badge badge-warning">Daten prüfen</span> Herkunftsland unvollständig.</span></span></li>
+                    <li class="exception-item"><span class="exception-mark info" aria-hidden="true">i</span><span class="exception-copy"><strong>Emil Wagner · Wiederaufnahme</strong><span><span class="badge badge-info">Unterbrochen</span> Ankunft bei Schritt 2 gespeichert.</span></span></li>
+                  </ul>
+                  <button class="btn-secondary" type="button">Alle Ausnahmen filtern</button>
+                </div>
+              </section>
+
+              <section class="panel" id="shortcuts" aria-labelledby="shortcuts-title">
+                <header class="panel-header"><div><h2 class="panel-title" id="shortcuts-title">Tastatur</h2><p class="panel-subtitle">Schneller Wechsel ohne Maus</p></div></header>
+                <div class="panel-body">
+                  <ul class="shortcut-list">
+                    <li><kbd>⌘ K</kbd><span>Gast, Reservierung oder Zimmer suchen</span></li>
+                    <li><kbd>↑ ↓</kbd><span>Nächste Zeile in der Warteschlange</span></li>
+                    <li><kbd>Enter</kbd><span>Fokussierte Ankunft öffnen</span></li>
+                    <li><kbd>F8</kbd><span>Nachweise zur ausgewählten Ankunft öffnen</span></li>
+                    <li><kbd>Esc</kbd><span>Detail oder Nachweis schließen</span></li>
+                  </ul>
+                </div>
+              </section>
+            </aside>
+
+            <section class="panel" aria-labelledby="selection-title">
+              <header class="panel-header"><div><h2 class="panel-title" id="selection-title">Ausgewählte Ankunft</h2><p class="panel-subtitle">Zeilenkontext bleibt neben der Warteschlange</p></div></header>
+              <div class="panel-body">
+                <article class="selected-context">
+                  <span class="badge badge-info">R-24011 · ausgewählt</span>
+                  <h3>Ingrid Faber · Zimmer 104</h3>
+                  <p>Der lokale Dokumentstatus zeigt „PDF erzeugt“. Die Vorschau allein belegt weder Übergabe noch externe Übermittlung; beides bleibt im Detail sichtbar.</p>
+                  <div class="proof-stack"><span class="badge badge-success">✓ Meldeschein erzeugt</span><span class="badge badge-info">Vorschau</span><span class="badge badge-teal">Kurkarte: Trockenlauf</span></div>
+                  <div class="action-row"><button class="btn-primary" type="button">Check-in öffnen</button><button class="btn-secondary" type="button">F8 · Nachweise</button></div>
+                </article>
+                <p class="workflow-note">Bei einer Unterbrechung speichert die spätere Umsetzung Ankunft, aktuellen Schritt und sichtbaren Nachweisstatus. Persistenz und API sind noch nicht belegt.</p>
+              </div>
+            </section>
+          </div>
+
+          <p class="page-note">Designprototyp mit synthetischen Daten. Begriffe wie „erzeugt“, „Vorschau“, „Trockenlauf“ und „CLI-/Testvertrag“ trennen belegte Outputs von geplanten Browser-, Speicher- oder Integrationsverträgen.</p>
+        </div>
+
+        <nav class="mobile-tabs" aria-label="Mobile Navigation">
+          <button class="mobile-tab active" type="button">Heute</button>
+          <button class="mobile-tab" type="button">Anreisen</button>
+          <button class="mobile-tab" type="button">Hinweise</button>
+        </nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Empty ===== -->
+  <section id="state-empty" class="stage" style="display: none;" aria-labelledby="empty-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation und Warteschlangen">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Empfang · Bad Orb</span></span></div>
+        <nav class="nav-section" aria-label="Arbeitsbereiche"><p class="nav-label">Arbeitsbereiche</p><ul class="nav-list"><li><a class="nav-link active" href="#empty-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">0</span></a></li><li><a class="nav-link" href="#empty-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">0</span></a></li></ul></nav>
+      </aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1>Ankünfte · heute</h1><p>Dienstag, 18. November · keine erwarteten Anreisen</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Datum ändern</button><button class="btn-primary" type="button">Morgen öffnen</button></div></header>
+        <div class="content">
+          <form class="command-strip" aria-label="Ankunft suchen"><div class="search-control"><label class="sr-only" for="empty-search">Reservierung, Name oder Zimmer suchen</label><input id="empty-search" type="search" placeholder="Reservierung, Name oder Zimmer suchen"><span class="key-hint" aria-hidden="true">⌘ K</span></div><button class="btn-secondary" type="button">F2 · Suche</button><span class="shortcut-inline"><kbd>⌘ K</kbd> Suche</span></form>
+          <section class="empty-state" aria-labelledby="empty-title"><span class="empty-icon" aria-hidden="true">⌂</span><h2 id="empty-title">Für diesen Tag sind keine Anreisen geplant.</h2><p>Der Tages- und Filterkontext bleibt erhalten. Öffnen Sie morgen oder wechseln Sie zu Abreisen, statt eine leere Warteschlange interpretieren zu müssen.</p><button class="btn-primary" type="button">Morgige Anreisen öffnen</button></section>
+          <p class="page-note">Leerer Zustand: Kein Erfolgssignal, keine versteckte Aktion — nur klarer Kontext und ein sinnvoller nächster Schritt.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Error ===== -->
+  <section id="state-error" class="stage" style="display: none;" aria-labelledby="error-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation und Warteschlangen">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Empfang · Bad Orb</span></span></div>
+        <nav class="nav-section" aria-label="Arbeitsbereiche"><p class="nav-label">Arbeitsbereiche</p><ul class="nav-list"><li><a class="nav-link active" href="#error-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">?</span></a></li><li><a class="nav-link" href="#error-evidence"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-text">Hinweise</span><span class="nav-count">1</span></a></li></ul></nav>
+      </aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1>Ankünfte · heute</h1><p>Statusquelle nicht verfügbar</p></div><div class="topbar-actions"><button class="btn-primary" type="button">Erneut versuchen</button></div></header>
+        <div class="content">
+          <section class="error-summary" role="alert" aria-labelledby="error-title"><span class="error-icon" aria-hidden="true">!</span><div><h2 id="error-title">Die Ankunftsliste konnte nicht aktualisiert werden.</h2><p>Der Prototyp zeigt keine verlässlichen Statuswerte an. Prüfen Sie zuerst die Verbindung oder nutzen Sie eine vorhandene lokale Schichtnotiz.</p></div><button class="btn-secondary" type="button">Details zur Störung</button></section>
+          <div class="main-grid">
+            <section class="panel" aria-labelledby="error-action-title"><header class="panel-header"><div><h2 class="panel-title" id="error-action-title">Sicher weiterarbeiten</h2><p class="panel-subtitle">Keine Annahmen über fehlende Daten treffen</p></div></header><div class="panel-body"><ul class="exception-list"><li class="exception-item"><span class="exception-mark error" aria-hidden="true">!</span><span class="exception-copy"><strong>Live-Status nicht verfügbar</strong><span><span class="badge badge-error">Nicht verbunden</span> Die künftige Integrationsquelle hat keinen aktuellen Stand geliefert.</span></span></li><li class="exception-item"><span class="exception-mark info" aria-hidden="true">i</span><span class="exception-copy"><strong>Lokale Schichtnotiz</strong><span><span class="badge badge-info">Manuell prüfen</span> Kann Kontext bieten, ersetzt jedoch keinen aktuellen Reservierungsstatus.</span></span></li></ul><div class="action-row"><button class="btn-primary" type="button">Erneut versuchen</button><button class="btn-secondary" type="button">Schichtnotiz öffnen</button></div></div></section>
+            <aside class="side-stack" id="error-evidence" aria-label="Störungsnachweis"><section class="panel"><header class="panel-header"><h2 class="panel-title">Statusnachweis</h2></header><div class="panel-body"><p class="workflow-note"><span class="badge badge-info">Backend erforderlich</span> Der Browser-, API-, Authentifizierungs- und Persistenzvertrag ist im aktuellen Repository nicht vorhanden. Dieser Zustand macht die Grenze sichtbar, statt veraltete Daten als aktuell auszugeben.</p><button class="btn-secondary" type="button" disabled>Check-in nicht starten</button></div></section></aside>
+          </div>
+          <p class="page-note">Fehlerzustand: Der entstehende Produktvertrag sollte die Störung per Live-Region ankündigen, einen Zeitstempel ausgeben und keine Aktion ohne gültigen Datenstand freigeben.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Loading ===== -->
+  <section id="state-loading" class="stage" style="display: none;" aria-labelledby="loading-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation"><div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Empfang · Bad Orb</span></span></div></aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1 id="loading-title">Ankünfte · heute</h1><p>Warteschlange wird geladen</p></div></header>
+        <div class="content" aria-busy="true" aria-live="polite">
+          <form class="command-strip" aria-label="Ankunft suchen"><div class="search-control"><label class="sr-only" for="loading-search">Reservierung, Name oder Zimmer suchen</label><input id="loading-search" type="search" placeholder="Reservierung, Name oder Zimmer suchen" disabled><span class="key-hint" aria-hidden="true">⌘ K</span></div><button class="btn-secondary" type="button" disabled>F2 · Suche</button><span class="shortcut-inline"><span class="badge badge-info">Lädt</span></span></form>
+          <section class="panel" aria-label="Ladeplatzhalter für Ankünfte"><header class="panel-header"><div><h2 class="panel-title">Warteschlange nach Zeitfenster</h2><p class="panel-subtitle">Status wird angefordert</p></div></header><div class="panel-body"><div class="skeleton-list"><div class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></div><div class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></div><div class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></div><div class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></div></div></div></section>
+          <p class="page-note">Ladezustand: Der spätere Browser sollte das Ende des Ladevorgangs und die Anzahl der Ergebnisse über eine geeignete Live-Region ankündigen.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Overflow ===== -->
+  <section id="state-overflow" class="stage" style="display: none;" aria-labelledby="overflow-title">
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Hauptnavigation und Warteschlangen">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">R</span><span class="brand-copy"><span class="brand-name">Hotel Rheinland</span><span class="brand-subtitle">Empfang · Bad Orb</span></span></div>
+        <nav class="nav-section" aria-label="Arbeitsbereiche"><p class="nav-label">Arbeitsbereiche</p><ul class="nav-list"><li><a class="nav-link active" href="#overflow-title" aria-current="page"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">24</span></a></li><li><a class="nav-link" href="#overflow-queue"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">18</span></a></li><li><a class="nav-link" href="#overflow-queue"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-text">Blocker</span><span class="nav-count">6</span></a></li></ul></nav>
+        <section class="queue-rail" aria-labelledby="overflow-filter-title"><p class="nav-label" id="overflow-filter-title">Ankunftslisten</p><button class="active" type="button" aria-pressed="true"><span>Jetzt</span><span class="queue-count">6</span></button><button type="button" aria-pressed="false"><span>Nächste 90 Min.</span><span class="queue-count">8</span></button><button type="button" aria-pressed="false"><span>Später</span><span class="queue-count">4</span></button></section>
+      </aside>
+      <main class="workspace">
+        <header class="topbar"><div class="topbar-title"><h1>Ankünfte · Welle</h1><p>18 erwartete Anreisen · Verdichtung schützt die aktuelle Gesprächsreihenfolge</p></div><div class="topbar-actions"><button class="btn-secondary" type="button">Nur Blocker 6</button><button class="btn-primary" type="button">Nächste öffnen</button></div></header>
+        <div class="content">
+          <section class="overflow-strip" aria-labelledby="overflow-title"><strong id="overflow-title">12:30–14:00 · Ankunftswelle</strong><span>Zeige sechs aktuelle Vorgänge. Weitere Anreisen bleiben nach Zeitfenster gruppiert, statt den nächsten Schritt zu überdecken.</span><span class="badge badge-peach">18 erwartet</span></section>
+          <section class="panel" id="overflow-queue" aria-labelledby="overflow-queue-title"><header class="panel-header"><div><h2 class="panel-title" id="overflow-queue-title">Jetzt am Empfang</h2><p class="panel-subtitle">Verdichtete Zeilen mit einer Aktion pro Gast</p></div><span class="header-grow"></span><div class="filter-chips"><button class="filter-chip active" type="button">Jetzt 6</button><button class="filter-chip" type="button">Nächste 8</button><button class="filter-chip" type="button">Blocker 6</button></div></header><div class="panel-body"><div class="table-wrap desktop-table"><table><thead><tr><th scope="col">Zeit</th><th scope="col">Gast</th><th scope="col">Zimmer</th><th scope="col">Status</th><th scope="col">Nächster Schritt</th></tr></thead><tbody><tr class="selected"><td class="time-cell">12:35</td><td><span class="guest-cell"><strong>Leonie Bender</strong><span>R-24039</span></span></td><td class="room-cell">204</td><td><span class="badge badge-warning">Befreiung prüfen</span></td><td><button class="table-action" type="button">Prüfen</button></td></tr><tr><td class="time-cell">12:40</td><td><span class="guest-cell"><strong>Robert Schneider</strong><span>R-24040</span></span></td><td class="room-cell">116</td><td><span class="badge badge-success">PDF erzeugt</span></td><td><button class="table-action" type="button">Öffnen</button></td></tr><tr><td class="time-cell">12:45</td><td><span class="guest-cell"><strong>Familie Neuhaus</strong><span>R-24041</span></span></td><td class="room-cell">310</td><td><span class="badge badge-error">Nachweis fehlt</span></td><td><button class="table-action" type="button">Prüfen</button></td></tr><tr><td class="time-cell">12:50</td><td><span class="guest-cell"><strong>Christine Dahl</strong><span>R-24042</span></span></td><td class="room-cell">109</td><td><span class="badge badge-info">Zeit bestätigt</span></td><td><button class="table-action" type="button">Öffnen</button></td></tr><tr><td class="time-cell">12:55</td><td><span class="guest-cell"><strong>Hans Winter</strong><span>R-24043</span></span></td><td class="room-cell">218</td><td><span class="badge badge-warning">Daten prüfen</span></td><td><button class="table-action" type="button">Prüfen</button></td></tr><tr><td class="time-cell">13:00</td><td><span class="guest-cell"><strong>J. Krüger</strong><span>R-24044</span></span></td><td class="room-cell">313</td><td><span class="badge badge-teal">Vorschau</span></td><td><button class="table-action" type="button">Öffnen</button></td></tr></tbody></table></div><ol class="mobile-arrivals"><li class="arrival-card selected"><div class="card-topline"><strong>12:35 · Leonie Bender</strong><span class="badge badge-warning">Befreiung prüfen</span></div><span class="card-meta">Zimmer 204 · R-24039</span><button class="btn-primary card-action" type="button">Prüfen</button></li><li class="arrival-card"><div class="card-topline"><strong>12:45 · Familie Neuhaus</strong><span class="badge badge-error">Nachweis fehlt</span></div><span class="card-meta">Zimmer 310 · R-24041</span><button class="btn-secondary card-action" type="button">Prüfen</button></li></ol></div></section>
+          <p class="page-note">Überlaufzustand: Ein späteres System sollte die Sortierregel, aktuelle Filter und die Zahl außerhalb des sichtbaren Zeitfensters immer explizit machen.</p>
+        </div>
+        <nav class="mobile-tabs" aria-label="Mobile Navigation"><button class="mobile-tab active" type="button">Heute</button><button class="mobile-tab" type="button">Anreisen</button><button class="mobile-tab" type="button">Hinweise</button></nav>
+      </main>
+    </div>
+  </section>
+
+  <!-- State switcher (for preview convenience) -->
+  <div class="state-switcher" style="position: fixed; bottom: 16px; right: 16px; display: flex; gap: 4px; z-index: 9999;" role="group" aria-label="Prototypzustand wechseln">
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-default').style.display=''">Voll</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-empty').style.display=''">Leer</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-error').style.display=''">Störung</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-loading').style.display=''">Lädt</button>
+    <button onclick="document.querySelectorAll('section[id^=state]').forEach(s=>s.style.display='none');document.getElementById('state-overflow').style.display=''">Welle</button>
+  </div>
+
+</body>
+</html>

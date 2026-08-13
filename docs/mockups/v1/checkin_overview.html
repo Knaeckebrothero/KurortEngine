@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in-Übersicht — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --detail-width: calc(var(--space-4xl) * 8);
+      --state-switcher-width: calc(var(--space-4xl) * 12);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    /* ===== Application shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .step-meta, .state-switcher, .mobile-nav, .mobile-step-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      background: var(--surface-0);
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .brand-copy, .page-copy, .panel-copy, .state-copy, .notice-copy, .context-copy, .step-copy, .summary-copy, .side-copy, .record-copy, .field-group {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .state-copy p, .notice-copy p, .context-copy p, .step-copy p, .summary-copy p, .side-copy p, .record-copy p, .field-help, .page-note, .disabled-reason { color: var(--text-secondary); font-size: 13px; }
+
+    .app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr); min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl))); }
+    .sidebar { display: flex; flex-direction: column; gap: var(--space-xl); padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: 1px solid var(--border-color); }
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .sidebar-boundary { display: grid; gap: var(--space-sm); margin-top: auto; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .sidebar-boundary h2 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+
+    main { display: grid; align-content: start; gap: var(--space-lg); min-width: var(--space-none); padding: var(--space-xl); padding-bottom: calc(var(--space-4xl) * 3); }
+    .context-strip { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); flex-wrap: wrap; }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+
+    /* ===== Shared primitives ===== */
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear, .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-0);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover, .button-link:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .panel, .side-card, .summary-card, .notice-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .panel-heading, .side-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .panel-body, .side-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-none) var(--space-xs); flex-wrap: wrap; }
+    .boundary-notice, .persistent-alert, .resume-notice, .completion-notice {
+      display: grid;
+      grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-peach);
+      border-radius: var(--radius-card);
+    }
+    .persistent-alert { border-left-color: var(--color-red); }
+    .resume-notice { border-left-color: var(--color-peach); }
+    .completion-notice { border-left-color: var(--color-teal); }
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    .persistent-alert .notice-symbol { color: var(--color-red); }
+    .completion-notice .notice-symbol { color: var(--color-teal); }
+    .boundary-notice strong, .persistent-alert strong, .resume-notice strong, .completion-notice strong { color: var(--text-primary); }
+    .layout-grid { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--detail-width)); gap: var(--space-lg); align-items: start; }
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .record-card { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-lg); align-items: start; padding: var(--space-lg); background: var(--surface-0); border: 1px solid var(--accent-color); border-radius: var(--radius-card); box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color); }
+    .record-code, .mono { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .record-status { display: grid; justify-items: end; gap: var(--space-xs); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card { display: grid; gap: var(--space-xs); padding: var(--space-md); background: var(--timeline-bg); border-radius: var(--radius-control); }
+    .summary-card span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small { color: var(--text-secondary); font-size: 12px; }
+
+    /* ===== Check-in workflow ===== */
+    .workflow-layout { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 5), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-lg); align-items: start; }
+    .workflow-steps { display: grid; gap: var(--space-sm); list-style: none; }
+    .workflow-step { display: grid; grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr); gap: var(--space-md); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-left: 3px solid var(--border-color); border-radius: var(--radius-card); }
+    .workflow-step.is-complete { border-left-color: var(--color-green); }
+    .workflow-step.is-current { border-color: var(--accent-color); border-left-color: var(--accent-color); background: var(--surface-0); }
+    .workflow-step.is-blocked { border-left-color: var(--color-red); }
+    .workflow-step.is-pending { border-left-color: var(--color-yellow); }
+    .workflow-step.is-locked { border-left-color: var(--color-teal); }
+    .step-number { display: grid; place-items: center; width: var(--space-2xl); height: var(--space-2xl); border: 1px solid var(--border-color); border-radius: var(--radius-badge); color: var(--text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .is-complete .step-number { border-color: var(--color-green); color: var(--color-green); }
+    .is-current .step-number { border-color: var(--accent-color); color: var(--accent-color); }
+    .is-blocked .step-number { border-color: var(--color-red); color: var(--color-red); }
+    .is-pending .step-number { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .is-locked .step-number { border-color: var(--color-teal); color: var(--color-teal); }
+    .step-copy h3 { color: var(--text-primary); }
+    .step-copy p { font-size: 12px; }
+    .step-copy .badge-row { margin-top: var(--space-xs); }
+    .step-detail { display: grid; gap: var(--space-md); padding: var(--space-lg); background: var(--surface-0); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .step-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+    .detail-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child { border-bottom: var(--space-none); }
+    .detail-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .work-action { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-md); align-items: center; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--accent-color); border-radius: var(--radius-card); }
+    .work-action p { color: var(--text-secondary); font-size: 13px; }
+    .checklist { display: grid; gap: var(--space-sm); list-style: none; }
+    .checklist li { display: grid; grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr); gap: var(--space-sm); padding: var(--space-sm); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 12px; }
+    .check-symbol { color: var(--color-teal); text-align: center; }
+    .warning-symbol { color: var(--color-yellow); text-align: center; }
+    .error-symbol { color: var(--color-red); text-align: center; }
+    .document-table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 13); border-collapse: collapse; font-size: 12px; }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-document-list { display: none; }
+    .mobile-document-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--surface-0); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+
+    /* ===== Context controls and safe recovery ===== */
+    .context-form { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr) auto; align-items: end; gap: var(--space-md); }
+    .field-group label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+    .field-group input, .field-group select { width: 100%; min-height: 40px; padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-primary); font-size: 14px; }
+    .field-help { color: var(--text-muted); font-size: 12px; }
+    .context-boundary, .disabled-reason { padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-left: 3px solid var(--color-blue); border-radius: var(--radius-control); }
+    .context-boundary { color: var(--text-secondary); font-size: 13px; }
+    .context-boundary strong { color: var(--color-blue); }
+    .disabled-reason { color: var(--text-muted); font-size: 12px; }
+    .recovery-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .recovery-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .recovery-card h3 { color: var(--text-primary); }
+    .recovery-card p { color: var(--text-secondary); font-size: 12px; }
+    .return-links { display: grid; gap: var(--space-sm); list-style: none; }
+    .return-links li { display: grid; gap: var(--space-xs); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .return-links li:last-child { border-bottom: var(--space-none); }
+    .return-links a { color: var(--accent-hover); font-size: 13px; overflow-wrap: anywhere; }
+    .return-links span { color: var(--text-muted); font-size: 12px; }
+    .empty-card { display: grid; place-items: center; gap: var(--space-md); min-height: calc(var(--space-4xl) * 5); padding: var(--space-2xl) var(--space-xl); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); text-align: center; }
+    .empty-card p { max-width: calc(var(--space-4xl) * 9); color: var(--text-secondary); font-size: 13px; }
+    .empty-card .empty-symbol { color: var(--color-yellow); font-size: var(--space-4xl); }
+
+    /* ===== Review controls and responsive task adaptation ===== */
+    .state-switcher { position: fixed; right: var(--space-lg); bottom: var(--space-lg); z-index: var(--z-state-switcher); max-width: var(--state-switcher-width); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      main { padding-right: var(--space-2xl); padding-left: var(--space-2xl); }
+      .layout-grid { grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 7), var(--detail-width)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .nav-label, .nav-text, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .layout-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .side-stack .wide-on-tablet { grid-column: 1 / -1; }
+      .workflow-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .context-form { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+      .context-form .action-row { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-divider, .context-value.is-secondary { display: none; }
+      .boundary-notice, .persistent-alert, .resume-notice, .completion-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .notice-symbol { display: none; }
+      .layout-grid, .workflow-layout, .context-form, .recovery-grid, .summary-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-status { justify-items: start; }
+      .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .workflow-step { grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr); }
+      .step-detail { padding: var(--space-md); }
+      .detail-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .work-action { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .work-action button { width: 100%; }
+      .document-table-wrap { display: none; }
+      .mobile-document-list { display: grid; gap: var(--space-sm); }
+      .mobile-document-card button { width: 100%; }
+      .context-form .action-row { display: grid; }
+      .context-form .action-row > * { width: 100%; }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); left: var(--space-sm); max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .mobile-nav { position: fixed; right: var(--space-none); bottom: var(--space-none); left: var(--space-none); z-index: var(--z-mobile-nav); display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: var(--panel-bg); border-top: 1px solid var(--border-color); }
+      .mobile-nav a { display: grid; place-items: center; min-height: var(--touch-target); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 11px; text-align: center; text-decoration: none; }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .button-link, .field-group input, .field-group select { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Proposed design composition only. CheckInOverviewWorkspace, CheckInStepper,
+    StepEvidenceCard, and CompletionReviewPanel are descriptive mockup names,
+    not production frontend paths, browser routes, API endpoints, or components.
+  -->
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Check-in-Arbeitsablauf</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisgrenzen des Prototyps">
+      <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+      <span class="badge badge-planned">Orchestrierung geplant</span>
+      <span class="badge badge-unclear">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <p class="nav-label">Rezeption</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="today_front_desk_dashboard.html"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-text">Heute</span><span class="nav-count">Beispiel</span></a></li>
+          <li><a class="nav-link" href="arrivals_queue.html#arrivals-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="reservation_detail.html#state-detail"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-text">Reservierungsdetail</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="#state-ready" aria-current="page"><span class="nav-symbol" aria-hidden="true">✓</span><span class="nav-text">Check-in</span><span class="nav-count">K-01</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Ausgewählter Kontext">
+        <p class="nav-label">Aufenthaltskontext</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="guest_profile.html#state-profile"><span class="nav-symbol" aria-hidden="true">◉</span><span class="nav-text">Gastprofil</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="room_planning_calendar.html#state-week"><span class="nav-symbol" aria-hidden="true">▦</span><span class="nav-text">Zimmerplanung</span><span class="nav-count">Unklar</span></a></li>
+          <li><a class="nav-link" href="#checkin-return-links"><span class="nav-symbol" aria-hidden="true">↩</span><span class="nav-text">Rückkehrkontext</span><span class="nav-count">Lokal</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="checkin-sidebar-boundary-title">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="checkin-sidebar-boundary-title">Keine Live-Route</h2>
+        <p>Die Dateilinks teilen keine Sitzung, Auswahl, Berechtigung, Check-in-Position oder Persistenz. Sie zeigen nur statische Prüfbezüge.</p>
+      </section>
+    </aside>
+
+    <main id="checkin-workspace">
+      <section class="context-strip" aria-label="Fiktiver Check-in-Kontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Rolle</span><span class="context-value is-secondary">Rezeption · Beispielrolle, keine Anmeldung</span>
+        </div>
+        <span class="badge badge-teal">Jana Müller-Kaya · synthetisch</span>
+      </section>
+
+      <section class="boundary-notice" aria-labelledby="checkin-page-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <h1 id="checkin-page-title">Check-in-Übersicht</h1>
+          <p>Ein fiktiver Ankunfts- und Prüfvorgang führt sichtbar durch Gastdetails, Meldeschein, Kurtaxe und Befreiung, Kurkarte sowie Dokumentprüfung. Die Oberfläche modelliert Entscheidungen und Recovery, nicht einen realen Check-in; es gibt keine Zimmerzuteilung.</p>
+          <div class="badge-row" aria-label="Grenzen des Check-in-Prototyps">
+            <span class="badge badge-planned">Keine Live-Orchestrierung</span>
+            <span class="badge badge-planned">Kein Save oder Resume</span>
+            <span class="badge badge-unclear">Keine Sitzung oder RBAC</span>
+            <span class="badge badge-prototype">Synthetische Daten</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="checkin-context-title">
+        <header class="panel-heading">
+          <div class="panel-copy">
+            <h2 id="checkin-context-title">Prüf- und Rückkehrkontext</h2>
+            <p>Die Controls zeigen, welche Kontextdaten eine spätere Check-in-Orchestrierung erhalten müsste. Sie ändern keine Queue, Reservierung oder Datenquelle.</p>
+          </div>
+          <span class="badge badge-info">Keine Live-Suche</span>
+        </header>
+        <div class="panel-body">
+          <form id="checkin-context-form" class="context-form" novalidate>
+            <div class="field-group">
+              <label for="checkin-origin">Statischer Einstieg</label>
+              <select id="checkin-origin" name="origin">
+                <option value="arrivals">Anreisen · Beispiel</option>
+                <option value="reservation">Reservierungsdetail · Beispiel</option>
+                <option value="profile">Gastprofil · Beispiel</option>
+              </select>
+              <span class="field-help">Kein gespeicherter Filter, keine Browserroute und keine gemeinsame Auswahl.</span>
+            </div>
+            <div class="field-group">
+              <label for="checkin-return-scope">Vorgesehener Rückkehrrahmen</label>
+              <select id="checkin-return-scope" name="return-scope">
+                <option value="queue">Anreisen · 16.07.2026 · fiktiver Filter</option>
+                <option value="detail">Reservierungsdetail · fiktiver Kontext</option>
+                <option value="profile">Gastprofil · minimierte Ansicht</option>
+              </select>
+              <span class="field-help">Save, Wiederaufnahme und Fokus-Rückkehr brauchen einen späteren Browser-/API-Vertrag.</span>
+            </div>
+            <div class="action-row" aria-label="Lokale Kontextaktionen">
+              <button class="btn-teal" type="submit">Kontext lokal erläutern</button>
+              <a class="button-link" href="arrivals_queue.html#arrivals-title">Zur statischen Anreisen-Queue</a>
+            </div>
+          </form>
+          <p class="context-boundary"><strong>Geplant / Backend erforderlich:</strong> ein datenschutzgerecht gescopter Aufenthalt, die Queue-Rückkehr, Echtzeitstatus, Speicherung, Wiederaufnahme, Konfliktprüfung, Authentifizierung, RBAC, Dokumentjobs und Auditereignisse. Dieser Prototyp führt keinen dieser Vorgänge aus.</p>
+        </div>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Bereite fiktive Check-in-Übersicht angezeigt.</p>
+
+      <!-- ===== State: Ready for a check-in review ===== -->
+      <section id="state-ready" class="state-panel" aria-labelledby="ready-state-title">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="ready-state-title">Bereit zur schrittweisen Prüfung</h2>
+            <p>Die fiktive Ankunft ist für die nächste fachliche Prüfung vorbereitet. „Bereit“ ist keine gespeicherte Anreise, Zimmerzuteilung, Schlüsselaktivierung, Zahlung, Zustellung oder rechtliche Finalität.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-teal">Bereit zur Prüfung</span><span class="badge badge-planned">Nächste Aktion geplant</span></div>
+        </header>
+
+        <div class="layout-grid">
+          <section class="panel" aria-labelledby="ready-overview-title">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="ready-overview-title">Fiktiver Aufenthalt und Check-in-Folge</h2>
+                <p>Der Aufenthaltskontext bleibt klar, bevor eine nachgelagerte Dokument- oder Kurortentscheidung beginnt.</p>
+              </div>
+              <span class="badge badge-prototype">Keine Datenbank gelesen</span>
+            </header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Ausgewählter fiktiver Aufenthaltskontext">
+                <div class="record-copy">
+                  <span class="badge badge-teal">Ausgewählt · lokal</span>
+                  <h2>Jana Müller-Kaya</h2>
+                  <p class="record-code">RES-BO-2026-0716-014</p>
+                  <p>16.–23.07.2026 · 2 synthetische Gäste · Zimmer 214 als ungeprüfter Beispielkontext</p>
+                </div>
+                <div class="record-status">
+                  <span class="badge badge-warning">Zimmerstatus unklar</span>
+                  <span class="badge badge-unclear">RBAC unklar</span>
+                </div>
+              </section>
+
+              <div class="summary-grid" aria-label="Fiktive Kerninformationen">
+                <article class="summary-card"><span>Aufenthalt</span><strong>16.–23.07.2026</strong><small>7 Nächte · keine bestätigte Anreise</small></article>
+                <article class="summary-card"><span>Weitere Gäste</span><strong>1 Begleitperson</strong><small>Nur Anzahl, keine zusätzliche Profilakte</small></article>
+                <article class="summary-card"><span>Arbeitskontext</span><strong>Anreisen · Beispiel</strong><small>Keine persistierte Queue-Auswahl</small></article>
+              </div>
+
+              <div class="workflow-layout">
+                <ol class="workflow-steps" aria-label="Schrittfolge für den fiktiven Check-in">
+                  <li class="workflow-step is-complete">
+                    <span class="step-number" aria-hidden="true">1</span>
+                    <div class="step-copy"><h3>Gastdetails</h3><p>Minimaler Profil- und Begleitkontext vor der fachlichen Prüfung.</p><div class="badge-row"><span class="badge badge-success">✓ Kontext vollständig</span><span class="badge badge-planned">Änderung geplant</span></div></div>
+                  </li>
+                  <li class="workflow-step is-current">
+                    <span class="step-number" aria-hidden="true">2</span>
+                    <div class="step-copy"><h3>Meldeschein</h3><p>Pflichtangaben und begrenzte Dokumentvorschau zuerst prüfen.</p><div class="badge-row"><span class="badge badge-prototype">Prototyp · Stub-Format</span><span class="badge badge-warning">Prüfung offen</span></div></div>
+                  </li>
+                  <li class="workflow-step is-pending">
+                    <span class="step-number" aria-hidden="true">3</span>
+                    <div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Berechnung und Nachweisstatus getrennt von Folio oder Zahlung lesen.</p><div class="badge-row"><span class="badge badge-teal">Operational · begrenzt</span><span class="badge badge-planned">Evidenzspeicher geplant</span></div></div>
+                  </li>
+                  <li class="workflow-step is-pending">
+                    <span class="step-number" aria-hidden="true">4</span>
+                    <div class="step-copy"><h3>Kurkarte</h3><p>Payload-Vorschau ist nicht Lieferung, Installation oder Schlüsselkopplung.</p><div class="badge-row"><span class="badge badge-prototype">Vorschau · Testvertrag</span></div></div>
+                  </li>
+                  <li class="workflow-step is-pending">
+                    <span class="step-number" aria-hidden="true">5</span>
+                    <div class="step-copy"><h3>Dokumentprüfung &amp; Abschluss</h3><p>Erwartete Artefakte und offene Blocker vor einer späteren Rückkehr prüfen.</p><div class="badge-row"><span class="badge badge-planned">Dokumentjob geplant</span></div></div>
+                  </li>
+                </ol>
+
+                <section class="step-detail" aria-labelledby="ready-current-step-title">
+                  <div class="step-detail-header">
+                    <div class="summary-copy"><span class="badge badge-planned">Aktiver Prüfschritt</span><h3 id="ready-current-step-title">Meldeschein vor der Vorschau prüfen</h3><p>Die nächste sichere Entscheidung ist, den fiktiven Pflichtangabenrahmen und seine Grenzen zu prüfen — nicht eine Datei, Daten oder einen rechtlichen Abschluss zu erzeugen.</p></div>
+                    <span class="badge badge-warning">2 von 5</span>
+                  </div>
+                  <ul class="detail-list">
+                    <li><span class="detail-label">Erforderlicher Kontext</span><span class="detail-value">Name, Geburtsdatum, Staatsangehörigkeit, Anschrift, Anreise und Abreise als spätere Formular-/Validierungsdaten.</span></li>
+                    <li><span class="detail-label">Nachweisstatus</span><span class="detail-value"><span class="badge badge-prototype">Stub-Format</span> Ein lokales Byte-/Dateimuster ist keine finale PDF, Speicherung, Download, Zustellung oder Einreichung.</span></li>
+                    <li><span class="detail-label">Sichere Folge</span><span class="detail-value">Feldprüfung, Korrektur oder Rückkehr in den fiktiven Aufenthaltskontext; keine automatische Fortsetzung.</span></li>
+                  </ul>
+                  <div class="work-action">
+                    <div class="summary-copy"><strong>Nächste menschliche Entscheidung</strong><p>Meldeschein-Prüfung als lokale Designinteraktion öffnen; die anschließende Orchestrierung bleibt ausdrücklich geplant.</p></div>
+                    <button class="btn-primary" type="button" data-prototype-action="Meldeschein-Prüfung als lokale Prototypnachricht gezeigt. Es wurde keine Eingabe validiert, Datei erzeugt, gespeichert, zugestellt oder eingereicht.">Meldeschein prüfen</button>
+                  </div>
+                </section>
+              </div>
+
+              <section class="panel" aria-labelledby="ready-artifact-title">
+                <header class="panel-heading"><div class="panel-copy"><h3 id="ready-artifact-title">Erwartete Artefakte und Beweisgrenze</h3><p>Die Reihenfolge vermeidet einen Gesamt-Erfolgsstatus, wenn nur ein Einzelartefakt dargestellt wird.</p></div><span class="badge badge-info">Vorschau ≠ Zustellung</span></header>
+                <div class="panel-body">
+                  <div class="document-table-wrap">
+                    <table>
+                      <caption>Fiktive Dokumentprüfung für RES-BO-2026-0716-014. Keine Zeile ist eine Dateiablage, ein Download, eine Zustellung, eine Wallet-Installation oder eine Einreichung.</caption>
+                      <thead><tr><th scope="col">Schritt</th><th scope="col">Fiktiver Nachweis</th><th scope="col">Status / Grenze</th><th scope="col">Sichere Folge</th></tr></thead>
+                      <tbody>
+                        <tr><td><strong>Meldeschein</strong><br><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span></td><td>Begrenzte Ausgabeform</td><td><span class="badge badge-prototype">Stub-Format</span></td><td>Formular-/Formatprüfung; keine Einreichung ableiten.</td></tr>
+                        <tr><td><strong>Kurtaxe</strong><br><span class="mono">36,00 EUR · Beispielwert</span></td><td>Lokale Berechnungslogik</td><td><span class="badge badge-teal">Operational · begrenzt</span><br><span class="badge badge-warning">Nicht gebucht</span></td><td>Befreiung und Satzungsquelle prüfen; keine Folio- oder Zahlungsaktion.</td></tr>
+                        <tr><td><strong>Kurkarte</strong><br><span class="mono">kurkarte_apple_RES-BO-2026-0716-014.pkpass</span></td><td>Payload-/Testkontext</td><td><span class="badge badge-prototype">Vorschau</span></td><td>Artefakt prüfen; keine Lieferung, Installation oder Schlüsselkopplung.</td></tr>
+                        <tr><td><strong>Dokumentreview</strong><br><span class="mono">arrival_review_RES-BO-2026-0716-014</span></td><td>Erwartete Prüfung</td><td><span class="badge badge-planned">Jobvertrag erforderlich</span></td><td>Expected/actual Artefakte und Blocker transparent vergleichen.</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mobile-document-list" aria-label="Mobile Artefaktzusammenfassung">
+                    <article class="mobile-document-card"><strong>Meldeschein · Stub-Format</strong><p class="field-help">Keine finale PDF, Speicherung, Zustellung oder Einreichung.</p><span class="badge badge-prototype">Prüfung offen</span></article>
+                    <article class="mobile-document-card"><strong>Kurtaxe · 36,00 EUR</strong><p class="field-help">Begrenzte Berechnung; nicht gebucht, bezahlt oder gemeldet.</p><span class="badge badge-teal">Operational · begrenzt</span></article>
+                    <article class="mobile-document-card"><strong>Kurkarte · Vorschau</strong><p class="field-help">Keine Lieferung, Installation oder Schlüsselkopplung.</p><span class="badge badge-prototype">Testvertrag</span></article>
+                    <article class="mobile-document-card"><strong>Dokumentreview</strong><p class="field-help">Zukünftiger Job-/Datei-/RBAC-Vertrag erforderlich.</p><span class="badge badge-planned">Geplant</span></article>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Bereit-Zustand: Handlungsgrenzen und Rückkehr">
+            <section class="side-card" aria-labelledby="ready-checklist-title">
+              <header class="side-heading"><div class="side-copy"><h2 id="ready-checklist-title">Vor der Fortsetzung sichtbar</h2><p>Checkliste als Entscheidungshilfe, nicht als validierte Datenprüfung.</p></div><span class="badge badge-teal">Prüfbar</span></header>
+              <div class="side-body">
+                <ul class="checklist">
+                  <li><span class="check-symbol" aria-hidden="true">✓</span><span>Fiktiver Aufenthalts- und Begleitkontext ist vor den Dokumentschritten sichtbar.</span></li>
+                  <li><span class="check-symbol" aria-hidden="true">✓</span><span>Der aktuelle Schritt, die nächste Entscheidung und eine Rückkehrabsicht sind benannt.</span></li>
+                  <li><span class="warning-symbol" aria-hidden="true">!</span><span>Zimmer 214 bleibt ein ungeprüfter Kontext: keine Verfügbarkeit, Reinigung, Zuteilung oder Schlüsselstatus.</span></li>
+                  <li><span class="warning-symbol" aria-hidden="true">!</span><span>Rollenname und sichtbare Buttons beweisen keine Authentifizierung, Autorisierung oder Auditierung.</span></li>
+                </ul>
+              </div>
+            </section>
+            <section class="side-card wide-on-tablet" id="checkin-return-links" aria-labelledby="ready-return-title">
+              <header class="side-heading"><div class="side-copy"><h2 id="ready-return-title">Statische Prüfbezüge</h2><p>Lokale Dokumentlinks, keine gemeinsame Session oder Auswahl.</p></div><span class="badge badge-info">Dateilinks</span></header>
+              <div class="side-body">
+                <ul class="return-links">
+                  <li><a href="arrivals_queue.html#arrivals-title">Anreisen: fiktive Queue als Ursprung lesen</a><span>Keine Live-Queue, kein gespeichertes Datum und keine Rückkehrposition.</span></li>
+                  <li><a href="reservation_detail.html#state-detail">Reservierungsdetail: RES-BO-2026-0716-014 lesen</a><span>Keine gemeinsame Auswahl, Check-in-Transaktion oder Persistenz.</span></li>
+                  <li><a href="guest_profile.html#state-profile">Gastprofil: Jana Müller-Kaya im minimierten Kontext lesen</a><span>Keine Profilquelle, Offenlegung oder RBAC-Prüfung.</span></li>
+                  <li><a href="room_planning_calendar.html#state-week">Zimmerplanung: Zimmer 214 als fiktiven Planungsbezug lesen</a><span>Keine Raummutation, Verfügbarkeit, Sperre oder Synchronisation.</span></li>
+                </ul>
+              </div>
+            </section>
+          </aside>
+        </div>
+        <p class="page-note">Bereit-Zustand: Der Prototyp hält eine konkrete Reihenfolge und Wirkgrenzen sichtbar. Quellprüfungen können Struktur und lokale DOM-Steuerung prüfen, aber keine gerenderte Layoutqualität, Keyboard-/Screen-Reader-Verhalten, WCAG/BFSG/EAA-Konformität, Browserroute, API, Datenbank, Authentifizierung, RBAC, Speicherung, Jobstatus, sichere Datei-/Wallet-Verarbeitung oder rechtliche Endgültigkeit beweisen.</p>
+      </section>
+
+      <!-- ===== State: Blocker ===== -->
+      <section id="state-blocker" class="state-panel" aria-labelledby="blocker-state-title" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="blocker-state-title">Blockiert: Befreiungsnachweis fehlt</h2><p>Ein fehlender Nachweis stoppt die nachgelagerte Darstellung sichtbar, statt einen berechneten Wert, eine Kurkarte oder den Abschluss als freigegeben zu behandeln.</p></div>
+          <div class="badge-row"><span class="badge badge-error">Blockiert</span><span class="badge badge-warning">Manuelle Prüfung erforderlich</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="blocker-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="blocker-alert-title">Befreiungsgrund ohne fiktiv dokumentierten Nachweis</h3><p>Für Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span> ist ein Beispiel-Befreiungshinweis sichtbar, aber kein Nachweis bestätigt. Deshalb bleibt Kurtaxe &amp; Befreiung offen; Folio, Zahlung, Kurkarte und Abschluss dürfen nicht als erledigt erscheinen.</p></div>
+        </section>
+
+        <div class="layout-grid">
+          <section class="panel" aria-labelledby="blocker-workflow-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="blocker-workflow-title">Check-in-Folge mit sicherem Blocker</h2><p>Der Blocker ist im Schritt selbst, in der Gesamtmeldung und in der Recovery sichtbar.</p></div><span class="badge badge-warning">Schritt 3 von 5</span></header>
+            <div class="panel-body">
+              <div class="workflow-layout">
+                <ol class="workflow-steps" aria-label="Blockierte fiktive Check-in-Schrittfolge">
+                  <li class="workflow-step is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Minimaler Kontext geprüft.</p><div class="badge-row"><span class="badge badge-success">✓ Kontext sichtbar</span></div></div></li>
+                  <li class="workflow-step is-complete"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Fiktive Formularprüfung vor der nächsten Fachentscheidung.</p><div class="badge-row"><span class="badge badge-prototype">Vorschau · Stub-Format</span></div></div></li>
+                  <li class="workflow-step is-blocked"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Der Nachweis ist nicht bestätigt; keine automatische Ausnahme.</p><div class="badge-row"><span class="badge badge-error">! Nachweis fehlt</span><span class="badge badge-warning">Manuelle Prüfung</span></div></div></li>
+                  <li class="workflow-step is-pending"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Bleibt nach der Blockerentscheidung offen.</p><div class="badge-row"><span class="badge badge-planned">Nicht fortsetzen</span></div></div></li>
+                  <li class="workflow-step is-pending"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentprüfung &amp; Abschluss</h3><p>Keine vollständige Prüfung behaupten.</p><div class="badge-row"><span class="badge badge-planned">Nicht verfügbar</span></div></div></li>
+                </ol>
+
+                <section class="step-detail" aria-labelledby="blocker-current-step-title">
+                  <div class="step-detail-header"><div class="summary-copy"><span class="badge badge-error">Aktiver Blocker</span><h3 id="blocker-current-step-title">Befreiung nicht als geklärt behandeln</h3><p>Der lokale Rechenkontext kann eine begrenzte Kurtaxe-Berechnung erklären. Ein Befreiungsgrund ohne Nachweis darf jedoch weder automatisch abgezogen noch als Folio-, Zahlungs- oder Meldeergebnis ausgegeben werden.</p></div><span class="badge badge-warning">Recovery nötig</span></div>
+                  <ul class="detail-list">
+                    <li><span class="detail-label">Fiktiver Grund</span><span class="detail-value">Kuraufenthalt mit möglicher Befreiung · nur Szenariokontext, keine Rechtsentscheidung.</span></li>
+                    <li><span class="detail-label">Fehlender Nachweis</span><span class="detail-value">Kein Evidenzspeicher, keine sichere Datei, keine Rollen-/Zweckprüfung und keine manuelle Freigabe nachgewiesen.</span></li>
+                    <li><span class="detail-label">Sichere Folge</span><span class="detail-value">Nachweis erfragen, Quelle prüfen oder an Management/Compliance eskalieren; nicht still fortsetzen.</span></li>
+                  </ul>
+                  <div class="action-row"><button class="btn-warning" type="button" data-prototype-action="Nachweisprüfung als lokaler Prototyphinweis gezeigt. Es wurde keine Evidenz gelesen, gespeichert, freigegeben oder an eine Rolle eskaliert.">Nachweisprüfung erläutern</button><button class="btn-secondary" type="button" data-state-target="state-ready" aria-controls="state-ready">Ohne Änderung zur Übersicht</button></div>
+                </section>
+              </div>
+
+              <section class="panel" aria-labelledby="blocker-safety-title">
+                <header class="panel-heading"><div class="panel-copy"><h3 id="blocker-safety-title">Folgen bewusst deaktiviert</h3><p>Eine sichtbare Sperre benennt den Grund und verhindert falsche Erfolgssprache.</p></div></header>
+                <div class="panel-body">
+                  <div class="recovery-grid">
+                    <article class="recovery-card"><span class="badge badge-warning">Kurtaxe</span><h3>Nicht als final behandeln</h3><p>Ein lokaler Wert wäre nur ein begrenzter Berechnungsoutput; keine Buchung, Zahlung oder kommunale Meldung.</p><button class="btn-secondary" type="button" disabled aria-describedby="blocker-tax-reason">Kurtaxe übernehmen</button><p id="blocker-tax-reason" class="disabled-reason">Deaktiviert: Nachweis, Rechts-/Satzungsprüfung, Folio, Berechtigung, Persistenz und Audit fehlen.</p></article>
+                    <article class="recovery-card"><span class="badge badge-warning">Kurkarte</span><h3>Keine Ausgabe fortsetzen</h3><p>Ein Beispiel-Payload darf keine Befreiungsentscheidung, Lieferung, Installation oder Schlüsselkopplung umgehen.</p><button class="btn-secondary" type="button" disabled aria-describedby="blocker-card-reason">Kurkarte prüfen</button><p id="blocker-card-reason" class="disabled-reason">Deaktiviert: Vorbedingung, API/Job, sichere Datei-/Pass-Verarbeitung und RBAC sind ungeklärt.</p></article>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
+          <aside class="side-stack" aria-label="Blocker-Recovery">
+            <section class="side-card"><header class="side-heading"><div class="side-copy"><h2>Wiederaufnahme erst nach Klärung</h2><p>Recovery ist eine sichere menschliche Entscheidung, keine automatische Retry-Queue.</p></div><span class="badge badge-peach">Eskalation</span></header><div class="side-body"><ul class="checklist"><li><span class="warning-symbol" aria-hidden="true">1</span><span>Minimalen Nachweisrahmen im späteren, autorisierten Kontext prüfen.</span></li><li><span class="warning-symbol" aria-hidden="true">2</span><span>Bei fehlender Grundlage den Vorgang bei Rezeption/Management/Compliance halten oder eskalieren.</span></li><li><span class="warning-symbol" aria-hidden="true">3</span><span>Eine spätere Berechtigung, Quelle, Entscheidung und Auditierung ausdrücklich nachweisen, bevor ein Schritt weitergeht.</span></li></ul><button class="btn-teal" type="button" data-prototype-action="Sicherer Recovery-Weg lokal erläutert. Es wurde keine Aufgabe, Eskalation, Retry-Anfrage oder Auditspur erstellt.">Recovery erklären</button></div></section>
+            <section class="side-card wide-on-tablet"><header class="side-heading"><div class="side-copy"><h2>Grenze der Blockeranzeige</h2><p>Ein sichtbarer Blocker ist kein Live-Fehlerstatus.</p></div><span class="badge badge-prototype">Statisch</span></header><div class="side-body"><p class="field-help">Eine Umsetzung braucht pro Schritt eine autoritative Fehler-/Evidenzquelle, Zeitpunkt, Berechtigungs-/Rollenentscheidung, idempotente Recovery-Regel, Rückkehrkontext und dauerhaftes Audit. Diese HTML-Datei besitzt keine dieser Abhängigkeiten.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Blocker-Zustand: Der fiktive Nachweisblocker zeigt Status, Grund, Recovery und deaktivierte Folgeaktionen. Er beweist keine Satzungs- oder Rechtsentscheidung, Evidenzprüfung, Autorisierung, Persistenz, Folio-/Zahlungsaktion, Datei-/Pass-Job oder Integration.</p>
+      </section>
+
+      <!-- ===== State: Resumable ===== -->
+      <section id="state-resumable" class="state-panel" aria-labelledby="resumable-state-title" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="resumable-state-title">Wiederaufnahme als fiktiver Kontext</h2><p>Eine Unterbrechung kann einen Schritt und seine offene Entscheidung sichtbar halten. Der Marker belegt jedoch keine Speicherung, Session, Lock, Mitarbeiterzuordnung oder automatische Wiederaufnahme.</p></div>
+          <div class="badge-row"><span class="badge badge-peach">↻ Wiederaufnahme</span><span class="badge badge-planned">Persistenz geplant</span></div>
+        </header>
+
+        <section class="resume-notice" aria-labelledby="resumable-notice-title">
+          <span class="notice-symbol" aria-hidden="true">↻</span>
+          <div class="notice-copy"><h3 id="resumable-notice-title">Fiktive Unterbrechung bei Meldeschein, Feldgruppe Anschrift</h3><p>Der Kontext beschreibt eine Pause nach dem Öffnen von Schritt 2. Keine Eingabe, Auswahl, Meldescheinprüfung oder Zeitmarke ist gespeichert. Ein späterer Dienst müsste Datenminimierung, Session, Konflikt, Berechtigung, Speicher- und Auditregeln ausdrücklich liefern.</p></div>
+        </section>
+
+        <div class="layout-grid">
+          <section class="panel" aria-labelledby="resumable-workflow-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="resumable-workflow-title">Schrittfolge mit Unterbrechung</h2><p>Die letzte sichere Entscheidung bleibt auffindbar; die Vorauswahl wird nicht als realer Entwurf dargestellt.</p></div><span class="badge badge-peach">Schritt 2 von 5</span></header>
+            <div class="panel-body">
+              <div class="workflow-layout">
+                <ol class="workflow-steps" aria-label="Fiktive wiederaufnehmbare Check-in-Schrittfolge">
+                  <li class="workflow-step is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Nur der sichtbare Beispielkontext ist vollständig.</p><div class="badge-row"><span class="badge badge-success">✓ Kontext sichtbar</span></div></div></li>
+                  <li class="workflow-step is-current"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Unterbrochen bei Anschrift; keine lokale Formulardaten-Speicherung.</p><div class="badge-row"><span class="badge badge-peach">↻ Wiederaufnahme markieren</span><span class="badge badge-planned">Save geplant</span></div></div></li>
+                  <li class="workflow-step is-pending"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Noch nicht prüfen, solange Schritt 2 nicht fachlich geklärt ist.</p><div class="badge-row"><span class="badge badge-planned">Abhängig von Schritt 2</span></div></div></li>
+                  <li class="workflow-step is-pending"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Kein Job, Payload oder Delivery-Status gestartet.</p><div class="badge-row"><span class="badge badge-prototype">Nicht gestartet</span></div></div></li>
+                  <li class="workflow-step is-pending"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentprüfung &amp; Abschluss</h3><p>Keine Durchlaufvollständigkeit behaupten.</p><div class="badge-row"><span class="badge badge-planned">Nicht verfügbar</span></div></div></li>
+                </ol>
+
+                <section class="step-detail" aria-labelledby="resumable-current-step-title">
+                  <div class="step-detail-header"><div class="summary-copy"><span class="badge badge-peach">Fiktiver Resume-Marker</span><h3 id="resumable-current-step-title">Zur letzten sicheren Fachentscheidung zurück</h3><p>Der nächste Schritt wäre, Pflichtangaben und Anlass erneut sichtbar zu prüfen. Der Prototyp übergibt keine Formularwerte und erzeugt keinen Entwurf.</p></div><span class="badge badge-unclear">Keine Session</span></div>
+                  <ul class="detail-list">
+                    <li><span class="detail-label">Fiktiver Startpunkt</span><span class="detail-value">Meldeschein · Anschrift prüfen · Beispielwerte nicht persistiert.</span></li>
+                    <li><span class="detail-label">Rückkehrkontext</span><span class="detail-value">Anreisen · 16.07.2026 · Jana Müller-Kaya als statischer Bezug, nicht als wiederhergestellte Auswahl.</span></li>
+                    <li><span class="detail-label">Erforderlicher Vertrag</span><span class="detail-value">Browser-/Sessionstatus, Datenschutzscope, validierter Entwurf, Version/Lock, Auth/RBAC, sicheren Resume-/Abbruchpfad und Audit.</span></li>
+                  </ul>
+                  <div class="work-action"><div class="summary-copy"><strong>Prototypinteraktion</strong><p>Die lokale Aktion kann nur den Hinweis aktualisieren. Sie öffnet keinen Check-in, speichert nichts und stellt keinen Zustand wieder her.</p></div><button class="btn-primary" type="button" data-prototype-action="Wiederaufnahme als lokale Prototypnachricht erläutert. Es wurde kein Entwurf geladen, keine Sitzung wiederhergestellt, keine Eingabe gespeichert und keine Berechtigung geprüft.">Wiederaufnahme erläutern</button></div>
+                </section>
+              </div>
+
+              <section class="panel" aria-labelledby="resumable-context-title">
+                <header class="panel-heading"><div class="panel-copy"><h3 id="resumable-context-title">Was bei einer Unterbrechung erhalten bleiben müsste</h3><p>Kontextkontinuität ist eine fachliche und technische Anforderung, keine Eigenschaft des statischen Zustandsumschalters.</p></div></header>
+                <div class="panel-body"><ul class="detail-list"><li><span class="detail-label">Queue</span><span class="detail-value">Datum, Filter, Zeilenbezug und eine sichere Rückkehr zur Quelle.</span></li><li><span class="detail-label">Schritt</span><span class="detail-value">Aktiver Schritt, validierte Zwischenstände, offene Fehler und Abhängigkeiten ohne Geheimnisse außerhalb des zulässigen Scopes.</span></li><li><span class="detail-label">Sicherheit</span><span class="detail-value">Authentifizierte Person, Zweck, Datenklasse, Ablauf-/Remask-Regel, Berechtigung, Konflikt und Audit.</span></li><li><span class="detail-label">Recovery</span><span class="detail-value">Explizite Fortsetzung, verwerfen, zurück zur Queue oder sichere Eskalation; kein stiller automatischer Retry.</span></li></ul></div>
+              </section>
+            </div>
+          </section>
+          <aside class="side-stack" aria-label="Wiederaufnahme-Grenzen">
+            <section class="side-card"><header class="side-heading"><div class="side-copy"><h2>Keine Scheinspeicherung</h2><p>Der sichtbare Marker darf nicht wie ein gespeicherter Entwurf gelesen werden.</p></div><span class="badge badge-planned">Save geplant</span></header><div class="side-body"><ul class="checklist"><li><span class="warning-symbol" aria-hidden="true">!</span><span>Keine Eingaben werden in dieser Datei gespeichert, geteilt oder gesendet.</span></li><li><span class="warning-symbol" aria-hidden="true">!</span><span>Kein Timer, keine Session, kein Lock und keine Personenzuordnung bestimmen die sichtbare Unterbrechung.</span></li><li><span class="warning-symbol" aria-hidden="true">!</span><span>Der Zustandsumschalter ist nur ein Review-Werkzeug und keine Produktionskontrolle.</span></li></ul><button class="btn-secondary" type="button" data-state-target="state-blocker" aria-controls="state-blocker">Blockerbeispiel lesen</button></div></section>
+            <section class="side-card wide-on-tablet"><header class="side-heading"><div class="side-copy"><h2>Mobiler Fokus</h2><p>Auf einem schmalen Bildschirm bleibt der einzelne Schritt vor der gesamten Desktop-Tabelle sichtbar.</p></div><span class="badge badge-info">Task-Modus</span></header><div class="side-body"><p class="field-help">Mobile zeigt eine einspaltige Schrittfolge, eine klar benannte nächste Entscheidung und mindestens 44px hohe Primär-/Navigationscontrols. Das ist CSS- und Strukturabsicht, kein gemessener Gerätetest.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Wiederaufnahme-Zustand: Die Darstellung dokumentiert Unterbrechung, Kontext und erforderliche Verträge. Sie beweist keine Speicherung, Session, Mehrbenutzerkonfliktkontrolle, Berechtigung, Wiederherstellung, Audit oder sichere Verarbeitung personenbezogener Daten.</p>
+      </section>
+
+      <!-- ===== State: Already completed ===== -->
+      <section id="state-completed" class="state-panel" aria-labelledby="completed-state-title" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="completed-state-title">Bereits abgeschlossen: fiktive Nachschau</h2><p>Diese Darstellung zeigt einen denkbaren Abschluss- und Sperrkontext. Sie ist kein bestätigter Check-in, keine dauerhafte Transaktion und kein Beweis dafür, dass nachgelagerte äußere Wirkungen eingetreten sind.</p></div>
+          <div class="badge-row"><span class="badge badge-teal">Abschluss angezeigt</span><span class="badge badge-prototype">Lokaler Zustand</span></div>
+        </header>
+
+        <section class="completion-notice" role="status" aria-labelledby="completed-notice-title">
+          <span class="notice-symbol" aria-hidden="true">✓</span>
+          <div class="notice-copy"><h3 id="completed-notice-title">Alle fünf fiktiven Prüfschritte sind als nachgesehen markiert</h3><p>Eine sichtbare Vollständigkeit bezieht sich ausschließlich auf dieses statische Szenario. Sie bedeutet weder Anreise, Zimmerübergabe, Schlüsselaktivierung, Meldeschein-Finalität, Kurtaxe-Buchung, Zahlung, Kurkartenlieferung, Dateizustellung, Einreichung noch eine rechtswirksame Handlung.</p></div>
+        </section>
+
+        <div class="layout-grid">
+          <section class="panel" aria-labelledby="completed-workflow-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="completed-workflow-title">Fiktive Abschlussübersicht</h2><p>Die Schrittfolge behält ihre fachlichen Grenzen auch im Abschlussbild bei.</p></div><span class="badge badge-teal">5 von 5 angezeigt</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiv abgeschlossener Aufenthaltskontext">
+                <div class="record-copy"><span class="badge badge-teal">Nachschau · lokal</span><h2>Jana Müller-Kaya</h2><p class="record-code">RES-BO-2026-0716-014</p><p>Fiktive Abschlussanzeige am 16.07.2026 · 10:18 · kein Serverzeitstempel, keine authentifizierte Person und keine dauerhafte Historie.</p></div>
+                <div class="record-status"><span class="badge badge-teal">Anzeige abgeschlossen</span><span class="badge badge-unclear">Lock unklar</span></div>
+              </section>
+
+              <div class="workflow-layout">
+                <ol class="workflow-steps" aria-label="Fiktiv abgeschlossene Check-in-Schrittfolge">
+                  <li class="workflow-step is-locked"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Im Szenario nachgesehen; keine Profiländerung gespeichert.</p><div class="badge-row"><span class="badge badge-teal">Anzeige geprüft</span></div></div></li>
+                  <li class="workflow-step is-locked"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Vorschau-/Formatgrenze bleibt sichtbar.</p><div class="badge-row"><span class="badge badge-prototype">Stub-Format</span><span class="badge badge-info">Nicht eingereicht</span></div></div></li>
+                  <li class="workflow-step is-locked"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Fiktiver Prüfschritt, keine Folio- oder Zahlungswirkung.</p><div class="badge-row"><span class="badge badge-teal">Berechnung begrenzt</span><span class="badge badge-warning">Nicht gebucht</span></div></div></li>
+                  <li class="workflow-step is-locked"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Ein dargestelltes Artefakt bleibt keine Lieferung oder Installation.</p><div class="badge-row"><span class="badge badge-prototype">Vorschau</span></div></div></li>
+                  <li class="workflow-step is-locked"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentprüfung &amp; Abschluss</h3><p>Vollständigkeit betrifft nur das Szenario.</p><div class="badge-row"><span class="badge badge-teal">Nachschau sichtbar</span><span class="badge badge-planned">Audit geplant</span></div></div></li>
+                </ol>
+
+                <section class="step-detail" aria-labelledby="completed-boundary-title">
+                  <div class="step-detail-header"><div class="summary-copy"><span class="badge badge-planned">Spätere Sperr-/Auditlogik</span><h3 id="completed-boundary-title">Abschlussbild ohne irreversible Behauptung</h3><p>Ein produktiver Abschluss braucht vor einer gesperrten Nachschau eine valide Schrittfolge, Bedingungen, Autorisierung, Persistenz, Audit, Konflikt- und Fehlerbehandlung sowie eine sichere Rückkehr zum Ursprung.</p></div><span class="badge badge-unclear">Kein Lockvertrag</span></div>
+                  <ul class="detail-list">
+                    <li><span class="detail-label">Dokumente</span><span class="detail-value">Kein nachgewiesenes final kompatibles PDF, keine sichere Ablage, kein Download, keine Zustellung und keine Einreichung.</span></li>
+                    <li><span class="detail-label">Zimmer / Schlüssel</span><span class="detail-value">Keine Zuteilung, Reinigung, Schlüssel-/Türverbindung, Übergabe oder Rücknahme.</span></li>
+                    <li><span class="detail-label">Finanzen</span><span class="detail-value">Keine Buchung, Zahlung, Rechnung, Fiskalisierung, Remittance oder Abgleich.</span></li>
+                    <li><span class="detail-label">Audit / Rechte</span><span class="detail-value">Keine identifizierte Person, RBAC-Prüfung, dauerhafte Historie, Aufbewahrung oder Integritätszusage.</span></li>
+                  </ul>
+                  <div class="action-row"><button class="btn-secondary" type="button" disabled aria-describedby="completed-edit-reason">Bearbeitung freigeben</button><button class="btn-teal" type="button" data-state-target="state-ready" aria-controls="state-ready">Zum Bereit-Beispiel</button></div>
+                  <p id="completed-edit-reason" class="disabled-reason">Deaktiviert: Es gibt keine authentifizierte Sitzung, keine Rollenentscheidung, keine Versions-/Sperrregel, keine Persistenz, keinen Auditvertrag und keine sichere Transaktionsgrenze.</p>
+                </section>
+              </div>
+            </div>
+          </section>
+          <aside class="side-stack" aria-label="Abschluss-Grenzen">
+            <section class="side-card"><header class="side-heading"><div class="side-copy"><h2>Was „abgeschlossen“ hier bedeutet</h2><p>Eine Anzeige, nicht ein produktionstauglicher Abschluss.</p></div><span class="badge badge-prototype">Szenario</span></header><div class="side-body"><ul class="checklist"><li><span class="check-symbol" aria-hidden="true">✓</span><span>Die fünf fachlichen Schritte und ihre Wirkgrenzen bleiben sichtbar.</span></li><li><span class="warning-symbol" aria-hidden="true">!</span><span>Ein Gesamtsuccess ersetzt keine Einzelprüfungen von Dokument, Befreiung, Artefakt und Berechtigung.</span></li><li><span class="warning-symbol" aria-hidden="true">!</span><span>Eine reale Sperre darf nicht ohne Version, Rechte, Transaktion, Audit und sichere Recovery formuliert werden.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet"><header class="side-heading"><div class="side-copy"><h2>Rückkehr bleibt geplant</h2><p>Eine spätere Anwendung kehrt zur Ursprungsliste zurück, ohne Kontext oder Fokus zu verlieren.</p></div><span class="badge badge-planned">Browservertrag</span></header><div class="side-body"><a class="button-link" href="arrivals_queue.html#arrivals-title">Fiktive Ursprungsliste lesen</a><p class="field-help">Dieser Link lädt nur eine lokale HTML-Datei. Er stellt keinen Queue-Filter, keine Auswahl, keine Check-in-Historie und keinen Browserstatus wieder her.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Abgeschlossen-Zustand: Das Szenario trennt einen sichtbaren Abschlussstatus von Speicherung, Buchung, Lieferung, Einreichung, rechtlicher Finalität und externer Wirkung. Es liefert keine produktive Sperre, Authentifizierung, RBAC, Audit- oder Persistenzprüfung.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Gast-, Aufenthalts-, Dokument-, Kurkarten- und Kurtaxe-Kontextdaten. Die lokalen State-Switcher und Nachrichten aktualisieren nur das DOM. Sie führen keine Browserroute, Suche, API-Anfrage, Datenbankaktion, Speicherung, Wiederaufnahme, Hintergrundjob, sichere Datei-/Wallet-Verarbeitung, Authentifizierung, RBAC, Integration, Buchung, Zahlung, Einreichung oder rechtliche Entscheidung aus.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html#arrivals-title">Anreisen</a>
+    <a href="#state-ready" aria-current="page">Check-in</a>
+    <a href="reservation_detail.html#state-detail">Aufenthalt</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <button id="state-button-ready" type="button" data-state-target="state-ready" aria-controls="state-ready" aria-pressed="true">Bereit</button>
+    <button id="state-button-blocker" type="button" data-state-target="state-blocker" aria-controls="state-blocker" aria-pressed="false">Blockiert</button>
+    <button id="state-button-resumable" type="button" data-state-target="state-resumable" aria-controls="state-resumable" aria-pressed="false">Wiederaufnahme</button>
+    <button id="state-button-completed" type="button" data-state-target="state-completed" aria-controls="state-completed" aria-pressed="false">Abgeschlossen</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('checkin-context-form');
+      const labels = {
+        'state-ready': 'Bereite fiktive Check-in-Übersicht angezeigt.',
+        'state-blocker': 'Blockierter fiktiver Check-in-Zustand angezeigt.',
+        'state-resumable': 'Fiktiver Wiederaufnahme-Zustand angezeigt.',
+        'state-completed': 'Fiktive abgeschlossene Nachschau angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Check-in-Kontext lokal erläutert. Es wurde keine Route, Queue-Auswahl, Suche, Datenquelle, Berechtigungsprüfung, Speicherung oder Wiederaufnahme ausgeführt.';
+      });
+    }());
+  </script>
+</body>
+</html>

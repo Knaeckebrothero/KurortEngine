@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in: Dokumentreview &amp; Abschluss — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --state-switcher-width: calc(var(--space-4xl) * 14);
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+    }
+
+    /* ===== Foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-control);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    /* ===== Shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .state-switcher, .mobile-nav, .step-badges {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      background: var(--surface-0);
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .brand-copy, .panel-copy, .state-copy, .notice-copy, .record-copy, .side-copy, .action-copy, .artifact-copy, .field-group {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .panel-copy p, .state-copy p, .notice-copy p, .record-copy p, .side-copy p, .action-copy p, .artifact-copy p, .field-help, .page-note, .disabled-reason { color: var(--text-secondary); font-size: 13px; }
+    .app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr); min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl))); }
+    .sidebar { display: flex; flex-direction: column; gap: var(--space-xl); padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: 1px solid var(--border-color); }
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .sidebar-boundary { display: grid; gap: var(--space-sm); margin-top: auto; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .sidebar-boundary h2 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+    main { display: grid; align-content: start; gap: var(--space-lg); min-width: var(--space-none); padding: var(--space-xl); padding-bottom: calc(var(--space-4xl) * 3); }
+
+    /* ===== Shared primitives ===== */
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned, .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-accent { border-color: var(--accent-color); color: var(--accent-color); }
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-0);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover, .button-link:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .mono { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .panel, .side-card, .context-panel, .artifact-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .panel-heading, .side-heading, .state-heading, .artifact-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .panel-body, .side-body, .artifact-body, .context-panel { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { padding: var(--space-none) var(--space-xs); background: var(--app-bg); border-bottom: var(--space-none); }
+    .context-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      flex-wrap: wrap;
+    }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+    .boundary-notice, .persistent-alert, .warning-notice, .completion-notice, .source-notice {
+      display: grid;
+      grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-peach);
+      border-radius: var(--radius-card);
+    }
+    .persistent-alert { border-left-color: var(--color-red); }
+    .warning-notice { border-left-color: var(--color-yellow); }
+    .completion-notice { border-left-color: var(--color-teal); }
+    .source-notice { border-left-color: var(--color-blue); }
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    .persistent-alert .notice-symbol { color: var(--color-red); }
+    .warning-notice .notice-symbol { color: var(--color-yellow); }
+    .completion-notice .notice-symbol { color: var(--color-teal); }
+    .source-notice .notice-symbol { color: var(--color-blue); }
+    .notice-copy strong { color: var(--text-primary); }
+    .page-note { padding: var(--space-md); background: var(--timeline-bg); border-left: 3px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-muted); font-size: 12px; }
+
+    /* ===== Check-in stepper and operational detail ===== */
+    .stepper { display: grid; grid-template-columns: repeat(5, minmax(var(--space-none), 1fr)); gap: var(--space-sm); list-style: none; }
+    .stepper li {
+      display: grid;
+      grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr);
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: calc(var(--space-4xl) + var(--space-lg));
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .stepper li.is-complete { border-left-color: var(--color-green); }
+    .stepper li.is-current { background: var(--surface-0); border-color: var(--accent-color); border-left-color: var(--accent-color); }
+    .stepper li.is-pending { border-left-color: var(--color-yellow); }
+    .stepper li.is-blocked { border-left-color: var(--color-red); }
+    .stepper li.is-locked { border-left-color: var(--color-blue); }
+    .step-number { display: grid; place-items: center; width: var(--space-2xl); height: var(--space-2xl); border: 1px solid var(--border-color); border-radius: var(--radius-badge); color: var(--text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .is-complete .step-number { border-color: var(--color-green); color: var(--color-green); }
+    .is-current .step-number { border-color: var(--accent-color); color: var(--accent-color); }
+    .is-pending .step-number { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .is-blocked .step-number { border-color: var(--color-red); color: var(--color-red); }
+    .is-locked .step-number { border-color: var(--color-blue); color: var(--color-blue); }
+    .step-copy { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .step-copy p { color: var(--text-secondary); font-size: 12px; }
+    .work-layout { display: grid; grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 6), 1fr); gap: var(--space-lg); align-items: start; }
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .record-card {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      gap: var(--space-lg);
+      align-items: start;
+      padding: var(--space-lg);
+      background: var(--surface-0);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .record-status { display: grid; justify-items: end; gap: var(--space-xs); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card, .artifact-tile, .boundary-card, .mobile-artifact-card {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .summary-card span, .artifact-tile span, .boundary-card span, .mobile-artifact-card span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong, .artifact-tile strong, .boundary-card strong, .mobile-artifact-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small, .artifact-tile small, .boundary-card small, .mobile-artifact-card small { color: var(--text-secondary); font-size: 12px; }
+    .artifact-grid, .boundary-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .artifact-tile.is-document { border-left: 3px solid var(--color-peach); }
+    .artifact-tile.is-apple { border-left: 3px solid var(--color-teal); }
+    .artifact-tile.is-google { border-left: 3px solid var(--color-blue); }
+    .boundary-card.is-warning { border-left: 3px solid var(--color-yellow); }
+    .boundary-card.is-error { border-left: 3px solid var(--color-red); }
+    .boundary-card.is-info { border-left: 3px solid var(--color-blue); }
+    .boundary-card.is-success { border-left: 3px solid var(--color-green); }
+    .detail-list, .dependency-list, .local-links { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li, .dependency-list li, .local-links li { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child, .dependency-list li:last-child, .local-links li:last-child { border-bottom: var(--space-none); }
+    .detail-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value, .dependency-list span, .local-links a { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .local-links a { color: var(--accent-hover); }
+    .next-action { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--timeline-bg); border: 1px solid var(--accent-color); border-radius: var(--radius-card); }
+    .artifact-card { overflow: hidden; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 14); border-collapse: collapse; font-size: 12px; }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-artifact-list { display: none; }
+    .error-summary { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--color-red); border-radius: var(--radius-card); }
+    .error-summary strong { color: var(--color-red); }
+    .error-summary p, .error-summary a { color: var(--text-secondary); font-size: 13px; }
+    .error-summary ol { display: grid; gap: var(--space-xs); padding-left: var(--space-lg); }
+    .error-summary a { color: var(--color-red); }
+    label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+    input, select { width: 100%; min-height: 40px; padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+    input[readonly] { color: var(--text-secondary); }
+    .invalid-input { border-color: var(--color-red) !important; }
+    .field-error { color: var(--color-red); font-size: 12px; }
+    .disabled-reason { color: var(--text-muted); font-size: 12px; }
+
+    /* ===== State controls and responsive task adaptation ===== */
+    .state-switcher { position: fixed; right: var(--space-lg); bottom: var(--space-lg); z-index: var(--z-state-switcher); max-width: var(--state-switcher-width); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      main { padding-right: var(--space-2xl); padding-left: var(--space-2xl); }
+      .work-layout { grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 7), calc(var(--space-4xl) * 8)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .nav-label, .nav-text, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .stepper { grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); }
+      .work-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .side-stack .wide-on-tablet { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-divider, .context-value.is-secondary { display: none; }
+      .boundary-notice, .persistent-alert, .warning-notice, .completion-notice, .source-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .notice-symbol { display: none; }
+      .stepper, .work-layout, .summary-grid, .artifact-grid, .boundary-grid, .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-status { justify-items: start; }
+      .panel-body, .side-body, .artifact-body, .context-panel { padding: var(--space-md); }
+      .detail-list li, .dependency-list li, .local-links li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .next-action { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .next-action button { width: 100%; }
+      .table-wrap { display: none; }
+      .mobile-artifact-list { display: grid; gap: var(--space-sm); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); left: var(--space-sm); max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .mobile-nav { position: fixed; right: var(--space-none); bottom: var(--space-none); left: var(--space-none); z-index: var(--z-mobile-nav); display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: var(--panel-bg); border-top: 1px solid var(--border-color); }
+      .mobile-nav a { display: grid; place-items: center; min-height: var(--touch-target); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 11px; text-align: center; text-decoration: none; }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .button-link, input, select { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Static review prototype only. ArtifactReviewPanel, CompletionGate, and FileEvidenceStrip
+       are descriptive design labels, not browser routes, APIs, production components, or data contracts. -->
+  <a class="skip-link" href="#document-review-workspace">Zur Dokumentprüfung springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Check-in-Arbeitsablauf</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisgrenzen des Dokumentreview-Prototyps">
+      <span class="badge badge-prototype">Prototyp · CLI-Bezug</span>
+      <span class="badge badge-planned">Dokumentjob geplant</span>
+      <span class="badge badge-warning">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <nav class="nav-group" aria-label="Check-in-Schritte">
+        <p class="nav-label">Check-in</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="checkin_overview.html#state-ready" aria-label="Check-in-Übersicht"><span class="nav-symbol" aria-hidden="true">✓</span><span class="nav-text">Check-in-Übersicht</span><span class="nav-count">K-01</span></a></li>
+          <li><a class="nav-link" href="checkin_meldeschein.html#state-preview" aria-label="Meldeschein, Schritt 2"><span class="nav-symbol" aria-hidden="true">▧</span><span class="nav-text">Meldeschein</span><span class="nav-count">Schritt 2</span></a></li>
+          <li><a class="nav-link" href="checkin_kurtaxe_exemptions.html#state-calculated" aria-label="Kurtaxe und Befreiung, Schritt 3"><span class="nav-symbol" aria-hidden="true">€</span><span class="nav-text">Kurtaxe &amp; Befreiung</span><span class="nav-count">Schritt 3</span></a></li>
+          <li><a class="nav-link" href="checkin_kurkarte.html#state-generated-preview" aria-label="Kurkarte, Schritt 4"><span class="nav-symbol" aria-hidden="true">◇</span><span class="nav-text">Kurkarte</span><span class="nav-count">Schritt 4</span></a></li>
+          <li><a class="nav-link" href="#state-all-ready" aria-current="page" aria-label="Dokumentreview und Abschluss, Schritt 5"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-text">Dokumentreview</span><span class="nav-count">Schritt 5</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Dokumentreview-Verweise">
+        <p class="nav-label">Review</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#artifact-boundaries" aria-label="Artefaktgrenzen"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-text">Artefaktgrenzen</span><span class="nav-count">Lokal</span></a></li>
+          <li><a class="nav-link" href="#document-review-links" aria-label="Statische Prüfbezüge"><span class="nav-symbol" aria-hidden="true">↩</span><span class="nav-text">Prüfbezüge</span><span class="nav-count">Dateilinks</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="document-review-sidebar-boundary-title">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="document-review-sidebar-boundary-title">Keine Datei- oder Abschlusskette</h2>
+        <p>Lokale Dateilinks teilen keine Sitzung, Auswahl, Job-ID, Dateiablage, Berechtigung, Zustellung, Einreichung oder Check-in-Historie.</p>
+      </section>
+    </aside>
+
+    <main id="document-review-workspace">
+      <section class="context-strip" aria-label="Fiktiver Check-in-Kontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Rolle</span><span class="context-value is-secondary">Rezeption · Beispielrolle, keine Anmeldung</span>
+        </div>
+        <span class="badge badge-accent">Jana Müller-Kaya · synthetisch</span>
+      </section>
+
+      <section class="boundary-notice" id="artifact-boundaries" aria-labelledby="document-review-page-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <h1 id="document-review-page-title">Check-in: Dokumentreview &amp; Abschluss</h1>
+          <p>Schritt 5 stellt erwartete Artefaktnamen, Prüfgrenzen und sichere menschliche Folgeentscheidungen dar. Die beobachtete CLI kann drei lokale Dateien aus einer Reservierungskennung schreiben; diese statische Seite ruft sie nicht auf und verknüpft ihre synthetische Jana-Fixture nicht mit dem Quellfixture.</p>
+          <div class="badge-row" aria-label="Ausdrückliche Grenzen des Dokumentreview-Prototyps">
+            <span class="badge badge-prototype">Drei-Datei-Output · begrenzt</span>
+            <span class="badge badge-warning">Kein gültiges finales Dokument</span>
+            <span class="badge badge-planned">Kein Download oder Delivery</span>
+            <span class="badge badge-error">Keine Einreichung</span>
+            <span class="badge badge-error">Keine persistierte Completion</span>
+            <span class="badge badge-warning">Keine rechtliche Finalität</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="context-panel" aria-labelledby="document-review-context-title">
+        <div class="panel-copy">
+          <h2 id="document-review-context-title">Ausgewählter fiktiver Aufenthalts- und Reviewrahmen</h2>
+          <p>Der Kontext hält Schrittfolge und Artefaktnamensshape zusammen. Er ist keine Reservierungsquelle, kein Dokumentregister und keine Bestätigung, dass die dargestellten Dateien existieren.</p>
+        </div>
+        <section class="record-card" aria-label="Ausgewählter synthetischer Aufenthaltskontext">
+          <div class="record-copy">
+            <span class="badge badge-accent">Ausgewählt · lokal</span>
+            <h2>Jana Müller-Kaya</h2>
+            <p class="mono">RES-BO-2026-0716-014</p>
+            <p>16.–23.07.2026 · 2 synthetische Gäste · Zimmer 214 als ungeprüfter Beispielkontext · Dokumentreview ist Schritt 5 von 5.</p>
+          </div>
+          <div class="record-status">
+            <span class="badge badge-warning">Aufenthaltsquelle unklar</span>
+            <span class="badge badge-warning">RBAC unklar</span>
+          </div>
+        </section>
+        <p class="source-notice"><span class="notice-symbol" aria-hidden="true">i</span><span><strong>Beobachteter enger Quellrahmen:</strong> <span class="mono">arrival bundle --reservation --output-dir</span> schreibt laut lokaler CLI-Komposition drei Dateien mit einer Reservierungskennung im Namen. Die Quelle synthetisiert Meldeschein- und Gastkartendaten lokal; sie liefert keinen Browserjob, keine echte Reservierungsabfrage, keinen dauerhaften Dateirecord, keine sichere Ablage, keinen Viewer, keinen Download, keine Zustellung, keine Einreichung, kein Audit und keine rechtliche Endgültigkeit.</span></p>
+      </section>
+
+      <p id="document-review-live" class="sr-only" aria-live="polite" aria-atomic="true">Alle erwarteten Ausgaben sind im fiktiven Reviewzustand angezeigt.</p>
+
+      <!-- ===== State: generating ===== -->
+      <section id="state-generating" class="state-panel" aria-labelledby="generating-state-title" data-state-kind="generating" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="generating-state-title">Erzeugung als fiktiver Prüffall: erwartete Ausgaben sichtbar halten</h2>
+            <p>Dieser Zustand modelliert die fachliche Sicht vor einem späteren Dokumentjob. Er behauptet keine laufende Ausführung, keine Job-ID, kein Polling, keine Datei und keine entstandene Check-in-Wirkung.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-warning">Erwartet · fiktiv</span><span class="badge badge-prototype">CLI-Bezug, nicht aufgerufen</span></div>
+        </header>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge, Erzeugung">
+          <li class="is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Kontext nur sichtbar dargestellt.</p><div class="step-badges"><span class="badge badge-success">Szenario</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Begrenzte Byte-/Formatgrenze bleibt offen.</p><div class="step-badges"><span class="badge badge-prototype">Stub-Format</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Keine Folio- oder Zahlungsfolge.</p><div class="step-badges"><span class="badge badge-warning">Nicht gebucht</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Payload ist keine Wallet-Zustellung.</p><div class="step-badges"><span class="badge badge-prototype">Vorschau</span></div></div></li>
+          <li class="is-current"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview &amp; Abschluss</h3><p>Erwartete Ausgaben zuerst getrennt prüfen.</p><div class="step-badges"><span class="badge badge-warning">Erzeugung nicht belegt</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="generating-artifacts-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="generating-artifacts-title">Drei erwartete Namen aus dem begrenzten Ankunftsbündel</h2><p>Die Quellfunktion verwendet die übergebene Reservierungskennung für drei lokale Pfade. Die Jana-Kennung wird hier ausschließlich als statischer Namensbezug eingesetzt, nicht als Quelleingabe oder nachgewiesene Datei.</p></div><span class="badge badge-info">Expected vs. vorhanden getrennt</span></header>
+            <div class="panel-body">
+              <div class="artifact-grid" aria-label="Erwartete fiktive Ankunftsbündel-Artefakte">
+                <article class="artifact-tile is-document"><span>Meldeschein</span><strong class="mono">meldeschein_RES-BO-2026-0716-014.pdf</strong><small>Erwarteter CLI-Namensshape; keine konkrete Datei, kein final kompatibles PDF, kein Viewer und keine Einreichung.</small></article>
+                <article class="artifact-tile is-apple"><span>Apple-Pass</span><strong class="mono">kurkarte_apple_RES-BO-2026-0716-014.pkpass</strong><small>Erwarteter CLI-Namensshape; kein signiertes PassKit-Archiv, keine Wallet-Installation und keine Zustellung.</small></article>
+                <article class="artifact-tile is-google"><span>Google-Wallet-JSON</span><strong class="mono">kurkarte_google_RES-BO-2026-0716-014.json</strong><small>Erwarteter CLI-Namensshape; kein Produktions-JWT, keine Provisionierung und keine Gastzustellung.</small></article>
+                <article class="artifact-tile"><span>Zusätzlicher Dokumentreview</span><strong>Datenschutzinfo, Hausordnung, Meldeschein-Beilage</strong><small>Nur geplante Reviewthemen. Sie gehören nicht zum beobachteten Drei-Datei-Output und sind keine bereitgestellten oder finalen Dokumente.</small></article>
+              </div>
+
+              <section class="artifact-card" aria-labelledby="generating-source-title">
+                <header class="artifact-header"><div class="artifact-copy"><h3 id="generating-source-title">Quellgrenze vor der Reviewentscheidung</h3><p>Die angezeigte Liste unterscheidet technische Namensform, erwarteten Zweck und fehlenden Lebenszyklusvertrag.</p></div><span class="badge badge-prototype">Lokale Ausgabeform</span></header>
+                <div class="artifact-body">
+                  <div class="table-wrap">
+                    <table>
+                      <caption>Fiktive erwartete Outputs für RES-BO-2026-0716-014. Keine Zeile beweist Ausführung, Existenz, Speicherung, Download, Zustellung, Einreichung oder Finalität.</caption>
+                      <thead><tr><th scope="col">Erwarteter Pfad</th><th scope="col">Enge Quelle</th><th scope="col">Fiktiver Reviewstatus</th><th scope="col">Was nicht folgt</th></tr></thead>
+                      <tbody>
+                        <tr><td><strong>Meldeschein</strong><br><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span></td><td><span class="mono">render_meldeschein(form)</span> in lokaler CLI-Komposition</td><td><span class="badge badge-warning">Erwartet</span></td><td>Kein gültiges finales PDF, keine Dateihistorie, kein Download, keine Einreichung.</td></tr>
+                        <tr><td><strong>Apple</strong><br><span class="mono">kurkarte_apple_RES-BO-2026-0716-014.pkpass</span></td><td><span class="mono">render_apple_pass(card)</span> in lokaler CLI-Komposition</td><td><span class="badge badge-warning">Erwartet</span></td><td>Kein signiertes Archiv, keine Wallet-Installation, keine Lieferung.</td></tr>
+                        <tr><td><strong>Google</strong><br><span class="mono">kurkarte_google_RES-BO-2026-0716-014.json</span></td><td><span class="mono">render_google_pass_object(card)</span> in lokaler CLI-Komposition</td><td><span class="badge badge-warning">Erwartet</span></td><td>Kein Produktions-JWT, keine Provisionierung, keine Lieferung.</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mobile-artifact-list" aria-label="Mobile erwartete Artefaktkarten">
+                    <article class="mobile-artifact-card"><span>Meldeschein</span><strong>meldeschein_RES-BO-2026-0716-014.pdf</strong><small>Erwartet, nicht als Datei belegt; kein finaler PDF-, Download- oder Einreichungsclaim.</small></article>
+                    <article class="mobile-artifact-card"><span>Apple</span><strong>kurkarte_apple_RES-BO-2026-0716-014.pkpass</strong><small>Erwartet, nicht signiert, nicht installiert und nicht zugestellt.</small></article>
+                    <article class="mobile-artifact-card"><span>Google</span><strong>kurkarte_google_RES-BO-2026-0716-014.json</strong><small>Erwartet, nicht provisioniert und nicht zugestellt.</small></article>
+                  </div>
+                  <section class="next-action" aria-labelledby="generating-next-action-title"><div class="action-copy"><span class="badge badge-warning">Nächste menschliche Entscheidung</span><h3 id="generating-next-action-title">Erwartete und später belegte Artefakte nicht verwechseln</h3><p>Eine spätere Anwendung müsste sicheren Inputscope, Jobstatus, tatsächliche Pfade, Formatprüfung, Rechte, Speicherung und Recovery liefern. Diese lokale State-Aktion zeigt nur den Reviewfall.</p></div><button class="btn-primary" type="button" data-prototype-action="Der fiktive Erzeugungsrahmen wurde lokal erläutert. Es wurde kein CLI-Befehl ausgeführt, keine Datei erzeugt, gespeichert, heruntergeladen, zugestellt oder eingereicht.">Erzeugungsgrenze erläutern</button></section>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Erzeugungszustand: sichere Grenzen">
+            <section class="side-card" aria-labelledby="generating-boundary-title"><header class="side-heading"><div class="side-copy"><h2 id="generating-boundary-title">Kein Browserjob</h2><p>Die sichtbare Erwartungsliste ist keine laufende technische Ausführung.</p></div><span class="badge badge-planned">Jobvertrag erforderlich</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Keine Quelle</span><span class="detail-value">Die statische Jana-Fixture ist keine Reservation-Lookup-Antwort; der lokale Quellcode synthetisiert seinen eigenen Fixturekörper.</span></li><li><span class="detail-label">Keine Dateiakte</span><span class="detail-value">Ein erwarteter Pfad ist kein dauerhafter Artefaktdatensatz, keine Speicherzusage und kein Nachweis über Inhalt oder Integrität.</span></li><li><span class="detail-label">Keine Folge</span><span class="detail-value">Kein Check-in, keine Raum-/Schlüsselwirkung, keine Zahlung, keine Zustellung, keine Einreichung und keine Rechtswirkung werden ausgelöst.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="generating-review-title"><header class="side-heading"><div class="side-copy"><h2 id="generating-review-title">Dokumente vor einer späteren Completion prüfen</h2><p>Vollständige Artefakte sind nicht ausreichend für eine rechtliche oder operative Finalität.</p></div><span class="badge badge-warning">Manuelle Prüfung</span></header><div class="side-body"><ul class="dependency-list"><li><span class="detail-label">Meldeschein</span><span>Format, Pflichtangaben, Inhalt, Berechtigung und spätere Rechts-/Aufbewahrungsvorgaben getrennt prüfen.</span></li><li><span class="detail-label">Datenschutz / Hausordnung</span><span>Nur geplante Reviewthemen; keine vorhandenen Unterlagen, Einwilligung, Zustellung oder Anerkennung behaupten.</span></li><li><span class="detail-label">Abschluss</span><span>Ein späterer Completionvertrag benötigt Daten-, Rechte-, Audit-, Konflikt- und Rückkehrregeln.</span></li></ul></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Erzeugung-Zustand: Die Anzeige erklärt ausschließlich eine fiktive erwartete Ausgabeliste. Sie beweist keinen CLI-Aufruf, keine Datei, keinen Dokumentjob, keinen Status, keine sichere Ablage, keinen Download, keine Delivery, keine Einreichung, keine persistierte Completion und keine rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: partial failure ===== -->
+      <section id="state-partial-failure" class="state-panel" aria-labelledby="partial-failure-state-title" data-state-kind="partial-failure" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="partial-failure-state-title">Teilweise erzeugt: fiktiven fehlenden Output benennen, nicht übergehen</h2>
+            <p>Der partielle Zustand zeigt eine spätere Fehlerfläche mit expected-versus-represented Kontext. Er ist keine tatsächliche Jobantwort und keine Aussage, dass ein lokaler Bundle-Lauf für Jana stattgefunden hat.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-error">Teilweise erzeugt · fiktiv</span><span class="badge badge-warning">Manuelle Prüfung erforderlich</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="partial-failure-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="partial-failure-alert-title">Google-Wallet-JSON ist im Beispiel nicht als prüfbar dargestellt</h3><p>Der fehlende erwartete Name <span class="mono">kurkarte_google_RES-BO-2026-0716-014.json</span> blockiert die fiktive Vollständigkeitsanzeige. Das bedeutet weder, dass ein Browserjob gelaufen ist, noch dass irgendeine Datei gespeichert, zugestellt oder bei einer Plattform provisioniert wurde.</p></div>
+        </section>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge, partieller Fehler">
+          <li class="is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Nur Szenariokontext sichtbar.</p><div class="step-badges"><span class="badge badge-success">Szenario</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Format- und Finalitätsgrenze bleibt.</p><div class="step-badges"><span class="badge badge-prototype">Stub-Format</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Keine Finanzfolge.</p><div class="step-badges"><span class="badge badge-warning">Nicht gebucht</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Ein Wallet-Ausgang bleibt unvollständig.</p><div class="step-badges"><span class="badge badge-error">Teilweise</span></div></div></li>
+          <li class="is-blocked"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview &amp; Abschluss</h3><p>Keine vollständige Review behaupten.</p><div class="step-badges"><span class="badge badge-error">Blockiert</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="partial-failure-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="partial-failure-panel-title">Expected-versus-represented Artefaktprüfung</h2><p>Die Tabelle hält einen fehlenden Output im Kontext, statt einen Gesamtstatus aus zwei dargestellten Positionen abzuleiten.</p></div><span class="badge badge-error">Kein Abschluss</span></header>
+            <div class="panel-body">
+              <nav id="partial-error-summary" class="error-summary" aria-label="Fehlerzusammenfassung für den fiktiv fehlenden Google-Ausgang">
+                <strong>1 erwartete Ausgabe für die spätere Prüfung klären</strong>
+                <p>Die Zusammenfassung verweist auf die fiktive Eingabe-/Evidenzstelle. Es wird keine Datei gesucht, kein Fehlercode gelesen und kein Retry ausgeführt.</p>
+                <ol><li><a href="#partial-google-artifact">Google-Wallet-JSON im späteren sicheren Job-/Dateikontext klären</a></li></ol>
+              </nav>
+
+              <section class="record-card" aria-label="Fiktiver teilweise erzeugter Dokumentreview-Kontext">
+                <div class="record-copy"><span class="badge badge-error">Teilweise · lokal dargestellt</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>Die fiktive Reviewansicht macht den fehlenden dritten Namen sichtbar. Sie enthält keine Dateiakte, keinen Zeitpunkt aus einem Dienst und keine persistierte Fehlerhistorie.</p></div>
+                <div class="record-status"><span class="badge badge-error">1 Output offen</span><span class="badge badge-warning">Keine Completion</span></div>
+              </section>
+
+              <div class="table-wrap">
+                <table>
+                  <caption>Fiktiver partieller Bundle-Review. „Dargestellt“ heißt nur als Szenariofläche sichtbar; keine Zeile belegt einen lokalen Dateischreibvorgang.</caption>
+                  <thead><tr><th scope="col">Erwarteter Output</th><th scope="col">Fiktiver Reviewstatus</th><th scope="col">Bedeutung der Darstellung</th><th scope="col">Sichere Folge</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Meldeschein</strong><br><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span></td><td><span class="badge badge-warning">Dargestellt · Stub-Format</span></td><td>Kein final gültiges PDF, keine Dateiakte und keine Einreichung.</td><td>Format und spätere sichere Datei-/Rechtekette separat prüfen.</td></tr>
+                    <tr><td><strong>Apple-Pass</strong><br><span class="mono">kurkarte_apple_RES-BO-2026-0716-014.pkpass</span></td><td><span class="badge badge-warning">Dargestellt · Vorschaugrenze</span></td><td>Kein signiertes Archiv, keine Installation und keine Zustellung.</td><td>Signierung, Provider- und Deliveryvertrag später getrennt prüfen.</td></tr>
+                    <tr><td><strong>Google-Wallet-JSON</strong><br><span class="mono">kurkarte_google_RES-BO-2026-0716-014.json</span></td><td><span class="badge badge-error">Fehlt im fiktiven Review</span></td><td>Keine reale Fehlersuche oder Laufzeitdiagnose dargestellt.</td><td>Ausgabe-/Jobvertrag, Quelle und manuelle Prüfung klären; nicht automatisch fortsetzen.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-artifact-list" aria-label="Mobile partieller Artefaktstatus">
+                <article class="mobile-artifact-card"><span>Meldeschein</span><strong>Fiktiv dargestellt · Stub-Format</strong><small>Kein finales PDF, keine Dateiakte und keine Einreichung.</small></article>
+                <article class="mobile-artifact-card"><span>Apple</span><strong>Fiktiv dargestellt · Vorschaugrenze</strong><small>Kein signiertes Archiv, keine Installation und keine Zustellung.</small></article>
+                <article class="mobile-artifact-card"><span>Google</span><strong>Fehlt im fiktiven Review</strong><small>Kein Retry, keine reale Fehlersuche und kein Fortsetzen.</small></article>
+              </div>
+
+              <section class="field-group" aria-labelledby="partial-artifact-label">
+                <label id="partial-artifact-label" for="partial-google-artifact">Fehlender erwarteter Artefaktname</label>
+                <input id="partial-google-artifact" class="invalid-input" type="text" value="kurkarte_google_RES-BO-2026-0716-014.json" readonly aria-invalid="true" aria-describedby="partial-artifact-help partial-artifact-error">
+                <span id="partial-artifact-help" class="field-help">Statischer Namensbezug aus dem beobachteten CLI-Namensmuster; keine Datei, URL oder Speicherreferenz.</span>
+                <span id="partial-artifact-error" class="field-error">Im fiktiven Prüffall fehlt die erwartete Position. Daraus folgt kein echter Jobfehler, keine automatische Wiederholung und keine Berechtigung zur Zustellung oder Einreichung.</span>
+              </section>
+
+              <section class="next-action" aria-labelledby="partial-next-action-title"><div class="action-copy"><span class="badge badge-warning">Manuelle Prüfung erforderlich</span><h3 id="partial-next-action-title">Vollständigkeitslücke offen halten</h3><p>Der spätere Recoveryweg braucht Job-/Fehlerdaten, idempotente Regeln, sichere Datei- und Zugriffslogik sowie einen Rückkehrkontext. Die Kontrollfläche startet nichts davon.</p></div><button class="btn-primary" type="button" disabled aria-describedby="partial-retry-reason">Erneut versuchen</button></section>
+              <p id="partial-retry-reason" class="disabled-reason">Deaktiviert: kein Browserrequest, keine Job-ID, kein Statusmodell, keine Idempotenz, keine sichere Dateiablage, keine Authentifizierung/RBAC, kein Audit und keine Delivery- oder Einreichungskette.</p>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Teilweiser Fehler: Recoverygrenzen">
+            <section class="side-card" aria-labelledby="partial-safe-title"><header class="side-heading"><div class="side-copy"><h2 id="partial-safe-title">Kein Schein-Retry</h2><p>Eine sichtbare Fehlermeldung ist nur dann hilfreich, wenn sie den fehlenden Input, die Grenze und die sichere nächste Person nennt.</p></div><span class="badge badge-warning">Recovery geplant</span></header><div class="side-body"><ul class="dependency-list"><li><span class="detail-label">Quelle</span><span>Die echte Reservation-/Gast-/Inputzuordnung ist nicht belegt und muss später abgesichert werden.</span></li><li><span class="detail-label">Job / Datei</span><span>Ein System braucht Status, Pfade, Dateiintegrität, Retention, Viewer/Downloadrechte, Retry und Audit.</span></li><li><span class="detail-label">Provider</span><span>Apple-/Google-Signierung, JWT, Provisionierung, Delivery, Callback und Versagen sind getrennte Verträge.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="partial-completion-title"><header class="side-heading"><div class="side-copy"><h2 id="partial-completion-title">Abschluss bleibt gesperrt</h2><p>Ein partieller Satz erwarteter Namen erfüllt weder Dokumentreview noch Check-in- oder Rechtsabschluss.</p></div><span class="badge badge-error">Nicht abschließen</span></header><div class="side-body"><button class="btn-danger" type="button" disabled aria-describedby="partial-completion-reason">Check-in abschließen</button><p id="partial-completion-reason" class="disabled-reason">Deaktiviert: erwartete Ausgabe offen; zudem fehlen verifizierte Artefakte, valide Dokumente, Rechte, Persistenz, Audit, Workflow-/Konfliktlogik und rechtliche Prüfung.</p><button class="btn-warning" type="button" data-state-target="state-generating" aria-controls="state-generating">Erwartete Outputs lesen</button></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Teilweise-erzeugt-Zustand: Der sichtbare fehlende Name ist eine statische Recoverydarstellung. Er beweist keinen tatsächlichen Lauf, keine Datei, keinen Errorcode, keinen Retry, keinen Download, keine Zustellung, keine Einreichung, keine persistierte Completion und keine rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: all ready ===== -->
+      <section id="state-all-ready" class="state-panel" aria-labelledby="all-ready-state-title" data-state-kind="all-ready">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="all-ready-state-title">Alle erwarteten Ausgaben zur Prüfung bereit: Einzelgrenzen bleiben sichtbar</h2>
+            <p>Der fiktive Bereitschaftszustand zeigt alle drei erwarteten Namensformen zusammen mit separaten Reviewthemen. „Bereit“ bedeutet ausschließlich: im statischen Szenario für eine menschliche Prüfung dargestellt.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-teal">Bereit zur Prüfung · fiktiv</span><span class="badge badge-planned">Keine Completion gespeichert</span></div>
+        </header>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge, alle Outputs zur Prüfung bereit">
+          <li class="is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Fiktiver Kontext bleibt getrennt.</p><div class="step-badges"><span class="badge badge-success">Szenario</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Format- und Rechtsprüfung getrennt.</p><div class="step-badges"><span class="badge badge-prototype">Stub-Format</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Keine Folio- oder Zahlungsfolge.</p><div class="step-badges"><span class="badge badge-warning">Nicht gebucht</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Payload bleibt kein Deliverystatus.</p><div class="step-badges"><span class="badge badge-prototype">Vorschau</span></div></div></li>
+          <li class="is-current"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview &amp; Abschluss</h3><p>Alle Namensformen menschlich prüfen.</p><div class="step-badges"><span class="badge badge-teal">Bereit · fiktiv</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="all-ready-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="all-ready-panel-title">Dokumentreview für Jana Müller-Kaya / RES-BO-2026-0716-014</h2><p>Der Hauptbereich kombiniert erwartete Drei-Datei-Ausgabe und geplante Vorab-Dokumentthemen, ohne sie in einer gemeinsamen technischen oder rechtlichen Erfolgsmeldung zusammenzuführen.</p></div><span class="badge badge-prototype">Synthetischer Reviewrahmen</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver vollständiger Reviewkontext">
+                <div class="record-copy"><span class="badge badge-teal">Reviewbereit · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · 2 synthetische Gäste · die dargestellte Vollständigkeit bezieht sich nur auf drei erwartete Namen und getrennte Reviewhinweise, nicht auf persistierte Dateien oder den Aufenthalt.</p></div>
+                <div class="record-status"><span class="badge badge-teal">3 Namensformen sichtbar</span><span class="badge badge-warning">Finalität offen</span></div>
+              </section>
+
+              <div class="table-wrap">
+                <table>
+                  <caption>Fiktiver all-ready Dokumentreview. Jeder Status bleibt nah am betroffenen Artefakt und bedeutet nicht Speicherung, Download, Delivery, Einreichung, Completion oder rechtliche Wirksamkeit.</caption>
+                  <thead><tr><th scope="col">Reviewobjekt</th><th scope="col">Fiktiver Status</th><th scope="col">Quell-/Inhaltsgrenze</th><th scope="col">Menschliche Prüfung</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Meldeschein</strong><br><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span></td><td><span class="badge badge-teal">Zur Prüfung bereit</span><br><span class="badge badge-warning">Stub-Format</span></td><td>Beobachtete lokale Byte-/Pfadform ist kein gültiges finales PDF, keine sichere Dateiakte und keine Einreichung.</td><td>Inhalt, Format, Befugnis, Aufbewahrung und spätere Rechtsprüfung getrennt klären.</td></tr>
+                    <tr><td><strong>Apple-Kurkarte</strong><br><span class="mono">kurkarte_apple_RES-BO-2026-0716-014.pkpass</span></td><td><span class="badge badge-teal">Zur Prüfung bereit</span><br><span class="badge badge-prototype">Vorschaugrenze</span></td><td>Kein signiertes Archiv, keine Wallet-Installation, keine Empfängerzustellung und kein Widerruf.</td><td>Signierung, Provider, Empfänger-/Gerätekontext, Delivery und Audit separat klären.</td></tr>
+                    <tr><td><strong>Google-Kurkarte</strong><br><span class="mono">kurkarte_google_RES-BO-2026-0716-014.json</span></td><td><span class="badge badge-teal">Zur Prüfung bereit</span><br><span class="badge badge-prototype">JSON-Form</span></td><td>Kein Produktions-JWT, keine API-Antwort, keine Provisionierung und keine Zustellung.</td><td>Issuer, Credentials, API, Empfänger-/Gerätekontext und Recovery separat klären.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-artifact-list" aria-label="Mobile Reviewkarten für die erwarteten Artefakte">
+                <article class="mobile-artifact-card"><span>Meldeschein</span><strong>Zur Prüfung bereit · Stub-Format</strong><small>Kein finales PDF, keine Dateiakte, kein Download und keine Einreichung.</small></article>
+                <article class="mobile-artifact-card"><span>Apple-Kurkarte</span><strong>Zur Prüfung bereit · Vorschaugrenze</strong><small>Kein signiertes Archiv, keine Installation und keine Zustellung.</small></article>
+                <article class="mobile-artifact-card"><span>Google-Kurkarte</span><strong>Zur Prüfung bereit · JSON-Form</strong><small>Kein Produktions-JWT, keine Provisionierung und keine Zustellung.</small></article>
+              </div>
+
+              <section class="artifact-card" aria-labelledby="all-ready-supplements-title">
+                <header class="artifact-header"><div class="artifact-copy"><h3 id="all-ready-supplements-title">Separate Pre-stay-Dokumentprüfung: kein Teil des beobachteten Drei-Datei-Outputs</h3><p>Diese Kontrollpunkte halten weitere erforderliche menschliche Prüfthemen sichtbar, ohne deren Texte, Zustellung, Anerkennung oder Rechtswirkung zu erfinden.</p></div><span class="badge badge-planned">Inhalt / Vertrag fehlt</span></header>
+                <div class="artifact-body">
+                  <div class="boundary-grid" aria-label="Geplante zusätzliche Dokumentreviewthemen">
+                    <article class="boundary-card is-warning"><span>Meldeschein-Beilage</span><strong>Prüfrahmen geplant</strong><small>Keine zusätzliche vorhandene Datei, kein verbindlicher Inhalt, keine Signatur und keine Ablage behauptet.</small></article>
+                    <article class="boundary-card is-warning"><span>Datenschutzinformation</span><strong>Prüfrahmen geplant</strong><small>Keine ausgehändigte Information, keine Zustimmung, kein Consent-Record und keine Zustellung behauptet.</small></article>
+                    <article class="boundary-card is-warning"><span>Hausordnung</span><strong>Prüfrahmen geplant</strong><small>Keine aktuelle Version, keine Kenntnisnahme, keine Zustellung und keine rechtliche Anerkennung behauptet.</small></article>
+                    <article class="boundary-card is-info"><span>Reviewabschluss</span><strong>Nur nächste menschliche Entscheidung</strong><small>Ein späterer Abschluss braucht valide Inhalte, Rechte, Persistenz, Audit, Konflikt- und Rechtsprüfung.</small></article>
+                  </div>
+                </div>
+              </section>
+
+              <section class="next-action" aria-labelledby="all-ready-next-action-title"><div class="action-copy"><span class="badge badge-warning">Abschluss erst nach späterer Prüfung</span><h3 id="all-ready-next-action-title">Fiktive Nachschau darstellen, keine Wirkung auslösen</h3><p>Die lokale State-Aktion zeigt ausschließlich den abgeschlossenen Reviewzustand als Designfall. Sie sendet keine Datei, speichert keine Completion und ändert keinen Check-in.</p></div><button class="btn-primary" type="button" data-state-target="state-completed" aria-controls="state-completed">Nachschau-Beispiel lesen</button></section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="All-ready-Zustand: Grenzen und lokale Verweise">
+            <section class="side-card" aria-labelledby="all-ready-limits-title"><header class="side-heading"><div class="side-copy"><h2 id="all-ready-limits-title">Was „bereit“ hier nicht bedeutet</h2><p>Die einzelnen Proof-Labels verhindern, dass eine Vollständigkeitsanzeige in eine Gesamtfinalität umkippt.</p></div><span class="badge badge-warning">Proof before claim</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Nicht Dateiakte</span><span class="detail-value">Die Namensformen zeigen weder sichere Speicherung noch Verfügbarkeit, Integrität, Version, Retention, Viewer oder Downloadrecht.</span></li><li><span class="detail-label">Nicht Delivery</span><span class="detail-value">Weder Meldeschein noch Apple-/Google-Artefakt wurden an eine Person übergeben, installiert oder bestätigt.</span></li><li><span class="detail-label">Nicht Einreichung</span><span class="detail-value">Keine Behörde, Plattform, Übertragung, Quittung oder Anerkennung ist in dieser statischen Darstellung vorhanden.</span></li><li><span class="detail-label">Nicht Completion</span><span class="detail-value">Keine persistierte Check-in- oder Dokumentreview-Completion, kein Audit und keine Rechtsfinalität entstehen.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" id="document-review-links" aria-labelledby="all-ready-links-title"><header class="side-heading"><div class="side-copy"><h2 id="all-ready-links-title">Statische Prüfbezüge der vorigen Schritte</h2><p>Die lokalen Dateilinks sind kein Workflow, keine gemeinsame Session und keine Übertragung von Person-, Dokument- oder Statusdaten.</p></div><span class="badge badge-info">Dateilinks</span></header><div class="side-body"><ul class="local-links"><li><span class="detail-label">Check-in</span><span><a href="checkin_overview.html#state-ready">Check-in-Übersicht lesen</a><br><span class="field-help">Keine Orchestrierung, keine Resume-Position und keine Completion-Übergabe.</span></span></li><li><span class="detail-label">Meldeschein</span><span><a href="checkin_meldeschein.html#state-preview">Meldeschein-Vorschaugrenze lesen</a><br><span class="field-help">Keine gemeinsame Datei, keine sichere Anzeige und keine Einreichung.</span></span></li><li><span class="detail-label">Kurtaxe</span><span><a href="checkin_kurtaxe_exemptions.html#state-calculated">Kurtaxe-Breakdown lesen</a><br><span class="field-help">Keine Folio-Buchung, keine Zahlung und keine Abrechnung.</span></span></li><li><span class="detail-label">Kurkarte</span><span><a href="checkin_kurkarte.html#state-generated-preview">Kurkarte-Payloadgrenze lesen</a><br><span class="field-help">Keine Wallet-Provisionierung, keine Persistenz und keine Zustellung.</span></span></li></ul></div></section>
+          </aside>
+        </div>
+        <p class="page-note">All-ready-Zustand: Die statische Anzeige bringt die drei erwarteten lokalen Namensformen und zusätzliche geplante Reviewthemen zusammen. Sie beweist keine Dateien, keine gültigen finalen Dokumente, keinen Download, keine Delivery, keine Einreichung, keine persistierte Completion und keine rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: completed ===== -->
+      <section id="state-completed" class="state-panel" aria-labelledby="completed-state-title" data-state-kind="completed" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="completed-state-title">Dokumentreview nachgesehen: sichtbarer Szenarioabschluss ohne Außenwirkung</h2>
+            <p>Diese Nachschau illustriert, wie ein späteres Produkt einen einzelnen Reviewabschluss klar von Check-in, Datei-/Wallet-Lebenszyklus, Finanzwirkung, Einreichung und rechtlicher Finalität trennen muss.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-teal">Nachschau angezeigt</span><span class="badge badge-prototype">Lokal, nicht persistiert</span></div>
+        </header>
+
+        <section class="completion-notice" role="status" aria-labelledby="completed-notice-title">
+          <span class="notice-symbol" aria-hidden="true">✓</span>
+          <div class="notice-copy"><h3 id="completed-notice-title">Alle Reviewpunkte sind im fiktiven Szenario als nachgesehen markiert</h3><p>Das Wort „nachgesehen“ betrifft ausschließlich diese statische Designansicht. Es bedeutet keinen echten Check-in, keine Zimmerübergabe, keine Schlüsselaktivierung, kein finales Dokument, keine Dateiablage, keinen Download, keine Delivery, keine Einreichung, keine persistierte Completion und keine rechtliche Finalität.</p></div>
+        </section>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge, Review nachgesehen">
+          <li class="is-locked"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Im Szenario nachgesehen.</p><div class="step-badges"><span class="badge badge-teal">Keine Änderung</span></div></div></li>
+          <li class="is-locked"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Formatgrenze bleibt sichtbar.</p><div class="step-badges"><span class="badge badge-warning">Stub-Format</span></div></div></li>
+          <li class="is-locked"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Keine Buchung oder Zahlung.</p><div class="step-badges"><span class="badge badge-warning">Nicht gebucht</span></div></div></li>
+          <li class="is-locked"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Keine Delivery oder Installation.</p><div class="step-badges"><span class="badge badge-prototype">Vorschau</span></div></div></li>
+          <li class="is-current"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview &amp; Abschluss</h3><p>Nur die Reviewansicht ist nachgesehen.</p><div class="step-badges"><span class="badge badge-teal">Szenarioabschluss</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="completed-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="completed-panel-title">Fiktive Nachschau für Jana Müller-Kaya</h2><p>Die Schrittfolge bleibt auch im positiven Szenario mit ihren Abhängigkeiten lesbar. Keine unsichtbare technische oder rechtliche Folge wird aus einer sichtbaren Reviewmarke abgeleitet.</p></div><span class="badge badge-teal">5 von 5 angezeigt</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiv nachgesehener Dokumentreviewkontext">
+                <div class="record-copy"><span class="badge badge-teal">Nachschau · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>Fiktive Reviewanzeige am 16.07.2026 · 10:18. Kein Serverzeitstempel, keine authentifizierte Person, keine Berechtigung, keine Sperrregel und keine dauerhafte Verlaufshistorie.</p></div>
+                <div class="record-status"><span class="badge badge-teal">Nachgesehen</span><span class="badge badge-warning">Audit unklar</span></div>
+              </section>
+
+              <div class="boundary-grid" aria-label="Fiktiv nachgesehene Reviewbereiche und Grenzen">
+                <article class="boundary-card is-success"><span>Drei Namensformen</span><strong>Im Szenario getrennt gelesen</strong><small>Kein Nachweis eines lokalen Schreibvorgangs und keine persistierte Dateiliste.</small></article>
+                <article class="boundary-card is-warning"><span>Meldeschein</span><strong>Formatgrenze bleibt bestehen</strong><small>Kein final gültiges PDF, keine Signatur, kein Download und keine Einreichung.</small></article>
+                <article class="boundary-card is-warning"><span>Wallet-Artefakte</span><strong>Deliverygrenze bleibt bestehen</strong><small>Kein signierter Pass, kein Produktions-JWT, keine Provisionierung und keine Zustellung.</small></article>
+                <article class="boundary-card is-info"><span>Weiterer Abschluss</span><strong>Späterer Vertrag erforderlich</strong><small>Keine Check-in-Completion, keine Persistenz, kein Audit und keine rechtliche Finalität.</small></article>
+              </div>
+
+              <section class="artifact-card" aria-labelledby="completed-boundary-title">
+                <header class="artifact-header"><div class="artifact-copy"><h3 id="completed-boundary-title">Was ein produktiver Reviewabschluss zusätzlich brauchen würde</h3><p>Die Darstellung zeigt die fehlenden Verträge ausdrücklich, statt aus einem Kontrollhäkchen einen Abschluss zu machen.</p></div><span class="badge badge-planned">Implementierungsbedarf</span></header>
+                <div class="artifact-body"><ul class="dependency-list"><li><span class="detail-label">Workflow</span><span>Scoped Aufenthalt, tatsächliche Schrittbedingungen, Kontextrestaurierung, Konflikt-/Lockverhalten und sichere Rückkehr zur Queue.</span></li><li><span class="detail-label">Dokumente</span><span>Inhalt, validierter Renderer, Format-/A11y-Prüfung, sichere Dateiablage, Retention, Viewer/Download und Einzelfinalität.</span></li><li><span class="detail-label">Rechte</span><span>Authentifizierung, Zweck-/Propertyscope, RBAC, sensitive Datei-/Dokumenthandlung und Zugangsentzug.</span></li><li><span class="detail-label">Audit / Recht</span><span>Durable Ereignisse, Zeit/Person, Integrität, Rechts-/Inhaltsprüfung, Einreichung/Quittung und Korrekturpfade.</span></li></ul></div>
+              </section>
+
+              <section class="next-action" aria-labelledby="completed-next-action-title"><div class="action-copy"><span class="badge badge-info">Sichere Rückkehrabsicht</span><h3 id="completed-next-action-title">Zur fiktiven Reviewbereitschaft zurückkehren</h3><p>Die lokale Aktion wechselt nur die DOM-Reviewansicht. Sie entsperrt nichts, persistiert nichts und ruft keine Queue, Datei, Wallet, Behörde oder Finanzkette auf.</p></div><button class="btn-teal" type="button" data-state-target="state-all-ready" aria-controls="state-all-ready">Bereit-Beispiel lesen</button></section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Nachschau-Zustand: Grenzen des sichtbaren Abschlusses">
+            <section class="side-card" aria-labelledby="completed-no-effect-title"><header class="side-heading"><div class="side-copy"><h2 id="completed-no-effect-title">Keine abgeleitete Außenwirkung</h2><p>Ein Reviewstatus ersetzt niemals einzelne nachweis- und rechtssensible Prozesse.</p></div><span class="badge badge-warning">Keine Gesamtfinalität</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Aufenthalt</span><span class="detail-value">Keine Anreise, kein Zimmerstatus, keine Schlüsselübergabe und kein dauerhaftes Check-in-Resultat.</span></li><li><span class="detail-label">Dokumente</span><span class="detail-value">Keine gültigen finalen Dokumente, keine Dateiakte, kein Download, keine Zustellung und keine Einreichung.</span></li><li><span class="detail-label">Finanzen</span><span class="detail-value">Keine Folio-Buchung, keine Zahlung, keine Rechnung, keine Fiskalisierung und keine Abrechnung.</span></li><li><span class="detail-label">Rechte / Audit</span><span class="detail-value">Keine Session, keine RBAC-Entscheidung, kein persistierter Abschluss und kein rechtlich belastbarer Auditnachweis.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="completed-lock-title"><header class="side-heading"><div class="side-copy"><h2 id="completed-lock-title">Sperrgrenze separat prüfen</h2><p>Eine Produktumsetzung darf eine Bearbeitung nicht ohne Rechte-, Versions- und Auditvertrag als abgeschlossen sperren.</p></div><span class="badge badge-planned">Lockvertrag fehlt</span></header><div class="side-body"><button class="btn-secondary" type="button" data-state-target="state-locked" aria-controls="state-locked">Sperrgrenze lesen</button><button type="button" disabled aria-describedby="completed-download-reason">Dokumente herunterladen</button><p id="completed-download-reason" class="disabled-reason">Deaktiviert: keine sichere Dateiablage, keine Autorisierung, kein Viewer-/Downloadvertrag, keine Retention und keine Auditspur.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Nachschau-Zustand: Der sichtbare Reviewabschluss bleibt ein lokaler Prototypzustand. Er beweist keine Dateien, keine finalen Dokumente, keinen Download, keine Delivery, keine Einreichung, keine persistierte Completion, keine Folio-/Zahlungswirkung, keine Autorisierung und keine rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: locked ===== -->
+      <section id="state-locked" class="state-panel" aria-labelledby="locked-state-title" data-state-kind="locked" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="locked-state-title">Abschluss gesperrt: spätere Berechtigung, Daten- und Rechtsvoraussetzungen offen</h2>
+            <p>Dieser Schutzfall zeigt eine nicht offenlegende Sperrbegründung. Die sichtbare Rolle ist keine Sitzung oder RBAC-Entscheidung; die Seite kann keinen Zugang prüfen, anfordern oder dauerhaft protokollieren.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-error">Abschluss gesperrt</span><span class="badge badge-warning">RBAC unklar</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="locked-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="locked-alert-title">Keine Completion ohne spätere Sicherheits- und Rechtskette</h3><p>Für Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span> ist die Abschlussaktion bewusst deaktiviert. Die Anzeige gibt keine sensiblen Dokumentinhalte preis und behauptet keine echte Berechtigungs-, Rechts-, Audit- oder Sperrprüfung.</p></div>
+        </section>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge, Abschluss gesperrt">
+          <li class="is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Nur fiktiver Kontext sichtbar.</p><div class="step-badges"><span class="badge badge-success">Szenario</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Kein finaler Dokumentclaim.</p><div class="step-badges"><span class="badge badge-warning">Format offen</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Keine Finanzwirkung.</p><div class="step-badges"><span class="badge badge-warning">Nicht gebucht</span></div></div></li>
+          <li class="is-complete"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Keine Delivery oder Installation.</p><div class="step-badges"><span class="badge badge-prototype">Vorschau</span></div></div></li>
+          <li class="is-locked"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview &amp; Abschluss</h3><p>Kein Berechtigungs- oder Completionvertrag.</p><div class="step-badges"><span class="badge badge-error">Gesperrt</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="locked-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="locked-panel-title">Fiktive Sperrprüfung vor einem späteren Abschluss</h2><p>Die Schutzfläche trennt sinnvolle nicht-sensitive Kontextinformation von nicht nachgewiesenen Zugriffs-, Datei-, Completion- und Legalvoraussetzungen.</p></div><span class="badge badge-error">Keine Freigabe</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver gesperrter Dokumentreviewkontext">
+                <div class="record-copy"><span class="badge badge-error">Sperrkontext · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>Rezeption ist nur eine Beispielrolle. Es gibt keine Anmeldung, keine Session, keine Property-/Zweckprüfung, keine Rechtequelle und kein Ereignisprotokoll.</p></div>
+                <div class="record-status"><span class="badge badge-error">Zugriff nicht bestätigt</span><span class="badge badge-warning">Keine Completion</span></div>
+              </section>
+
+              <div class="boundary-grid" aria-label="Fiktive gesperrte Abschlussbedingungen">
+                <article class="boundary-card is-error"><span>Dokumente</span><strong>Finalität und sichere Artefakte ungeklärt</strong><small>Keine validen finalen Dokumente, keine sichere Ablage, keine Content-/Formatprüfung, keine Retention und kein Downloadrecht.</small></article>
+                <article class="boundary-card is-error"><span>Berechtigung</span><strong>RBAC unklar</strong><small>Keine Identität, kein Zweck, kein Propertyscope, keine Rolle und keine datensparsame Zugriffsentscheidung.</small></article>
+                <article class="boundary-card is-warning"><span>Workflow</span><strong>Persistenz und Konfliktmodell fehlen</strong><small>Kein endgültiger Schrittstatus, keine Transaktion, keine Version, kein Lock und keine sichere Wiederaufnahme.</small></article>
+                <article class="boundary-card is-warning"><span>Recht / Audit</span><strong>Keine rechtliche Finalität</strong><small>Kein Rechts-/Inhaltsreview, keine Einreichung, keine Quittung und kein dauerhafter Auditnachweis.</small></article>
+              </div>
+
+              <section class="artifact-card" aria-labelledby="locked-recovery-title">
+                <header class="artifact-header"><div class="artifact-copy"><h3 id="locked-recovery-title">Sichere menschliche Folge statt fingierter Freigabe</h3><p>Eine spätere Implementierung könnte ein minimal gehaltenes, autorisiertes Review- und Eskalationsmodell anbieten. Der Prototyp sendet keine Anfrage und offenbart keine geschützten Inhalte.</p></div><span class="badge badge-peach">Eskalation geplant</span></header>
+                <div class="artifact-body"><ul class="dependency-list"><li><span class="detail-label">1. Scope</span><span>Konkreten Aufenthalt, Dokumente, Zweck, Datenklasse und benötigte Aktion später bestimmen.</span></li><li><span class="detail-label">2. Prüfung</span><span>Identität, Berechtigung, Format-/Inhalt, Vollständigkeit, Konflikt und Rechts-/Policyvoraussetzungen gesondert prüfen.</span></li><li><span class="detail-label">3. Handlung</span><span>Erst danach eine durably gespeicherte und auditierbare Completion oder eine sichere Rückkehr anbieten; nicht aus diesem DOM-Zustand.</span></li></ul></div>
+              </section>
+
+              <section class="next-action" aria-labelledby="locked-next-action-title"><div class="action-copy"><span class="badge badge-warning">Kein automatischer Abschluss</span><h3 id="locked-next-action-title">Rückkehr zur fiktiven Reviewansicht statt Zugriffsvortäuschung</h3><p>Die sichtbare Aktion ändert nur den lokalen State-Switcher. Sie beantragt keinen Zugriff, speichert keine Zustimmung, aktiviert keine Dateiaktion und führt keinen Abschluss durch.</p></div><button class="btn-secondary" type="button" data-state-target="state-all-ready" aria-controls="state-all-ready">Reviewbereitschaft lesen</button></section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Gesperrter Abschluss: deaktivierte Kontrollflächen">
+            <section class="side-card" aria-labelledby="locked-actions-title"><header class="side-heading"><div class="side-copy"><h2 id="locked-actions-title">Bewusst deaktivierte Folgeaktionen</h2><p>Die Controls bleiben sichtbar und erklären ihren Grund statt einen unsichtbaren oder unklaren Zugriffszustand vorzutäuschen.</p></div><span class="badge badge-error">Nicht verfügbar</span></header><div class="side-body"><button class="btn-primary" type="button" disabled aria-describedby="locked-complete-reason">Check-in abschließen</button><p id="locked-complete-reason" class="disabled-reason">Deaktiviert: keine bestätigte Identität/Berechtigung, keine persistente Schrittfolge, keine validen finalen Dokumente, kein Audit, keine Konfliktregel und keine rechtliche Finalität.</p><button type="button" disabled aria-describedby="locked-delivery-reason">Dokumente zustellen</button><p id="locked-delivery-reason" class="disabled-reason">Deaktiviert: keine sichere Dateiakte, keine Download-/Deliveryrechte, kein Empfänger-/Gerätekontext, keine Integration, keine Retention und kein Audit.</p><button class="btn-danger" type="button" disabled aria-describedby="locked-submission-reason">Unterlagen einreichen</button><p id="locked-submission-reason" class="disabled-reason">Deaktiviert: keine finale Unterlage, keine Autorisierung, keine Behördenschnittstelle, keine Übertragung, keine Quittung und keine Rechtsprüfung.</p></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="locked-boundary-title"><header class="side-heading"><div class="side-copy"><h2 id="locked-boundary-title">Sperre ist selbst kein RBAC-Nachweis</h2><p>Eine schön beschriftete gesperrte Schaltfläche ersetzt keine Security- oder Auditarchitektur.</p></div><span class="badge badge-prototype">Statische Schutzform</span></header><div class="side-body"><p class="field-help">Diese Seite kann keine Identität erkennen, keine Berechtigung berechnen, keine sensible Datei maskieren, keinen Zugriff anfragen, keinen Ablauf remasken und keinen Audit-Event speichern. Sie dokumentiert nur die erforderliche spätere Designgrenze.</p><button class="btn-teal" type="button" data-prototype-action="Die fiktive Sperrgrenze wurde lokal erläutert. Es wurde kein Zugriff geprüft oder angefragt, kein Dokument offengelegt, keine Completion gespeichert und keine Einreichung ausgelöst.">Sperrgrenze erläutern</button></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Gesperrt-Zustand: Der Prototyp zeigt eine nicht offenlegende, begründete Sperrfläche. Er beweist keine echte Autorisierung, keine Datei-/Dokumentprüfung, keinen Download, keine Delivery, keine Einreichung, keine persistierte Completion, keine Auditpersistenz und keine rechtliche Finalität.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Gast-, Aufenthalts-, Dokument-, Kurkarten- und Reviewbeispielen. State-Switcher und lokale Hinweise ändern nur das DOM. Sie führen keine Browserroute, Suche, API-Anfrage, Datenbankaktion, CLI-Ausführung, Dateierzeugung, Dateispeicherung, sicheren Viewer, Download, Delivery, Wallet-Provisioning, Einreichung, Check-in-Completion, Authentifizierung, RBAC, Auditpersistenz, Zahlung, Folio-Buchung oder rechtliche Entscheidung aus.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="checkin_meldeschein.html#state-preview">Meldeschein</a>
+    <a href="checkin_kurkarte.html#state-generated-preview">Kurkarte</a>
+    <a href="#state-all-ready" aria-current="page">Dokumentreview</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <button id="state-button-generating" type="button" data-state-target="state-generating" aria-controls="state-generating" aria-pressed="false">Erzeugung</button>
+    <button id="state-button-partial-failure" type="button" data-state-target="state-partial-failure" aria-controls="state-partial-failure" aria-pressed="false">Teilweise</button>
+    <button id="state-button-all-ready" type="button" data-state-target="state-all-ready" aria-controls="state-all-ready" aria-pressed="true">Alle bereit</button>
+    <button id="state-button-completed" type="button" data-state-target="state-completed" aria-controls="state-completed" aria-pressed="false">Nachschau</button>
+    <button id="state-button-locked" type="button" data-state-target="state-locked" aria-controls="state-locked" aria-pressed="false">Gesperrt</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('document-review-live');
+      const labels = {
+        'state-generating': 'Fiktiver Erzeugungs- und Erwartungszustand angezeigt.',
+        'state-partial-failure': 'Fiktiver Dokumentreviewzustand mit teilweiser Ausgabe angezeigt.',
+        'state-all-ready': 'Alle erwarteten Ausgaben sind im fiktiven Reviewzustand angezeigt.',
+        'state-completed': 'Fiktive Dokumentreview-Nachschau angezeigt.',
+        'state-locked': 'Fiktiver gesperrter Dokumentreviewzustand angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

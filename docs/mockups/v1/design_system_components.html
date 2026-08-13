@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hotel Rheinland Komponenten-Galerie — Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      /* Status colors */
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* ===== Established geometry and type scale ===== */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-size-empty-icon: 48px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --line-height-empty: 1.6;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --modal-width: 480px;
+      --toast-width: 400px;
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+    }
+
+    /* ===== Reset ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { padding: var(--space-lg); }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    /* ===== Focus ===== */
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: 0 0 0 var(--border-width) var(--accent-color);
+    }
+
+    /* ===== Prototype shell and shared primitives ===== */
+    .state[hidden] { display: none; }
+
+    .prototype-shell {
+      width: 100%;
+      min-height: 100vh;
+      background: var(--app-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+
+    .topbar,
+    .panel-header,
+    .component-heading,
+    .state-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+
+    .topbar { flex-wrap: wrap; }
+
+    .topbar-title-group,
+    .header-actions,
+    .context-row,
+    .chip-row,
+    .button-row,
+    .legend-row,
+    .status-row,
+    .inline-note,
+    .tab-list,
+    .artifact-strip,
+    .dialog-actions,
+    .drawer-actions,
+    .mobile-nav,
+    .state-switcher {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .eyebrow,
+    .component-kicker,
+    .field-label,
+    .table-note,
+    .meta-label,
+    .helper-text,
+    .status-note,
+    .evidence-label,
+    .step-note {
+      color: var(--text-muted);
+      font-size: var(--font-size-label);
+    }
+
+    .eyebrow,
+    .component-kicker,
+    .table-note,
+    .meta-label,
+    .evidence-label {
+      letter-spacing: var(--space-xs);
+      text-transform: uppercase;
+    }
+
+    h1 { font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    h2 { font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    h3 { font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    p { color: var(--text-secondary); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 4fr);
+      min-height: calc(100vh - var(--space-4xl));
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .brand-block {
+      display: grid;
+      gap: var(--space-xs);
+      padding-bottom: var(--space-lg);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+
+    .nav-list {
+      display: grid;
+      gap: var(--space-xs);
+      list-style: none;
+    }
+
+    .nav-link,
+    .mobile-nav a {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-secondary);
+      text-decoration: none;
+      border: var(--border-width) solid transparent;
+      border-radius: var(--radius-control);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover,
+    .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left: var(--border-emphasis) solid var(--accent-color); color: var(--text-primary); }
+
+    .sidebar-foot { margin-top: auto; display: grid; gap: var(--space-sm); }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      min-width: var(--space-none);
+      padding: var(--space-xl);
+      background: var(--app-bg);
+    }
+
+    .page-intro {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      flex-wrap: wrap;
+    }
+
+    .page-intro-copy { display: grid; gap: var(--space-xs); max-width: 100%; }
+    .page-intro-copy p { max-width: var(--modal-width); }
+
+    .chip,
+    .badge,
+    .evidence-label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      line-height: var(--line-height-base);
+    }
+
+    .chip { padding: var(--space-xs) var(--space-compact); color: var(--text-secondary); background: transparent; }
+    .chip:hover { background: var(--surface-0); color: var(--text-primary); }
+    .chip.is-active { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    .badge { padding: var(--space-badge-y) var(--space-sm); background: var(--timeline-bg); }
+    .badge-success { color: var(--color-green); border-color: var(--color-green); }
+    .badge-warning { color: var(--color-yellow); border-color: var(--color-yellow); }
+    .badge-error { color: var(--color-red); border-color: var(--color-red); }
+    .badge-info { color: var(--color-blue); border-color: var(--color-blue); }
+    .badge-teal { color: var(--color-teal); border-color: var(--color-teal); }
+    .badge-peach { color: var(--color-peach); border-color: var(--color-peach); }
+    .badge-muted { color: var(--text-secondary); border-color: var(--surface-2); }
+    .badge-prototype { color: var(--color-peach); border-color: var(--color-peach); }
+    .badge-planned { color: var(--color-blue); border-color: var(--color-blue); }
+    .badge-unclear { color: var(--color-yellow); border-color: var(--color-yellow); }
+
+    .evidence-label { padding: var(--space-badge-y) var(--space-sm); color: var(--text-muted); background: var(--panel-bg); }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-lg);
+      border: var(--border-width) solid transparent;
+      border-radius: var(--radius-control);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover { transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { transform: translateY(var(--space-none)); background: var(--surface-2); }
+    button[disabled] { cursor: not-allowed; color: var(--text-muted); border-color: var(--border-color); background: var(--surface-0); }
+
+    .btn-primary { background: var(--accent-color); color: var(--timeline-bg); border-color: var(--accent-color); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+    .btn-secondary { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-secondary:hover { background: var(--surface-0); color: var(--text-primary); }
+    .btn-danger { background: transparent; color: var(--color-red); border-color: var(--color-red); }
+    .btn-danger:hover { background: var(--surface-0); }
+    .btn-warning { background: transparent; color: var(--color-yellow); border-color: var(--color-yellow); }
+    .btn-quiet { background: var(--surface-0); color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-quiet:hover { background: var(--surface-1); color: var(--text-primary); }
+
+    .component-section { display: grid; gap: var(--space-md); }
+
+    .section-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(var(--space-none), 1fr));
+      gap: var(--space-lg);
+    }
+
+    .component-card,
+    .panel,
+    .queue-row,
+    .interruption-marker,
+    .document-job,
+    .permission-card,
+    .conflict-card,
+    .toast,
+    .drawer-preview,
+    .error-summary,
+    .empty-state,
+    .loading-panel {
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .component-card,
+    .panel,
+    .document-job,
+    .permission-card,
+    .conflict-card,
+    .drawer-preview,
+    .error-summary,
+    .loading-panel { padding: var(--space-md) var(--space-lg); }
+
+    .component-card {
+      display: grid;
+      gap: var(--space-md);
+      min-width: var(--space-none);
+      transition: background var(--motion-fast), border-color var(--motion-fast);
+    }
+
+    .component-card:hover { background: var(--surface-1); border-color: var(--surface-1); }
+    .component-card.is-selected { border-color: var(--accent-color); box-shadow: 0 0 0 var(--border-width) var(--accent-color); }
+    .span-two { grid-column: span 2; }
+
+    .component-heading { margin: calc(var(--space-md) * -1) calc(var(--space-lg) * -1) var(--space-none); }
+
+    .panel { display: grid; gap: var(--space-md); background: var(--panel-bg); }
+    .panel-header { margin: calc(var(--space-md) * -1) calc(var(--space-lg) * -1) var(--space-none); }
+
+    .card-sample {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      transition: background var(--motion-fast), border-color var(--motion-fast);
+    }
+
+    .card-sample:hover { background: var(--surface-1); border-color: var(--surface-1); }
+    .card-sample.selected { border-color: var(--accent-color); box-shadow: 0 0 0 var(--border-width) var(--accent-color); }
+
+    .field-group { display: grid; gap: var(--space-xs); }
+    .field-label { color: var(--text-secondary); font-weight: var(--font-weight-medium); }
+
+    input:not([type="checkbox"]),
+    select,
+    textarea {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-body);
+      outline: none;
+      transition: border-color var(--motion-fast), box-shadow var(--motion-fast), background var(--motion-fast);
+    }
+
+    input:not([type="checkbox"])::placeholder,
+    textarea::placeholder { color: var(--text-muted); }
+    input:not([type="checkbox"])[aria-invalid="true"],
+    select[aria-invalid="true"],
+    textarea[aria-invalid="true"] { border-color: var(--color-red); }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-regular);
+      cursor: pointer;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: var(--space-lg);
+      height: var(--space-lg);
+      margin: var(--space-none);
+      accent-color: var(--accent-color);
+      flex: 0 0 auto;
+    }
+
+    .field-error { color: var(--color-red); font-size: var(--font-size-label); }
+
+    .tab-list { border-bottom: var(--border-width) solid var(--border-color); }
+    [role="tab"] { background: transparent; color: var(--text-secondary); border-radius: var(--radius-control) var(--radius-control) var(--space-none) var(--space-none); }
+    [role="tab"][aria-selected="true"] { color: var(--text-primary); border-bottom: var(--border-emphasis) solid var(--accent-color); }
+    [role="tabpanel"] { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); }
+
+    .queue-row {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 3fr) minmax(var(--space-none), 2fr) auto;
+      gap: var(--space-md);
+      align-items: center;
+      padding: var(--space-md) var(--space-lg);
+      transition: background var(--motion-fast), border-color var(--motion-fast);
+    }
+
+    .queue-row:hover { background: var(--surface-1); border-color: var(--surface-1); }
+    .queue-row.is-selected { border-left: var(--border-emphasis) solid var(--accent-color); }
+    .queue-time { display: grid; gap: var(--space-xs); color: var(--text-secondary); }
+    .queue-time time { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
+    .queue-identity,
+    .queue-status { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .queue-action { justify-self: end; }
+
+    .artifact-strip { list-style: none; }
+    .artifact-button {
+      display: grid;
+      justify-items: start;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      color: var(--text-primary);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      text-align: left;
+    }
+
+    .artifact-button:hover { background: var(--surface-1); border-color: var(--surface-2); }
+    .artifact-name { font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    .artifact-proof { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--font-size-label); }
+
+    .interruption-marker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      border-left: var(--border-emphasis) solid var(--color-peach);
+      flex-wrap: wrap;
+    }
+
+    .interruption-copy { display: grid; gap: var(--space-xs); }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 50vh;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: var(--font-size-secondary); }
+    caption { padding: var(--space-sm) var(--space-md); color: var(--text-secondary); text-align: left; }
+    th,
+    td { padding: var(--space-compact) var(--space-md); text-align: left; border-bottom: var(--border-width) solid var(--border-color); vertical-align: top; }
+    th {
+      position: sticky;
+      top: var(--space-none);
+      z-index: 1;
+      color: var(--text-muted);
+      background: var(--surface-0);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--space-xs);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    tbody tr { transition: background var(--motion-fast); }
+    tbody tr:hover { background: var(--surface-0); }
+    .mono { font-family: var(--font-mono); font-size: var(--font-size-secondary); color: var(--text-secondary); }
+
+    .stepper { display: grid; grid-template-columns: repeat(4, minmax(var(--space-none), 1fr)); gap: var(--space-sm); list-style: none; }
+    .stepper li { display: grid; gap: var(--space-xs); padding: var(--space-sm); border-top: var(--border-emphasis) solid var(--border-color); color: var(--text-muted); }
+    .stepper .is-complete { border-color: var(--color-green); color: var(--text-secondary); }
+    .stepper .is-current { border-color: var(--accent-color); color: var(--text-primary); background: var(--panel-bg); }
+    .stepper .is-blocked { border-color: var(--color-yellow); color: var(--text-secondary); }
+
+    .job-meta,
+    .key-value-list { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-sm) var(--space-md); }
+    .job-meta dt,
+    .key-value-list dt { color: var(--text-muted); font-size: var(--font-size-label); }
+    .job-meta dd,
+    .key-value-list dd { color: var(--text-secondary); }
+
+    .sensitive-value {
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+
+    .sensitive-value[hidden] { display: none; }
+
+    .permission-card { display: grid; gap: var(--space-md); border-left: var(--border-emphasis) solid var(--color-blue); }
+    .conflict-card { display: grid; gap: var(--space-md); border-left: var(--border-emphasis) solid var(--color-yellow); }
+
+    .drawer-preview { display: grid; gap: var(--space-md); border-left: var(--border-emphasis) solid var(--color-teal); }
+    .drawer-preview summary { color: var(--text-secondary); cursor: pointer; }
+    .drawer-preview details { display: grid; gap: var(--space-sm); }
+
+    dialog.modal-preview {
+      position: static;
+      width: 100%;
+      max-width: var(--modal-width);
+      margin: var(--space-none);
+      padding: var(--space-none);
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-modal);
+    }
+
+    dialog.modal-preview::backdrop { background: var(--timeline-bg); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-lg) var(--space-lg-plus); border-bottom: var(--border-width) solid var(--border-color); }
+    .modal-body { display: grid; gap: var(--space-md); padding: var(--space-lg-plus); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: var(--space-sm); flex-wrap: wrap; padding: var(--space-lg) var(--space-lg-plus); border-top: var(--border-width) solid var(--border-color); }
+
+    .toast { display: flex; align-items: flex-start; gap: var(--space-md); max-width: var(--toast-width); padding: var(--space-md) var(--space-lg); border-left: var(--border-emphasis) solid var(--color-blue); }
+    .toast-success { border-left-color: var(--color-green); }
+    .toast-warning { border-left-color: var(--color-yellow); }
+    .toast-error { border-left-color: var(--color-red); }
+    .toast-copy { display: grid; gap: var(--space-xs); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-md);
+      min-height: 50vh;
+      padding: var(--space-4xl) var(--space-xl);
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon { color: var(--text-muted); font-size: var(--font-size-empty-icon); }
+    .empty-state-title { color: var(--text-secondary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-medium); }
+    .empty-state-message { max-width: var(--toast-width); color: var(--text-muted); font-size: var(--font-size-secondary); line-height: var(--line-height-empty); }
+
+    .error-summary {
+      display: grid;
+      gap: var(--space-sm);
+      border-left: var(--border-emphasis) solid var(--color-red);
+    }
+
+    .error-summary h2 { color: var(--color-red); }
+    .error-summary ul { display: grid; gap: var(--space-xs); padding-left: var(--space-xl); }
+    .error-summary a { color: var(--accent-hover); }
+    .error-summary a:hover { color: var(--text-primary); }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .form-grid .full-width { grid-column: span 2; }
+
+    .loading-layout { display: grid; gap: var(--space-lg); }
+    .loading-panel { display: grid; gap: var(--space-md); background: var(--panel-bg); }
+    .skeleton { min-height: var(--space-xl); background: var(--surface-0); border-radius: var(--radius-control); }
+    .skeleton.short { max-width: 50%; }
+    .skeleton.medium { max-width: 75%; }
+    .skeleton.tall { min-height: var(--space-4xl); }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: 10;
+      padding: var(--space-xs);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: 0 var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+
+    .state-switcher button { padding: var(--space-xs) var(--space-sm); background: var(--surface-0); color: var(--text-secondary); border-color: var(--border-color); font-size: var(--font-size-dense); }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      .gallery-grid { grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); }
+      .gallery-grid .span-two { grid-column: span 2; }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      body { padding: var(--space-md); }
+      .app-shell { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .sidebar { display: none; }
+      .main-content { padding: var(--space-lg); }
+      .gallery-grid { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .queue-row { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 3fr) auto; }
+      .queue-status { grid-column: span 2; }
+      .queue-action { grid-column: 3; grid-row: 1 / span 2; }
+      .mobile-nav { display: flex; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding: var(--space-none); }
+      .prototype-shell { border-radius: var(--space-none); border-left: var(--space-none); border-right: var(--space-none); }
+      .topbar { padding: var(--space-md); }
+      .topbar .header-actions { width: 100%; }
+      .topbar .header-actions button { flex: 1; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .main-content { padding: var(--space-lg); padding-bottom: var(--space-4xl); }
+      .gallery-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .gallery-grid .span-two { grid-column: span 1; }
+      .component-card,
+      .panel,
+      .document-job,
+      .permission-card,
+      .conflict-card,
+      .drawer-preview,
+      .error-summary,
+      .loading-panel { padding: var(--space-md); }
+      .component-heading,
+      .panel-header { margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-none); padding: var(--space-md); }
+      .queue-row { grid-template-columns: minmax(var(--space-none), 1fr); padding: var(--space-md); }
+      .queue-action { justify-self: stretch; }
+      .queue-action button { width: 100%; }
+      .artifact-strip { display: grid; grid-template-columns: minmax(var(--space-none), 1fr); }
+      .artifact-button { width: 100%; }
+      .stepper { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .form-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .form-grid .full-width { grid-column: span 1; }
+      .job-meta,
+      .key-value-list { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .table-wrap { max-height: none; }
+      th:nth-child(4),
+      td:nth-child(4) { display: none; }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: 8;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        background: var(--panel-bg);
+        border-top: var(--border-width) solid var(--border-color);
+      }
+      .mobile-nav a { justify-content: center; min-height: var(--touch-target); padding: var(--space-sm); font-size: var(--font-size-label); }
+      button,
+      input:not([type="checkbox"]),
+      select,
+      textarea { min-height: var(--touch-target); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-lg)); }
+      .state-switcher button { min-height: var(--touch-target); }
+      dialog.modal-preview { max-width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto;
+        transition-duration: var(--space-none);
+        animation-duration: var(--space-none);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Component Mapping =====
+    .prototype-shell      -> HotelPrototypeShellComponent (new; design-only)
+    .topbar               -> AppContextHeaderComponent (new)
+    .sidebar              -> ShellNavigationComponent (new; composes panel/list patterns)
+    .component-card       -> reuse design-guide card pattern
+    .panel / .panel-header -> reuse design-guide panel pattern
+    .badge / .chip        -> reuse design-guide badge and filter-chip patterns
+    .queue-row            -> ReceptionQueueRowComponent (new)
+    .artifact-strip       -> ArrivalArtifactStripComponent (new)
+    .drawer-preview       -> EvidenceDrawerComponent (new)
+    .modal-preview        -> ConfirmationDialogComponent (new; native dialog intent)
+    .state-switcher       -> prototype-only StateSwitcher, not a production control
+  -->
+
+  <!-- ===== State: Default (populated component gallery) ===== -->
+  <section class="state" id="state-default" aria-labelledby="default-gallery-title">
+    <div class="prototype-shell">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <div>
+            <p class="eyebrow">Hotel Rheinland · Bad Orb</p>
+            <h1 id="default-gallery-title">Komponenten-Galerie</h1>
+          </div>
+          <span class="badge badge-prototype">◌ Prototyp</span>
+        </div>
+        <div class="header-actions" aria-label="Prototypaktionen">
+          <button class="btn-secondary" type="button">▤ Musterliste</button>
+          <button class="btn-primary" type="button">+ Neue Ankunft</button>
+        </div>
+      </header>
+
+      <div class="app-shell">
+        <aside class="sidebar" aria-label="Galerie-Navigation">
+          <div class="brand-block">
+            <span class="brand-name">Rheinland ERP</span>
+            <span class="helper-text">Komponentenreferenz · synthetische Beispieldaten</span>
+          </div>
+          <nav aria-label="Bereiche der Komponenten-Galerie">
+            <ul class="nav-list">
+              <li><a class="nav-link" href="#foundations" aria-current="page">◉ Grundlagen</a></li>
+              <li><a class="nav-link" href="#operations">▤ Operations</a></li>
+              <li><a class="nav-link" href="#safety">◈ Sicherheit &amp; Nachweis</a></li>
+              <li><a class="nav-link" href="#state-switcher">↻ Zustände</a></li>
+            </ul>
+          </nav>
+          <div class="sidebar-foot">
+            <span class="evidence-label">Operational Clarity</span>
+            <span class="evidence-label">Catppuccin Mocha</span>
+            <p class="helper-text">Keine Live-Daten, Anmeldung oder Speicherung in diesem Prototyp.</p>
+          </div>
+        </aside>
+
+        <main class="main-content" id="default-gallery-main">
+          <header class="page-intro">
+            <div class="page-intro-copy">
+              <p class="eyebrow">Systemfundament · Stand: Entwurfsprüfung</p>
+              <h2>Wiederverwendbare Muster für eine unterbrechungssichere Empfangsarbeit</h2>
+              <p>Diese Galerie zeigt Komponenten als Gestaltungsvereinbarung. Labels wie <strong>Prototyp</strong>, <strong>Geplant</strong> und <strong>Unklar</strong> markieren fehlende Browser-, API-, Berechtigungs- und Speicherverträge sichtbar.</p>
+            </div>
+            <div class="legend-row" aria-label="Evidenzlegende">
+              <span class="badge badge-success">✓ Operational</span>
+              <span class="badge badge-prototype">◌ Prototyp</span>
+              <span class="badge badge-planned">→ Geplant</span>
+              <span class="badge badge-unclear">? Unklar</span>
+            </div>
+          </header>
+
+          <section class="component-section" id="foundations" aria-labelledby="foundations-heading">
+            <div class="section-title-row">
+              <div>
+                <p class="component-kicker">01 · Grundelemente</p>
+                <h2 id="foundations-heading">Panel, Karte, Chips, Eingabe, Buttons und Tabs</h2>
+              </div>
+              <span class="evidence-label">Design-System-Muster</span>
+            </div>
+
+            <div class="gallery-grid">
+              <article class="component-card" aria-labelledby="panel-card-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">Panel &amp; Karte</p>
+                    <h3 id="panel-card-title">Schichtkontext</h3>
+                  </div>
+                  <span class="badge badge-teal">● Heute</span>
+                </header>
+                <section class="panel" aria-label="Beispiel für ein Panel">
+                  <header class="panel-header">
+                    <span>Frühschicht · 07:00–15:00</span>
+                    <span class="mono">BE-17</span>
+                  </header>
+                  <div class="card-sample selected">
+                    <span class="badge badge-peach">↻ Unterbrechung</span>
+                    <h3>Rückkehr zu Ankunft R-260716-08</h3>
+                    <p>Letzter Schritt: Meldeschein-Angaben prüfen. Filter und Auswahl bleiben beim Wechsel in den Detailbereich erhalten.</p>
+                  </div>
+                </section>
+                <span class="evidence-label">Geplant · neuer API-Vertrag erforderlich</span>
+              </article>
+
+              <article class="component-card" aria-labelledby="controls-card-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">Eingabe &amp; Aktionen</p>
+                    <h3 id="controls-card-title">Kompakte Bedienung</h3>
+                  </div>
+                  <span class="badge badge-muted">Native Controls</span>
+                </header>
+                <div class="field-group">
+                  <label class="field-label" for="gallery-search">Gast oder Reservierungsnummer</label>
+                  <input id="gallery-search" type="search" placeholder="z. B. R-260716-08 oder Weber" aria-describedby="gallery-search-hint">
+                  <span id="gallery-search-hint" class="helper-text">Nur Gestaltungsmuster – keine Live-Suche im Prototyp.</span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="gallery-filter">Arbeitsfilter</label>
+                  <select id="gallery-filter">
+                    <option>Alle offenen Aufgaben</option>
+                    <option>Anreisen vor 12:00</option>
+                    <option>Nachweis fehlt</option>
+                  </select>
+                </div>
+                <div class="button-row">
+                  <button class="btn-primary" type="button">Ankunft öffnen</button>
+                  <button class="btn-secondary" type="button">Als Vorlage speichern</button>
+                  <button class="btn-danger" type="button">Entwurf verwerfen</button>
+                  <button class="btn-primary" type="button" disabled>Wird vorbereitet</button>
+                </div>
+                <span class="evidence-label">Prototyp · keine Speicherung</span>
+              </article>
+
+              <article class="component-card" aria-labelledby="chips-tabs-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">Filter &amp; Kontext</p>
+                    <h3 id="chips-tabs-title">Chips und Tabs</h3>
+                  </div>
+                  <span class="badge badge-info">i Auswahl</span>
+                </header>
+                <div class="chip-row" aria-label="Beispielhafte Filterchips">
+                  <button class="chip is-active" type="button">Heute <span>(8)</span></button>
+                  <button class="chip" type="button">Anreisen <span>(5)</span></button>
+                  <button class="chip" type="button">Ausnahmen <span>(2)</span></button>
+                </div>
+                <div class="tab-list" role="tablist" aria-label="Aufenthaltskontext">
+                  <button id="gallery-tab-stay" role="tab" type="button" aria-selected="true" aria-controls="gallery-panel-stay" tabindex="0">Aufenthalt</button>
+                  <button id="gallery-tab-proof" role="tab" type="button" aria-selected="false" aria-controls="gallery-panel-proof" tabindex="-1">Nachweise</button>
+                  <button id="gallery-tab-history" role="tab" type="button" aria-selected="false" aria-controls="gallery-panel-history" tabindex="-1">Verlauf</button>
+                </div>
+                <div id="gallery-panel-stay" role="tabpanel" aria-labelledby="gallery-tab-stay">
+                  <p><strong>Synthetischer Aufenthalt:</strong> Lara und Jürgen Weber · 16.–23. Juli · Kurpaket Classic.</p>
+                  <span class="evidence-label">Unklar · Aufenthaltsdaten brauchen API-Vertrag</span>
+                </div>
+                <div id="gallery-panel-proof" role="tabpanel" aria-labelledby="gallery-tab-proof" hidden>
+                  <p>Nachweise werden im Prototyp als sichtbare Grenzen statt als Live-Dateien modelliert.</p>
+                </div>
+                <div id="gallery-panel-history" role="tabpanel" aria-labelledby="gallery-tab-history" hidden>
+                  <p>Ein späterer Verlauf braucht eine Persistenz- und Auditierungsgrundlage.</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="component-section" id="operations" aria-labelledby="operations-heading">
+            <div class="section-title-row">
+              <div>
+                <p class="component-kicker">02 · Empfangsarbeit</p>
+                <h2 id="operations-heading">Queue, Artefakte, Wiederaufnahme, Tabelle und Stepper</h2>
+              </div>
+              <span class="evidence-label">Queue-first · ein nächster Schritt</span>
+            </div>
+
+            <div class="gallery-grid">
+              <article class="component-card span-two" aria-labelledby="queue-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">ReceptionQueueRowComponent</p>
+                    <h3 id="queue-pattern-title">Aktive Ankunftszeile mit Nachweisgrenze</h3>
+                  </div>
+                  <span class="badge badge-prototype">◌ Prototyp</span>
+                </header>
+                <article class="queue-row is-selected" aria-labelledby="queue-row-guest">
+                  <div class="queue-time">
+                    <time datetime="2026-07-16T10:40">10:40</time>
+                    <span class="helper-text">fällig in 18 Min.</span>
+                  </div>
+                  <div class="queue-identity">
+                    <h3 id="queue-row-guest">Lara Weber mit Jürgen Weber</h3>
+                    <p>R-260716-08 · 7 Nächte · Kurpaket Classic · Beispielgast</p>
+                  </div>
+                  <div class="queue-status">
+                    <span class="badge badge-warning">! Nachweis fehlt</span>
+                    <span class="helper-text">Ausweisnummer für ausländischen Begleitgast prüfen</span>
+                  </div>
+                  <div class="queue-action"><button class="btn-primary" type="button">Ankunft öffnen</button></div>
+                </article>
+                <p class="status-note">Muster für eine spätere Warteschlange. Reihenfolge, Besitz, Status und Reservierungsdaten sind <strong>geplant</strong>, bis ein Daten- und Persistenzvertrag besteht.</p>
+              </article>
+
+              <article class="component-card span-two" aria-labelledby="artifact-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">ArrivalArtifactStripComponent</p>
+                    <h3 id="artifact-pattern-title">Artefaktstreifen: erzeugt ist nicht zugestellt</h3>
+                  </div>
+                  <span class="badge badge-info">CLI-/Testvertrag</span>
+                </header>
+                <ul class="artifact-strip" aria-label="Artefaktstatus der Beispielankunft">
+                  <li><button class="artifact-button" type="button"><span class="artifact-name">Meldeschein PDF</span><span class="badge badge-warning">! Stub-Format</span><span class="artifact-proof">meldeschein_R-260716-08.pdf</span></button></li>
+                  <li><button class="artifact-button" type="button"><span class="artifact-name">Apple PKPass</span><span class="badge badge-prototype">◌ Vorschau</span><span class="artifact-proof">kurkarte_apple_R-260716-08.pkpass</span></button></li>
+                  <li><button class="artifact-button" type="button"><span class="artifact-name">Google Wallet JSON</span><span class="badge badge-success">✓ Erzeugt</span><span class="artifact-proof">kurkarte_google_R-260716-08.json</span></button></li>
+                </ul>
+                <div class="inline-note">
+                  <span class="evidence-label">CLI-basiert</span>
+                  <span class="evidence-label">Testvertrag</span>
+                  <span class="evidence-label">Nicht als Wallet-Zustellung bestätigt</span>
+                </div>
+              </article>
+
+              <article class="component-card" aria-labelledby="resume-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">InterruptionMarkerComponent</p>
+                    <h3 id="resume-pattern-title">Wiederaufnahme nach Unterbrechung</h3>
+                  </div>
+                  <span class="badge badge-peach">↻ 09:58</span>
+                </header>
+                <article class="interruption-marker" aria-label="Gespeicherter Arbeitskontext im Prototyp">
+                  <div class="interruption-copy">
+                    <strong>Offener Schritt: Kurtaxe-Ausnahme prüfen</strong>
+                    <span class="helper-text">Filter „Anreisen“, Beispielgast Weber, Schritt 2 von 4.</span>
+                  </div>
+                  <button class="btn-secondary" type="button">Schritt fortsetzen</button>
+                </article>
+                <span class="evidence-label">Geplant · keine echte Speicherung</span>
+              </article>
+
+              <article class="component-card" aria-labelledby="stepper-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">CheckInStepperComponent</p>
+                    <h3 id="stepper-pattern-title">Resumierbarer Check-in-Workflow</h3>
+                  </div>
+                  <span class="badge badge-planned">→ Geplant</span>
+                </header>
+                <ol class="stepper" aria-label="Check-in-Schritte">
+                  <li class="is-complete"><strong>1 · Aufenthalt</strong><span class="step-note">geprüft</span></li>
+                  <li class="is-current" aria-current="step"><strong>2 · Meldeschein</strong><span class="step-note">aktuell</span></li>
+                  <li class="is-blocked"><strong>3 · Kurtaxe</strong><span class="step-note">Nachweis prüfen</span></li>
+                  <li><strong>4 · Abschluss</strong><span class="step-note">ausstehend</span></li>
+                </ol>
+                <p class="status-note">Ein Schritt speichert erst nach einem zukünftigen, expliziten API-/Persistenzvertrag.</p>
+              </article>
+
+              <article class="component-card span-two" aria-labelledby="table-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">StickyTableComponent</p>
+                    <h3 id="table-pattern-title">Dichte Nachweistabelle mit Sticky Header</h3>
+                  </div>
+                  <span class="badge badge-muted">Scrollbares Muster</span>
+                </header>
+                <div class="table-wrap" tabindex="0" aria-label="Tabelle mit Beispiel-Dokumentjobs">
+                  <table>
+                    <caption>Beispielhafte Dokumentjobs · synthetische Daten · keine Hintergrundjobs im Prototyp</caption>
+                    <thead>
+                      <tr>
+                        <th>Vorgang</th>
+                        <th>Nachweis</th>
+                        <th>Status</th>
+                        <th>Letzte Prüfung</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Ankunft R-260716-08</strong><br><span class="mono">job-arrival-081</span></td>
+                        <td>Meldeschein PDF</td>
+                        <td><span class="badge badge-warning">! Stub-Format</span></td>
+                        <td><time datetime="2026-07-16T10:22">10:22</time></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Ankunft R-260716-11</strong><br><span class="mono">job-arrival-082</span></td>
+                        <td>Apple PKPass</td>
+                        <td><span class="badge badge-prototype">◌ Vorschau</span></td>
+                        <td><time datetime="2026-07-16T10:24">10:24</time></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Kurbeitrag Juli</strong><br><span class="mono">job-export-021</span></td>
+                        <td>CSV-Entwurf</td>
+                        <td><span class="badge badge-info">i Nicht eingereicht</span></td>
+                        <td><time datetime="2026-07-16T10:27">10:27</time></td>
+                      </tr>
+                      <tr>
+                        <td><strong>AVV Nachweis</strong><br><span class="mono">job-avv-014</span></td>
+                        <td>HBDI-HE Paket</td>
+                        <td><span class="badge badge-error">! Prüfung nötig</span></td>
+                        <td><time datetime="2026-07-16T10:31">10:31</time></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="component-section" id="safety" aria-labelledby="safety-heading">
+            <div class="section-title-row">
+              <div>
+                <p class="component-kicker">03 · Sicherheit &amp; Wahrheit</p>
+                <h2 id="safety-heading">Dokumentjob, sensible Daten, Berechtigung, Konflikt, Drawer, Modal und Toast</h2>
+              </div>
+              <span class="evidence-label">Nachweis vor Behauptung</span>
+            </div>
+
+            <div class="gallery-grid">
+              <article class="component-card" aria-labelledby="job-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">DocumentJobComponent</p>
+                    <h3 id="job-pattern-title">Dokumentjob mit Teilstatus</h3>
+                  </div>
+                  <span class="badge badge-warning">↻ Teilweise</span>
+                </header>
+                <article class="document-job">
+                  <dl class="job-meta">
+                    <dt>Vorgang</dt><dd>Ankunftsbündel R-260716-08</dd>
+                    <dt>Ausgabe</dt><dd>2 von 3 Artefakten nachweisbar</dd>
+                    <dt>Grenze</dt><dd>Keine Zustellung oder finale PDF-Prüfung bestätigt</dd>
+                  </dl>
+                  <div class="button-row">
+                    <button class="btn-secondary" type="button">Nachweis öffnen</button>
+                    <button class="btn-warning" type="button">Erneut versuchen</button>
+                  </div>
+                </article>
+                <span class="evidence-label">Prototyp · asynchroner Jobvertrag fehlt</span>
+              </article>
+
+              <article class="component-card" aria-labelledby="sensitive-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">SensitiveRevealComponent</p>
+                    <h3 id="sensitive-pattern-title">Sensible Daten standardmäßig maskiert</h3>
+                  </div>
+                  <span class="badge badge-unclear">? RBAC unklar</span>
+                </header>
+                <div id="sensitive-mask" class="sensitive-value" aria-live="polite">Ausweisnummer: •••• •••• 4817</div>
+                <div id="sensitive-value" class="sensitive-value" hidden aria-live="polite">Ausweisnummer: AT-RP-4817 · synthetischer Beispielwert</div>
+                <div class="button-row">
+                  <button id="sensitive-toggle" class="btn-secondary" type="button" aria-pressed="false" aria-controls="sensitive-value" onclick="toggleSensitive()">Daten anzeigen</button>
+                </div>
+                <p class="status-note">Die sichtbare Aktion ist nur ein Interaktionsmuster. Berechtigung, Audit und automatische Rückmaskierung sind <strong>geplant</strong>.</p>
+              </article>
+
+              <article class="component-card" aria-labelledby="permission-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">Permission &amp; Conflict</p>
+                    <h3 id="permission-pattern-title">Nicht offenlegen, sicher eskalieren</h3>
+                  </div>
+                  <span class="badge badge-planned">→ Geplant</span>
+                </header>
+                <article class="permission-card">
+                  <span class="badge badge-info">i Zugriff nicht bestätigt</span>
+                  <p>Die AVV-Evidenz kann in diesem Prototyp nicht geöffnet werden. Eine Rollen- oder Berechtigungsprüfung ist nicht implementiert.</p>
+                  <button class="btn-secondary" type="button" disabled>Nachweis herunterladen</button>
+                  <button class="btn-quiet" type="button">Zugriff anfragen</button>
+                </article>
+                <article class="conflict-card">
+                  <span class="badge badge-warning">! Bearbeitungskonflikt</span>
+                  <p>Eine spätere Persistenzschicht könnte melden: „Ankunft wurde vor 1 Minute von der Frühschicht geändert.“</p>
+                  <button class="btn-secondary" type="button">Änderungen vergleichen</button>
+                </article>
+              </article>
+
+              <article class="component-card" aria-labelledby="drawer-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">EvidenceDrawerComponent</p>
+                    <h3 id="drawer-pattern-title">Kontextuelle Evidenz statt Compliance-Cockpit</h3>
+                  </div>
+                  <span class="badge badge-teal">▣ Drawer</span>
+                </header>
+                <aside class="drawer-preview" aria-labelledby="drawer-preview-title">
+                  <div>
+                    <h3 id="drawer-preview-title">AVV Nachweis · cm-booking-com</h3>
+                    <p>Dieses Paket ist nach der aktuellen Quellenlage ein test-/modulbasiertes Nachweisobjekt.</p>
+                  </div>
+                  <dl class="key-value-list">
+                    <dt>Status</dt><dd><span class="badge badge-warning">! Stub-Format</span></dd>
+                    <dt>Hash</dt><dd class="mono">a4c1…9f72</dd>
+                    <dt>Prüfung</dt><dd>Manuelle/rechtliche Prüfung erforderlich</dd>
+                  </dl>
+                  <details>
+                    <summary>Offene Verträge anzeigen</summary>
+                    <p>API, Rollenmodell, dauerhafte Ablage, finale PDF-Renderung und rechtliche Freigabe sind nicht nachgewiesen.</p>
+                  </details>
+                  <div class="drawer-actions"><button class="btn-secondary" type="button">Quelle ansehen</button></div>
+                </aside>
+              </article>
+
+              <article class="component-card span-two" aria-labelledby="confirmation-pattern-title">
+                <header class="component-heading">
+                  <div>
+                    <p class="component-kicker">ConfirmationDialogComponent &amp; ToastComponent</p>
+                    <h3 id="confirmation-pattern-title">Fokussierte Bestätigung für sensible oder irreversible Schritte</h3>
+                  </div>
+                  <span class="badge badge-error">! Sensibel</span>
+                </header>
+                <div class="gallery-grid">
+                  <dialog class="modal-preview" open aria-labelledby="confirmation-title" aria-describedby="confirmation-description">
+                    <header class="modal-header">
+                      <div>
+                        <p class="component-kicker">Native Dialog-Absicht</p>
+                        <h3 id="confirmation-title">Löschvorschau bestätigen?</h3>
+                      </div>
+                      <span class="badge badge-warning">Manuelle Prüfung</span>
+                    </header>
+                    <div class="modal-body">
+                      <p id="confirmation-description">Die DSGVO-Löschvorschau ist ein Prototypmuster. Sie beweist keine Identitätsprüfung, rechtliche Freigabe, Rollenberechtigung oder systemübergreifende Löschung.</p>
+                      <label class="checkbox-row" for="manual-review"><input id="manual-review" type="checkbox"> Ich habe Auswirkungen und offene Verträge geprüft.</label>
+                    </div>
+                    <footer class="modal-footer">
+                      <button class="btn-secondary" type="button">Als Vorschau behalten</button>
+                      <button class="btn-danger" type="button" disabled>Nach Prüfung ausführen</button>
+                    </footer>
+                  </dialog>
+                  <aside class="toast toast-warning" role="status" aria-live="polite" aria-label="Beispiel einer nicht störenden Statusmeldung">
+                    <span aria-hidden="true">!</span>
+                    <div class="toast-copy">
+                      <strong>Vorschau gespeichert</strong>
+                      <span>Keine dauerhafte Speicherung oder Auditierung im Prototyp nachgewiesen.</span>
+                    </div>
+                  </aside>
+                </div>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <nav class="mobile-nav" aria-label="Mobile Muster-Navigation">
+        <a href="#foundations" aria-current="page">Heute</a>
+        <a href="#operations">Anreisen</a>
+        <a href="#safety">Hinweise</a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ===== State: Loading / disabled ===== -->
+  <section class="state" id="state-loading" hidden aria-labelledby="loading-title">
+    <div class="prototype-shell">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <div><p class="eyebrow">Hotel Rheinland · Komponenten-Galerie</p><h1 id="loading-title">Laden und deaktiviert</h1></div>
+          <span class="badge badge-prototype">◌ Prototyp</span>
+        </div>
+        <button class="btn-secondary" type="button" disabled>Aktualisierung läuft</button>
+      </header>
+      <main class="main-content" aria-busy="true" aria-describedby="loading-note">
+        <p id="loading-note" class="status-note">Dieser Ladezustand ist ein Gestaltungsmuster. Es wird keine API-Anfrage, kein Polling und kein Hintergrundjob ausgeführt.</p>
+        <div class="loading-layout">
+          <section class="loading-panel" aria-label="Ladeskelett für eine Arbeitsliste">
+            <div class="skeleton short"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton medium"></div>
+          </section>
+          <section class="loading-panel" aria-label="Deaktivierte Dokumentaktion">
+            <div class="skeleton medium"></div>
+            <div class="skeleton tall"></div>
+            <div class="button-row"><button class="btn-primary" type="button" disabled>◌ Ankunftsbündel wird vorbereitet</button><button class="btn-secondary" type="button" disabled>Nachweis öffnen</button></div>
+            <span class="evidence-label">Geplant · asynchroner Jobvertrag erforderlich</span>
+          </section>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Validation / error ===== -->
+  <section class="state" id="state-error" hidden aria-labelledby="error-state-title">
+    <div class="prototype-shell">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <div><p class="eyebrow">Hotel Rheinland · Check-in-Muster</p><h1 id="error-state-title">Validierung und Fehler</h1></div>
+          <span class="badge badge-error">! Korrektur erforderlich</span>
+        </div>
+        <button class="btn-secondary" type="button">Zur Queue zurück</button>
+      </header>
+      <main class="main-content">
+        <section class="error-summary" role="alert" aria-labelledby="validation-summary-title">
+          <h2 id="validation-summary-title">2 Angaben vor der Dokumentvorschau korrigieren</h2>
+          <p>Die Fehlerübersicht steht vor den ungültigen Feldern und verlinkt auf die konkrete Korrektur.</p>
+          <ul>
+            <li><a href="#field-nationality">Staatsangehörigkeit für den Begleitgast ergänzen</a></li>
+            <li><a href="#field-departure">Abreisedatum muss nach dem Anreisedatum liegen</a></li>
+          </ul>
+        </section>
+
+        <section class="component-card" aria-labelledby="validation-form-title">
+          <header class="component-heading">
+            <div><p class="component-kicker">Meldeschein-Validierung</p><h2 id="validation-form-title">Beispielhafte Pflichtangaben</h2></div>
+            <span class="badge badge-prototype">◌ PDF nur als Stub-Format</span>
+          </header>
+          <form novalidate aria-describedby="validation-form-note">
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="field-family">Familienname</label>
+                <input id="field-family" type="text" value="Weber">
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="field-first">Vorname</label>
+                <input id="field-first" type="text" value="Lara">
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="field-nationality">Staatsangehörigkeit</label>
+                <input id="field-nationality" type="text" aria-invalid="true" aria-describedby="nationality-error" placeholder="z. B. AT">
+                <span id="nationality-error" class="field-error">Bitte Staatsangehörigkeit angeben.</span>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="field-departure">Abreisedatum</label>
+                <input id="field-departure" type="date" aria-invalid="true" aria-describedby="departure-error" value="2026-07-15">
+                <span id="departure-error" class="field-error">Das Abreisedatum muss nach dem 16.07.2026 liegen.</span>
+              </div>
+              <div class="field-group full-width">
+                <label class="field-label" for="field-address">Anschrift</label>
+                <textarea id="field-address" rows="2">Wiesenstraße 22, 97070 Würzburg</textarea>
+              </div>
+            </div>
+            <div class="button-row"><button class="btn-primary" type="button" disabled>Dokumentvorschau erzeugen</button><button class="btn-secondary" type="button">Entwurf sichern</button></div>
+            <p id="validation-form-note" class="status-note">Sicherung, Dokumenterzeugung und Fehlerantworten benötigen später API-, Persistenz- und Berechtigungsverträge.</p>
+          </form>
+        </section>
+
+        <aside class="toast toast-error" role="status" aria-live="polite">
+          <span aria-hidden="true">!</span>
+          <div class="toast-copy"><strong>Dokumentjob nicht gestartet</strong><span>Die Eingabefehler wurden vor einem späteren CLI-/Modulaufruf erkannt.</span></div>
+        </aside>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Permission / destructive / conflict ===== -->
+  <section class="state" id="state-permission" hidden aria-labelledby="permission-state-title">
+    <div class="prototype-shell">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <div><p class="eyebrow">Hotel Rheinland · Schutzmuster</p><h1 id="permission-state-title">Berechtigung, Konflikt und destruktive Bestätigung</h1></div>
+          <span class="badge badge-planned">→ RBAC geplant</span>
+        </div>
+        <button class="btn-secondary" type="button">Hilfe für Zugriff anfordern</button>
+      </header>
+      <main class="main-content">
+        <section class="permission-card" aria-labelledby="permission-card-title">
+          <span class="badge badge-info">i Zugriff nicht bestätigt</span>
+          <h2 id="permission-card-title">AVV-Paket kann nicht geöffnet werden</h2>
+          <p>Der Prototyp zeigt eine nicht preisgebende Ablehnung. Eine reale Nutzerrolle, Sitzung oder Berechtigungsprüfung ist nicht vorhanden.</p>
+          <div class="button-row"><button class="btn-secondary" type="button" disabled>PDF öffnen</button><button class="btn-quiet" type="button">An Administrator weitergeben</button></div>
+          <span class="evidence-label">Geplant · neuer Auth-/RBAC-Vertrag erforderlich</span>
+        </section>
+
+        <section class="conflict-card" aria-labelledby="conflict-card-title">
+          <span class="badge badge-warning">! Datensatzkonflikt</span>
+          <h2 id="conflict-card-title">Aufenthaltsdaten könnten zwischen zwei Arbeitsplätzen abweichen</h2>
+          <p>Die erwartete Konfliktansicht legt Quelle, Zeitpunkt und nächste Entscheidung offen. Versionsnummern, Sperren und Zusammenführung sind nicht implementiert.</p>
+          <div class="button-row"><button class="btn-secondary" type="button">Versionen vergleichen</button><button class="btn-warning" type="button">Später fortsetzen</button></div>
+          <span class="evidence-label">Geplant · Persistenz-/Konkurrenzvertrag erforderlich</span>
+        </section>
+
+        <dialog class="modal-preview" open aria-labelledby="destructive-title" aria-describedby="destructive-description">
+          <header class="modal-header"><div><p class="component-kicker">DestructiveConfirmationComponent</p><h2 id="destructive-title">Löschvorschau erst nach manueller Prüfung ausführen?</h2></div><span class="badge badge-error">! Sensibel</span></header>
+          <div class="modal-body">
+            <p id="destructive-description">Eine DSGVO-Kaskade ist nur als test-/modulbasiertes Beispiel beschrieben. Identitätsprüfung, Rechtsgrundlage, Legal Hold, Rollenberechtigung, systemübergreifende Ausführung und dauerhafte Auditierung sind nicht nachgewiesen.</p>
+            <label class="checkbox-row" for="destructive-review"><input id="destructive-review" type="checkbox"> Ich habe die offenen Verträge gelesen.</label>
+          </div>
+          <footer class="modal-footer"><button class="btn-secondary" type="button">Abbrechen</button><button class="btn-danger" type="button" disabled>Nach manueller Prüfung ausführen</button></footer>
+        </dialog>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Empty ===== -->
+  <section class="state" id="state-empty" hidden aria-labelledby="empty-state-title">
+    <div class="prototype-shell">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <div><p class="eyebrow">Hotel Rheinland · Heute</p><h1 id="empty-state-title">Leerer Arbeitszustand</h1></div>
+          <span class="badge badge-teal">● Filter aktiv</span>
+        </div>
+        <button class="btn-secondary" type="button">Filter zurücksetzen</button>
+      </header>
+      <main class="main-content">
+        <section class="empty-state" aria-labelledby="empty-title">
+          <span class="empty-state-icon" aria-hidden="true">▤</span>
+          <h2 id="empty-title" class="empty-state-title">Keine offenen Ankunftsaufgaben für „vor 12:00“</h2>
+          <p class="empty-state-message">Für den ausgewählten Tag und Filter liegen in diesem Prototyp keine synthetischen Queue-Zeilen vor. Das ist kein Nachweis, dass es im späteren Produkt keine Anreisen gibt.</p>
+          <div class="chip-row" aria-label="Aktive Filter"><span class="chip is-active">16. Juli</span><span class="chip">Vor 12:00</span></div>
+          <div class="button-row"><button class="btn-primary" type="button">Alle Anreisen anzeigen</button><button class="btn-secondary" type="button">Ausnahmen öffnen</button></div>
+          <span class="evidence-label">Geplant · Datenabfrage und Queue-Persistenz erforderlich</span>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- ===== State: Overflow / long operational data ===== -->
+  <section class="state" id="state-overflow" hidden aria-labelledby="overflow-state-title">
+    <div class="prototype-shell">
+      <header class="topbar">
+        <div class="topbar-title-group">
+          <div><p class="eyebrow">Hotel Rheinland · Nachweisübersicht</p><h1 id="overflow-state-title">Überlauf und lange Inhalte</h1></div>
+          <span class="badge badge-info">i Vollständigkeit vor Kürzung</span>
+        </div>
+        <button class="btn-secondary" type="button">Zeilenansicht öffnen</button>
+      </header>
+      <main class="main-content">
+        <section class="component-card" aria-labelledby="overflow-table-title">
+          <header class="component-heading">
+            <div><p class="component-kicker">Überlaufmuster</p><h2 id="overflow-table-title">Lange Artefaktnamen bleiben erreichbar</h2></div>
+            <span class="badge badge-prototype">◌ Synthetische Daten</span>
+          </header>
+          <p>Bei dichten Nachweistabellen bleibt die vollständige Kennung kopierbar und horizontal erreichbar. Auf kleinen Bildschirmen wird die Arbeitsansicht auf den nächsten Schritt reduziert; der vollständige Nachweis bleibt in einer späteren Detailansicht zugänglich.</p>
+          <div class="table-wrap" tabindex="0" aria-label="Horizontal scrollbare Tabelle mit langen Beispielwerten">
+            <table class="overflow-table">
+              <caption>Überlaufmuster für lange Dokumentkennungen · kein Live-Export oder dauerhafter Jobstatus</caption>
+              <thead>
+                <tr><th>Gast / Vorgang</th><th>Artefaktkennung</th><th>Nachweisgrenze</th><th>Aktion</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Marianne von der Lindenberg-Steinberg</strong><br><span class="mono">R-260716-33</span></td>
+                  <td class="mono">meldeschein_R-260716-33_marianne-von-der-lindenberg-steinberg_draft.pdf</td>
+                  <td><span class="badge badge-warning">! Stub-Format</span></td>
+                  <td><button class="btn-secondary" type="button">Nachweis prüfen</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Kurbeitrag Gruppenaufenthalt</strong><br><span class="mono">export-2026-07-16-021</span></td>
+                  <td class="mono">kurverwaltung_bad-orb_juli_2026_zwischenstand_nicht-eingereicht.csv</td>
+                  <td><span class="badge badge-info">i Nicht eingereicht</span></td>
+                  <td><button class="btn-secondary" type="button">Entwurf ansehen</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="inline-note"><span class="evidence-label">Prototyp · keine Kopier-/Downloadfunktion</span><span class="evidence-label">Mobile Detailansicht geplant</span></div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- State switcher (for preview convenience) -->
+  <nav class="state-switcher" id="state-switcher" aria-label="Prototypzustand wechseln">
+    <button type="button" data-state-button="default" aria-controls="state-default" aria-pressed="true" onclick="showState('default')">Standard</button>
+    <button type="button" data-state-button="loading" aria-controls="state-loading" aria-pressed="false" onclick="showState('loading')">Laden</button>
+    <button type="button" data-state-button="error" aria-controls="state-error" aria-pressed="false" onclick="showState('error')">Validierung</button>
+    <button type="button" data-state-button="permission" aria-controls="state-permission" aria-pressed="false" onclick="showState('permission')">Schutz</button>
+    <button type="button" data-state-button="empty" aria-controls="state-empty" aria-pressed="false" onclick="showState('empty')">Leer</button>
+    <button type="button" data-state-button="overflow" aria-controls="state-overflow" aria-pressed="false" onclick="showState('overflow')">Überlauf</button>
+  </nav>
+
+  <script>
+    const prototypeStates = ['default', 'loading', 'error', 'permission', 'empty', 'overflow'];
+
+    function showState(name) {
+      prototypeStates.forEach((stateName) => {
+        const state = document.getElementById('state-' + stateName);
+        const isActive = stateName === name;
+        state.hidden = !isActive;
+      });
+
+      document.querySelectorAll('[data-state-button]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.stateButton === name));
+      });
+    }
+
+    function toggleSensitive() {
+      const masked = document.getElementById('sensitive-mask');
+      const revealed = document.getElementById('sensitive-value');
+      const control = document.getElementById('sensitive-toggle');
+      const isRevealed = !revealed.hidden;
+
+      revealed.hidden = isRevealed;
+      masked.hidden = !isRevealed;
+      control.setAttribute('aria-pressed', String(!isRevealed));
+      control.textContent = isRevealed ? 'Daten anzeigen' : 'Daten wieder maskieren';
+    }
+  </script>
+</body>
+</html>

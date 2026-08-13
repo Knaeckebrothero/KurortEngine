@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in: Kurkarte — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --state-switcher-width: calc(var(--space-4xl) * 13);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-control);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    /* ===== Shell and shared primitives ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .mobile-nav, .state-switcher, .step-badges {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      background: var(--surface-0);
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .brand-copy, .panel-copy, .state-copy, .notice-copy, .record-copy, .field-group, .action-copy, .artifact-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .panel-copy p, .state-copy p, .notice-copy p, .record-copy p, .field-help, .action-copy p, .artifact-copy p, .page-note, .disabled-reason { color: var(--text-secondary); font-size: 13px; }
+    .app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr); min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl))); }
+    .sidebar { display: flex; flex-direction: column; gap: var(--space-xl); padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: 1px solid var(--border-color); }
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .sidebar-boundary { display: grid; gap: var(--space-sm); margin-top: auto; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .sidebar-boundary h2 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+    main { display: grid; align-content: start; gap: var(--space-lg); min-width: var(--space-none); padding: var(--space-xl); padding-bottom: calc(var(--space-4xl) * 3); }
+
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned, .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-accent { border-color: var(--accent-color); color: var(--accent-color); }
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-0);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover, .button-link:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .mono { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .panel, .side-card, .context-panel, .artifact-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .panel-heading, .side-heading, .state-heading, .context-heading, .artifact-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .panel-body, .side-body, .context-panel, .artifact-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { padding: var(--space-none) var(--space-xs); background: var(--app-bg); border-bottom: var(--space-none); }
+    .context-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      flex-wrap: wrap;
+    }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+    .boundary-notice, .persistent-alert, .warning-notice, .source-notice {
+      display: grid;
+      grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-peach);
+      border-radius: var(--radius-card);
+    }
+    .persistent-alert { border-left-color: var(--color-red); }
+    .warning-notice { border-left-color: var(--color-yellow); }
+    .source-notice { border-left-color: var(--color-blue); }
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    .persistent-alert .notice-symbol { color: var(--color-red); }
+    .warning-notice .notice-symbol { color: var(--color-yellow); }
+    .source-notice .notice-symbol { color: var(--color-blue); }
+    .notice-copy strong { color: var(--text-primary); }
+    .page-note { padding: var(--space-md); background: var(--timeline-bg); border-left: 3px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-muted); font-size: 12px; }
+
+    /* ===== Check-in and Kurkarte evidence patterns ===== */
+    .stepper { display: grid; grid-template-columns: repeat(5, minmax(var(--space-none), 1fr)); gap: var(--space-sm); list-style: none; }
+    .stepper li {
+      display: grid;
+      grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr);
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: calc(var(--space-4xl) + var(--space-lg));
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .stepper li.is-complete { border-left-color: var(--color-green); }
+    .stepper li.is-current { background: var(--surface-0); border-color: var(--accent-color); border-left-color: var(--accent-color); }
+    .stepper li.is-pending { border-left-color: var(--color-yellow); }
+    .step-number { display: grid; place-items: center; width: var(--space-2xl); height: var(--space-2xl); border: 1px solid var(--border-color); border-radius: var(--radius-badge); color: var(--text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .is-complete .step-number { border-color: var(--color-green); color: var(--color-green); }
+    .is-current .step-number { border-color: var(--accent-color); color: var(--accent-color); }
+    .is-pending .step-number { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .step-copy { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .step-copy p { color: var(--text-secondary); font-size: 12px; }
+    .work-layout { display: grid; grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 6), 1fr); gap: var(--space-lg); align-items: start; }
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .record-card {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      gap: var(--space-lg);
+      align-items: start;
+      padding: var(--space-lg);
+      background: var(--surface-0);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .record-status { display: grid; justify-items: end; gap: var(--space-xs); }
+    .summary-grid, .artifact-grid, .boundary-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-grid { grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); }
+    .summary-card, .artifact-tile, .boundary-card, .mobile-artifact-card {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .summary-card span, .artifact-tile span, .boundary-card span, .mobile-artifact-card span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong, .artifact-tile strong, .boundary-card strong, .mobile-artifact-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small, .artifact-tile small, .boundary-card small, .mobile-artifact-card small { color: var(--text-secondary); font-size: 12px; }
+    .artifact-tile.is-apple { border-left: 3px solid var(--color-teal); }
+    .artifact-tile.is-google { border-left: 3px solid var(--color-blue); }
+    .boundary-card.is-warning { border-left: 3px solid var(--color-yellow); }
+    .boundary-card.is-error { border-left: 3px solid var(--color-red); }
+    .boundary-card.is-info { border-left: 3px solid var(--color-blue); }
+    .detail-list, .local-links, .dependency-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li, .local-links li, .dependency-list li { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr); gap: var(--space-md); padding: var(--space-sm) var(--space-none); border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child, .local-links li:last-child, .dependency-list li:last-child { border-bottom: var(--space-none); }
+    .detail-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value, .local-links a, .dependency-list span { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .local-links a { color: var(--accent-hover); }
+    .next-action { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--timeline-bg); border: 1px solid var(--accent-color); border-radius: var(--radius-card); }
+    .artifact-card { overflow: hidden; }
+    .artifact-code {
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 13); border-collapse: collapse; font-size: 12px; }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-artifact-list { display: none; }
+    .error-summary { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--color-red); border-radius: var(--radius-card); }
+    .error-summary strong { color: var(--color-red); }
+    .error-summary p, .error-summary a { color: var(--text-secondary); font-size: 13px; }
+    .error-summary ol { display: grid; gap: var(--space-xs); padding-left: var(--space-lg); }
+    .error-summary a { color: var(--color-red); }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .field-group.full-span { grid-column: 1 / -1; }
+    label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+    input, select { width: 100%; min-height: 40px; padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-primary); font-size: 14px; line-height: 1.5; }
+    input[readonly] { color: var(--text-secondary); }
+    .invalid-input { border-color: var(--color-red) !important; }
+    .field-error { color: var(--color-red); font-size: 12px; }
+    .disabled-reason { color: var(--text-muted); font-size: 12px; }
+
+    /* ===== State switcher and responsive task adaptation ===== */
+    .state-switcher { position: fixed; right: var(--space-lg); bottom: var(--space-lg); z-index: var(--z-state-switcher); max-width: var(--state-switcher-width); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      main { padding-right: var(--space-2xl); padding-left: var(--space-2xl); }
+      .work-layout { grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 7), calc(var(--space-4xl) * 8)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: calc(var(--touch-target) + var(--space-xl)) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .nav-label, .nav-text, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .stepper { grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); }
+      .work-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .side-stack .wide-on-tablet { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-divider, .context-value.is-secondary { display: none; }
+      .boundary-notice, .persistent-alert, .warning-notice, .source-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .notice-symbol { display: none; }
+      .stepper, .work-layout, .summary-grid, .artifact-grid, .boundary-grid, .field-grid, .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-status { justify-items: start; }
+      .panel-body, .side-body, .context-panel, .artifact-body { padding: var(--space-md); }
+      .detail-list li, .local-links li, .dependency-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .next-action { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .next-action button { width: 100%; }
+      .table-wrap { display: none; }
+      .mobile-artifact-list { display: grid; gap: var(--space-sm); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); left: var(--space-sm); max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .mobile-nav { position: fixed; right: var(--space-none); bottom: var(--space-none); left: var(--space-none); z-index: var(--z-mobile-nav); display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: var(--panel-bg); border-top: 1px solid var(--border-color); }
+      .mobile-nav a { display: grid; place-items: center; min-height: var(--touch-target); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 11px; text-align: center; text-decoration: none; }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .button-link, input, select { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Static design prototype only. KurkarteReview, ApplePayloadPreview, GooglePayloadPreview,
+       WalletUnavailable and IssuanceLockBoundary are design names, not browser routes, APIs,
+       production components, source paths, or real wallet operations. -->
+  <a class="skip-link" href="#kurkarte-workspace">Zur Kurkarte-Prüfung springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Check-in-Arbeitsablauf</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisgrenzen des Kurkarte-Prototyps">
+      <span class="badge badge-prototype">Prototyp · JSON-Vorschau</span>
+      <span class="badge badge-warning">Testmodus / In-Memory</span>
+      <span class="badge badge-warning">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <p class="nav-label">Rezeption</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="checkin_overview.html#state-ready"><span class="nav-symbol" aria-hidden="true">✓</span><span class="nav-text">Check-in-Übersicht</span><span class="nav-count">K-01</span></a></li>
+          <li><a class="nav-link" href="checkin_guest_details.html#state-valid"><span class="nav-symbol" aria-hidden="true">◉</span><span class="nav-text">Gastdetails</span><span class="nav-count">Schritt 1</span></a></li>
+          <li><a class="nav-link" href="checkin_meldeschein.html#state-valid"><span class="nav-symbol" aria-hidden="true">▧</span><span class="nav-text">Meldeschein</span><span class="nav-count">Schritt 2</span></a></li>
+          <li><a class="nav-link" href="checkin_kurtaxe_exemptions.html#state-calculated"><span class="nav-symbol" aria-hidden="true">€</span><span class="nav-text">Kurtaxe &amp; Befreiung</span><span class="nav-count">Schritt 3</span></a></li>
+          <li><a class="nav-link" href="#state-ready" aria-current="page"><span class="nav-symbol" aria-hidden="true">◇</span><span class="nav-text">Kurkarte</span><span class="nav-count">Schritt 4</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Kurkarte-Nachweise">
+        <p class="nav-label">Nachweise</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#state-generated-preview"><span class="nav-symbol" aria-hidden="true">{ }</span><span class="nav-text">Payload-Vorschau</span><span class="nav-count">Statisch</span></a></li>
+          <li><a class="nav-link" href="#state-issued-locked"><span class="nav-symbol" aria-hidden="true">⌁</span><span class="nav-text">Ausgabe &amp; Sperre</span><span class="nav-count">Begrenzt</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="kurkarte-sidebar-boundary-title">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="kurkarte-sidebar-boundary-title">Keine Wallet-Lebenszykluskette</h2>
+        <p>Lokale Dateilinks teilen keine Sitzung, keinen Kartenstatus, keine Signing-Credentials, keine Dateiablage, keine Zustellung, keine Sperre und keine Rückkehrdaten.</p>
+      </section>
+    </aside>
+
+    <main id="kurkarte-workspace">
+      <section class="context-strip" aria-label="Fiktiver Check-in-Kontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Rolle</span><span class="context-value is-secondary">Rezeption · Beispielrolle, keine Anmeldung</span>
+        </div>
+        <span class="badge badge-accent">Jana Müller-Kaya · synthetisch</span>
+      </section>
+
+      <section class="boundary-notice" aria-labelledby="kurkarte-page-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <h1 id="kurkarte-page-title">Check-in: Kurkarte und Wallet-Payload prüfen</h1>
+          <p>Schritt 4 macht eine begrenzte Apple-/Google-Serialisierung sichtbar. JSON-Vorschau und Testmodus sind keine signierte Karte, keine Wallet-Aktion und keine Ausgabe an einen Gast.</p>
+          <div class="badge-row" aria-label="Ausdrückliche Grenzen des Kurkarte-Prototyps">
+            <span class="badge badge-warning">Kein signiertes .pkpass</span>
+            <span class="badge badge-warning">Kein Produktions-JWT</span>
+            <span class="badge badge-error">Kein Wallet-Provisioning</span>
+            <span class="badge badge-planned">Keine Persistenz</span>
+            <span class="badge badge-planned">Keine Zustellung</span>
+            <span class="badge badge-error">Keine kommunale Synchronisierung</span>
+            <span class="badge badge-error">Keine rechtliche Ausgabe</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="context-panel" aria-labelledby="kurkarte-context-title">
+        <header class="context-heading">
+          <div class="panel-copy">
+            <h2 id="kurkarte-context-title">Fiktiver Karten- und Aufenthaltsrahmen</h2>
+            <p>Die Seite verwendet den Check-in-Fixturekontext Jana Müller-Kaya / `RES-BO-2026-0716-014`. Sie ruft weder `issue_guest_card`, Apple PassKit, Google Wallet noch einen In-Memory-Lookup auf.</p>
+          </div>
+          <span class="badge badge-info">Keine Live-Quelle</span>
+        </header>
+        <section class="record-card" aria-label="Ausgewählter synthetischer Kurkarte-Kontext">
+          <div class="record-copy">
+            <span class="badge badge-accent">Ausgewählt · lokal</span>
+            <h2>Jana Müller-Kaya</h2>
+            <p class="mono">RES-BO-2026-0716-014</p>
+            <p>16.–23.07.2026 · Kurpaket-Vorlage <span class="mono">B</span> als fiktive UI-Auswahl · keine Reservierungsquelle, keine Karte und keine tatsächliche Ausgabe.</p>
+          </div>
+          <div class="record-status">
+            <span class="badge badge-warning">Kartenstatus unklar</span>
+            <span class="badge badge-warning">RBAC unklar</span>
+          </div>
+        </section>
+        <p class="source-notice"><span class="notice-symbol" aria-hidden="true">i</span><span><strong>Geplant / Backend erforderlich:</strong> Aufenthaltsquelle, Kartenerstellung, serialisierte Artefaktmetadaten, Apple-/Google-Credentials, Signierung, Produktionstoken, Empfänger-/Gerätezustand, Wallet-Provisioning, Persistenz, Zustellung, Sperre/Widerruf, Callback, Audit, kommunale Synchronisierung und rechtliche Ausgabe. Diese statische Datei besitzt keinen dieser Verträge.</span></p>
+      </section>
+
+      <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge">
+        <li class="is-complete"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Fiktiver Personen- und Aufenthaltskontext.</p><div class="step-badges"><span class="badge badge-success">Kontext dargestellt</span></div></div></li>
+        <li class="is-complete"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Begrenzte Vorschau bleibt getrennt.</p><div class="step-badges"><span class="badge badge-prototype">Stub-Format</span></div></div></li>
+        <li class="is-complete"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Rechen- und Nachweisgrenze erläutert.</p><div class="step-badges"><span class="badge badge-teal">Operational · eng</span></div></div></li>
+        <li class="is-current"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Apple-/Google-Payload nur prüfen.</p><div class="step-badges"><span class="badge badge-prototype">Prototyp</span></div></div></li>
+        <li class="is-pending"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview</h3><p>Keine Abschlusswirkung behaupten.</p><div class="step-badges"><span class="badge badge-planned">Geplant</span></div></div></li>
+      </ol>
+
+      <p id="kurkarte-live" class="sr-only" aria-live="polite" aria-atomic="true">Bereiter fiktiver Kurkarte-Zustand angezeigt.</p>
+
+      <!-- ===== State: ready ===== -->
+      <section id="state-ready" class="state-panel" aria-labelledby="ready-state-title" data-state-kind="ready">
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="ready-state-title">Bereit zur Prüfung: begrenzte Karteninputs und zwei Serializer unterscheiden</h2><p>Der Ausgangszustand macht die Inputs sichtbar, die eine spätere lokale Kartenfunktion erwartet. Er erstellt kein `KurpaketGuestCard`-Objekt, keinen QR-Code, keine JSON-Ausgabe und keine Wallet-Karte.</p></div>
+          <div class="badge-row"><span class="badge badge-teal">Kontext vollständig dargestellt</span><span class="badge badge-prototype">Keine Serializer-Ausführung</span></div>
+        </header>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="ready-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="ready-panel-title">Kartenrahmen für Jana Müller-Kaya / RES-BO-2026-0716-014</h2><p>Die Quelle modelliert eine `KurpaketGuestCard` mit Buchungs-ID, Gastname, Template, Gültigkeit, QR-Payload, Heilbad-Badge und Schema. Die dargestellten Werte sind statisch und nicht aus einer Reservierung geladen.</p></div><span class="badge badge-prototype">Fiktiver Inputrahmen</span></header>
+            <div class="panel-body">
+              <div class="summary-grid" aria-label="Fiktive Kurkarte-Kerndaten">
+                <article class="summary-card"><span>Card identity</span><strong class="mono">RES-BO-2026-0716-014</strong><small>Als möglicher `booking_id`-/Serial-Kontext dargestellt; keine generierte Karte.</small></article>
+                <article class="summary-card"><span>Gültigkeit</span><strong>16.–23.07.2026</strong><small>Fiktive An-/Abreisedaten; kein Check-in, keine Geräte- oder Plattformgültigkeit.</small></article>
+                <article class="summary-card"><span>Template</span><strong class="mono">B</strong><small>Fiktive UI-Auswahl; keine Angebotsbuchung oder Kapazitätszusage.</small></article>
+              </div>
+
+              <div class="artifact-grid" aria-label="Apple- und Google-Serialisierungsrahmen">
+                <article class="artifact-tile is-apple"><span>Apple PassKit</span><strong><span class="mono">render_apple_pass(card)</span></strong><small>Quellfunktion liefert einen JSON-serialisierbaren dict-Shape. Keine Signatur, kein Manifest, kein `.pkpass`-Archiv und keine Apple-Wallet-Installation.</small></article>
+                <article class="artifact-tile is-google"><span>Google Wallet Generic</span><strong><span class="mono">render_google_pass_object(card, today)</span></strong><small>Quellfunktion liefert einen JSON-serialisierbaren Generic-pass dict-Shape. Kein Produktions-JWT, keine API-Anfrage und kein hinzugefügter Pass.</small></article>
+              </div>
+
+              <section class="artifact-card" aria-labelledby="ready-source-shape-title">
+                <header class="artifact-header"><div class="artifact-copy"><h3 id="ready-source-shape-title">Beobachteter Karteninput · nur Leserahmen</h3><p>Das Quellmodell erzeugt einen QR-Payload-String und leitet Gültigkeit aus An-/Abreise ab. Die Seite zeigt weder einen QR-Code noch tatsächliche Serien- oder Validitätsdaten aus einer Datenquelle.</p></div><span class="badge badge-info">Quellform, nicht Laufzeit</span></header>
+                <div class="artifact-body"><ul class="detail-list"><li><span class="detail-label">booking_id</span><span class="detail-value"><span class="mono">RES-BO-2026-0716-014</span> als synthetischer Kontext; kein Lookup oder persistierter Kartenrecord.</span></li><li><span class="detail-label">guest_name</span><span class="detail-value">Jana Müller-Kaya ist sichtbar, weil dieser ausgewählte Check-in-Schritt die Person kontextualisiert; keine Berechtigungsprüfung.</span></li><li><span class="detail-label">Heilbad-Badge</span><span class="detail-value">Am statischen Datum 16.07.2026 läge `Heilbad 2026` innerhalb der Quellfensterlogik. Die Bedingung wurde nicht ausgeführt und stellt keine Zertifizierung dar.</span></li><li><span class="detail-label">Browsergrenze</span><span class="detail-value">Keine Route, kein API-Aufruf, keine Datenspeicherung, keine Wallet-App, keine Gerätebindung und keine Zustellung.</span></li></ul></div>
+              </section>
+
+              <section class="next-action" aria-labelledby="ready-next-action-title"><div class="action-copy"><span class="badge badge-warning">Nächste menschliche Entscheidung</span><h3 id="ready-next-action-title">JSON-Form und Signing-Grenze getrennt ansehen</h3><p>Eine spätere Prüfung darf eine Python-Dict-Serialisierung nicht mit einer signierten, installierten oder rechtswirksam ausgegebenen Karte verwechseln. Die lokale Aktion öffnet nur den statischen Vorschauzustand.</p></div><button class="btn-primary" type="button" data-state-target="state-generated-preview" aria-controls="state-generated-preview">Payload-Vorschau lesen</button></section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Bereiter Kurkarte-Zustand: Grenzen und lokale Links">
+            <section class="side-card" aria-labelledby="ready-boundary-title"><header class="side-heading"><div class="panel-copy"><h2 id="ready-boundary-title">Zwei Serializer, keine Wallet-Ausgabe</h2><p>Apple und Google haben unterschiedliche Zielshapes und gemeinsame Produktionslücken.</p></div><span class="badge badge-warning">Preview-only</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Apple</span><span class="detail-value">JSON-Form mit PassKit-Feldern; Signierung mit realem Apple Developer-/PassKit-Zertifikat fehlt.</span></li><li><span class="detail-label">Google</span><span class="detail-value">Generic-pass JSON-Form; realer Issuer und RS256-Produktions-JWT fehlen.</span></li><li><span class="detail-label">Gemeinsam</span><span class="detail-value">Kein Browser-/API-Vertrag, keine Auth/RBAC, keine persistente Historie, kein Delivery- oder Provisioning-Nachweis.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="ready-links-title"><header class="side-heading"><div class="panel-copy"><h2 id="ready-links-title">Statische Prüfbezüge</h2><p>Lokale HTML-Dateien, keine gemeinsame Produktnavigation.</p></div><span class="badge badge-info">Dateilinks</span></header><div class="side-body"><ul class="local-links"><li><span class="detail-label">Kurtaxe</span><span><a href="checkin_kurtaxe_exemptions.html#state-calculated">Fiktiven Kurtaxe-Breakdown lesen</a><br><span class="field-help">Keine Übergabe eines berechneten Werts oder Befreiungsstatus.</span></span></li><li><span class="detail-label">Meldeschein</span><span><a href="checkin_meldeschein.html#state-valid">Fiktiven Meldeschein-Kontext lesen</a><br><span class="field-help">Keine gemeinsame Person, Datei, Sitzung oder Artefaktkette.</span></span></li><li><span class="detail-label">Check-in</span><span><a href="checkin_overview.html#state-ready">Statische Check-in-Übersicht lesen</a><br><span class="field-help">Keine Orchestrierung, Speicherung oder Abschlusswirkung.</span></span></li></ul><button class="btn-teal" type="button" data-prototype-action="Der fiktive Kurkarte-Inputrahmen wurde lokal erläutert. Es wurde kein Kartenobjekt erstellt, kein Serializer aufgerufen, kein QR-Code generiert, keine Wallet geöffnet und keine Karte ausgegeben.">Inputgrenze erläutern</button></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Bereit-Zustand: Der Prototyp zeigt die Form möglicher Inputs und Apple-/Google-Serializer. Er beweist keine Karte, keine JSON-Ausführung, kein signiertes `.pkpass`, keinen Produktions-JWT, kein Wallet-Provisioning, keine Persistenz, keine Zustellung, keine kommunale Synchronisierung und keine rechtliche Ausgabe.</p>
+      </section>
+
+      <!-- ===== State: generated preview ===== -->
+      <section id="state-generated-preview" class="state-panel" aria-labelledby="generated-preview-state-title" data-state-kind="generated-preview" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="generated-preview-state-title">Erzeugt / Vorschau: begrenzte Apple- und Google-JSON-Form prüfen</h2><p>Die Codefelder zeigen synthetische, gekürzte Formbeispiele, die an beobachteten Schlüsseln orientiert sind. Sie sind keine tatsächliche Funktionsausgabe, keine Datei und keine Plattformantwort.</p></div>
+          <div class="badge-row"><span class="badge badge-prototype">Erzeugt · statische Darstellung</span><span class="badge badge-warning">Vorschau · Testmodus</span><span class="badge badge-info">Nicht zugestellt</span></div>
+        </header>
+
+        <section class="warning-notice" aria-labelledby="generated-preview-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="generated-preview-alert-title">JSON-Shape ist kein signiertes Wallet-Artefakt</h3><p>Apple- und Google-Funktionen geben Dicts zurück. Der Apple-Testpfad nutzt eine HMAC-Placeholder-Signatur; der Google-Testpfad ebenso. Weder ein signiertes `.pkpass` noch ein Produktions-JWT, Wallet-Provisioning, Geräteinstallation, Persistenz, Zustellung, kommunale Synchronisierung oder rechtliche Ausgabe wird daraus abgeleitet.</p></div>
+        </section>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="generated-preview-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="generated-preview-panel-title">Begrenzte Serializer-Evidenz für Jana Müller-Kaya</h2><p>Die Zielwerte werden bewusst als kleine, lesbare Ausschnitte gezeigt. Ein späteres Produkt müsste vollständige Inhalte, Ausführung, Signierung, Fehler, Zuständigkeit und sicheren Artefaktlebenszyklus getrennt belegen.</p></div><span class="badge badge-prototype">Keine JSON-Ausführung</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver Kurkarte-Vorschaukontext">
+                <div class="record-copy"><span class="badge badge-prototype">Vorschau · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · Template <span class="mono">B</span> · keine Datei, keine Wallet-Installation und keine Gastzustellung.</p></div>
+                <div class="record-status"><span class="badge badge-warning">Testmodus</span><span class="badge badge-info">Nicht zugestellt</span></div>
+              </section>
+
+              <div class="table-wrap">
+                <table>
+                  <caption>Begrenzte, statische Evidenzformen. Keine Zelle ist ein tatsächlich erzeugtes/synchronisiertes Objekt, eine signierte Datei, ein JWT, ein Wallet-Status oder eine Ausgabebestätigung.</caption>
+                  <thead><tr><th scope="col">Plattform</th><th scope="col">Beobachtete Formschlüssel</th><th scope="col">Statischer Ausschnitt</th><th scope="col">Explizite Grenze</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Apple PassKit</strong><br><span class="badge badge-teal">JSON-serialisierbar</span></td><td><span class="mono">formatVersion</span>, <span class="mono">passTypeIdentifier</span>, <span class="mono">serialNumber</span>, <span class="mono">lang</span>, Felder mit <span class="mono">label</span></td><td><span class="mono">pass.com.bad-orb.kurkarte</span><br><span class="mono">serialNumber: RES-BO-2026-0716-014</span><br><span class="mono">lang: de</span><br><span class="mono">applePassStyle: high / 12pt</span></td><td>Kein Manifest, kein reales Team-Zertifikat, kein signiertes `.pkpass`, keine Installation, keine Zustellung oder rechtliche Ausgabe.</td></tr>
+                    <tr><td><strong>Google Wallet Generic</strong><br><span class="badge badge-info">JSON-serialisierbar</span></td><td><span class="mono">id</span>, <span class="mono">classId</span>, <span class="mono">issuerName</span>, <span class="mono">cardTitle</span>, <span class="mono">header</span>, <span class="mono">textModulesData</span></td><td><span class="mono">id: RES-BO-2026-0716-014</span><br><span class="mono">header: B</span><br>Kurbeitrag-Zeilen aus Profilkontext; bei diesem statischen Datum möglicher `Heilbad 2026`-Eintrag; Buchungszeile.</td><td>Kein Produktions-JWT, kein bestätigter Issuer, keine API-Anfrage, kein Save-to-Wallet, keine Provisionierung oder Zustellung.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-artifact-list" aria-label="Mobile Apple- und Google-Evidenzkarten">
+                <article class="mobile-artifact-card"><span>Apple PassKit</span><strong>JSON-Shape · `lang: de` · markierte labels</strong><small>Kein Manifest, kein reales Zertifikat, kein signiertes `.pkpass`, keine Installation oder Zustellung.</small></article>
+                <article class="mobile-artifact-card"><span>Google Wallet Generic</span><strong>JSON-Shape · `id`, `classId`, `textModulesData`</strong><small>Kein Produktions-JWT, kein bestätigter Issuer, keine API-Anfrage, keine Provisionierung oder Zustellung.</small></article>
+              </div>
+
+              <div class="artifact-grid" aria-label="Gekürzte JSON-Formbeispiele">
+                <section class="artifact-card" aria-labelledby="apple-preview-title"><header class="artifact-header"><div class="artifact-copy"><h3 id="apple-preview-title">Apple-PassKit-Ausschnitt · statisch</h3><p>Felder spiegeln die Return-Dict-Struktur; keine Funktion wurde aufgerufen.</p></div><span class="badge badge-teal">Apple</span></header><div class="artifact-body"><pre class="artifact-code" aria-label="Statischer Apple PassKit JSON-Ausschnitt">{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.com.bad-orb.kurkarte",
+  "serialNumber": "RES-BO-2026-0716-014",
+  "teamIdentifier": "TESTMODE0000",
+  "lang": "de",
+  "applePassStyle": { "contrast": "high", "fontSize": "12pt" },
+  "primaryFields": [{ "key": "guest", "label": "Gast", "value": "Jana Müller-Kaya" }]
+}</pre><p class="field-help">`TESTMODE0000` ist der beobachtete Platzhalter. Ein test-mode HMAC ersetzt weder Apple Developer-/PassKit-Zertifikat noch Manifest-Signierung oder ein signiertes `.pkpass`.</p></div></section>
+                <section class="artifact-card" aria-labelledby="google-preview-title"><header class="artifact-header"><div class="artifact-copy"><h3 id="google-preview-title">Google-Generic-Ausschnitt · statisch</h3><p>Felder spiegeln die Return-Dict-Struktur; keine Funktion wurde aufgerufen.</p></div><span class="badge badge-info">Google</span></header><div class="artifact-body"><pre class="artifact-code" aria-label="Statischer Google Wallet Generic JSON-Ausschnitt">{
+  "id": "RES-BO-2026-0716-014",
+  "classId": "&lt;issuerId&gt;.kurkarte_bad_orb",
+  "issuerName": "Hotel Rheinland Bad Orb",
+  "cardTitle": "Jana Müller-Kaya",
+  "header": "B",
+  "textModulesData": ["profilbasierte Kurbeitrag-Zeilen", "Prädikat: Heilbad 2026", "Buchung"]
+}</pre><p class="field-help">Der Quellcode nutzt einen Placeholder-Issuer und test-mode HMAC. Ein Produktionsweg benötigt echten Issuer, Service-Account und RS256-JWT; das ist hier nicht vorhanden.</p></div></section>
+              </div>
+
+              <section class="next-action" aria-labelledby="generated-next-action-title"><div class="action-copy"><span class="badge badge-warning">Keine operative Ausgabe</span><h3 id="generated-next-action-title">Artefaktgrenze statt Plattformaktion sichtbar halten</h3><p>Die deaktivierten Aktionen verhindern eine falsche Ableitung von JSON-Vorschau zu signierter Datei, JWT, Wallet-Provisioning, Zustellung oder rechtlicher Ausgabe.</p></div><button class="btn-primary" type="button" disabled aria-describedby="generated-save-reason">Kurkarte ausgeben</button></section>
+              <p id="generated-save-reason" class="disabled-reason">Deaktiviert: kein signiertes `.pkpass`, kein Produktions-JWT, keine Apple-/Google-Credentials, kein Wallet-Provisioning, keine Auth/RBAC, keine Persistenz, keine Empfängerzustellung, kein Audit und keine rechtliche Ausgabe.</p>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Kurkarte-Vorschau: Signing- und Deliverygrenzen">
+            <section class="side-card" aria-labelledby="apple-signing-title"><header class="side-heading"><div class="panel-copy"><h2 id="apple-signing-title">Apple: Dict und Test-HMAC</h2><p>Die technische Rückgabeform ist von der Produktionssignierung getrennt.</p></div><span class="badge badge-warning">Testmodus</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Quellreturn</span><span class="detail-value"><span class="mono">render_apple_pass(card)</span> liefert einen JSON-serialisierbaren dict.</span></li><li><span class="detail-label">Testhelper</span><span class="detail-value"><span class="mono">_sign_pass_with_test_key</span> verwendet HMAC-SHA256 als klaren Placeholder.</span></li><li><span class="detail-label">Nicht vorhanden</span><span class="detail-value">Kein Apple Developer-/PassKit-Zertifikat, kein Manifest, kein signiertes `.pkpass`, keine Installations- oder Deliverybestätigung.</span></li></ul><button type="button" disabled aria-describedby="apple-download-reason">Signiertes .pkpass herunterladen</button><p id="apple-download-reason" class="disabled-reason">Deaktiviert: keine Produktionssignierung, kein Artefaktstore, keine Auth/RBAC, keine sichere Dateiablage und keine Deliverykette.</p></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="google-signing-title"><header class="side-heading"><div class="panel-copy"><h2 id="google-signing-title">Google: Dict und Test-HMAC</h2><p>Die Generic-pass-Form ist von einem authentischen Google-Wallet-Flow getrennt.</p></div><span class="badge badge-warning">Kein Produktions-JWT</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Quellreturn</span><span class="detail-value"><span class="mono">render_google_pass_object(card, today)</span> liefert einen JSON-serialisierbaren dict.</span></li><li><span class="detail-label">Testhelper</span><span class="detail-value"><span class="mono">_sign_jwt_with_test_key</span> nutzt HMAC-SHA256 als test-mode Placeholder.</span></li><li><span class="detail-label">Nicht vorhanden</span><span class="detail-value">Kein realer Issuer-Account, kein RS256-JWT mit Service-Account, keine API-Antwort, kein Provisioning, keine Zustellung oder Gerätezusage.</span></li></ul><button type="button" disabled aria-describedby="google-provision-reason">Google Wallet provisionieren</button><p id="google-provision-reason" class="disabled-reason">Deaktiviert: kein Produktions-JWT, keine Credentials, keine API, kein Empfängergerät, keine Auth/RBAC, keine Persistenz und keine sichere Zustellung.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Erzeugt-/Vorschau-Zustand: Die sichtbaren JSON-Ausschnitte sind statische Quellenachweise. Sie sind kein signiertes `.pkpass`, kein Produktions-JWT, keine Wallet-Provisionierung, keine Plattformbestätigung, keine Persistenz, keine Zustellung, keine kommunale Synchronisierung und keine rechtliche Ausgabe.</p>
+      </section>
+
+      <!-- ===== State: wallet unavailable ===== -->
+      <section id="state-wallet-unavailable" class="state-panel" aria-labelledby="wallet-unavailable-state-title" data-state-kind="wallet-unavailable" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="wallet-unavailable-state-title">Wallet nicht verfügbar: fiktive Konfigurations- und Integrationsgrenze</h2><p>Dieser Recoveryzustand beschreibt, was ein späteres Produkt bei fehlenden Voraussetzungen sichtbar machen müsste. Er ist kein Live-Connectivity-Test und behauptet keine Prüfung von Apple, Google, Credentials oder einem Empfängergerät.</p></div>
+          <div class="badge-row"><span class="badge badge-error">Nicht verbunden · fiktiv</span><span class="badge badge-planned">Backend erforderlich</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="wallet-unavailable-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="wallet-unavailable-alert-title">Kein Wallet-Provisioning oder Delivery aus einer fehlenden Konfiguration ableiten</h3><p>Für Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span> ist im fiktiven Zustand keine Produktionsverbindung verfügbar. Diese Anzeige stellt keinen Request, keine Tokenprüfung, keinen Retry, keine Plattformstörung und keine Ausgabesperre aus einem realen System dar.</p></div>
+        </section>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="wallet-unavailable-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="wallet-unavailable-panel-title">Fiktiver Wallet-Konfigurationsblock</h2><p>Die Fehlerzusammenfassung und das Feldergebnis zeigen eine zukünftige, zuordenbare Korrekturfläche. Keine Credential-Information wird offengelegt und keine Konfiguration wird gelesen oder geändert.</p></div><span class="badge badge-prototype">Keine Connectivity-Prüfung</span></header>
+            <div class="panel-body">
+              <nav id="wallet-error-summary" class="error-summary" aria-label="Fehlerzusammenfassung für die fiktive Wallet-Verfügbarkeit">
+                <strong>1 Wallet-Voraussetzung vor einer späteren Ausgabe klären</strong>
+                <p>Die sichtbare Ursache ist ein Designzustand. Es wurde kein Apple-/Google-Endpunkt aufgerufen, kein Secret gelesen, kein JWT erstellt und kein Pass auf ein Gerät geladen.</p>
+                <ol><li><a href="#wallet-connection-status">Apple-/Google-Produktionsvertrag, Credentials und sichere Delivery getrennt klären</a></li></ol>
+              </nav>
+
+              <section class="record-card" aria-label="Fiktiver Kurkarte-Kontext mit Wallet-Blocker">
+                <div class="record-copy"><span class="badge badge-error">Wallet nicht verfügbar · lokal dargestellt</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>Apple-/Google-JSON-Vorschau bleibt von Plattformkonto, JWT, Provisioning und Gastzustellung getrennt.</p></div>
+                <div class="record-status"><span class="badge badge-error">Keine Provisionierung</span><span class="badge badge-info">Keine Zustellung</span></div>
+              </section>
+
+              <section class="field-grid" aria-labelledby="wallet-unavailable-fields-title">
+                <div class="field-group full-span"><h3 id="wallet-unavailable-fields-title">Fiktive Integrationsquelle · keine Credential-Anzeige</h3><span class="field-help">Eine spätere Umsetzung braucht sichere Secrets, Anbieteraccounts, zugelassene Sender-/Empfängerscope, Fehlerhülle, Retry-/Idempotenzregeln, Datenschutz und Audit. Keine dieser Voraussetzungen ist im Prototyp vorhanden.</span></div>
+                <div class="field-group"><label for="wallet-connection-status">Wallet-Produktionsvertrag</label><input id="wallet-connection-status" name="wallet-connection-status" class="invalid-input" type="text" value="Nicht verbunden · fiktiver Designzustand" aria-invalid="true" aria-describedby="wallet-connection-help wallet-connection-error" readonly><span id="wallet-connection-help" class="field-help">Kein echter Gesundheitscheck, keine Secret-/Tokenprüfung und keine Plattformantwort.</span><span id="wallet-connection-error" class="field-error">Produktionssignierung, Issuer, JWT und sichere Delivery sind im fiktiven Zustand nicht belegt. Keine Wallet-Ausgabe darf daraus abgeleitet werden.</span></div>
+                <div class="field-group"><label for="wallet-escalation-scope">Sichere Folge · fiktive Auswahl</label><select id="wallet-escalation-scope" name="wallet-escalation-scope" aria-describedby="wallet-escalation-help"><option value="admin" selected>Systemadministration / Integrationsreview</option><option value="manager">Front-office-Management informieren</option><option value="manual">Manuelle Dokumentreview fortsetzen</option></select><span id="wallet-escalation-help" class="field-help">Kein Ticket, keine Benachrichtigung, keine Berechtigungsanfrage und kein Retry werden ausgelöst.</span></div>
+              </section>
+
+              <div class="boundary-grid" aria-label="Wallet-Voraussetzungen im fiktiven Fehlerzustand">
+                <article class="boundary-card is-error"><span>Apple</span><strong>PassKit-Zertifikat und Signing fehlen</strong><small>Ein echter Apple Developer Account, Pass Type ID Certificate, Manifest und Signierungs-/Auslieferungsweg sind separate künftige Voraussetzungen.</small></article>
+                <article class="boundary-card is-error"><span>Google</span><strong>Issuer und Produktions-JWT fehlen</strong><small>Ein echter Issuer-Account, Service-Account und RS256-JWT samt API-Response sind separate künftige Voraussetzungen.</small></article>
+                <article class="boundary-card is-warning"><span>Delivery</span><strong>Kein Empfänger- oder Gerätestatus</strong><small>Keine Provisionierung, Installation, Callback, Update, Revocation oder Zustellung wird sichtbar oder behauptet.</small></article>
+                <article class="boundary-card is-info"><span>Gemeinsame Plattformgrenze</span><strong>Keine Persistenz oder Integration</strong><small>Kein Browser/API-Vertrag, keine Auth/RBAC, kein Artefaktstore, kein Audit, keine kommunale Synchronisierung und keine rechtliche Ausgabe.</small></article>
+              </div>
+
+              <section class="next-action" aria-labelledby="wallet-unavailable-next-action-title"><div class="action-copy"><span class="badge badge-warning">Manuelle Prüfung erforderlich</span><h3 id="wallet-unavailable-next-action-title">Keinen Retry oder Plattformkontakt vortäuschen</h3><p>Ein späteres System müsste Ursache, Scope, Zeit, Fehlercode, Berechtigung, sichere Recovery und Rückkehrkontext liefern. Die gesperrten Controls starten keine Verbindung, keine Signierung und keine Zustellung.</p></div><button class="btn-primary" type="button" disabled aria-describedby="wallet-retry-reason">Wallet erneut verbinden</button></section>
+              <p id="wallet-retry-reason" class="disabled-reason">Deaktiviert: kein API-Client, keine Credentials, kein Healthcheck, keine Job-ID, keine Retry-/Idempotenzregeln, keine Auth/RBAC, keine Persistenz, kein Deliveryvertrag und keine rechtliche Ausgabe.</p>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Wallet nicht verfügbar: sichere Folgen">
+            <section class="side-card" aria-labelledby="wallet-unavailable-limits-title"><header class="side-heading"><div class="panel-copy"><h2 id="wallet-unavailable-limits-title">Was „nicht verfügbar“ nicht belegt</h2><p>Die Fehlermeldung bleibt ein statisches Designmuster.</p></div><span class="badge badge-error">Kein Live-Test</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Kein Request</span><span class="detail-value">Kein Apple-/Google-Endpunkt, keine URL, kein Header, kein JWT und kein Secret werden verwendet.</span></li><li><span class="detail-label">Kein Retry</span><span class="detail-value">Keine Queue, kein Backoff, keine Idempotenz, kein Timer, kein Webhook und keine Statusabfrage.</span></li><li><span class="detail-label">Keine Ausgabe</span><span class="detail-value">Keine signierte Datei, kein Provisioning, keine Geräteinstallation, keine Zustellung, keine Sperre und keine rechtliche Karte.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="wallet-unavailable-return-title"><header class="side-heading"><div class="panel-copy"><h2 id="wallet-unavailable-return-title">Zur Vorschau oder in den Kartenrahmen</h2><p>Die State-Aktion ändert nur die lokale Reviewansicht.</p></div><span class="badge badge-prototype">DOM lokal</span></header><div class="side-body"><button class="btn-warning" type="button" data-state-target="state-generated-preview" aria-controls="state-generated-preview">Payload-Vorschau lesen</button><button class="btn-teal" type="button" data-prototype-action="Die fiktive Wallet-Blockergrenze wurde lokal erläutert. Es wurde keine Verbindung geprüft, kein Token erzeugt, kein Pass signiert, nichts provisioniert, gespeichert oder zugestellt.">Integrationsgrenze erläutern</button></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Wallet-nicht-verfügbar-Zustand: Der Blocker ist eine statische Recoverydarstellung. Er beweist keine Apple-/Google-Connectivity, kein Credential-Problem, keinen Retry, kein signiertes `.pkpass`, keinen Produktions-JWT, kein Wallet-Provisioning, keine Persistenz, keine Zustellung, keine kommunale Synchronisierung und keine rechtliche Ausgabe.</p>
+      </section>
+
+      <!-- ===== State: issued / locked ===== -->
+      <section id="state-issued-locked" class="state-panel" aria-labelledby="issued-locked-state-title" data-state-kind="issued-locked" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="issued-locked-state-title">Ausgabe / Sperre (issued / locked): In-Memory-Lookup ist kein Kartenlebenszyklus</h2><p>Der Quellcode enthält einen begrenzten importzeitlichen Apple-Pass-Registry-Fall. Diese Reviewansicht trennt ihn ausdrücklich von Jana Müllers UI-Fixture und von jeder dauerhaften Ausgabe-, Sperr-, Widerrufs- oder Deliverybehauptung.</p></div>
+          <div class="badge-row"><span class="badge badge-warning">In-Memory · begrenzt</span><span class="badge badge-error">Ausgabe / Sperre gesperrt</span></div>
+        </header>
+
+        <section class="warning-notice" aria-labelledby="issued-locked-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="issued-locked-alert-title">Ein Registry-Dict ist kein ausgegebener Pass</h3><p><span class="mono">lookup_apple_pass</span> kann einen zuvor gerenderten Apple-Pass-Dict aus einer prozesslokalen Map zurückgeben. Der Quellfixture ist <span class="mono">B-AC1-001</span> / Anna Testgast — nicht Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span>. Diese Seite führt keinen Lookup aus und leitet keinen Ausgabestatus ab.</p></div>
+        </section>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="issued-locked-panel-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="issued-locked-panel-title">Quellregistry, UI-Fixture und gesperrte Lebenszyklusaktionen trennen</h2><p>Die Vergleichstabelle schützt davor, die vorbefüllte Testmap als Datenbank, Karte, Deliveryzustand, Sperrstatus oder rechtliche Ausgabe zu lesen.</p></div><span class="badge badge-prototype">Keine Lookup-Ausführung</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver Jana-Kurkarte-Kontext ohne bestätigten Ausgabestatus">
+                <div class="record-copy"><span class="badge badge-warning">Ausgabestatus unklar · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>Keine `lookup_apple_pass`-Abfrage, keine Karte, keine Persistenz, keine Zustellung und kein Sperr-/Widerrufsstatus für diesen fiktiven Check-in-Kontext.</p></div>
+                <div class="record-status"><span class="badge badge-warning">Nicht überprüft</span><span class="badge badge-error">Lebenszyklus gesperrt</span></div>
+              </section>
+
+              <div class="table-wrap">
+                <table>
+                  <caption>Abgrenzung von Quellfixture und UI-Fixture. Keine Zeile bestätigt eine Karte, eine Datei, einen Walletstatus oder eine rechtliche Ausgabe.</caption>
+                  <thead><tr><th scope="col">Kontext</th><th scope="col">Beobachteter Scope</th><th scope="col">Was ein späterer Lookup liefern könnte</th><th scope="col">Was ausdrücklich nicht folgt</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Quellfixture</strong><br><span class="mono">B-AC1-001</span><br>Anna Testgast · Template B · 01.–08.06.2030</td><td>Importzeitlich vorbefüllter Schlüssel in <span class="mono">_ISSUED_APPLE_PASSES</span>.</td><td>Ein gerenderter Apple-Pass-Dict einschließlich zusätzlichem valid-from/valid-until-Kontext, wenn die Funktion tatsächlich aufgerufen wird.</td><td>Kein signiertes `.pkpass`, keine Datenbank, keine reale Installation, keine Gastzustellung, keine Production-Credential, kein Widerruf und kein Auditnachweis.</td></tr>
+                    <tr><td><strong>Check-in-UI-Fixture</strong><br><span class="mono">RES-BO-2026-0716-014</span><br>Jana Müller-Kaya · 16.–23.07.2026</td><td>Statische Seite; kein Kartenobjekt erzeugt, kein Lookup durchgeführt und kein Eintrag aus der Registry behauptet.</td><td>Kein Resultat dargestellt. Ein künftiges Produkt müsste Ausgabestatus und Herkunft separat, sicher und dauerhaft modellieren.</td><td>Keine Ausgabe, keine Sperre, kein Widerruf, kein Wallet-Provisioning, keine Persistenz, keine Zustellung, keine kommunale Synchronisierung und keine rechtliche Ausgabe.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-artifact-list" aria-label="Mobile Registry-Abgrenzungskarten">
+                <article class="mobile-artifact-card"><span>Quellfixture B-AC1-001</span><strong>Anna Testgast · In-Memory Apple-Dict</strong><small>Kein signiertes `.pkpass`, keine DB, keine Installation, keine Zustellung und kein Lebenszyklusnachweis.</small></article>
+                <article class="mobile-artifact-card"><span>Jana UI-Fixture</span><strong>RES-BO-2026-0716-014 · nicht abgefragt</strong><small>Kein Kartenresultat, keine Ausgabe, keine Sperre, keine Persistenz oder Deliverybehauptung.</small></article>
+              </div>
+
+              <div class="boundary-grid" aria-label="Lebenszyklusgrenzen">
+                <article class="boundary-card is-warning"><span>In-Memory Registry</span><strong>Prozesslokal und rücksetzbar</strong><small>Die Quellhilfe leert und befüllt die Map beim Seed erneut. Das ist keine dauerhafte Kartenhistorie, kein Datenmodell und kein Audit.</small></article>
+                <article class="boundary-card is-error"><span>Sperre / Widerruf</span><strong>Kein beobachteter Lifecycle-API</strong><small>Der Quellscope enthält keinen Browser-, DB-, Plattform- oder Deliveryvertrag für Sperren, Widerruf, Updates oder Remoting.</small></article>
+                <article class="boundary-card is-info"><span>Ausgabe</span><strong>Kein Ausgabeentscheid</strong><small>Ein Dict-Lookup ersetzt keine Prüfkette für Identität, Zutritt, rechtliche Ausgabe, Signierung, Lieferung oder Empfang.</small></article>
+                <article class="boundary-card is-warning"><span>Integration</span><strong>Keine Rückmeldung / Synchronisierung</strong><small>Keine Apple-/Google-Callback-, Geräte-, Zustell-, Kommunal- oder Plattform-Synchronisierung wird beobachtet oder simuliert.</small></article>
+              </div>
+
+              <section class="next-action" aria-labelledby="issued-locked-next-action-title"><div class="action-copy"><span class="badge badge-warning">Keine Lebenszyklusmutation</span><h3 id="issued-locked-next-action-title">Ausgabe, Sperre und Widerruf nicht per UI behaupten</h3><p>Die gesperrten Controls zeigen eine spätere Sicherheits- und Betriebsgrenze: jede echte Aktion bräuchte Auth/RBAC, Kartenquelle, Signing, Persistenz, Providervertrag, Empfängerbezug, Audit, Recovery und Rechtsprüfung.</p></div><button class="btn-primary" type="button" disabled aria-describedby="issued-action-reason">Kurkarte als ausgegeben markieren</button></section>
+              <div class="action-row"><button class="btn-danger" type="button" disabled aria-describedby="lock-action-reason">Kurkarte sperren oder widerrufen</button><button class="btn-warning" type="button" data-state-target="state-ready" aria-controls="state-ready">Kartenrahmen lesen</button></div>
+              <p id="issued-action-reason" class="disabled-reason">Deaktiviert: kein sicherer Ausgabevertrag, kein signiertes Artefakt, keine Auth/RBAC, keine Datenbank, keine Zustellung, kein Geräte-/Providerstatus und kein Audit.</p>
+              <p id="lock-action-reason" class="disabled-reason">Deaktiviert: kein Sperr-/Widerrufsmodell, keine Apple-/Google-Providerintegration, kein Callback, keine Persistenz, keine Idempotenz, kein Audit und keine rechtliche Ausgabe.</p>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Ausgabe und Sperre: sichere Grenzen und lokale Hinweise">
+            <section class="side-card" aria-labelledby="issued-locked-scope-title"><header class="side-heading"><div class="panel-copy"><h2 id="issued-locked-scope-title">Was die Lookup-Hilfe tatsächlich begrenzt</h2><p>Das API liefert bei bekanntem Code einen Dict oder `None` und macht keine Produktlebenszyklusaussage.</p></div><span class="badge badge-info">Enger Source Scope</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Key</span><span class="detail-value">Kurkarte-Code entspricht in der Quelle der Booking-ID und der Apple-SerialNumber.</span></li><li><span class="detail-label">Treffer</span><span class="detail-value">Bei bekanntem Key kann ein gerenderter Apple-Pass-Dict zurückkommen; die Quelle koppelt das an einen begrenzten EV-Reservation-Match-Fall.</span></li><li><span class="detail-label">Kein Treffer</span><span class="detail-value">`None` ist kein beweisbarer Sperr-, Rechts-, Delivery- oder Geräteentscheid.</span></li><li><span class="detail-label">Kein UI-Aufruf</span><span class="detail-value">Dieser Prototyp liest die Registry nicht und zeigt für Jana deshalb bewusst keinen Lookupstatus.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="issued-locked-links-title"><header class="side-heading"><div class="panel-copy"><h2 id="issued-locked-links-title">Zur Payload- oder Kontextprüfung</h2><p>Die lokalen Aktionen verändern nur die sichtbare Reviewansicht.</p></div><span class="badge badge-prototype">DOM lokal</span></header><div class="side-body"><button class="btn-warning" type="button" data-state-target="state-generated-preview" aria-controls="state-generated-preview">Payload-Vorschau lesen</button><button class="btn-teal" type="button" data-prototype-action="Die fiktive Ausgabe- und Sperrgrenze wurde lokal erläutert. Es wurde kein Lookup ausgeführt, kein Status geändert, kein Pass signiert, keine Karte provisioniert, nichts gespeichert, zugestellt, gesperrt oder widerrufen.">Lebenszyklusgrenze erläutern</button></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Ausgabe-/Sperre-Zustand: Der Quellfixture `B-AC1-001` ist strikt von Jana Müllers UI-Fixture getrennt. Ein in-memory Apple-Dict ist kein signiertes `.pkpass`, kein Produktions-JWT, kein Wallet-Provisioning, keine Persistenz, keine Zustellung, keine Sperre/Widerruf, keine kommunale Synchronisierung und keine rechtliche Ausgabe.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Gast-, Aufenthalts-, Karten- und Payloadbeispielen. State-Switcher und lokale Hinweise ändern nur den DOM-Reviewzustand. Sie führen keine Suche, Browserroute, API-Anfrage, Datenbankaktion, Kartenobjekterzeugung, Serializer-Aufruf, Signing, Produktions-JWT, Registry-Lookup, Wallet-Provisioning, Persistenz, Zustellung, Sperre/Widerruf, Authentifizierung, RBAC, Audit, kommunale Synchronisierung oder rechtliche Ausgabe aus.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="checkin_kurtaxe_exemptions.html#state-calculated">Kurtaxe</a>
+    <a href="#state-ready" aria-current="page">Kurkarte</a>
+    <a href="checkin_overview.html#state-ready">Check-in</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <button id="state-button-ready" type="button" data-state-target="state-ready" aria-controls="state-ready" aria-pressed="true">Bereit</button>
+    <button id="state-button-generated-preview" type="button" data-state-target="state-generated-preview" aria-controls="state-generated-preview" aria-pressed="false">Vorschau</button>
+    <button id="state-button-wallet-unavailable" type="button" data-state-target="state-wallet-unavailable" aria-controls="state-wallet-unavailable" aria-pressed="false">Nicht verfügbar</button>
+    <button id="state-button-issued-locked" type="button" data-state-target="state-issued-locked" aria-controls="state-issued-locked" aria-pressed="false">Ausgabe / Sperre</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('kurkarte-live');
+      const labels = {
+        'state-ready': 'Bereiter fiktiver Kurkarte-Zustand angezeigt.',
+        'state-generated-preview': 'Fiktive Apple- und Google-JSON-Vorschau angezeigt.',
+        'state-wallet-unavailable': 'Fiktiver Kurkarte-Zustand mit nicht verfügbarer Wallet angezeigt.',
+        'state-issued-locked': 'Fiktiver Kurkarte-Zustand für Ausgabe und Sperre angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

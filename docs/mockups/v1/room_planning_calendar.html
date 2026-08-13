@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zimmerplanung — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+    }
+
+    /* ===== Reset and base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    :focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: 0 0 0 1px var(--accent-color);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: -48px;
+      left: 16px;
+      z-index: 80;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      background: var(--accent-color);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: top 0.15s ease;
+    }
+
+    .skip-link:focus-visible { top: 16px; }
+
+    /* ===== Shared shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: calc(48px + 24px);
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-header-bg);
+    }
+
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .filter-actions, .state-switcher, .mobile-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid var(--color-teal);
+      border-radius: 8px;
+      background: var(--surface-0);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .brand-copy, .page-copy, .panel-copy, .selection-copy, .state-copy, .notice-copy, .loading-copy, .agenda-copy, .evidence-copy {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .selection-copy p, .state-copy p, .notice-copy p, .evidence-copy p, .page-note, .help-text, .field-help, .agenda-copy p { color: var(--text-secondary); font-size: 13px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: fit-content;
+      padding: 2px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-muted { color: var(--text-muted); }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+    }
+
+    button:not([disabled]):hover { border-color: var(--surface-1); background: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active { border-color: var(--surface-2); background: var(--surface-2); transform: translateY(0); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { border-color: var(--accent-hover); background: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-secondary { background: var(--panel-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: calc(100vh - 72px);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 16px 12px;
+      border-right: 1px solid var(--border-color);
+      background: var(--panel-bg);
+    }
+
+    .nav-group { display: grid; gap: 8px; }
+    .nav-label { padding: 0 12px; color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: 4px; list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--panel-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .nav-link:hover { border-color: var(--surface-1); background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { border-left-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: 12px; text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+
+    .sidebar-boundary {
+      display: grid;
+      gap: 8px;
+      margin-top: auto;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .sidebar-boundary strong { color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-muted); font-size: 12px; }
+
+    .workspace {
+      display: grid;
+      align-content: start;
+      gap: 16px;
+      min-width: 0;
+      padding: 24px;
+      padding-bottom: 96px;
+    }
+
+    .context-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .context-values { min-width: 0; }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+
+    .boundary-notice, .filter-panel, .panel, .selected-panel, .state-card, .evidence-card, .mobile-agenda {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .boundary-notice {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 12px;
+      padding: 16px;
+      border-left: 3px solid var(--color-peach);
+    }
+
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+
+    /* ===== Persistent planning context and filters ===== */
+    .filter-panel { display: grid; gap: 16px; padding: 16px; }
+    .section-heading, .panel-heading, .state-heading, .selected-heading, .agenda-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(160px, 0.75fr) minmax(160px, 0.75fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field-group { display: grid; gap: 4px; min-width: 0; }
+    .field-group label { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+
+    input[type="date"], select {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .field-help { color: var(--text-muted); font-size: 12px; }
+    .filter-actions { align-self: end; }
+    .filter-actions button { min-width: 160px; }
+
+    .form-boundary {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .form-boundary strong { color: var(--color-peach); }
+
+    /* ===== State: normal planning week ===== */
+    .state-panel { display: grid; gap: 16px; min-width: 0; }
+    .state-heading { padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--panel-header-bg); }
+
+    .planning-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 352px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel, .selected-panel { overflow: hidden; }
+    .panel-heading, .selected-heading, .agenda-heading { padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: var(--panel-header-bg); }
+    .panel-body, .selected-body, .state-card-body, .agenda-body { display: grid; gap: 12px; padding: 16px; }
+
+    .panel-heading .badge-row { justify-content: flex-end; }
+    .calendar-context { color: var(--text-secondary); font-size: 12px; }
+    .calendar-context strong { color: var(--text-primary); }
+
+    .calendar-scroll {
+      overflow: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--timeline-bg);
+    }
+
+    table { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 12px; }
+    caption { padding: 8px 12px; background: var(--timeline-bg); color: var(--text-muted); font-size: 12px; text-align: left; }
+    th, td { padding: 8px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    thead th { position: sticky; top: 0; z-index: 1; background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    tbody th { min-width: 144px; background: var(--panel-bg); color: var(--text-primary); font-size: 12px; font-weight: 600; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    th:last-child, td:last-child { border-right: 0; }
+    .room-type { display: block; color: var(--text-muted); font-size: 11px; font-weight: 400; }
+    .day-date { display: block; color: var(--text-secondary); font-size: 11px; font-weight: 400; text-transform: none; }
+
+    .calendar-item {
+      display: grid;
+      width: 100%;
+      min-height: 48px;
+      justify-content: start;
+      gap: 4px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      font-size: 11px;
+      line-height: 1.35;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .calendar-item:hover { border-color: var(--accent-color); background: var(--surface-1); color: var(--text-primary); }
+    .calendar-item.is-selected { border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); }
+    .calendar-item.is-warning { border-color: var(--color-yellow); }
+    .calendar-item.is-conflict { border-color: var(--color-red); background: var(--surface-1); }
+    .calendar-item.is-empty { background: var(--panel-bg); color: var(--text-muted); }
+    .calendar-item strong { color: var(--text-primary); font-size: 12px; font-weight: 600; }
+    .calendar-item small { color: var(--text-muted); font-size: 10px; }
+    .calendar-item.is-conflict small { color: var(--color-red); }
+
+    .mobile-agenda { display: none; }
+    .selected-body { gap: 16px; }
+    .selection-summary {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--accent-color);
+      border-radius: 6px;
+      background: var(--surface-0);
+    }
+
+    .selection-summary strong { color: var(--text-primary); font-size: 14px; }
+    .selection-summary p { color: var(--text-secondary); font-size: 12px; }
+    .detail-list { display: grid; gap: 8px; list-style: none; }
+    .detail-list li { display: grid; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+    .detail-list li:last-child { border-bottom: 0; }
+    .detail-label { color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .selection-status { color: var(--text-muted); font-size: 12px; }
+
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .evidence-card { display: grid; gap: 8px; padding: 12px; background: var(--timeline-bg); }
+    .evidence-card h3 { color: var(--text-primary); }
+    .evidence-card p { color: var(--text-secondary); font-size: 12px; }
+    .evidence-card.is-warning { border-left: 3px solid var(--color-yellow); }
+    .evidence-card.is-info { border-left: 3px solid var(--color-blue); }
+    .evidence-card.is-peach { border-left: 3px solid var(--color-peach); }
+
+    /* ===== State: planning conflict ===== */
+    .persistent-alert {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--color-red);
+      border-left: 3px solid var(--color-red);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .alert-symbol { color: var(--color-red); font-size: 20px; text-align: center; }
+    .alert-copy { display: grid; gap: 4px; }
+    .alert-copy p { color: var(--text-secondary); font-size: 13px; }
+
+    .conflict-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 352px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .conflict-board { display: grid; gap: 12px; }
+    .conflict-row {
+      display: grid;
+      grid-template-columns: 144px minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .conflict-room { display: grid; gap: 4px; align-content: start; }
+    .conflict-room strong { color: var(--text-primary); }
+    .conflict-room span { color: var(--text-muted); font-size: 12px; }
+    .overlap-track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+    .overlap-block { display: grid; min-height: 72px; gap: 4px; padding: 8px; border: 1px solid var(--color-red); border-radius: 6px; background: var(--surface-0); color: var(--text-secondary); font-size: 11px; }
+    .overlap-block strong { color: var(--text-primary); font-size: 12px; }
+    .overlap-block small { color: var(--color-red); font-size: 10px; }
+    .overlap-empty { min-height: 72px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--panel-bg); color: var(--text-muted); font-size: 11px; }
+
+    .recovery-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--color-yellow);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .recovery-card p { color: var(--text-secondary); font-size: 13px; }
+    .disabled-explanation { color: var(--text-muted); font-size: 12px; }
+
+    /* ===== State: loading ===== */
+    .loading-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 0.75fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .loading-copy {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--timeline-bg);
+    }
+
+    .loading-copy p { color: var(--text-secondary); font-size: 13px; }
+    .skeleton-list { display: grid; gap: 8px; list-style: none; }
+    .skeleton-row { display: grid; grid-template-columns: 144px minmax(0, 1fr); gap: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--panel-bg); }
+    .skeleton-block { min-height: 20px; border-radius: 4px; background: var(--surface-0); }
+    .skeleton-block.tall { min-height: 48px; }
+
+    /* ===== State: semantic room list ===== */
+    .agenda-list { display: grid; gap: 8px; list-style: none; }
+    .agenda-item {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .agenda-room { display: grid; gap: 4px; }
+    .agenda-room strong { color: var(--text-primary); font-size: 14px; }
+    .agenda-room span { color: var(--text-muted); font-size: 11px; }
+    .agenda-copy strong { color: var(--text-primary); font-size: 13px; }
+    .agenda-copy p { color: var(--text-secondary); font-size: 12px; }
+    .agenda-item.is-conflict { border-left: 3px solid var(--color-red); }
+    .agenda-item.is-warning { border-left: 3px solid var(--color-yellow); }
+    .agenda-item.is-selected { border-left: 3px solid var(--accent-color); background: var(--surface-0); }
+
+    /* ===== Fixed prototype controls ===== */
+    .state-switcher {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 60;
+      max-width: 520px;
+      justify-content: flex-end;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--panel-bg);
+    }
+
+    .switcher-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .state-switcher button { min-height: 32px; padding: 4px 8px; font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+
+    .mobile-nav { display: none; }
+    .page-note { color: var(--text-muted); font-size: 11px; }
+
+    /* ===== Laptop ===== */
+    @media (max-width: 1280px) and (min-width: 769px) {
+      .planning-layout, .conflict-layout { grid-template-columns: minmax(0, 1fr) 304px; }
+      .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .filter-actions { grid-column: 1 / -1; }
+      .evidence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .evidence-grid .evidence-card:last-child { grid-column: 1 / -1; }
+    }
+
+    /* ===== Tablet ===== */
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: 72px minmax(0, 1fr); }
+      .sidebar { align-items: center; padding: 16px 8px; }
+      .nav-label, .nav-copy, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: 16px; justify-content: center; width: 48px; padding: 8px; border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .planning-layout, .conflict-layout, .loading-layout { grid-template-columns: minmax(0, 1fr); }
+      .selected-panel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .selected-heading { grid-column: 1 / -1; }
+      .selected-body { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .selected-body .selection-summary, .selected-body .action-row, .selected-body .selection-status { grid-column: 1 / -1; }
+      .evidence-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    /* ===== Focused mobile task mode ===== */
+    @media (max-width: 768px) {
+      body { padding-bottom: 112px; }
+      .app-header { align-items: flex-start; min-height: 0; padding: 16px; }
+      .top-actions { justify-content: flex-start; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .workspace { gap: 16px; padding: 16px; padding-bottom: 128px; }
+      .context-strip { align-items: flex-start; }
+      .context-values { gap: 4px; }
+      .boundary-notice { grid-template-columns: minmax(0, 1fr); }
+      .notice-symbol { display: none; }
+      .filter-grid { grid-template-columns: minmax(0, 1fr); }
+      .filter-actions { display: grid; }
+      .filter-actions button { width: 100%; }
+      .filter-panel { padding: 12px; }
+      .calendar-scroll { display: none; }
+      .mobile-agenda { display: grid; gap: 12px; padding: 12px; }
+      .mobile-agenda .agenda-list { display: grid; }
+      .selected-panel { display: grid; }
+      .selected-body { display: grid; grid-template-columns: minmax(0, 1fr); }
+      .conflict-row { grid-template-columns: minmax(0, 1fr); }
+      .overlap-track { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .agenda-item { grid-template-columns: minmax(0, 1fr); }
+      .agenda-item button { width: 100%; }
+      .state-switcher { right: 8px; bottom: 56px; left: 8px; max-width: none; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; }
+      .state-switcher button { min-height: 44px; flex: 0 0 auto; }
+      .switcher-label { display: none; }
+      .mobile-nav {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px 8px;
+        border-top: 1px solid var(--border-color);
+        background: var(--panel-bg);
+      }
+      .mobile-nav a {
+        display: grid;
+        min-height: 44px;
+        place-items: center;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background: var(--panel-bg);
+        color: var(--text-secondary);
+        font-size: 11px;
+        text-align: center;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { border-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, input[type="date"], select { min-height: 44px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Design-only composition: a staff planning shell, a semantic room timeline,
+    a selected-stay context, and a room-list alternative. These are not
+    production component paths, routes, or claims of a browser implementation.
+  -->
+  <a class="skip-link" href="#planning-workspace">Zum Planungsbereich springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland ERP">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Betriebsarbeitsplatz · Bad Orb</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisstatus der Planung">
+      <span class="badge badge-prototype">◈ Prototyp</span>
+      <span class="badge badge-planned">⌁ Geplant · Zimmer-API</span>
+      <span class="badge badge-unclear">? RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <div class="brand" aria-hidden="true">
+        <span class="brand-mark">HR</span>
+        <span class="brand-copy"><span class="brand-name">Arbeitsplatz</span></span>
+      </div>
+
+      <nav class="nav-group" aria-label="Tägliche Arbeit">
+        <p class="nav-label">Tägliche Arbeit</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#planning-workspace"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-copy">Heute</span><span class="nav-count">6</span></a></li>
+          <li><a class="nav-link" href="#planning-workspace"><span class="nav-symbol" aria-hidden="true">↗</span><span class="nav-copy">Anreisen</span><span class="nav-count">8</span></a></li>
+          <li><a class="nav-link" href="#planning-workspace" aria-current="page"><span class="nav-symbol" aria-hidden="true">▦</span><span class="nav-copy">Zimmerplanung</span><span class="nav-count">Woche</span></a></li>
+          <li><a class="nav-link" href="#planning-boundary"><span class="nav-symbol" aria-hidden="true">⌕</span><span class="nav-copy">Suche &amp; Reservierungen</span><span class="nav-count">Beispiel</span></a></li>
+        </ul>
+      </nav>
+
+      <nav class="nav-group" aria-label="Nachweise und Hinweise">
+        <p class="nav-label">Nachweise</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#planning-boundary"><span class="nav-symbol" aria-hidden="true">◫</span><span class="nav-copy">Planungsgrenze</span><span class="nav-count">1</span></a></li>
+          <li><a class="nav-link" href="#state-conflict"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-copy">Konflikte</span><span class="nav-count">1</span></a></li>
+        </ul>
+      </nav>
+
+      <section class="sidebar-boundary" aria-label="Grenze der Datenbasis">
+        <span class="badge badge-unclear">Keine Live-Belegung</span>
+        <strong>Fiktive Wochenansicht</strong>
+        <p>Inventar, Bereitschaft, Preise, Sperren, Rollen und Synchronisation brauchen eigene künftige Verträge.</p>
+      </section>
+    </aside>
+
+    <main id="planning-workspace" class="workspace">
+      <section class="context-strip" aria-label="Aktueller Planungskontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Planungswoche</span><time class="context-value" datetime="2026-07-13">13.–19. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Ansicht</span><span class="context-value">Fiktive Belegungsplanung</span>
+        </div>
+        <span class="badge badge-teal">⊙ Synthetische Beispieldaten</span>
+      </section>
+
+      <section id="planning-boundary" class="boundary-notice" aria-labelledby="planning-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <div class="section-heading">
+            <div class="page-copy">
+              <h1 id="planning-title">Zimmerplanung und Belegungskalender</h1>
+              <p>Diese statische Arbeitsansicht zeigt eine fiktive Woche als Planungs- und Prüfkontext. Sie ist kein Live-Zimmerinventar, keine Verfügbarkeitszusage und keine gespeicherte Zimmerzuteilung.</p>
+            </div>
+            <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+          </div>
+          <p><strong>Keine Live-Routen oder geteilte Auswahl:</strong> Der Beispielbezug zu <code>RES-BO-2026-0716-014</code> passt zur fiktiven Reservierungssuche, öffnet aber keinen echten Datensatz und bewahrt keine Auswahl.</p>
+        </div>
+      </section>
+
+      <section class="filter-panel" aria-labelledby="filter-title">
+        <div class="section-heading">
+          <div class="page-copy">
+            <h2 id="filter-title">Planungskontext festlegen</h2>
+            <p>Eigenschaft, Zeitraum und Segment bleiben sichtbar, wenn ein Zimmer, ein Konflikt oder die Listenalternative geprüft wird.</p>
+          </div>
+          <span class="badge badge-info">⌁ Filter nur lokal</span>
+        </div>
+
+        <form id="planning-filter-form" class="filter-grid" novalidate>
+          <div class="field-group">
+            <label for="property-filter">Betrieb</label>
+            <select id="property-filter" name="property">
+              <option value="rheinland">Hotel Rheinland · Bad Orb</option>
+              <option value="sample">Weiterer Betrieb · nur Beispiel</option>
+            </select>
+            <span class="field-help">Die Auswahl ändert keine Quelle oder Berechtigung.</span>
+          </div>
+          <div class="field-group">
+            <label for="week-start">Wochenbeginn</label>
+            <input id="week-start" name="week-start" type="date" value="2026-07-13">
+          </div>
+          <div class="field-group">
+            <label for="room-segment">Zimmersegment</label>
+            <select id="room-segment" name="room-segment">
+              <option value="all">Alle fiktiven Zimmer</option>
+              <option value="arrival">Anreisebezug</option>
+              <option value="exceptions">Mit Hinweis</option>
+            </select>
+          </div>
+          <div class="filter-actions" aria-label="Lokale Prototypaktionen">
+            <button id="filter-preview" class="btn-primary" type="submit">Beispielansicht aktualisieren</button>
+            <button class="btn-secondary" type="button" data-state-target="state-list" aria-controls="state-list">Zimmerliste öffnen</button>
+          </div>
+        </form>
+
+        <p class="form-boundary"><strong>Geplant / Backend erforderlich:</strong><span>Raumkatalog, Verfügbarkeit, Reinigung, Wartung, Aufenthalt, Preis, Rollenprüfung, Konflikt-/Sperrmodell, Speicherung, Kanalabgleich und Nachvollziehbarkeit sind nicht durch diese Ansicht belegt.</span></p>
+      </section>
+
+      <p id="prototype-state-message" class="sr-only" aria-live="polite" aria-atomic="true">Normale fiktive Wochenansicht angezeigt.</p>
+
+      <!-- ===== State: normal week ===== -->
+      <section id="state-week" class="state-panel" aria-labelledby="week-heading">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="week-heading">Normale fiktive Planungswoche</h2>
+            <p>Zimmer, Woche und ausgewählter Aufenthaltskontext stehen im Vordergrund; Nachweise und Grenzen folgen als zweite Ebene.</p>
+          </div>
+          <div class="badge-row">
+            <span class="badge badge-teal">Kalender + Liste</span>
+            <span class="badge badge-planned">Geplant · Datenquelle</span>
+          </div>
+        </header>
+
+        <div class="planning-layout">
+          <section class="panel" aria-labelledby="calendar-heading">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="calendar-heading">Fiktiver Zimmerkalender</h2>
+                <p>Jede sichtbare Belegung ist als Schaltfläche erreichbar; die Tabelle besitzt eine beschriftete Scrollfläche und eine separate Zimmerliste.</p>
+              </div>
+              <div class="badge-row">
+                <span class="badge badge-muted">13.–19.07.2026</span>
+                <span class="badge badge-warning">Keine Live-Verfügbarkeit</span>
+              </div>
+            </header>
+            <div class="panel-body">
+              <p class="calendar-context"><strong>Ausgewählt:</strong> Jana Müller-Kaya · <code>RES-BO-2026-0716-014</code> · fiktiver Zimmerbezug 214. Die blaue Auswahl ist lokaler Prototypzustand, keine Sperre oder Reservierung.</p>
+
+              <div class="calendar-scroll" tabindex="0" aria-label="Fiktiver Zimmerkalender für die Woche vom 13. bis 19. Juli 2026; horizontal scrollbar">
+                <table>
+                  <caption>Fiktive Belegungsblöcke. „Keine fiktive Belegung“ bedeutet nicht, dass ein Zimmer real frei, sauber oder buchbar ist.</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Zimmer</th>
+                      <th scope="col"><time datetime="2026-07-13">Mo<span class="day-date">13.07.</span></time></th>
+                      <th scope="col"><time datetime="2026-07-14">Di<span class="day-date">14.07.</span></time></th>
+                      <th scope="col"><time datetime="2026-07-15">Mi<span class="day-date">15.07.</span></time></th>
+                      <th scope="col"><time datetime="2026-07-16">Do<span class="day-date">16.07.</span></time></th>
+                      <th scope="col"><time datetime="2026-07-17">Fr<span class="day-date">17.07.</span></time></th>
+                      <th scope="col"><time datetime="2026-07-18">Sa<span class="day-date">18.07.</span></time></th>
+                      <th scope="col"><time datetime="2026-07-19">So<span class="day-date">19.07.</span></time></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">101<span class="room-type">Einzelzimmer · Beispiel</span></th>
+                      <td colspan="3"><button class="calendar-item" type="button" data-selection data-name="Erika Mustergast" data-record="RES-BO-2026-0713-002" data-room="Zimmer 101 · fiktiv" data-stay="13.–15.07.2026 · 2 Nächte · fiktiver Aufenthalt" aria-label="Fiktive Belegung Zimmer 101, Erika Mustergast, 13. bis 15. Juli 2026"><strong>Erika Mustergast</strong><span>13.–15.07. · RES-BO-2026-0713-002</span><small>Prototyp · keine Ankunftsbestätigung</small></button></td>
+                      <td colspan="4"><button class="calendar-item is-empty" type="button" data-selection data-name="Keine fiktive Belegung" data-record="Kein Datenbankeintrag" data-room="Zimmer 101 · Beispielbereich" data-stay="16.–19.07.2026 · Planungsbereich ohne Live-Status" aria-label="Zimmer 101, 16. bis 19. Juli, keine fiktive Belegung"><strong>Keine fiktive Belegung</strong><span>16.–19.07. · Statusquelle geplant</span><small>Nicht als frei oder bereit interpretieren</small></button></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">108<span class="room-type">Einzelzimmer · Beispiel</span></th>
+                      <td colspan="5"><button class="calendar-item is-warning" type="button" data-selection data-name="Jörg Müller" data-record="RES-BO-2026-0628-087" data-room="Zimmer 108 · fiktiv" data-stay="10.–17.07.2026 · Abreise im Beispielkontext" aria-label="Fiktive Belegung Zimmer 108, Jörg Müller, 13. bis 17. Juli 2026"><strong>Jörg Müller</strong><span>bis 17.07. · RES-BO-2026-0628-087</span><small>Unklar · Abreise-/Bereitschaftsstatus</small></button></td>
+                      <td colspan="2"><button class="calendar-item is-empty" type="button" data-selection data-name="Keine fiktive Belegung" data-record="Kein Datenbankeintrag" data-room="Zimmer 108 · Beispielbereich" data-stay="18.–19.07.2026 · kein Live-Status" aria-label="Zimmer 108, 18. bis 19. Juli, keine fiktive Belegung"><strong>Keine fiktive Belegung</strong><span>18.–19.07. · Planungsbereich</span><small>Reinigung und Sperren ungeklärt</small></button></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">117<span class="room-type">Einzelzimmer · Beispiel</span></th>
+                      <td colspan="2"><button class="calendar-item" type="button" data-selection data-name="Sibel Müller" data-record="RES-BO-2026-0511-203" data-room="Zimmer 117 · fiktiv" data-stay="Vergangener Beispielaufenthalt; keine Historienabfrage" aria-label="Fiktive Historienreferenz Zimmer 117, Sibel Müller"><strong>Sibel Müller</strong><span>Historienhinweis · RES-BO-2026-0511-203</span><small>Unklar · keine Historienquelle</small></button></td>
+                      <td colspan="5"><button class="calendar-item is-empty" type="button" data-selection data-name="Keine fiktive Belegung" data-record="Kein Datenbankeintrag" data-room="Zimmer 117 · Beispielbereich" data-stay="15.–19.07.2026 · keine bestätigte Belegung" aria-label="Zimmer 117, 15. bis 19. Juli, keine fiktive Belegung"><strong>Keine fiktive Belegung</strong><span>15.–19.07. · Beispielbereich</span><small>Keine Quelle für Inventar oder Pflegezustand</small></button></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">214<span class="room-type">Doppelzimmer · Beispiel</span></th>
+                      <td colspan="3"><button class="calendar-item" type="button" data-selection data-name="Familie Vogt" data-record="RES-BO-2026-0712-011" data-room="Zimmer 214 · fiktiv" data-stay="12.–15.07.2026 · Abreise vor ausgewähltem Beispiel" aria-label="Fiktive Belegung Zimmer 214, Familie Vogt, bis 15. Juli 2026"><strong>Familie Vogt</strong><span>bis 15.07. · RES-BO-2026-0712-011</span><small>Prototyp · Abreise nicht bestätigt</small></button></td>
+                      <td colspan="4"><button class="calendar-item is-selected" type="button" data-selection data-name="Jana Müller-Kaya" data-record="RES-BO-2026-0716-014" data-room="Zimmer 214 · fiktiv" data-stay="16.–23.07.2026 · 2 Gäste · Anreise im Beispiel" aria-label="Ausgewählte fiktive Belegung Zimmer 214, Jana Müller-Kaya, 16. bis 23. Juli 2026"><strong>Jana Müller-Kaya</strong><span>16.–23.07. · RES-BO-2026-0716-014</span><small>Ausgewählt · keine gespeicherte Zuteilung</small></button></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">215<span class="room-type">Doppelzimmer · Beispiel</span></th>
+                      <td colspan="3"><button class="calendar-item" type="button" data-selection data-name="Heike und Rolf Stark" data-record="RES-BO-2026-0714-021" data-room="Zimmer 215 · fiktiv" data-stay="14.–21.07.2026 · Beispielaufenthalt; in dieser Wochenansicht bis 15.07. ohne Überschneidung" aria-label="Fiktiver bestehender Belegungsbezug Zimmer 215 bis 15. Juli 2026"><strong>Heike und Rolf Stark</strong><span>bestehender Bezug bis 15.07.</span><small>RES-BO-2026-0714-021 · Nachweisprüfung geplant</small></button></td>
+                      <td colspan="4"><button class="calendar-item is-conflict" type="button" data-state-target="state-conflict" aria-controls="state-conflict" aria-label="Konfliktbeispiel für Zimmer 215 vom 16. bis 19. Juli öffnen"><strong>Fiktiver Überschneidungshinweis</strong><span>16.–19.07. · zwei Beispielbezüge</span><small>Konflikt prüfen · keine Auflösung ausgeführt</small></button></td>
+                    </tr>
+                    <tr>
+                      <th scope="row">302<span class="room-type">Komfortzimmer · Beispiel</span></th>
+                      <td colspan="5"><button class="calendar-item is-empty" type="button" data-selection data-name="Keine fiktive Belegung" data-record="Kein Datenbankeintrag" data-room="Zimmer 302 · Beispielbereich" data-stay="13.–17.07.2026 · kein Live-Status" aria-label="Zimmer 302, 13. bis 17. Juli, keine fiktive Belegung"><strong>Keine fiktive Belegung</strong><span>13.–17.07. · Beispielbereich</span><small>Nicht als frei oder preislich berechnet</small></button></td>
+                      <td colspan="2"><button class="calendar-item" type="button" data-selection data-name="Dr. Anke Müller-Stein" data-record="RES-BO-2026-0702-041" data-room="Zimmer 302 · fiktiv" data-stay="18.–29.07.2026 · geplanter Beispielaufenthalt" aria-label="Fiktive Belegung Zimmer 302, Dr. Anke Müller-Stein, ab 18. Juli"><strong>Dr. Anke Müller-Stein</strong><span>18.–29.07. · RES-BO-2026-0702-041</span><small>Vorschau · keine Verfügbarkeit abgeleitet</small></button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <section class="mobile-agenda" aria-labelledby="mobile-agenda-heading">
+                <header class="agenda-heading">
+                  <div class="agenda-copy">
+                    <h3 id="mobile-agenda-heading">Fokussierte mobile Zimmerliste</h3>
+                    <p>Auf kleinen Bildschirmen erscheint keine zusammengeschobene Wochenmatrix.</p>
+                  </div>
+                  <span class="badge badge-teal">44px Ziele</span>
+                </header>
+                <ul class="agenda-list">
+                  <li class="agenda-item is-selected"><div class="agenda-room"><strong>214</strong><span>Doppelzimmer</span></div><div class="agenda-copy"><strong>Jana Müller-Kaya</strong><p>16.–23.07. · RES-BO-2026-0716-014 · fiktiv</p></div><button type="button" data-selection data-name="Jana Müller-Kaya" data-record="RES-BO-2026-0716-014" data-room="Zimmer 214 · fiktiv" data-stay="16.–23.07.2026 · 2 Gäste · Anreise im Beispiel">Kontext wählen</button></li>
+                  <li class="agenda-item is-warning"><div class="agenda-room"><strong>215</strong><span>Doppelzimmer</span></div><div class="agenda-copy"><strong>Hinweis ab 16.07.</strong><p>Zwei fiktive Bezüge; keine automatische Auflösung.</p></div><button class="btn-warning" type="button" data-state-target="state-conflict" aria-controls="state-conflict">Konflikt prüfen</button></li>
+                  <li class="agenda-item"><div class="agenda-room"><strong>108</strong><span>Einzelzimmer</span></div><div class="agenda-copy"><strong>Abreisebezug unklar</strong><p>Keine fiktive Belegung ab 18.07. ist keine Ready-/Frei-Aussage.</p></div><button type="button" data-state-target="state-list" aria-controls="state-list">Liste ansehen</button></li>
+                </ul>
+              </section>
+            </div>
+          </section>
+
+          <aside class="selected-panel" aria-labelledby="selection-heading">
+            <header class="selected-heading">
+              <div class="panel-copy">
+                <h2 id="selection-heading">Ausgewählter Aufenthaltskontext</h2>
+                <p>Lokale Auswahl mit minimalen fiktiven Angaben.</p>
+              </div>
+              <span class="badge badge-prototype">Prototyp</span>
+            </header>
+            <div class="selected-body">
+              <article class="selection-summary">
+                <span class="badge badge-teal">Ausgewählt · lokal</span>
+                <strong id="selected-name">Jana Müller-Kaya</strong>
+                <p id="selected-stay">16.–23.07.2026 · 2 Gäste · Anreise im Beispiel</p>
+              </article>
+              <ul class="detail-list" aria-label="Minimierter fiktiver Aufenthaltskontext">
+                <li><span class="detail-label">Reservierung</span><span id="selected-record" class="detail-value">RES-BO-2026-0716-014</span></li>
+                <li><span class="detail-label">Zimmerbezug</span><span id="selected-room" class="detail-value">Zimmer 214 · fiktiv</span></li>
+                <li><span class="detail-label">Datenschutz</span><span class="detail-value">Keine Adresse, Geburtsdaten, Ausweise, Zahlungs- oder Gesundheitsdaten sichtbar.</span></li>
+                <li><span class="detail-label">Status</span><span class="detail-value">Keine Zimmerzuteilung, Reinigung, Schlüsselübergabe oder Speicherung bestätigt.</span></li>
+              </ul>
+              <div class="action-row">
+                <button class="btn-primary" type="button" data-state-target="state-list" aria-controls="state-list">Zimmerliste als Alternative öffnen</button>
+                <button class="btn-warning" type="button" data-state-target="state-conflict" aria-controls="state-conflict">Konfliktbeispiel prüfen</button>
+              </div>
+              <p id="selection-status" class="selection-status" role="status">Ausgewählt aus der fiktiven Kalenderansicht; kein Datensatz, keine Route und keine Auswahl wurden gespeichert.</p>
+            </div>
+          </aside>
+        </div>
+
+        <section class="evidence-grid" aria-label="Grenzen und Nachweis der Planungsansicht">
+          <article class="evidence-card is-peach">
+            <span class="badge badge-prototype">Operational · begrenzt</span>
+            <h3>Reservierungsähnlicher Kontext</h3>
+            <p>Der lokale Kurtaxe-Code kennt Reservierungs-ID, An- und Abreise sowie Gäste. Er liefert weder Zimmerinventar noch Belegung, Preis oder Zuteilung.</p>
+          </article>
+          <article class="evidence-card is-warning">
+            <span class="badge badge-unclear">Unklar · Konflikt/RBAC</span>
+            <h3>Keine automatische Änderung</h3>
+            <p>Ein sichtbarer Überschneidungshinweis ist kein Sperrtest, keine Berechtigung, keine Übersteuerung und kein dauerhafter Audit-Eintrag.</p>
+          </article>
+          <article class="evidence-card is-info">
+            <span class="badge badge-planned">Geplant · Integration</span>
+            <h3>Keine externe Synchronisation</h3>
+            <p>Drag &amp; Drop ist nur ein geplantes Muster: Es speichert, reserviert oder synchronisiert keinen Zimmerwechsel. Room-Move, Housekeeping, Tür-/Schlüsselsystem, Channel-Abgleich, Preis und Benachrichtigung brauchen getrennte API-, Daten-, Job- und Integrationsverträge.</p>
+          </article>
+        </section>
+      </section>
+
+      <!-- ===== State: overbooking conflict ===== -->
+      <section id="state-conflict" class="state-panel" aria-labelledby="conflict-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="conflict-heading">Fiktiver Überbuchungs- und Konflikthinweis</h2>
+            <p>Eine Ausnahme bleibt sichtbar, bis ein späterer fachlicher und technischer Vertrag eine sichere Entscheidung ermöglicht.</p>
+          </div>
+          <span class="badge badge-error">! Konflikt · Beispiel</span>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="conflict-alert-title">
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div class="alert-copy">
+            <h3 id="conflict-alert-title">Zimmer 215 enthält ab 16.07. zwei fiktive Aufenthaltsbezüge.</h3>
+            <p>Heike und Rolf Stark (<code>RES-BO-2026-0714-021</code>) und ein unbestätigter Beispielbezug teilen im Prototyp dieselbe Zimmer-/Zeitfläche. Die Ansicht vergleicht nur Darstellung; sie prüft keinen echten Bestand, hält kein Zimmer und löst keinen Konflikt.</p>
+          </div>
+        </section>
+
+        <div class="conflict-layout">
+          <section class="panel" aria-labelledby="overlap-heading">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="overlap-heading">Betroffener Planungsbereich</h2>
+                <p>Beispielhafte Überschneidung mit klarer Zeit- und Zimmerreferenz.</p>
+              </div>
+              <span class="badge badge-warning">Manuelle Prüfung erforderlich</span>
+            </header>
+            <div class="panel-body">
+              <div class="conflict-board">
+                <article class="conflict-row">
+                  <div class="conflict-room"><strong>Zimmer 215</strong><span>Doppelzimmer · Beispiel</span><span>16.–19.07.2026</span></div>
+                  <div class="overlap-track" aria-label="Fiktive Überschneidung in Zimmer 215">
+                    <div class="overlap-block"><strong>Heike und Rolf Stark</strong><span>RES-BO-2026-0714-021</span><small>bestehender Beispielblock</small></div>
+                    <div class="overlap-block"><strong>Unbestätigter Bezug</strong><span>RES-BO-2026-0716-099</span><small>fiktive Überschneidung</small></div>
+                    <div class="overlap-empty">Kein abrufbarer Echtzeitstatus</div>
+                    <div class="overlap-empty">Kein abrufbarer Echtzeitstatus</div>
+                  </div>
+                </article>
+                <article class="evidence-card is-warning">
+                  <span class="badge badge-unclear">Quelle / Zeit / Version unklar</span>
+                  <h3>Kein stilles Überschreiben</h3>
+                  <p>Eine spätere Umsetzung benötigt Inventar- und Aufenthaltsdaten, Zeitstempel, Versions-/Sperrregeln, Konfliktvergleich, autorisierte Übersteuerung, Audit, Rückkehrkontext und eine sichere Fehlermeldung.</p>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="recovery-heading">
+            <span class="badge badge-warning">Sicherer nächster Schritt</span>
+            <h2 id="recovery-heading">Vergleichen oder zurückkehren</h2>
+            <p>Der Prototyp erlaubt nur die Betrachtung der fiktiven Ausnahme und die Rückkehr zur Liste. Eine Zimmeränderung, Preisänderung, Benachrichtigung oder Synchronisation wird bewusst nicht simuliert.</p>
+            <button type="button" class="btn-secondary" data-state-target="state-list" aria-controls="state-list">Betroffene Zimmerliste öffnen</button>
+            <button type="button" class="btn-secondary" data-state-target="state-week" aria-controls="state-week">Zur Planungswoche zurück</button>
+            <button type="button" class="btn-danger" disabled aria-describedby="change-disabled-reason">Zimmerwechsel bestätigen</button>
+            <p id="change-disabled-reason" class="disabled-explanation">Gesperrt: Datenquelle, Verfügbarkeit, Berechtigung, Konfliktprüfung, Persistenz und auditierbarer Abschluss sind Geplant bzw. Unklar.</p>
+          </aside>
+        </div>
+
+        <p class="page-note">Konfliktzustand: Der rote Hinweis trägt Text und Bedeutung; er behauptet weder einen realen Sperrstatus noch eine konfliktfreie Alternative oder einen geretteten Vorgang.</p>
+      </section>
+
+      <!-- ===== State: loading ===== -->
+      <section id="state-loading" class="state-panel" aria-labelledby="loading-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="loading-heading">Ladezustand der Planungsansicht</h2>
+            <p>Planungskontext bleibt sichtbar; Platzhalter ersetzen weder eine leere Liste noch einen veralteten Echtzeitstand.</p>
+          </div>
+          <span class="badge badge-info">◷ Lädt · Prototyp</span>
+        </header>
+
+        <div class="loading-layout" aria-busy="true">
+          <section class="loading-copy" aria-label="Erklärung zum fiktiven Ladezustand">
+            <span class="badge badge-prototype">Keine Anfrage ausgelöst</span>
+            <h3>Struktur vor scheinbarer Sofort-Verfügbarkeit</h3>
+            <p>Dieser lokale Zustand zeigt, wie eine spätere Zimmerquelle strukturell angekündigt werden könnte. Er startet keinen Abruf, speichert keinen Filter und kann keine Zimmer, Preise, Reinigungsstände oder Konflikte aktualisieren.</p>
+            <div class="action-row">
+              <button type="button" class="btn-secondary" data-state-target="state-week" aria-controls="state-week">Zu fiktiven Planungsdaten</button>
+              <button type="button" class="btn-warning" data-state-target="state-conflict" aria-controls="state-conflict">Konfliktzustand ansehen</button>
+            </div>
+          </section>
+          <ul class="skeleton-list" aria-label="Platzhalter für eine spätere Zimmerplanung">
+            <li class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></li>
+            <li class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></li>
+            <li class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></li>
+            <li class="skeleton-row"><span class="skeleton-block tall"></span><span class="skeleton-block tall"></span></li>
+          </ul>
+        </div>
+
+        <p class="page-note">Ladezustand: Eine spätere Anwendung braucht eine echte Quelle, Zeitüberschreitungs-/Fehlersemantik, Berechtigungsprüfung, Aktualitätsangabe und angemessene Live-Regionen. Dieses statische HTML liefert keines davon.</p>
+      </section>
+
+      <!-- ===== State: accessible room-list alternative ===== -->
+      <section id="state-list" class="state-panel" aria-labelledby="list-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="list-heading">Zimmerliste als zugängliche Planungsalternative</h2>
+            <p>Die Woche, die fiktiven Zimmer- und Aufenthaltsbezüge sowie Ausnahmehinweise bleiben ohne Miniaturkalender lesbar.</p>
+          </div>
+          <span class="badge badge-teal">Liste · fiktiv</span>
+        </header>
+
+        <section class="panel" aria-labelledby="agenda-heading">
+          <header class="agenda-heading">
+            <div class="panel-copy">
+              <h2 id="agenda-heading">13.–19. Juli 2026 · fiktive Zimmerbezüge</h2>
+              <p>Native Liste mit einem Kontextschritt pro Eintrag. „Keine fiktive Belegung“ ist keine Live-Aussage über Verfügbarkeit oder Bereitschaft.</p>
+            </div>
+            <div class="badge-row"><span class="badge badge-prototype">Kein Live-Inventar</span><span class="badge badge-planned">Geplant · Zimmerstatus</span></div>
+          </header>
+          <div class="agenda-body">
+            <ol class="agenda-list">
+              <li class="agenda-item"><div class="agenda-room"><strong>101</strong><span>Einzelzimmer</span></div><div class="agenda-copy"><strong>Erika Mustergast</strong><p>13.–15.07. · RES-BO-2026-0713-002 · danach keine fiktive Belegung bis 19.07.</p></div><button type="button" data-selection data-name="Erika Mustergast" data-record="RES-BO-2026-0713-002" data-room="Zimmer 101 · fiktiv" data-stay="13.–15.07.2026 · 2 Nächte · fiktiver Aufenthalt">Kontext wählen</button></li>
+              <li class="agenda-item is-warning"><div class="agenda-room"><strong>108</strong><span>Einzelzimmer</span></div><div class="agenda-copy"><strong>Jörg Müller</strong><p>Bis 17.07. · RES-BO-2026-0628-087 · Abreise, Reinigung und nachfolgender Zimmerstatus Unklar.</p></div><button type="button" data-selection data-name="Jörg Müller" data-record="RES-BO-2026-0628-087" data-room="Zimmer 108 · fiktiv" data-stay="10.–17.07.2026 · Abreise im Beispielkontext">Kontext wählen</button></li>
+              <li class="agenda-item"><div class="agenda-room"><strong>117</strong><span>Einzelzimmer</span></div><div class="agenda-copy"><strong>Sibel Müller · Historienhinweis</strong><p>Kein aktueller fiktiver Wochenblock. Eine Historie, Verfügbarkeit oder Buchbarkeit wurde nicht abgefragt.</p></div><button type="button" data-selection data-name="Sibel Müller" data-record="RES-BO-2026-0511-203" data-room="Zimmer 117 · fiktiv" data-stay="Vergangener Beispielaufenthalt; keine Historienabfrage">Kontext wählen</button></li>
+              <li class="agenda-item is-selected"><div class="agenda-room"><strong>214</strong><span>Doppelzimmer</span></div><div class="agenda-copy"><strong>Jana Müller-Kaya</strong><p>16.–23.07. · RES-BO-2026-0716-014 · 2 Gäste · fiktive Auswahl aus der Suche, keine gespeicherte Zuteilung.</p></div><button class="btn-primary" type="button" data-selection data-name="Jana Müller-Kaya" data-record="RES-BO-2026-0716-014" data-room="Zimmer 214 · fiktiv" data-stay="16.–23.07.2026 · 2 Gäste · Anreise im Beispiel">Kontext wählen</button></li>
+              <li class="agenda-item is-conflict"><div class="agenda-room"><strong>215</strong><span>Doppelzimmer</span></div><div class="agenda-copy"><strong>Heike und Rolf Stark · Konflikthinweis</strong><p>14.–21.07. · RES-BO-2026-0714-021 · ab 16.07. enthält die fiktive Ansicht eine Überschneidung.</p></div><button class="btn-warning" type="button" data-state-target="state-conflict" aria-controls="state-conflict">Konflikt prüfen</button></li>
+              <li class="agenda-item"><div class="agenda-room"><strong>302</strong><span>Komfortzimmer</span></div><div class="agenda-copy"><strong>Dr. Anke Müller-Stein</strong><p>Ab 18.07. · RES-BO-2026-0702-041 · Vorschaukontext; keine Verfügbarkeit, Preislogik oder Zuteilung abgeleitet.</p></div><button type="button" data-selection data-name="Dr. Anke Müller-Stein" data-record="RES-BO-2026-0702-041" data-room="Zimmer 302 · fiktiv" data-stay="18.–29.07.2026 · geplanter Beispielaufenthalt">Kontext wählen</button></li>
+            </ol>
+            <div class="action-row">
+              <button class="btn-secondary" type="button" data-state-target="state-week" aria-controls="state-week">Wochenkalender öffnen</button>
+              <button class="btn-secondary" type="button" data-state-target="state-loading" aria-controls="state-loading">Ladezustand demonstrieren</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="evidence-card is-info" aria-label="Grenze der Listenalternative">
+          <span class="badge badge-planned">Geplant · zugängliche Umsetzung</span>
+          <h3>Struktur statt Konformitätsbehauptung</h3>
+          <p>Die Liste verwendet native Überschriften, eine geordnete Liste und Buttons. Der Quellcode kann jedoch keine Tastaturabläufe, Screen-Reader-Ausgabe, Kontrast in jeder gerenderten Kombination, Zoom/Reflow, Touchmessung oder WCAG-/BFSG-Konformität nachweisen.</p>
+        </section>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Hotel-, Zimmer- und Gastdaten. Quellprüfungen können Tokens, semantische Struktur, Zustandsabschnitte und lokale JavaScript-Logik nachweisen; sie beweisen weder gerenderte Layoutqualität noch assistive Technologie, Berechtigung, Persistenz, Inventar, Preise, Konfliktauflösung, externe Synchronisation oder rechtliche/operative Endgültigkeit.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="#planning-workspace">Heute</a>
+    <a href="#planning-workspace" aria-current="page">Planung</a>
+    <a href="#planning-boundary">Hinweise</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <span class="switcher-label">Zustand</span>
+    <button id="state-button-week" type="button" data-state-target="state-week" aria-controls="state-week" aria-pressed="true">Normale Woche</button>
+    <button id="state-button-conflict" type="button" data-state-target="state-conflict" aria-controls="state-conflict" aria-pressed="false">Konflikt</button>
+    <button id="state-button-loading" type="button" data-state-target="state-loading" aria-controls="state-loading" aria-pressed="false">Lädt</button>
+    <button id="state-button-list" type="button" data-state-target="state-list" aria-controls="state-list" aria-pressed="false">Zimmerliste</button>
+  </div>
+
+  <script>
+    (function () {
+      const statePanels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const stateMessage = document.getElementById('prototype-state-message');
+      const filterForm = document.getElementById('planning-filter-form');
+      const selectionName = document.getElementById('selected-name');
+      const selectionRecord = document.getElementById('selected-record');
+      const selectionRoom = document.getElementById('selected-room');
+      const selectionStay = document.getElementById('selected-stay');
+      const selectionStatus = document.getElementById('selection-status');
+
+      const stateLabels = {
+        'state-week': 'Normale fiktive Planungswoche angezeigt.',
+        'state-conflict': 'Fiktiver Überbuchungs- und Konflikthinweis angezeigt.',
+        'state-loading': 'Fiktiver Ladezustand angezeigt. Keine Anfrage wurde ausgelöst.',
+        'state-list': 'Zugängliche fiktive Zimmerliste angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const targetPanel = document.getElementById(targetId);
+        if (!targetPanel) {
+          return;
+        }
+
+        statePanels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        stateMessage.textContent = stateLabels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      Array.from(document.querySelectorAll('[data-selection]')).forEach(function (control) {
+        control.addEventListener('click', function () {
+          const name = control.dataset.name;
+          const record = control.dataset.record;
+          const room = control.dataset.room;
+          const stay = control.dataset.stay;
+
+          selectionName.textContent = name;
+          selectionRecord.textContent = record;
+          selectionRoom.textContent = room;
+          selectionStay.textContent = stay;
+          selectionStatus.textContent = name + ' wurde nur in der fiktiven Prototypansicht ausgewählt. Es gibt keine Route, Speicherung, Zimmerzuteilung oder Berechtigungsprüfung.';
+          stateMessage.textContent = 'Fiktiver Kontext für ' + name + ' ausgewählt. Keine Daten wurden gespeichert.';
+        });
+      });
+
+      filterForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        activateState('state-week');
+        stateMessage.textContent = 'Beispielansicht lokal aktualisiert. Es wurde keine Inventar-, Preis-, Berechtigungs- oder Belegungsabfrage ausgeführt.';
+      });
+    }());
+  </script>
+</body>
+</html>

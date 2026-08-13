@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operativer Hinweis — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* Established geometry, type, and interaction scale. */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --letter-spacing-label: 0.5px;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --drawer-width: calc(var(--space-4xl) * 8);
+      --state-switcher-width: calc(var(--space-4xl) * 12);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --motion-none: 0s;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Reset and base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: var(--border-width);
+      height: var(--border-width);
+      margin: calc(var(--border-width) * -1);
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-color);
+      border: var(--border-width) solid var(--accent-color);
+      border-radius: var(--radius-control);
+      color: var(--timeline-bg);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    h1 { color: var(--text-primary); font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    h2 { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    h3 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--touch-target) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .brand,
+    .top-actions,
+    .context-values,
+    .context-strip,
+    .badge-row,
+    .button-row,
+    .legend-row,
+    .state-switcher,
+    .mobile-nav,
+    .notice-title-row,
+    .metadata-grid,
+    .timeline-meta,
+    .evidence-actions,
+    .alert-header-actions,
+    .acknowledgement-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .brand { min-height: var(--touch-target); }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-2xl);
+      height: var(--space-2xl);
+      flex: 0 0 auto;
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .brand-copy,
+    .header-copy,
+    .section-copy,
+    .panel-copy,
+    .alert-copy,
+    .context-copy,
+    .timeline-copy,
+    .evidence-copy,
+    .recovery-copy,
+    .state-copy,
+    .permission-copy,
+    .confirm-copy,
+    .metadata-item,
+    .offline-copy,
+    .resolution-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .brand-subtitle,
+    .header-copy p,
+    .panel-copy p,
+    .section-copy p,
+    .alert-copy p,
+    .context-copy p,
+    .timeline-copy p,
+    .evidence-copy p,
+    .recovery-copy p,
+    .state-copy p,
+    .permission-copy p,
+    .confirm-copy p,
+    .offline-copy p,
+    .resolution-copy p,
+    .helper,
+    .metadata-label,
+    .context-label,
+    .context-value,
+    .timeline-note,
+    .evidence-note,
+    .page-note,
+    .state-note {
+      color: var(--text-muted);
+      font-size: var(--font-size-label);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: var(--space-badge-y) var(--space-sm);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      line-height: var(--line-height-base);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-operational { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-assigned { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-acknowledged { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-offline { border-color: var(--color-red); color: var(--color-red); }
+    .badge-retrying { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-resolved { border-color: var(--color-green); color: var(--color-green); }
+    .badge-permission { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+
+    button, input, select, textarea { font: inherit; }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); border-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-secondary { background: var(--panel-bg); border-color: var(--border-color); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-quiet { background: var(--timeline-bg); border-color: var(--border-color); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: calc(100vh - calc(var(--touch-target) + var(--space-xl)));
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label {
+      padding: var(--space-none) var(--space-md);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+    }
+
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-left: var(--border-emphasis) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: var(--font-size-secondary);
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: var(--font-size-label); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .sidebar-boundary {
+      display: grid;
+      gap: var(--space-xs);
+      margin-top: auto;
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .sidebar-boundary strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .sidebar-boundary p { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .workspace {
+      display: grid;
+      align-content: start;
+      gap: var(--space-lg);
+      min-width: var(--space-none);
+      padding: var(--space-xl);
+      padding-bottom: calc(var(--space-4xl) * 2);
+    }
+
+    .context-strip,
+    .context-boundary,
+    .alert-card,
+    .panel,
+    .evidence-drawer,
+    .recovery-card,
+    .permission-card,
+    .confirmation-card,
+    .resolution-card,
+    .offline-card,
+    .state-explainer,
+    .timeline-card {
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .context-strip {
+      justify-content: space-between;
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .context-values { min-width: var(--space-none); }
+    .context-label { letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .context-divider { color: var(--surface-2); }
+
+    .context-boundary {
+      display: grid;
+      grid-template-columns: auto minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      border-left: var(--border-emphasis) solid var(--color-peach);
+    }
+
+    .boundary-symbol { color: var(--color-peach); font-size: var(--font-size-section-title); line-height: var(--line-height-base); }
+    .context-boundary h1 { font-size: var(--font-size-page-title); }
+    .context-boundary p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .state-panel { display: grid; gap: var(--space-lg); min-width: var(--space-none); }
+    .alert-detail-grid { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 6), var(--drawer-width)); gap: var(--space-lg); align-items: start; }
+    .main-stack, .side-stack { display: grid; gap: var(--space-lg); min-width: var(--space-none); }
+
+    .alert-card { display: grid; overflow: hidden; }
+    .alert-card-header, .panel-header, .evidence-header, .timeline-header, .state-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .alert-card-header { border-left: var(--border-emphasis) solid var(--color-peach); }
+    .alert-card.is-acknowledged .alert-card-header { border-left-color: var(--color-blue); }
+    .alert-card.is-offline .alert-card-header { border-left-color: var(--color-red); }
+    .alert-card.is-retrying .alert-card-header { border-left-color: var(--color-yellow); }
+    .alert-card.is-resolved .alert-card-header { border-left-color: var(--color-green); }
+    .alert-card.is-permission .alert-card-header { border-left-color: var(--color-yellow); }
+
+    .alert-body, .panel-body, .evidence-body, .timeline-body, .state-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .alert-header-actions { justify-content: flex-end; }
+    .alert-copy h2 { font-size: var(--font-size-section-title); }
+    .alert-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .metadata-grid { display: grid; grid-template-columns: repeat(4, minmax(var(--space-none), 1fr)); gap: var(--space-sm); }
+    .metadata-item { padding: var(--space-md); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .metadata-label { letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .metadata-value { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); overflow-wrap: anywhere; }
+    .metadata-value.mono, .mono { color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--font-size-label); }
+
+    .alert-summary {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .alert-summary h3 { color: var(--text-primary); }
+    .alert-summary p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .alert-summary strong { color: var(--color-peach); font-weight: var(--font-weight-semibold); }
+
+    .recovery-card, .state-explainer, .resolution-card, .offline-card, .permission-card, .confirmation-card, .timeline-card, .evidence-drawer { display: grid; overflow: hidden; }
+    .recovery-card { border-left: var(--border-emphasis) solid var(--color-peach); }
+    .offline-card { border-left: var(--border-emphasis) solid var(--color-red); }
+    .resolution-card { border-left: var(--border-emphasis) solid var(--color-green); }
+    .permission-card { border-left: var(--border-emphasis) solid var(--color-yellow); }
+    .confirmation-card { border-left: var(--border-emphasis) solid var(--color-blue); }
+    .timeline-card { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .evidence-drawer { border-left: var(--border-emphasis) solid var(--color-blue); }
+
+    .recovery-card .panel-body, .offline-card .panel-body, .resolution-card .panel-body, .permission-card .panel-body, .confirmation-card .panel-body, .state-explainer .panel-body { gap: var(--space-md); }
+    .recovery-copy p, .offline-copy p, .resolution-copy p, .permission-copy p, .confirm-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .activity-timeline { display: grid; gap: var(--space-none); list-style: none; }
+    .timeline-event {
+      display: grid;
+      grid-template-columns: calc(var(--space-lg) + var(--space-xs)) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-none);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+
+    .timeline-event:last-child { border-bottom: var(--space-none); }
+    .timeline-marker {
+      display: grid;
+      place-items: center;
+      width: var(--space-lg);
+      height: var(--space-lg);
+      margin-top: var(--space-xs);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-badge);
+      color: var(--color-teal);
+      font-size: var(--font-size-dense);
+    }
+
+    .timeline-event.warning .timeline-marker { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .timeline-event.error .timeline-marker { border-color: var(--color-red); color: var(--color-red); }
+    .timeline-event.info .timeline-marker { border-color: var(--color-blue); color: var(--color-blue); }
+    .timeline-copy h3 { font-size: var(--font-size-secondary); }
+    .timeline-copy p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .timeline-meta { color: var(--text-muted); font-size: var(--font-size-dense); }
+    .timeline-meta time { color: var(--text-secondary); font-family: var(--font-mono); }
+
+    .evidence-list, .fact-list, .limit-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .evidence-list li, .fact-list li, .limit-list li {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-sm) var(--space-none);
+      border-bottom: var(--border-width) solid var(--border-color);
+    }
+
+    .evidence-list li:last-child, .fact-list li:last-child, .limit-list li:last-child { border-bottom: var(--space-none); }
+    .evidence-list strong, .fact-list strong, .limit-list strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .evidence-list span, .fact-list span, .limit-list span { color: var(--text-secondary); font-size: var(--font-size-label); overflow-wrap: anywhere; }
+
+    details {
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    summary { color: var(--text-secondary); cursor: pointer; font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    summary:hover { color: var(--text-primary); }
+    .details-copy { display: grid; gap: var(--space-sm); padding-top: var(--space-md); }
+    .details-copy p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .details-copy code { color: var(--text-primary); font-family: var(--font-mono); font-size: var(--font-size-label); overflow-wrap: anywhere; }
+
+    .acknowledgement-box {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--color-blue);
+      border-radius: var(--radius-control);
+    }
+
+    .acknowledgement-box h3 { color: var(--text-primary); }
+    .acknowledgement-box p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .audit-intent {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .audit-intent strong { color: var(--text-primary); font-family: var(--font-mono); font-size: var(--font-size-label); overflow-wrap: anywhere; }
+    .audit-intent span { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .offline-status {
+      display: grid;
+      grid-template-columns: auto minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--color-red);
+      border-radius: var(--radius-control);
+    }
+
+    .offline-symbol { color: var(--color-red); font-size: var(--font-size-section-title); }
+    .offline-status h3 { color: var(--text-primary); }
+    .offline-status p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .retry-plan {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+      gap: var(--space-sm);
+    }
+
+    .retry-step {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .retry-step strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .retry-step span { color: var(--text-muted); font-size: var(--font-size-label); }
+    .retry-step.is-current { border-color: var(--color-yellow); }
+    .retry-step.is-current strong { color: var(--color-yellow); }
+
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: var(--font-size-secondary);
+      cursor: pointer;
+    }
+
+    input[type="checkbox"] { width: var(--space-lg); height: var(--space-lg); margin-top: var(--space-xs); accent-color: var(--accent-color); flex: 0 0 auto; }
+    .prototype-result { min-height: var(--touch-target); color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .permission-safe-area {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .permission-safe-area h3 { color: var(--text-primary); }
+    .permission-safe-area p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .state-explainer { border-left: var(--border-emphasis) solid var(--color-peach); }
+    .state-explainer .panel-body { gap: var(--space-sm); }
+    .state-explainer p { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .mobile-nav { display: none; }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      width: min(var(--state-switcher-width), calc(100% - calc(var(--space-lg) * 2)));
+      justify-content: flex-end;
+      padding: var(--space-sm);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .switcher-label { color: var(--text-muted); font-size: var(--font-size-dense); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-dense); }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-xs); }
+      .brand-copy, .nav-copy, .nav-label, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); }
+      .alert-detail-grid { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .metadata-grid { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .evidence-drawer { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 5), 1fr); }
+      .evidence-header { grid-column: 1 / -1; }
+      .evidence-body { grid-column: 1 / -1; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + calc(var(--space-4xl) * 2)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { justify-content: flex-start; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .workspace { gap: var(--space-md); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-boundary { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .alert-detail-grid { gap: var(--space-md); }
+      .metadata-grid, .retry-plan { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .alert-card-header, .panel-header, .evidence-header, .timeline-header, .state-header { padding: var(--space-md); }
+      .alert-body, .panel-body, .evidence-body, .timeline-body, .state-body { padding: var(--space-md); }
+      .evidence-drawer, .evidence-body { display: grid; grid-template-columns: minmax(var(--space-none), 1fr); }
+      .offline-status { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-md)); left: var(--space-sm); width: auto; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .switcher-label { display: none; }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-mobile-nav);
+        display: flex;
+        align-items: stretch;
+        justify-content: space-around;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--panel-bg);
+        border-top: var(--border-width) solid var(--border-color);
+      }
+      .mobile-nav a {
+        display: grid;
+        place-items: center;
+        min-width: var(--touch-target);
+        min-height: var(--touch-target);
+        padding: var(--space-xs) var(--space-sm);
+        border: var(--border-width) solid var(--border-color);
+        border-radius: var(--radius-control);
+        color: var(--text-secondary);
+        font-size: var(--font-size-dense);
+        text-align: center;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: var(--motion-none) !important;
+        scroll-behavior: auto;
+        transition-duration: var(--motion-none) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Proposed design-only composition:
+    OperationalAlertDetailWorkspace, AlertStateHeader, GuestStayContext,
+    ActivityTimeline, EvidenceDrawer, RetryConfirmation, and PermissionDenial
+    are proposed components. No browser route, API, alert store, job queue,
+    RBAC layer, durable audit store, or document delivery service is present.
+  -->
+  <a class="skip-link" href="#alert-workspace">Zum Hinweis springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland ERP">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Betriebsarbeitsplatz · Bad Orb</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisgrenzen der Ansicht">
+      <span class="badge badge-prototype">◈ Prototype</span>
+      <span class="badge badge-planned">⌁ Browser-/Jobvertrag erforderlich</span>
+      <span class="badge badge-unclear">? RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <div class="brand" aria-hidden="true">
+        <span class="brand-mark">HR</span>
+        <span class="brand-copy"><span class="brand-name">Arbeitsplatz</span></span>
+      </div>
+
+      <nav class="nav-group" aria-label="Tägliche Aufgaben">
+        <p class="nav-label">Tägliche Arbeit</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#alert-workspace" aria-label="Heute"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-copy">Heute</span><span class="nav-count">6</span></a></li>
+          <li><a class="nav-link" href="#guest-stay-context" aria-label="Anreisen"><span class="nav-symbol" aria-hidden="true">↗</span><span class="nav-copy">Anreisen</span><span class="nav-count">8</span></a></li>
+          <li><a class="nav-link" href="#alert-workspace" aria-current="page" aria-label="Hinweise"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-copy">Hinweise</span><span class="nav-count">aktiv</span></a></li>
+        </ul>
+      </nav>
+
+      <nav class="nav-group" aria-label="Nachweisbereiche">
+        <p class="nav-label">Nachweise</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#evidence-drawer" aria-label="Nachweisdetails"><span class="nav-symbol" aria-hidden="true">◫</span><span class="nav-copy">Nachweisdetails</span><span class="nav-count">1</span></a></li>
+          <li><a class="nav-link" href="#activity-timeline" aria-label="Aktivitätsverlauf"><span class="nav-symbol" aria-hidden="true">↻</span><span class="nav-copy">Verlauf</span><span class="nav-count">4</span></a></li>
+        </ul>
+      </nav>
+
+      <section class="sidebar-boundary" aria-label="Berechtigungsgrenze">
+        <span class="badge badge-unclear">RBAC unklar</span>
+        <strong>Keine Sitzung nachgewiesen</strong>
+        <p>Rollenname, Zuweisung, Aufhebung und Zugriff sind in diesem Prototyp keine durchgesetzten Berechtigungen.</p>
+      </section>
+    </aside>
+
+    <main id="alert-workspace" class="workspace">
+      <section class="context-strip" aria-label="Aktueller Arbeitskontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Schicht</span><span class="context-value">Frühdienst · Beispiel</span>
+        </div>
+        <span class="badge badge-teal">⊙ Fiktive Beispieldaten</span>
+      </section>
+
+      <section class="context-boundary" aria-labelledby="alert-page-heading">
+        <span class="boundary-symbol" aria-hidden="true">!</span>
+        <div class="header-copy">
+          <div class="notice-title-row">
+            <h1 id="alert-page-heading">Operativer Hinweis: erwartetes Ankunftsbündel prüfen</h1>
+            <span class="badge badge-prototype">Prototypansicht</span>
+          </div>
+          <p>Der Hinweis, die Person, der Aufenthalt, die Besitzerin, Zeiten und Artefaktangaben sind synthetische Entwurfsdaten. Eine lokale CLI-Funktion kann drei Bundle-Dateien erzeugen; daraus folgt weder ein Browser-Hinweis, eine aktuelle Datei, eine Zuweisung, eine Retry-Ausführung noch eine Zustellung.</p>
+        </div>
+      </section>
+
+      <!-- ===== State: assigned ===== -->
+      <section id="state-assigned" class="state-panel" aria-labelledby="assigned-heading">
+        <div class="alert-detail-grid">
+          <div class="main-stack">
+            <section class="alert-card" aria-labelledby="assigned-heading">
+              <header class="alert-card-header">
+                <div class="alert-copy">
+                  <div class="badge-row">
+                    <span class="badge badge-assigned">↗ Zugewiesen · Prototype</span>
+                    <span class="badge badge-warning">! Manuelle Prüfung</span>
+                  </div>
+                  <h2 id="assigned-heading">Fiktiver Hinweis ist einer Empfangsrolle zugeordnet</h2>
+                  <p>Die sichtbare Zuweisung organisiert nur diese Beispielansicht. Sie belegt keinen Alert-Store, keine tatsächliche Eigentümerschaft und keine Benachrichtigung.</p>
+                </div>
+                <div class="alert-header-actions">
+                  <button class="btn-primary" type="button" data-state-target="state-acknowledged" aria-controls="state-acknowledged">Anerkennung ansehen</button>
+                </div>
+              </header>
+              <div class="alert-body">
+                <div id="guest-stay-context" class="metadata-grid" aria-label="Fiktiver Gast- und Aufenthaltskontext">
+                  <div class="metadata-item"><span class="metadata-label">Fiktiver Gast</span><strong class="metadata-value">Jana Müller-Kaya</strong><span class="helper">Keine Personenabfrage</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Reservierung</span><strong class="metadata-value mono">RES-BO-2026-0716-014</strong><span class="helper">Beispielkennung</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Aufenthalt</span><strong class="metadata-value">16.–23.07.2026</strong><span class="helper">Fiktiver Zeitraum</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Zimmer</span><strong class="metadata-value">214 · Beispiel</strong><span class="helper">Nicht live bestätigt</span></div>
+                </div>
+
+                <div class="alert-summary">
+                  <h3>Was geprüft werden soll</h3>
+                  <p>Für den fiktiven Vorgang ist die erwartete <strong>dreiteilige Ankunftsbündel-Struktur</strong> als Ausnahme markiert: Meldeschein-PDF, Apple-PKPass und Google-Wallet-JSON. Die Liste ist aus dem lokalen Modul abgeleitet, aber der Status in dieser Ansicht ist kein Dateisystem-, Job- oder Liefernachweis.</p>
+                </div>
+
+                <div class="metadata-grid" aria-label="Fiktive Besitz- und Zeitangaben">
+                  <div class="metadata-item"><span class="metadata-label">Zugewiesen an</span><strong class="metadata-value">Mara Keller · Empfang</strong><span class="helper">Fiktive Persona · keine Sitzung</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Erfasst</span><time class="metadata-value mono" datetime="2026-07-16T10:22:00+02:00">16.07.2026 · 10:22</time><span class="helper">Beispielzeit · keine Zeitquelle</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Übergabe</span><time class="metadata-value mono" datetime="2026-07-16T10:27:00+02:00">16.07.2026 · 10:27</time><span class="helper">Nicht dauerhaft gespeichert</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Quellenstatus</span><strong class="metadata-value">Unklar</strong><span class="helper">Kein Browser-/PMS-Statusvertrag</span></div>
+                </div>
+
+                <section class="recovery-card" aria-labelledby="assigned-recovery-heading">
+                  <header class="panel-header">
+                    <div class="recovery-copy"><h3 id="assigned-recovery-heading">Vorgesehene Wiederherstellung</h3><p>Ein späteres Produkt müsste zuerst Quelle, Berechtigung, aktuelle Dateien und mögliche Auswirkungen prüfen.</p></div>
+                    <span class="badge badge-planned">⌁ Kein Retry ausgeführt</span>
+                  </header>
+                  <div class="panel-body">
+                    <ol class="fact-list" aria-label="Geplanter Wiederherstellungsweg">
+                      <li><strong>1 · Kontext prüfen</strong><span>Fiktive Reservierung und erwartete Bundle-Namen gegen eine spätere, berechtigte Datenquelle abgleichen.</span></li>
+                      <li><strong>2 · Ursache sichtbar machen</strong><span>Späteres Job-/Fehlerobjekt muss Quelle, Zeitpunkt, betroffene Ausgabe und sichere Eskalation liefern.</span></li>
+                      <li><strong>3 · Retry nur nach Bestätigung</strong><span>Idempotenz, Timeout, Anstoß, Ergebnis, Dateizugriff und Audit benötigen eigene Verträge.</span></li>
+                    </ol>
+                    <div class="button-row">
+                      <button class="btn-warning" type="button" data-state-target="state-retrying" aria-controls="state-retrying">Erneut versuchen vorbereiten</button>
+                      <button class="btn-secondary" type="button" data-state-target="state-offline" aria-controls="state-offline">Quellenausfall ansehen</button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </section>
+
+            <section id="activity-timeline" class="timeline-card" aria-labelledby="timeline-heading">
+              <header class="timeline-header">
+                <div class="timeline-copy"><h2 id="timeline-heading">ActivityTimeline · fiktiver Verlauf</h2><p>Zeilen sind Prototypdaten; sie sind kein dauerhafter Browser-Auditverlauf.</p></div>
+                <span class="badge badge-prototype">◈ Synthetic events</span>
+              </header>
+              <div class="timeline-body">
+                <ol class="activity-timeline" aria-label="Fiktive Ereignisse für den operativen Hinweis">
+                  <li class="timeline-event warning"><span class="timeline-marker" aria-hidden="true">!</span><div class="timeline-copy"><h3>Ausnahme für erwartete Bundle-Prüfung sichtbar gemacht</h3><p>Fiktiver Hinweistext verweist auf eine spätere manuelle Prüfung und nicht auf einen bestätigten Fehler.</p><div class="timeline-meta"><time datetime="2026-07-16T10:22:00+02:00">10:22 · Beispielzeit</time><span>· Quelle: Prototype</span><span>· Akteur: Systemhinweis · fiktiv</span></div></div></li>
+                  <li class="timeline-event info"><span class="timeline-marker" aria-hidden="true">↗</span><div class="timeline-copy"><h3>Besitz als Entwurfszustand gesetzt</h3><p>Die Anzeige nennt Mara Keller als Beispielrolle; sie schreibt keine tatsächliche Zuweisung oder Benachrichtigung.</p><div class="timeline-meta"><time datetime="2026-07-16T10:27:00+02:00">10:27 · Beispielzeit</time><span>· Status: Prototype</span><span>· Persistenz: Planned</span></div></div></li>
+                  <li class="timeline-event"><span class="timeline-marker" aria-hidden="true">◫</span><div class="timeline-copy"><h3>Lokale Modulgrenze dokumentiert</h3><p><code>build_arrival_bundle(reservation_id, output_dir)</code> kann lokal drei Namen schreiben; es liefert keinen Alert- oder Browserstatus.</p><div class="timeline-meta"><time datetime="2026-07-16T10:30:00+02:00">10:30 · Beispielzeit</time><span>· Operational: enger Modulvertrag</span></div></div></li>
+                  <li class="timeline-event error"><span class="timeline-marker" aria-hidden="true">×</span><div class="timeline-copy"><h3>Wiederholung noch nicht angefordert</h3><p>Es gibt keine lokale Warteschlange, keinen Browser-Job, keine Retry-Ausführung und keinen dokumentierten Ergebnisstatus.</p><div class="timeline-meta"><time datetime="2026-07-16T10:31:00+02:00">10:31 · Beispielzeit</time><span>· Retry: Planned</span><span>· Audit: Unclear</span></div></div></li>
+                </ol>
+              </div>
+            </section>
+          </div>
+
+          <aside class="side-stack" aria-label="Nachweis- und Statuskontext">
+            <section id="evidence-drawer" class="evidence-drawer" aria-labelledby="evidence-heading">
+              <header class="evidence-header">
+                <div class="evidence-copy"><h2 id="evidence-heading">EvidenceDrawer · erwartete Ausgaben</h2><p>Progressive Detailansicht über einem erhaltenen Hinweis-Kontext.</p></div>
+                <span class="badge badge-planned">⌁ Secure viewer geplant</span>
+              </header>
+              <div class="evidence-body">
+                <ul class="evidence-list" aria-label="Erwartete fiktive Artefakte">
+                  <li><strong>Meldeschein PDF</strong><span class="mono">meldeschein_RES-BO-2026-0716-014.pdf</span><span><span class="badge badge-unclear">? Nicht bestätigt</span> Fiktiver Erwartungsname, nicht als vorhandene, valide, sichere oder zugestellte Datei belegt.</span></li>
+                  <li><strong>Apple PKPass</strong><span class="mono">kurkarte_apple_RES-BO-2026-0716-014.pkpass</span><span><span class="badge badge-prototype">◈ Vorschaugrenze</span> Der lokale Outputvertrag ist nicht gleich Wallet-Installation, Zustellung oder Update.</span></li>
+                  <li><strong>Google Wallet JSON</strong><span class="mono">kurkarte_google_RES-BO-2026-0716-014.json</span><span><span class="badge badge-prototype">◈ JSON-Form</span> Keine echte Google-Wallet-Verbindung, Signatur, Zustellung oder Gerätebestätigung.</span></li>
+                </ul>
+
+                <details open>
+                  <summary>Quellen- und Vertragsgrenze anzeigen</summary>
+                  <div class="details-copy">
+                    <p><span class="badge badge-operational">⊙ Operational</span> `repo/src/kurort_engine/guest_arrival.py` kennt einen lokalen, side-effect-only Bundle-Aufruf mit drei erwarteten Namen.</p>
+                    <p><span class="badge badge-prototype">◈ Prototype</span> Gast, Aufenthalt, Hinweis, Eigentümer, Zeiten, Verlauf und Artefaktstatus dieser Oberfläche sind synthetisch.</p>
+                    <p><span class="badge badge-planned">⌁ Planned</span> Browserroute, Alertmodell, Jobstatus, Retry, Persistenz, sichere Dateiöffnung, Zustellung, Authentifizierung und RBAC.</p>
+                    <p><span class="badge badge-unclear">? Unclear</span> Welche Rolle die aktuelle Ausnahme sehen, zuweisen, bestätigen oder schließen darf.</p>
+                  </div>
+                </details>
+
+                <details>
+                  <summary>Technische Referenz zeigen</summary>
+                  <div class="details-copy">
+                    <code>build_arrival_bundle(reservation_id, output_dir)</code>
+                    <p>Die Funktion synthetisiert derzeit Buchungsdaten lokal; sie ist kein PMS-/Postgres-Lookup und kein HTTP-Endpoint.</p>
+                    <code>AuditEntry(actor, payload) / AuditLog.append(entry)</code>
+                    <p>Eine append-only In-Process-Struktur ist keine bestätigte, browserfähige oder dauerhafte Audit-Historie für diesen Hinweis.</p>
+                  </div>
+                </details>
+
+                <div class="evidence-actions">
+                  <button class="btn-secondary" type="button" data-state-target="state-permission" aria-controls="state-permission">Zugriffsgrenze ansehen</button>
+                  <button class="btn-quiet" type="button" data-state-target="state-resolved" aria-controls="state-resolved">Abschlussdarstellung ansehen</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="state-explainer" aria-labelledby="assigned-boundary-heading">
+              <header class="panel-header"><div class="state-copy"><h2 id="assigned-boundary-heading">Was diese Ansicht nicht beweist</h2></div></header>
+              <div class="panel-body">
+                <p>Sie beweist keine echte Ausgabe, Dateiqualität, Zustellung, Anmeldung, RBAC-Prüfung, Rollenbesitz, Offline-Warteschlange, Retry-Ausführung, Lösung, Benachrichtigung oder dauerhafte Auditierung.</p>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: acknowledged ===== -->
+      <section id="state-acknowledged" class="state-panel" aria-labelledby="acknowledged-heading" hidden>
+        <div class="alert-detail-grid">
+          <div class="main-stack">
+            <section class="alert-card is-acknowledged" aria-labelledby="acknowledged-heading">
+              <header class="alert-card-header">
+                <div class="alert-copy">
+                  <div class="badge-row"><span class="badge badge-acknowledged">✓ Anerkannt · Prototype</span><span class="badge badge-planned">⌁ Audit beabsichtigt</span></div>
+                  <h2 id="acknowledged-heading">Fiktive Anerkennung hält die Prüfung offen</h2>
+                  <p>Die Anerkennung signalisiert nur, dass eine Beispielrolle den Hinweis wahrgenommen hätte. Sie startet keinen Job, ändert keine Datei und schreibt keinen Audit-Eintrag.</p>
+                </div>
+                <div class="alert-header-actions"><button class="btn-secondary" type="button" data-state-target="state-assigned" aria-controls="state-assigned">Zuweisung ansehen</button></div>
+              </header>
+              <div class="alert-body">
+                <div class="metadata-grid" aria-label="Fiktive Anerkennungsdetails">
+                  <div class="metadata-item"><span class="metadata-label">Anerkannt von</span><strong class="metadata-value">Mara Keller · Empfang</strong><span class="helper">Fiktive Persona</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Anerkannt um</span><time class="metadata-value mono" datetime="2026-07-16T10:35:00+02:00">16.07.2026 · 10:35</time><span class="helper">Beispielzeit</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Nächste Entscheidung</span><strong class="metadata-value">Quelle &amp; Nachweis prüfen</strong><span class="helper">Keine automatische Aktion</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Aufenthalt</span><strong class="metadata-value">Jana Müller-Kaya · 16.–23.07.</strong><span class="helper">Fiktiver Kontext</span></div>
+                </div>
+
+                <section class="acknowledgement-box" aria-labelledby="acknowledgement-intent-heading">
+                  <div class="acknowledgement-meta"><span class="badge badge-prototype">◈ Lokaler Entwurfszustand</span><span class="badge badge-unclear">? Kein Rollenbeweis</span></div>
+                  <h3 id="acknowledgement-intent-heading">Beabsichtigtes Audit-Ereignis</h3>
+                  <p>Eine spätere Umsetzung könnte die Anerkennung nur nach einer serverseitigen Identitäts- und Berechtigungsprüfung protokollieren. Die statische Ansicht erzeugt keinen Event, keinen Zeitstempel und keinen Hash.</p>
+                  <div class="audit-intent">
+                    <span>Beabsichtigte Eventform · Planned</span>
+                    <strong>alert.acknowledgement.requested</strong>
+                    <span>Attribute vorgesehen: alert_id, owner_id, actor_id, occurred_at, source_status, reservation_reference. Werte, Speicherort, Zustimmung, Unveränderlichkeit und Zugriff bleiben offen.</span>
+                  </div>
+                  <div class="button-row"><button id="acknowledgement-intent-button" class="btn-primary" type="button">Anerkennungsabsicht erläutern</button><button class="btn-secondary" type="button" data-state-target="state-retrying" aria-controls="state-retrying">Retry-Absicht prüfen</button></div>
+                  <p id="acknowledgement-result" class="prototype-result" role="status" aria-live="polite">Noch keine Aktion ausgeführt.</p>
+                </section>
+
+                <section class="recovery-card" aria-labelledby="acknowledged-recovery-heading">
+                  <header class="panel-header"><div class="recovery-copy"><h3 id="acknowledged-recovery-heading">Anerkannt bedeutet nicht gelöst</h3><p>Der Hinweis bleibt sichtbar, bis eine spätere, belegte Entscheidung die Ursache, Ausgaben und Rückkehrroute erklärt.</p></div><span class="badge badge-warning">! Prüfung ausstehend</span></header>
+                  <div class="panel-body"><ul class="limit-list"><li><strong>Kein persistierter Besitzer</strong><span>Der dargestellte Eigentümer wird beim Neuladen nicht gesichert.</span></li><li><strong>Kein Event-Append</strong><span>Der lokale `AuditLog`-Baustein beweist keinen Browser-Auditdatensatz.</span></li><li><strong>Keine Retry-Ausführung</strong><span>Die nächste Ansicht modelliert nur Bestätigung und zukünftige Abhängigkeiten.</span></li></ul></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="timeline-card" aria-labelledby="acknowledged-timeline-heading">
+              <header class="timeline-header"><div class="timeline-copy"><h2 id="acknowledged-timeline-heading">ActivityTimeline · Anerkennung als Beispielereignis</h2><p>Der Verlauf erweitert die Arbeitsentscheidung, nicht die Tatsachenbehauptung.</p></div><span class="badge badge-acknowledged">✓ 10:35 · Beispiel</span></header>
+              <div class="timeline-body"><ol class="activity-timeline" aria-label="Fiktiver Anerkennungsverlauf"><li class="timeline-event info"><span class="timeline-marker" aria-hidden="true">✓</span><div class="timeline-copy"><h3>Anerkennung dargestellt</h3><p>Die Entwurfsansicht verknüpft eine fiktive Person mit einer offenen manuellen Prüfung.</p><div class="timeline-meta"><time datetime="2026-07-16T10:35:00+02:00">10:35 · Beispielzeit</time><span>· Prototype</span><span>· nicht gespeichert</span></div></div></li><li class="timeline-event warning"><span class="timeline-marker" aria-hidden="true">!</span><div class="timeline-copy"><h3>Quelle weiterhin nicht verifiziert</h3><p>Der nächste Status darf nicht aus einer Anerkennung abgeleitet werden.</p><div class="timeline-meta"><span>Quellennachweis: Unclear</span><span>· Retry: Planned</span></div></div></li></ol></div>
+            </section>
+          </div>
+
+          <aside class="side-stack" aria-label="Anerkennungsnachweis">
+            <section class="evidence-drawer" aria-labelledby="acknowledged-evidence-heading">
+              <header class="evidence-header"><div class="evidence-copy"><h2 id="acknowledged-evidence-heading">EvidenceDrawer · Anerkennungskontext</h2><p>Kein Zugriff auf echte Akte, Gastdaten oder Auditliste.</p></div><span class="badge badge-unclear">? RBAC unklar</span></header>
+              <div class="evidence-body"><ul class="fact-list"><li><strong>Hinweiskennung</strong><span class="mono">ALT-BO-2026-0716-014 · fiktiv</span></li><li><strong>Betroffener Kontext</strong><span>Jana Müller-Kaya · RES-BO-2026-0716-014 · ausschließlich fiktiv.</span></li><li><strong>Offene Verträge</strong><span>Identität, Berechtigung, Audit-Ereignis, Persistenz, Retry, Artefaktquelle und Dateizugriff.</span></li></ul><details><summary>Warum kein Erfolg angezeigt wird</summary><div class="details-copy"><p>Eine Anerkennung kann eine zukünftige menschliche Entscheidung markieren. Sie ist nicht gleich Fehleranalyse, Datenzugriff, erledigte Ausgabe, Retry, Lieferung oder formale Abschlussfreigabe.</p></div></details></div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: offline ===== -->
+      <section id="state-offline" class="state-panel" aria-labelledby="offline-heading" hidden>
+        <div class="alert-detail-grid">
+          <div class="main-stack">
+            <section class="alert-card is-offline" aria-labelledby="offline-heading">
+              <header class="alert-card-header">
+                <div class="alert-copy"><div class="badge-row"><span class="badge badge-offline">× Nicht verbunden</span><span class="badge badge-planned">⌁ Offline-Queue fehlt</span></div><h2 id="offline-heading">Die spätere Hinweisquelle ist nicht verfügbar</h2><p>Dieser Zustand unterscheidet fehlende Quellenerreichbarkeit von „kein Hinweis vorhanden“. Er beweist keine echte Offline-Erkennung oder Netzwerkdiagnose.</p></div>
+                <div class="alert-header-actions"><button class="btn-primary" type="button" data-state-target="state-retrying" aria-controls="state-retrying">Geplanten Retry ansehen</button></div>
+              </header>
+              <div class="alert-body">
+                <div class="offline-status" role="alert">
+                  <span class="offline-symbol" aria-hidden="true">×</span>
+                  <div class="offline-copy"><h3>Aktueller Job- und Dateistatus kann nicht geprüft werden.</h3><p>Es gibt keine tatsächliche Verbindung, Offline-Warteschlange, Cache-Validierung oder Quelle in diesem HTML-Prototyp. Eine alte Anzeige wäre nicht als aktuell zu interpretieren.</p></div>
+                </div>
+
+                <div class="metadata-grid" aria-label="Fiktiver Offlinekontext">
+                  <div class="metadata-item"><span class="metadata-label">Letzter Beispielkontext</span><time class="metadata-value mono" datetime="2026-07-16T10:31:00+02:00">10:31 · fiktiv</time><span class="helper">Keine echte Aktualität</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Besitzerstatus</span><strong class="metadata-value">Unklar</strong><span class="helper">Keine Sitzungs-/Owner-Prüfung</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Lokale Warteschlange</span><strong class="metadata-value">Nicht vorhanden</strong><span class="helper">Nicht nur deaktiviert: nicht implementiert</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Sicherer nächster Schritt</span><strong class="metadata-value">Manuell eskalieren</strong><span class="helper">Nach künftiger Betriebsregel</span></div>
+                </div>
+
+                <section class="offline-card" aria-labelledby="offline-recovery-heading">
+                  <header class="panel-header"><div class="offline-copy"><h3 id="offline-recovery-heading">Sichere Darstellung statt stiller Wiederholung</h3><p>Eine spätere Umsetzung muss Zeitpunkt, betroffene Quelle, Nutzerhinweis, Retry-Grund und Eskalation sichtbar machen.</p></div><span class="badge badge-error">× Kein Live-Status</span></header>
+                  <div class="panel-body"><ul class="limit-list"><li><strong>Keine Neuplanung</strong><span>Das Mockup legt keinen Retry in eine lokale oder serverseitige Queue.</span></li><li><strong>Keine verborgenen Fallback-Daten</strong><span>Es behauptet nicht, dass Gast, Aufenthalt oder Artefakte aus Cache oder PMS gelesen wurden.</span></li><li><strong>Keine Fehlerquittierung</strong><span>Ein späterer Fehlervertrag muss sichere technische Details von Bedienhinweisen trennen.</span></li></ul><div class="button-row"><button class="btn-warning" type="button" data-state-target="state-retrying" aria-controls="state-retrying">Retry-Absicht prüfen</button><button class="btn-secondary" type="button" data-state-target="state-permission" aria-controls="state-permission">Zugriffsgrenze prüfen</button></div></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="timeline-card" aria-labelledby="offline-timeline-heading">
+              <header class="timeline-header"><div class="timeline-copy"><h2 id="offline-timeline-heading">ActivityTimeline · Offline-Darstellung</h2><p>Die Zeitwerte erklären den Zustand; sie sind keine Telemetrie.</p></div><span class="badge badge-offline">× Quelle nicht erreichbar</span></header>
+              <div class="timeline-body"><ol class="activity-timeline" aria-label="Fiktive Offline-Ereignisse"><li class="timeline-event error"><span class="timeline-marker" aria-hidden="true">×</span><div class="timeline-copy"><h3>Quelle als nicht verfügbar markiert</h3><p>Keine Browseranfrage hat stattgefunden; die Anzeige modelliert nur den erforderlichen Schutz gegen irreführende Aktualität.</p><div class="timeline-meta"><time datetime="2026-07-16T10:40:00+02:00">10:40 · Beispielzeit</time><span>· Prototype</span></div></div></li><li class="timeline-event warning"><span class="timeline-marker" aria-hidden="true">!</span><div class="timeline-copy"><h3>Retry und Eskalation bleiben offen</h3><p>Timeout, Backoff, Idempotenz, Nutzerbestätigung, Owner und Audit haben keinen bestätigten Vertrag.</p><div class="timeline-meta"><span>Retry: Planned</span><span>· Audit: Unclear</span></div></div></li></ol></div>
+            </section>
+          </div>
+
+          <aside class="side-stack" aria-label="Offline-Nachweisgrenze">
+            <section class="evidence-drawer" aria-labelledby="offline-evidence-heading"><header class="evidence-header"><div class="evidence-copy"><h2 id="offline-evidence-heading">EvidenceDrawer · Offline-Grenze</h2><p>Die Ansicht hält nur nicht-sensitive, fiktive Orientierung sichtbar.</p></div><span class="badge badge-unclear">? Cache unklar</span></header><div class="evidence-body"><ul class="fact-list"><li><strong>Verborgene Werte</strong><span>Keine Adresse, Dokumentnummer, Zahlung, Gesundheits- oder Dateiinhalte werden als Fallback angezeigt.</span></li><li><strong>Was fehlt</strong><span>Integrationsstatus, wiederholbarer Request, gesicherter Zeitstempel, Besitzer, Offline-Queue, Audit und Dateizugriff.</span></li><li><strong>Empfohlene spätere Regel</strong><span>Keine automatischen Erfolgsmeldungen oder Wiederversuche ohne nachweisbaren Quellestatus und Idempotenzvertrag.</span></li></ul></div></section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: retrying ===== -->
+      <section id="state-retrying" class="state-panel" aria-labelledby="retrying-heading" hidden>
+        <div class="alert-detail-grid">
+          <div class="main-stack">
+            <section class="alert-card is-retrying" aria-labelledby="retrying-heading">
+              <header class="alert-card-header">
+                <div class="alert-copy"><div class="badge-row"><span class="badge badge-retrying">◷ Retry-Absicht · Prototype</span><span class="badge badge-planned">⌁ Job-/Idempotenzvertrag fehlt</span></div><h2 id="retrying-heading">Erneuter Versuch wird nur als bestätigte Absicht modelliert</h2><p>Dieser Zustand führt keine CLI-Funktion, keine Dateioperation und keinen Netzwerkzugriff aus. Er zeigt die Informationen, die eine spätere sichere Wiederholung brauchen würde.</p></div>
+                <div class="alert-header-actions"><button class="btn-secondary" type="button" data-state-target="state-offline" aria-controls="state-offline">Zum Quellenausfall</button></div>
+              </header>
+              <div class="alert-body">
+                <div class="metadata-grid" aria-label="Fiktiver Retry-Kontext">
+                  <div class="metadata-item"><span class="metadata-label">Beabsichtigter Vorgang</span><strong class="metadata-value mono">arrival bundle · Beispiel</strong><span class="helper">Kein echter CLI-Aufruf</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Betroffener Bezug</span><strong class="metadata-value mono">RES-BO-2026-0716-014</strong><span class="helper">Fiktive Kennung</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Aktueller Versuch</span><strong class="metadata-value">Nicht gestartet</strong><span class="helper">Kein Jobstatus</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Retry-Grenze</span><strong class="metadata-value">Unklar</strong><span class="helper">Keine Policy / Idempotenz</span></div>
+                </div>
+
+                <section class="confirmation-card" aria-labelledby="retry-confirmation-heading">
+                  <header class="panel-header"><div class="confirm-copy"><h3 id="retry-confirmation-heading">Bestätigungsabsicht vor einer späteren Wiederholung</h3><p>Diese kurze Bestätigung ersetzt keine Berechtigung, Fehleranalyse, Rechtsprüfung, Idempotenz oder Auditierung.</p></div><span class="badge badge-planned">⌁ Geplanter Dialog</span></header>
+                  <div class="panel-body">
+                    <div class="retry-plan" aria-label="Vorgesehene Schritte für eine spätere Wiederholung">
+                      <div class="retry-step"><strong>1 · Quelle prüfen</strong><span>Fehlertyp, Frische und Berechtigung müssen vom Backend kommen.</span></div>
+                      <div class="retry-step is-current"><strong>2 · Wirkung bestätigen</strong><span>Die betroffene Ausgabe und mögliche Doppelverarbeitung müssen verständlich sein.</span></div>
+                      <div class="retry-step"><strong>3 · Nachweis abwarten</strong><span>Ergebnis, Dateien, Zeit, Fehler und Audit müssen getrennt bestätigt werden.</span></div>
+                    </div>
+                    <label class="checkbox-row" for="retry-confirmation"><input id="retry-confirmation" type="checkbox" aria-describedby="retry-confirmation-help"> Ich habe verstanden: Diese Prototypaktion startet keinen Retry, erzeugt keine Datei und schreibt keinen Audit-Eintrag.</label>
+                    <p id="retry-confirmation-help" class="helper">In einer späteren Implementierung wären Berechtigung, Idempotenz, Zeitüberschreitung, Abbruch, Ergebnisstatus, sichere Dateiablage und Audit eigene serverseitige Entscheidungen.</p>
+                    <div class="audit-intent"><span>Beabsichtigte Eventform · Planned</span><strong>alert.retry.requested</strong><span>Vorgesehen, aber nicht ausgeführt: alert_id, actor_id, request_id, idempotency_key, source_snapshot, requested_at und Ergebnisreferenz.</span></div>
+                    <div class="button-row"><button id="retry-intent-button" class="btn-primary" type="button" disabled>Retry-Absicht im Prototyp bestätigen</button><button class="btn-secondary" type="button" data-state-target="state-assigned" aria-controls="state-assigned">Abbrechen und zurück</button></div>
+                    <p id="retry-result" class="prototype-result" role="status" aria-live="polite">Noch keine lokale Prototypbestätigung ausgewählt.</p>
+                  </div>
+                </section>
+              </div>
+            </section>
+
+            <section class="timeline-card" aria-labelledby="retrying-timeline-heading">
+              <header class="timeline-header"><div class="timeline-copy"><h2 id="retrying-timeline-heading">ActivityTimeline · Wiederholungsabsicht</h2><p>Die Phasen erlauben eine prüfbare Kommunikation, ohne Erfolg vorwegzunehmen.</p></div><span class="badge badge-retrying">◷ Nicht gestartet</span></header>
+              <div class="timeline-body"><ol class="activity-timeline" aria-label="Fiktive Retry-Ereignisse"><li class="timeline-event warning"><span class="timeline-marker" aria-hidden="true">◷</span><div class="timeline-copy"><h3>Bestätigung erwartet</h3><p>Der aktuelle Schritt hält die Wirkung einer späteren Wiederholung sichtbar, bevor ein Job entstehen könnte.</p><div class="timeline-meta"><time datetime="2026-07-16T10:44:00+02:00">10:44 · Beispielzeit</time><span>· Prototype</span></div></div></li><li class="timeline-event info"><span class="timeline-marker" aria-hidden="true">◫</span><div class="timeline-copy"><h3>Beabsichtigtes Audit noch nicht angelegt</h3><p>Der mögliche Eventname ist eine Handoff-Anforderung, keine gespeicherte Historie.</p><div class="timeline-meta"><span class="mono">alert.retry.requested</span><span>· Planned</span></div></div></li></ol></div>
+            </section>
+          </div>
+
+          <aside class="side-stack" aria-label="Retry-Nachweis und Einschränkungen">
+            <section class="evidence-drawer" aria-labelledby="retry-evidence-heading"><header class="evidence-header"><div class="evidence-copy"><h2 id="retry-evidence-heading">EvidenceDrawer · Retry-Abhängigkeiten</h2><p>Die lokale Retention-Logik mit Retry ist kein Nachweis für Arrival-Bundle-Retry.</p></div><span class="badge badge-warning">! Nicht verallgemeinern</span></header><div class="evidence-body"><ul class="fact-list"><li><strong>Beobachtet</strong><span>Eine spezifische Retention-Cascade hat eine eigene Retry-Hülle. Ihr Vertrag ist nicht auf Ankunftsbündel übertragbar.</span></li><li><strong>Erforderlich</strong><span>Für ein Bundle: Requestmodell, Idempotenz, Eigentümer, Jobstatus, Timeout, Fehlerklasse, Datei- und Lieferstatus, Audit und Berechtigung.</span></li><li><strong>Nicht behauptet</strong><span>Keine Queue, kein Polling, kein Backoff, kein tatsächlicher Versuch und keine erfolgreiche Erzeugung.</span></li></ul><details><summary>Wirkung der geplanten Aktion</summary><div class="details-copy"><p>Eine spätere Wiederholung könnte neue oder doppelte lokale Outputs erzeugen. Erst ein expliziter Vertrag kann erläutern, wann sie erlaubt ist und wie die Ausgabe eindeutig geprüft wird.</p></div></details></div></section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: resolved ===== -->
+      <section id="state-resolved" class="state-panel" aria-labelledby="resolved-heading" hidden>
+        <div class="alert-detail-grid">
+          <div class="main-stack">
+            <section class="alert-card is-resolved" aria-labelledby="resolved-heading">
+              <header class="alert-card-header">
+                <div class="alert-copy"><div class="badge-row"><span class="badge badge-resolved">✓ Abschlussdarstellung · Prototype</span><span class="badge badge-warning">! Keine Lieferbestätigung</span></div><h2 id="resolved-heading">Fiktive manuelle Prüfung als Abschlussansicht</h2><p>Der Abschluss modelliert die erforderliche Sprache nach einer späteren Sichtung. Er ist kein Nachweis, dass Dateien erzeugt, gespeichert, zugestellt, eingereicht oder dauerhaft abgeschlossen wurden.</p></div>
+                <div class="alert-header-actions"><button class="btn-secondary" type="button" data-state-target="state-assigned" aria-controls="state-assigned">Hinweis wieder ansehen</button></div>
+              </header>
+              <div class="alert-body">
+                <div class="metadata-grid" aria-label="Fiktive Abschlussangaben">
+                  <div class="metadata-item"><span class="metadata-label">Fiktiv geprüft von</span><strong class="metadata-value">Mara Keller · Empfang</strong><span class="helper">Keine nachgewiesene Identität</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Darstellung um</span><time class="metadata-value mono" datetime="2026-07-16T10:51:00+02:00">16.07.2026 · 10:51</time><span class="helper">Beispielzeit</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Darstellungsgrund</span><strong class="metadata-value">Manuelle Sichtung · fiktiv</strong><span class="helper">Keine Quellendatei</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Dauerhafter Status</span><strong class="metadata-value">Unklar</strong><span class="helper">Keine Persistenz</span></div>
+                </div>
+
+                <section class="resolution-card" aria-labelledby="resolution-meaning-heading">
+                  <header class="panel-header"><div class="resolution-copy"><h3 id="resolution-meaning-heading">Was der grüne Beispielstatus bedeutet</h3><p>Er zeigt die Sprache für einen künftig nachvollziehbaren Abschluss, nicht ein Produktversprechen.</p></div><span class="badge badge-resolved">✓ Beispielabschluss</span></header>
+                  <div class="panel-body"><ul class="limit-list"><li><strong>Kann bedeuten</strong><span>Eine berechtigte Person hätte die erwartete Ausnahme geprüft und eine eindeutige nächste Entscheidung dokumentiert.</span></li><li><strong>Bedeutet nicht</strong><span>Keine Aussage über Erzeugung, Dateiqualität, sichere Speicherung, Download, Wallet-Installation, Zustellung, kommunale Einreichung oder Rechtsfinalität.</span></li><li><strong>Weiterer Bedarf</strong><span>Ein echter Abschluss braucht Quelle, Ergebnisdaten, Zeitpunkt, Zustand, Rollenprüfung, Audit, Wiedereröffnung und Konfliktregeln.</span></li></ul><div class="audit-intent"><span>Beabsichtigte Eventform · Planned</span><strong>alert.resolution.recorded</strong><span>Kein Eintrag wurde geschrieben. Audit-Dauer, Hash, Zugriff, Widerspruch und Aufbewahrung sind nicht geklärt.</span></div></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="timeline-card" aria-labelledby="resolved-timeline-heading">
+              <header class="timeline-header"><div class="timeline-copy"><h2 id="resolved-timeline-heading">ActivityTimeline · Abschlussdarstellung</h2><p>Die letzten Ereignisse trennen manuellen Entscheidungsentwurf von tatsächlicher Ausführung.</p></div><span class="badge badge-resolved">✓ Fiktiv beendet</span></header>
+              <div class="timeline-body"><ol class="activity-timeline" aria-label="Fiktive Abschlussereignisse"><li class="timeline-event"><span class="timeline-marker" aria-hidden="true">◫</span><div class="timeline-copy"><h3>Erwartete Ausgaben als Kontext geprüft</h3><p>Im Prototyp werden nur Namen und Grenzen dargestellt, keine Dateien geöffnet oder validiert.</p><div class="timeline-meta"><time datetime="2026-07-16T10:50:00+02:00">10:50 · Beispielzeit</time><span>· Prototype</span></div></div></li><li class="timeline-event"><span class="timeline-marker" aria-hidden="true">✓</span><div class="timeline-copy"><h3>Abschlussansicht verfügbar</h3><p>Ein künftiger produktiver Status bräuchte einen persistierten, nachvollziehbaren und berechtigten Abschlussgrund.</p><div class="timeline-meta"><time datetime="2026-07-16T10:51:00+02:00">10:51 · Beispielzeit</time><span>· Audit: Planned</span></div></div></li></ol></div>
+            </section>
+          </div>
+
+          <aside class="side-stack" aria-label="Abschlussnachweisgrenze">
+            <section class="evidence-drawer" aria-labelledby="resolved-evidence-heading"><header class="evidence-header"><div class="evidence-copy"><h2 id="resolved-evidence-heading">EvidenceDrawer · Abschluss braucht Beleg</h2><p>Kein Artefakt oder Auditwert ist in dieser Ansicht erreichbar.</p></div><span class="badge badge-planned">⌁ Durable audit</span></header><div class="evidence-body"><ul class="fact-list"><li><strong>Ergebnisreferenz</strong><span>Erst eine echte Job-/Dateiantwort könnte festlegen, was in welchem Zustand vorlag.</span></li><li><strong>Dokumentlieferung</strong><span>Ein „erzeugt“- oder „geprüft“-Label wäre nicht gleich Download, Übergabe, Zustellung oder Einreichung.</span></li><li><strong>Wiedereröffnung</strong><span>Ein späterer Umgang mit neuen Fakten, Konflikten und Statuskorrekturen ist noch Planned.</span></li></ul></div></section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: permission denied ===== -->
+      <section id="state-permission" class="state-panel" aria-labelledby="permission-heading" hidden>
+        <div class="alert-detail-grid">
+          <div class="main-stack">
+            <section class="alert-card is-permission" aria-labelledby="permission-heading">
+              <header class="alert-card-header">
+                <div class="alert-copy"><div class="badge-row"><span class="badge badge-permission">! Zugriff nicht bestätigt</span><span class="badge badge-unclear">? RBAC unklar</span></div><h2 id="permission-heading">Geschützte Hinweisdetails werden nicht offengelegt</h2><p>Die Prototypansicht zeigt einen nicht preisgebenden Zugangshinweis. Sie prüft keine Identität, Session, Rolle, Berechtigung oder Zugriffsanfrage.</p></div>
+                <div class="alert-header-actions"><button class="btn-secondary" type="button" data-state-target="state-assigned" aria-controls="state-assigned">Zur sicheren Übersicht</button></div>
+              </header>
+              <div class="alert-body">
+                <div class="permission-safe-area">
+                  <span class="badge badge-planned">⌁ Zugriffskonzept erforderlich</span>
+                  <h3>Details, Dateiinhalt und vollständiger Verlauf bleiben verborgen.</h3>
+                  <p>Der sichtbare Rahmen nennt nur den Schutzgrund und die sichere nächste Route. Er zeigt weder Dateninhalt noch einen Hinweis darauf, ob eine konkrete Person, Datei oder Berechtigung existiert.</p>
+                </div>
+
+                <div class="metadata-grid" aria-label="Nicht-sensitive Hinweise zum gesperrten Bereich">
+                  <div class="metadata-item"><span class="metadata-label">Geschützter Bereich</span><strong class="metadata-value">Nachweisdetails</strong><span class="helper">Keine Dateivorschau</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Zugriffsgrund</span><strong class="metadata-value">Rolle nicht bestätigt</strong><span class="helper">Kein RBAC-Check</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Sichere Route</span><strong class="metadata-value">Administratorhand-off</strong><span class="helper">Geplanter Prozess</span></div>
+                  <div class="metadata-item"><span class="metadata-label">Audit der Ablehnung</span><strong class="metadata-value">Planned</strong><span class="helper">Nicht protokolliert</span></div>
+                </div>
+
+                <section class="permission-card" aria-labelledby="permission-recovery-heading">
+                  <header class="panel-header"><div class="permission-copy"><h3 id="permission-recovery-heading">Zugriff anfragen ist nur ein Entwurfsmuster</h3><p>Eine künftige Anfrage benötigt Zweck, beantragte Ressource, Empfänger, Genehmigung, Ablauf, Benachrichtigung und Audit.</p></div><span class="badge badge-planned">⌁ No request sent</span></header>
+                  <div class="panel-body"><div class="audit-intent"><span>Beabsichtigte Eventform · Planned</span><strong>alert.access.requested</strong><span>Eine sichtbare Anfrage darf nicht so tun, als sei sie an einen Administrator gesendet oder gespeichert worden.</span></div><div class="button-row"><button id="access-intent-button" class="btn-primary" type="button">Zugriffsabsicht im Prototyp erklären</button><button class="btn-secondary" type="button" data-state-target="state-offline" aria-controls="state-offline">Ohne Quelle fortfahren</button></div><p id="access-intent-result" class="prototype-result" role="status" aria-live="polite">Keine Zugriffsanfrage wurde gesendet.</p></div>
+                </section>
+              </div>
+            </section>
+
+            <section class="timeline-card" aria-labelledby="permission-timeline-heading">
+              <header class="timeline-header"><div class="timeline-copy"><h2 id="permission-timeline-heading">ActivityTimeline · nicht preisgebende Ablehnung</h2><p>Der Verlauf verrät keine sensiblen Inhalte und behauptet keinen echten Zugriffstest.</p></div><span class="badge badge-permission">! Zugriff nicht bestätigt</span></header>
+              <div class="timeline-body"><ol class="activity-timeline" aria-label="Fiktiver Verlauf bei Zugriffsbeschränkung"><li class="timeline-event warning"><span class="timeline-marker" aria-hidden="true">!</span><div class="timeline-copy"><h3>Geschütztes Detail als eingeschränkt dargestellt</h3><p>Die Sichtbarkeit richtet sich im Entwurf nach einer späteren RBAC-Entscheidung; sie kennt keine echte Rolle.</p><div class="timeline-meta"><time datetime="2026-07-16T10:47:00+02:00">10:47 · Beispielzeit</time><span>· Unclear</span></div></div></li><li class="timeline-event info"><span class="timeline-marker" aria-hidden="true">↗</span><div class="timeline-copy"><h3>Sicherer Hand-off vorgesehen</h3><p>Ein zukünftiger Request muss ohne Datenleck und mit einer nachvollziehbaren Rückmeldung arbeiten.</p><div class="timeline-meta"><span>Access request: Planned</span><span>· Audit: Planned</span></div></div></li></ol></div>
+            </section>
+          </div>
+
+          <aside class="side-stack" aria-label="Berechtigungsgrenze">
+            <section class="evidence-drawer" aria-labelledby="permission-evidence-heading"><header class="evidence-header"><div class="evidence-copy"><h2 id="permission-evidence-heading">EvidenceDrawer · sichtbar ohne Preisgabe</h2><p>Schutzinformation ist nicht gleich Berechtigungsentscheidung.</p></div><span class="badge badge-unclear">? Kein Login</span></header><div class="evidence-body"><ul class="fact-list"><li><strong>Nicht sichtbar</strong><span>Keine Dateinamen, Inhalte, vollständigen Gastattribute, Auditwerte oder Rolleninformationen, die eine spätere Freigabe verraten könnten.</span></li><li><strong>Erforderliche Verträge</strong><span>Authentifizierung, Session, Rollenmatrix, policy evaluation, Zweckbindung, Zugriffsauskunft, Audit, Ablauf und sichere Dateiauslieferung.</span></li><li><strong>Keine Umgehung</strong><span>Ein lokaler Button oder eine andere Prototypansicht ist keine Ersatzberechtigung.</span></li></ul></div></section>
+          </aside>
+        </div>
+      </section>
+
+      <p id="prototype-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true">Zugewiesener Prototypzustand angezeigt. Keine externe Aktion wurde ausgeführt.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="#alert-workspace">Heute</a>
+    <a href="#guest-stay-context">Anreisen</a>
+    <a href="#alert-workspace" aria-current="page">Hinweise</a>
+    <a href="#evidence-drawer">Nachweis</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <span class="switcher-label">Zustand</span>
+    <button id="switch-assigned" type="button" data-state-target="state-assigned" aria-controls="state-assigned" aria-pressed="true">Zugewiesen</button>
+    <button id="switch-acknowledged" type="button" data-state-target="state-acknowledged" aria-controls="state-acknowledged" aria-pressed="false">Anerkannt</button>
+    <button id="switch-offline" type="button" data-state-target="state-offline" aria-controls="state-offline" aria-pressed="false">Offline</button>
+    <button id="switch-retrying" type="button" data-state-target="state-retrying" aria-controls="state-retrying" aria-pressed="false">Retry-Absicht</button>
+    <button id="switch-resolved" type="button" data-state-target="state-resolved" aria-controls="state-resolved" aria-pressed="false">Abschluss</button>
+    <button id="switch-permission" type="button" data-state-target="state-permission" aria-controls="state-permission" aria-pressed="false">Zugriff</button>
+  </div>
+
+  <script>
+    (function () {
+      const statePanels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const retryConfirmation = document.getElementById('retry-confirmation');
+      const retryIntentButton = document.getElementById('retry-intent-button');
+      const retryResult = document.getElementById('retry-result');
+      const acknowledgementIntentButton = document.getElementById('acknowledgement-intent-button');
+      const acknowledgementResult = document.getElementById('acknowledgement-result');
+      const accessIntentButton = document.getElementById('access-intent-button');
+      const accessIntentResult = document.getElementById('access-intent-result');
+
+      function readableStateName(targetId) {
+        const names = {
+          'state-assigned': 'Zugewiesen',
+          'state-acknowledged': 'Anerkannt',
+          'state-offline': 'Offline',
+          'state-retrying': 'Retry-Absicht',
+          'state-resolved': 'Abschlussdarstellung',
+          'state-permission': 'Zugriff nicht bestätigt'
+        };
+        return names[targetId] || 'Prototypzustand';
+      }
+
+      function activateState(targetId) {
+        const targetPanel = document.getElementById(targetId);
+        if (!targetPanel) {
+          return;
+        }
+        statePanels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+        stateControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+        liveMessage.textContent = 'Prototypzustand „' + readableStateName(targetId) + '“ angezeigt. Keine externe Aktion wurde ausgeführt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      retryConfirmation.addEventListener('change', function () {
+        retryIntentButton.disabled = !retryConfirmation.checked;
+        retryResult.textContent = retryConfirmation.checked
+          ? 'Bestätigungsabsicht gewählt. Ein Klick bleibt lokal: kein Retry, keine Datei und kein Audit-Eintrag.'
+          : 'Noch keine lokale Prototypbestätigung ausgewählt.';
+      });
+
+      retryIntentButton.addEventListener('click', function () {
+        retryResult.textContent = 'Prototypbestätigung dokumentiert nur diese Ansicht. Es wurde kein Retry angefordert, keine Datei erzeugt und kein Audit-Ereignis geschrieben.';
+        liveMessage.textContent = retryResult.textContent;
+      });
+
+      acknowledgementIntentButton.addEventListener('click', function () {
+        acknowledgementResult.textContent = 'Die Anerkennungsabsicht ist erläutert. Kein Besitzer, kein Zeitstempel und kein Audit-Ereignis wurden gespeichert.';
+        liveMessage.textContent = acknowledgementResult.textContent;
+      });
+
+      accessIntentButton.addEventListener('click', function () {
+        accessIntentResult.textContent = 'Die Zugriffsabsicht ist lokal beschrieben. Keine Anfrage wurde gesendet und keine Berechtigung wurde geprüft.';
+        liveMessage.textContent = accessIntentResult.textContent;
+      });
+    }());
+  </script>
+</body>
+</html>

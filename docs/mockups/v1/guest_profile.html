@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gastprofil — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --state-switcher-width: calc(var(--space-4xl) * 11);
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Reset and foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select, textarea { font: inherit; }
+
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-control);
+      background: var(--accent-color);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    /* ===== Shared operational shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-header-bg);
+      flex-wrap: wrap;
+    }
+
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .switcher-controls, .mobile-nav, .identity-row, .comparison-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      place-items: center;
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      background: var(--surface-0);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .brand-copy, .page-copy, .panel-copy, .state-copy, .field-group, .notice-copy, .profile-copy, .sensitive-copy, .permission-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .state-copy p, .notice-copy p, .profile-copy p, .sensitive-copy p, .permission-copy p, .field-help, .page-note, .table-note, .disabled-explanation { color: var(--text-secondary); font-size: 13px; }
+    .muted-copy, .detail-label, .context-label, .nav-label { color: var(--text-muted); font-size: 12px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      background: var(--surface-0);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.5;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover, .button-link:hover { border-color: var(--surface-1); background: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { border-color: var(--surface-2); background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { border-color: var(--accent-hover); background: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl)));
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      border-right: 1px solid var(--border-color);
+      background: var(--panel-bg);
+    }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+
+    .nav-link {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      background: var(--panel-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover { border-color: var(--surface-1); background: var(--surface-0); color: var(--text-primary); }
+    .nav-link[aria-current="page"] { border-left-color: var(--accent-color); border-color: var(--accent-color); background: var(--surface-0); color: var(--text-primary); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+
+    .sidebar-boundary {
+      display: grid;
+      gap: var(--space-sm);
+      margin-top: auto;
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--timeline-bg);
+    }
+
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+
+    main {
+      display: grid;
+      align-content: start;
+      gap: var(--space-xl);
+      min-width: var(--space-none);
+      padding: var(--space-xl);
+    }
+
+    .context-panel, .panel, .side-card, .state-card, .notice-card, .permission-card, .comparison-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+    }
+
+    .context-panel { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .context-heading, .panel-heading, .state-heading, .side-heading, .notice-heading {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+    .context-form, .profile-form { display: grid; gap: var(--space-md); }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .field-group { align-content: start; }
+    label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    textarea { min-height: calc(var(--space-4xl) * 2); resize: vertical; }
+    input[readonly] { color: var(--text-secondary); }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    .check-row { display: flex; align-items: start; gap: var(--space-sm); color: var(--text-secondary); font-size: 13px; }
+    .check-row input { width: auto; min-height: var(--space-none); margin-top: var(--space-xs); }
+    .check-row label { color: var(--text-secondary); font-weight: 400; }
+
+    .form-boundary, .page-note {
+      padding: var(--space-md);
+      border-left: 3px solid var(--color-blue);
+      border-radius: var(--radius-control);
+      background: var(--timeline-bg);
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .form-boundary strong { color: var(--color-blue); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { padding: var(--space-none) var(--space-xs); }
+
+    .profile-grid, .duplicate-layout, .sensitive-layout, .permission-layout {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 5), 1fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+
+    .panel-heading, .side-heading, .notice-heading { padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border-color); background: var(--panel-header-bg); }
+    .panel-body, .side-body, .state-card-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .side-stack { display: grid; gap: var(--space-lg); }
+
+    .profile-record {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      gap: var(--space-lg);
+      align-items: start;
+      padding: var(--space-lg);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+      background: var(--surface-0);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+
+    .record-reference, .code-value { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+    .profile-name { color: var(--text-primary); font-size: 20px; font-weight: 600; }
+    .status-stack { display: grid; justify-items: end; gap: var(--space-xs); }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card, .relationship-card, .evidence-card {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--surface-0);
+    }
+
+    .summary-card span, .relationship-card span, .evidence-card span { color: var(--text-muted); font-size: 12px; }
+    .summary-card strong, .relationship-card strong, .evidence-card strong { color: var(--text-primary); font-size: 14px; }
+    .summary-card small, .relationship-card small, .evidence-card small { color: var(--text-secondary); font-size: 12px; }
+
+    .decision-card, .persistent-alert, .privacy-notice, .recovery-card {
+      display: grid;
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--timeline-bg);
+    }
+
+    .decision-card { grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; border-color: var(--accent-color); }
+    .persistent-alert { grid-template-columns: auto minmax(var(--space-none), 1fr); border-left: 3px solid var(--color-yellow); }
+    .permission-alert { border-left-color: var(--color-red); }
+    .alert-symbol { display: grid; width: var(--space-xl); height: var(--space-xl); place-items: center; border: 1px solid var(--color-yellow); border-radius: var(--radius-badge); color: var(--color-yellow); font-weight: 600; }
+    .permission-alert .alert-symbol { border-color: var(--color-red); color: var(--color-red); }
+
+    .section-divider { display: grid; gap: var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--border-color); }
+    .detail-list, .relationship-list, .dependency-list, .sensitive-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li, .relationship-list li, .dependency-list li, .sensitive-list li {
+      display: grid;
+      grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr);
+      gap: var(--space-md);
+      padding: var(--space-sm) var(--space-none);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .detail-list li:last-child, .relationship-list li:last-child, .dependency-list li:last-child, .sensitive-list li:last-child { border-bottom: var(--space-none); }
+    .detail-value, .relationship-list a, .dependency-list span, .sensitive-list span { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .relationship-list a { color: var(--accent-color); text-decoration: none; }
+    .relationship-list a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; border-collapse: collapse; min-width: calc(var(--space-4xl) * 12); }
+    caption { padding: var(--space-md); color: var(--text-secondary); font-size: 12px; text-align: left; }
+    th { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); background: var(--surface-0); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-align: left; text-transform: uppercase; }
+    td { padding: var(--space-md); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .candidate-name { color: var(--text-primary); font-weight: 600; }
+    .candidate-reference { color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; }
+
+    .mobile-candidate-list { display: none; gap: var(--space-md); }
+    .mobile-candidate-card { display: grid; gap: var(--space-sm); padding: var(--space-md); border: 1px solid var(--border-color); border-radius: var(--radius-card); background: var(--surface-0); }
+
+    .masked-value, .revealed-value {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--timeline-bg);
+    }
+
+    .masked-value strong { color: var(--text-muted); font-family: var(--font-mono); font-size: 13px; }
+    .revealed-value { border-color: var(--color-peach); }
+    .revealed-value strong { color: var(--color-peach); font-size: 13px; }
+    .revealed-value p, .masked-value p { color: var(--text-secondary); font-size: 13px; }
+    .local-status { color: var(--text-secondary); font-size: 13px; }
+
+    .permission-card { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .disabled-explanation { padding: var(--space-md); border: 1px solid var(--border-color); border-radius: var(--radius-control); background: var(--timeline-bg); }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      display: grid;
+      gap: var(--space-sm);
+      width: min(var(--state-switcher-width), calc(100vw - var(--space-2xl)));
+      padding: var(--space-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+      background: var(--panel-bg);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+
+    .switcher-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .switcher-controls { align-items: stretch; }
+    .state-switcher button { min-height: 32px; padding: var(--space-xs) var(--space-sm); font-size: 12px; }
+    .state-switcher button[aria-pressed="true"] { border-color: var(--accent-color); background: var(--accent-color); color: var(--timeline-bg); }
+
+    .mobile-nav { display: none; }
+
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .sidebar { display: none; }
+      .profile-grid, .duplicate-layout, .sensitive-layout, .permission-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .profile-grid .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .form-grid { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+    }
+
+    @media (max-width: 767px) {
+      .app-header { padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-panel, .panel-body, .side-body, .state-card-body, .permission-card { padding: var(--space-md); }
+      .form-grid, .summary-grid, .profile-grid .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .profile-record, .decision-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .status-stack { justify-items: start; }
+      .detail-list li, .relationship-list li, .dependency-list li, .sensitive-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .table-wrap { display: none; }
+      .mobile-candidate-list { display: grid; }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-mobile-nav);
+        display: grid;
+        grid-template-columns: repeat(3, minmax(var(--space-none), 1fr));
+        gap: var(--space-xs);
+        padding: var(--space-sm);
+        border-top: 1px solid var(--border-color);
+        background: var(--panel-bg);
+      }
+      .mobile-nav a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--touch-target);
+        padding: var(--space-sm);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-control);
+        background: var(--surface-0);
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { border-color: var(--accent-color); color: var(--text-primary); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--space-4xl) + var(--space-xl)); left: var(--space-sm); width: auto; }
+      .state-switcher button { min-height: var(--touch-target); }
+      .action-row > button, .action-row > .button-link, .comparison-actions > button { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#profile-workspace">Zum Gastprofil</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Designprototyp</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Prototypkontext">
+      <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+      <span class="badge badge-planned">Geplant · Profilvertrag</span>
+      <span class="badge badge-unclear">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primäre Aufgabenbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <span class="nav-label">Rezeption</span>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="today_front_desk_dashboard.html"><span>Heute</span><span class="nav-count">Beispiel</span></a></li>
+          <li><a class="nav-link" href="arrivals_queue.html"><span>Anreisen</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="reservation_search_results.html#state-results"><span>Reservierungssuche</span><span class="nav-count">Keine Live-Suche</span></a></li>
+          <li><a class="nav-link" href="reservation_detail.html#state-detail"><span>Reservierungsdetail</span><span class="nav-count">Dateilink</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Ausgewählter Kontext">
+        <span class="nav-label">Ausgewählter Kontext</span>
+        <ul class="nav-list">
+          <li><a class="nav-link" aria-current="page" href="#state-profile"><span>Gastprofil</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="room_planning_calendar.html#state-week"><span>Zimmerplanung</span><span class="nav-count">Keine Zuteilung</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="sidebar-boundary-heading">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="sidebar-boundary-heading">Keine Profilquelle</h2>
+        <p>Navigation und Dateilinks sind statische Prüfbezüge. Sie lesen keine Gastdaten, teilen keine Auswahl und speichern keinen Rückkehrweg.</p>
+      </section>
+    </aside>
+
+    <main id="profile-workspace">
+      <section class="context-panel" aria-labelledby="profile-page-title">
+        <header class="context-heading">
+          <div class="page-copy">
+            <h1 id="profile-page-title">Gastprofil prüfen</h1>
+            <p>Minimum-necessary Kontext für eine spätere Gastaktensicht. Nicht als bestehende Profilquelle, gespeicherte Auswahl oder Berechtigung lesen.</p>
+          </div>
+          <div class="badge-row" aria-label="Kontextstatus">
+            <span class="badge badge-teal">Jana Müller-Kaya · fiktiv</span>
+            <span class="badge badge-warning">Prüfung vor Änderung</span>
+          </div>
+        </header>
+
+        <form id="profile-context-form" class="context-form" novalidate>
+          <div class="form-grid">
+            <div class="field-group">
+              <label for="profile-origin">Statischer Ursprung</label>
+              <select id="profile-origin" name="origin">
+                <option value="reservation-detail">Reservierungsdetail · Beispiel</option>
+                <option value="reservation-search">Reservierungssuche · Beispiel</option>
+                <option value="room-planning">Zimmerplanung · Beispiel</option>
+              </select>
+              <span class="field-help">Kein echter Rückkehrpfad, keine gemeinsame Sitzung und keine gespeicherte Auswahl.</span>
+            </div>
+            <div class="field-group">
+              <label for="profile-property">Betrieb</label>
+              <select id="profile-property" name="property">
+                <option value="rheinland">Hotel Rheinland · Bad Orb</option>
+                <option value="sample">Weiterer Betrieb · nur Beispiel</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <span class="detail-label">Datenschutzansicht</span>
+              <span class="check-row"><input id="profile-minimize" name="minimize-sensitive" type="checkbox" checked><label for="profile-minimize">Sensible Werte minimiert anzeigen</label></span>
+            </div>
+          </div>
+          <div class="action-row" aria-label="Lokale Kontextaktionen">
+            <button class="btn-teal" type="submit">Beispielkontext aktualisieren</button>
+            <a class="button-link" href="reservation_detail.html#state-detail">Zum statischen Reservierungsdetail</a>
+          </div>
+        </form>
+
+        <p class="form-boundary"><strong>Geplant / Backend erforderlich:</strong> Browserroute, Gast-/Kontakt-/Einwilligungsdaten, Suche, Profilquelle, Versionsprüfung, Zweckbindung, Rollenentscheidung, Fehlervertrag, Speicherung und Audit werden durch diese Ansicht nicht bereitgestellt.</p>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Normale fiktive Gastprofilansicht angezeigt.</p>
+
+      <!-- ===== State: normal profile ===== -->
+      <section id="state-profile" class="state-panel" aria-labelledby="state-profile-heading">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="state-profile-heading">Normales fiktives Gastprofil</h2>
+            <p>Identität und Aufenthaltsbezug zuerst; persönliche Kontaktwerte, Vergleichslogik und Abhängigkeiten bleiben begrenzt und sichtbar.</p>
+          </div>
+          <div class="badge-row">
+            <span class="badge badge-prototype">Keine Gastakte gelesen</span>
+            <span class="badge badge-planned">Änderung nur vorgeschlagen</span>
+          </div>
+        </header>
+
+        <div class="profile-grid">
+          <section class="panel" aria-labelledby="profile-summary-heading">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="profile-summary-heading">Profil- und Aufenthaltskontext</h2>
+                <p>Fiktive Minimaldaten für die Prüfung, nicht für eine umfassende Personenakte.</p>
+              </div>
+              <span class="badge badge-teal">Kontext prüfen</span>
+            </header>
+            <div class="panel-body">
+              <section class="profile-record" aria-label="Ausgewählter fiktiver Profilkontext">
+                <div class="profile-copy">
+                  <span class="badge badge-teal">Ausgewählt · lokal</span>
+                  <h2 class="profile-name">Jana Müller-Kaya</h2>
+                  <p class="record-reference">GP-BO-PROTOTYP-014</p>
+                  <p>Fiktiver Gastbezug zu <strong>RES-BO-2026-0716-014</strong> · 16.–23.07.2026 · Zimmer 214 als ungeprüfter Beispielkontext.</p>
+                </div>
+                <div class="status-stack">
+                  <span class="badge badge-warning">Datenquelle unklar</span>
+                  <span class="badge badge-unclear">Keine Live-Suche</span>
+                </div>
+              </section>
+
+              <div class="summary-grid" aria-label="Fiktive Kerninformationen">
+                <article class="summary-card"><span>Profilschlüssel</span><strong class="code-value">GP-BO-PROTOTYP-014</strong><small>Lokaler Beispielwert, keine Datenbank-ID</small></article>
+                <article class="summary-card"><span>Aufenthaltsbezug</span><strong>16.–23.07.2026</strong><small>Keine bestätigte Anreise oder Check-in-Aktion</small></article>
+                <article class="summary-card"><span>Zimmerkontext</span><strong>214 · Beispiel</strong><small>Keine Zuteilung, Verfügbarkeit oder Freigabe</small></article>
+              </div>
+
+              <section class="decision-card" aria-labelledby="profile-decision-heading">
+                <div class="profile-copy">
+                  <span class="badge badge-planned">Geplant · Browser-/Datenaktion</span>
+                  <h3 id="profile-decision-heading">Nächste menschliche Entscheidung: Änderung erst prüfen</h3>
+                  <p>Ein späterer Dienst müsste richtigen Profilkontext, Pflichtfelder, Dubletten, Zweck, Versionsstand und Rechte prüfen, bevor Kontakt- oder Profildaten gespeichert werden.</p>
+                </div>
+                <button class="btn-primary" type="button" data-prototype-action="Änderungsprüfung als lokaler Prototyphinweis gezeigt. Es wurde kein Profil gelesen, geändert, zusammengeführt oder gespeichert.">Änderung prüfen</button>
+              </section>
+
+              <form id="profile-form" class="profile-form" novalidate>
+                <section class="section-divider" aria-labelledby="profile-fields-heading">
+                  <div class="panel-copy">
+                    <h3 id="profile-fields-heading">Fiktiver Änderungsrahmen</h3>
+                    <p>Beschriftete native Felder machen den späteren Prüfbedarf sichtbar. Sie ändern keinen Datensatz.</p>
+                  </div>
+                  <div class="form-grid">
+                    <div class="field-group">
+                      <label for="profile-reference">Fiktive Profilreferenz</label>
+                      <input id="profile-reference" name="profile-reference" type="text" value="GP-BO-PROTOTYP-014" readonly aria-describedby="profile-reference-help">
+                      <span id="profile-reference-help" class="field-help">Keine verifizierte ID, kein Lookup und keine Quellautorität.</span>
+                    </div>
+                    <div class="field-group">
+                      <label for="contact-preference">Bevorzugter Kontaktkanal</label>
+                      <select id="contact-preference" name="contact-preference">
+                        <option value="unknown">Unklar · nur Beispiel</option>
+                        <option value="email">E-Mail · fiktive Auswahl</option>
+                        <option value="phone">Telefon · fiktive Auswahl</option>
+                      </select>
+                      <span class="field-help">Ein Kontaktkanal ist keine Einwilligung, Zustellung oder Berechtigung.</span>
+                    </div>
+                    <div class="field-group">
+                      <label for="profile-note">Hinweis für die nächste Prüfung</label>
+                      <textarea id="profile-note" name="profile-note" rows="3">Nur fiktiver Prüfhinweis: Ähnliche Namen vor einer späteren Änderung manuell vergleichen.</textarea>
+                      <span class="field-help">Keine Eingabe wird validiert, gespeichert oder weitergegeben.</span>
+                    </div>
+                  </div>
+                  <div class="action-row">
+                    <button class="btn-teal" type="submit">Fiktiven Änderungsrahmen prüfen</button>
+                    <button type="button" disabled aria-describedby="profile-save-reason">Änderung speichern</button>
+                  </div>
+                  <p id="profile-save-reason" class="disabled-explanation">Speichern deaktiviert: Gastquelle, Duplikaten-/Versionsmodell, Validierung, Zweckbindung, Authentifizierung, RBAC, Persistenz, Audit und Fehlervertrag sind Geplant oder Unklar.</p>
+                </section>
+              </form>
+
+              <section class="section-divider" aria-labelledby="profile-relationship-heading">
+                <div class="panel-copy">
+                  <h3 id="profile-relationship-heading">Statischer Prüfbezug</h3>
+                  <p>Diese Beziehung verbindet nur lokale HTML-Dokumente: keine Live-Route, keine gemeinsame Sitzung, Auswahl, Profileigenschaft oder Persistenz.</p>
+                </div>
+                <ul class="relationship-list">
+                  <li><span class="detail-label">Suche</span><span><a href="reservation_search_results.html#state-results">Jana Müller-Kaya / RES-BO-2026-0716-014 in fiktiver Suche</a><br><span class="muted-copy">Keine Live-Suche, kein Query- oder Berechtigungsbezug.</span></span></li>
+                  <li><span class="detail-label">Detail</span><span><a href="reservation_detail.html#state-detail">Fiktives Reservierungsdetail öffnen</a><br><span class="muted-copy">Keine gemeinsame Auswahl, Route, Persistenz oder Check-in-Transaktion.</span></span></li>
+                  <li><span class="detail-label">Planung</span><span><a href="room_planning_calendar.html#state-week">Zimmer 214 als fiktiven Planungskontext lesen</a><br><span class="muted-copy">Keine Verfügbarkeit, Zuteilung, Sperre oder Synchronisation.</span></span></li>
+                </ul>
+              </section>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Profilgrenzen und Datenminimierung">
+            <section class="side-card" aria-labelledby="contact-minimum-heading">
+              <header class="side-heading">
+                <div class="panel-copy"><h2 id="contact-minimum-heading">Kontakt minimiert</h2><p>Die normale Ansicht zeigt keinen echten Kontaktwert.</p></div>
+                <span class="badge badge-teal">Standard: verdeckt</span>
+              </header>
+              <div class="side-body">
+                <div class="masked-value"><strong>Telefon: +49 ••• ••• 421</strong><strong>E-Mail: j•••.m•••@beispiel.invalid</strong><p>Maskierte Fiktivwerte sind kein Zugriffsschutz. Eine spätere Offenlegung braucht Zweck, Authentifizierung, RBAC, Audit, sichere Darstellung und Remasking.</p></div>
+                <button class="btn-teal" type="button" data-prototype-action="Die Maskierungsregel wurde lokal erläutert. Es wurde kein Kontaktwert abgerufen oder offengelegt.">Maskierung erläutern</button>
+              </div>
+            </section>
+
+            <section class="side-card" aria-labelledby="profile-dependencies-heading">
+              <header class="side-heading">
+                <div class="panel-copy"><h2 id="profile-dependencies-heading">Abhängigkeiten sichtbar halten</h2><p>Eine Profilfläche ersetzt keine Daten- oder Rechteverträge.</p></div>
+                <span class="badge badge-planned">Geplant</span>
+              </header>
+              <div class="side-body">
+                <ul class="dependency-list">
+                  <li><span class="detail-label">Browser / API</span><span>Suche, Lesen, Update, Fehler, Rückkehr und Refresh fehlen.</span></li>
+                  <li><span class="detail-label">Daten / Konflikt</span><span>Gast, Kontakt, Zweck, Relation, Version, Dublette, Merge und Historie sind nicht belegt.</span></li>
+                  <li><span class="detail-label">RBAC / Audit</span><span>Keine Sitzung, keine Rollenentscheidung, keine Offenlegungs- oder Änderungsprotokollierung.</span></li>
+                  <li><span class="detail-label">Integration</span><span>Keine PMS-, Nachricht-, Dokument-, Zahlungs-, Gemeinde- oder Schlüsselverbindung wird aufgerufen.</span></li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="side-card" aria-labelledby="profile-evidence-heading">
+              <header class="side-heading">
+                <div class="panel-copy"><h2 id="profile-evidence-heading">Nachweisvokabular</h2><p>Die Begriffe beschreiben Grenzen, nicht Reifegrade.</p></div>
+                <span class="badge badge-info">Lesen</span>
+              </header>
+              <div class="side-body">
+                <div class="evidence-card"><strong>Operational</strong><small>Begrenzte lokale Domänenmodelle sind keine Gastakte oder Profilfunktion.</small></div>
+                <div class="evidence-card"><strong>Prototyp</strong><small>Fiktive Profile, lokale Sichtbarkeit und Formularmuster ohne Datenwirkung.</small></div>
+                <div class="evidence-card"><strong>Geplant / Unklar</strong><small>Profilquelle, API, Speicherung, Authentifizierung, RBAC, Audit und Integrationen brauchen eigene Verträge.</small></div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== State: duplicate candidates ===== -->
+      <section id="state-duplicate" class="state-panel" aria-labelledby="duplicate-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="duplicate-heading">Ähnliche Profile: manuelle Prüfung erforderlich</h2>
+            <p>Der Vergleich ist eine fiktive Schutzfläche. Er liefert keine Identitätsentscheidung und führt keinen automatischen Abgleich oder Merge aus.</p>
+          </div>
+          <span class="badge badge-warning">! 3 ähnliche Namen</span>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="duplicate-alert-heading">
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy">
+            <h3 id="duplicate-alert-heading">Nicht zusammenführen, nicht überschreiben</h3>
+            <p>Gleiche oder ähnliche Namen beweisen keine Personengleichheit. Eine spätere Entscheidung benötigt eine zulässige, datensparsame Quelle, Vergleichsregeln, Zweckbindung, Berechtigung, Versions-/Konfliktmodell und einen auditierbaren Handlungsweg.</p>
+          </div>
+        </section>
+
+        <div class="duplicate-layout">
+          <section class="comparison-card" aria-labelledby="duplicate-candidates-heading">
+            <header class="panel-heading">
+              <div class="panel-copy"><h2 id="duplicate-candidates-heading">Fiktive Kandidaten im Vergleich</h2><p>Nur minimale Kontextwerte; keine Adresse, Geburtsdatum, Ausweis-, Zahlungs- oder Gesundheitsdaten.</p></div>
+              <span class="badge badge-prototype">Keine Quellabfrage</span>
+            </header>
+            <div class="state-card-body">
+              <div class="table-wrap" tabindex="0" aria-label="Fiktive Profilkandidaten als Vergleichstabelle; horizontales Scrollen möglich">
+                <table>
+                  <caption>Fiktiver Kandidatenvergleich. Die Tabelle ist keine Suche, kein Matching, keine Identitätsprüfung und kein Merge-Werkzeug.</caption>
+                  <thead>
+                    <tr><th scope="col">Name / Profilreferenz</th><th scope="col">Minimaler Aufenthaltskontext</th><th scope="col">Vergleichsstatus</th><th scope="col">Sichere Folge</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><span class="candidate-name">Jana Müller-Kaya</span><br><span class="candidate-reference">GP-BO-PROTOTYP-014</span></td><td>RES-BO-2026-0716-014 · 16.–23.07.2026 · Zimmer 214 als Beispiel</td><td><span class="badge badge-warning">Prüfen</span><br><span class="table-note">Lokaler fiktiver Kontext</span></td><td>Keine Auswahl oder Änderung ausführen</td></tr>
+                    <tr><td><span class="candidate-name">Jana Müller</span><br><span class="candidate-reference">GP-BO-PROTOTYP-126</span></td><td>RES-BO-2026-0514-126 · 08.–12.07.2026 · Zimmer 121 als Beispiel</td><td><span class="badge badge-unclear">Unklar</span><br><span class="table-note">Keine Quellenfrische</span></td><td>Nur später manuell vergleichen</td></tr>
+                    <tr><td><span class="candidate-name">Johanna Müller-Kaya</span><br><span class="candidate-reference">GP-BO-PROTOTYP-018</span></td><td>RES-BO-2026-0729-018 · 29.07.–02.08.2026 · Zimmer 216 als Beispiel</td><td><span class="badge badge-info">Vorschau</span><br><span class="table-note">Keine Profilquelle</span></td><td>Keine Offenlegung und kein Merge</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mobile-candidate-list" aria-label="Mobile fiktive Kandidatenkarten">
+                <article class="mobile-candidate-card"><strong>Jana Müller-Kaya</strong><span class="candidate-reference">GP-BO-PROTOTYP-014</span><p class="muted-copy">RES-BO-2026-0716-014 · 16.–23.07.2026 · Zimmer 214</p><span class="badge badge-warning">Prüfen · keine Auswahl</span></article>
+                <article class="mobile-candidate-card"><strong>Jana Müller</strong><span class="candidate-reference">GP-BO-PROTOTYP-126</span><p class="muted-copy">RES-BO-2026-0514-126 · 08.–12.07.2026 · Zimmer 121</p><span class="badge badge-unclear">Unklar · keine Quelle</span></article>
+                <article class="mobile-candidate-card"><strong>Johanna Müller-Kaya</strong><span class="candidate-reference">GP-BO-PROTOTYP-018</span><p class="muted-copy">RES-BO-2026-0729-018 · 29.07.–02.08.2026 · Zimmer 216</p><span class="badge badge-info">Vorschau · kein Merge</span></article>
+              </div>
+
+              <div class="comparison-actions">
+                <button class="btn-danger" type="button" disabled aria-describedby="duplicate-selection-reason">Profile zusammenführen</button>
+                <button class="btn-warning" type="button" data-prototype-action="Fiktive Eskalation erläutert. Es wurde kein Vergleich an eine Rolle übergeben und kein Ticket oder Auditereignis angelegt.">Manuelle Prüfung erläutern</button>
+              </div>
+              <p id="duplicate-selection-reason" class="disabled-explanation">Zusammenführen deaktiviert: Keine verifizierte Quelle, keine Identitätsprüfung, keine Datensparsamkeits-/Zweckprüfung, keine Berechtigung, kein Versionsvergleich, keine Konfliktauflösung, keine Persistenz und kein Audit vorhanden.</p>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="duplicate-recovery-heading">
+            <span class="badge badge-warning">Sicherer Rückweg</span>
+            <h2 id="duplicate-recovery-heading">Kontext statt Vermutung behalten</h2>
+            <p>Die spätere Rezeption würde nach zulässigen Merkmalen und Rollen prüfen oder an Front-office-Management beziehungsweise Datenschutz eskalieren. Dieser Prototyp beansprucht keine solche Entscheidung.</p>
+            <a class="button-link" href="reservation_search_results.html#state-duplicate">Fiktive Suchprüfung lesen</a>
+            <button class="btn-teal" type="button" data-prototype-action="Der sichere Rückweg wurde lokal beschrieben. Es wurde keine Navigation, Suche, Auswahl oder Profiländerung ausgelöst.">Rückweg erläutern</button>
+          </aside>
+        </div>
+
+        <p class="page-note">Dubletten-Zustand: Sichtbare Kandidaten sind statische Beispiele. Sie sind weder ein Matching-Ergebnis noch ein Nachweis für richtige Person, Einwilligung, Berechtigung, Speicherung, Änderungshistorie oder Konfliktsicherheit.</p>
+      </section>
+
+      <!-- ===== State: sensitive data, hidden by default with local reveal ===== -->
+      <section id="state-sensitive" class="state-panel" aria-labelledby="sensitive-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="sensitive-heading">Sensible Kontaktangaben: standardmäßig verdeckt</h2>
+            <p>Der lokale Schalter zeigt die geplante Maskierungs- und Remasking-Behandlung mit ausschließlich fiktiven Werten. Er ist kein Berechtigungs- oder Auditmechanismus.</p>
+          </div>
+          <span class="badge badge-teal">Datenminimierung</span>
+        </header>
+
+        <div class="sensitive-layout">
+          <section class="panel" aria-labelledby="sensitive-contact-heading">
+            <header class="panel-heading">
+              <div class="panel-copy"><h2 id="sensitive-contact-heading">Fiktiver Kontaktbereich</h2><p>Minimaler Zusammenhang bleibt verständlich, während sensible Werte verborgen bleiben.</p></div>
+              <span class="badge badge-planned">Offenlegung: Geplant</span>
+            </header>
+            <div class="panel-body">
+              <section id="sensitive-contact-mask" class="masked-value" aria-labelledby="masked-contact-heading">
+                <span class="badge badge-teal">Verdeckt · Standard</span>
+                <h3 id="masked-contact-heading">Kontaktdaten nicht sichtbar</h3>
+                <strong>Telefon: +49 ••• ••• 421</strong>
+                <strong>E-Mail: j•••.m•••@beispiel.invalid</strong>
+                <p>Die Maskierung ist lokal dargestellt. Sie beweist keine Datenklassifikation, Zweckbindung, Authentifizierung, RBAC, sichere Darstellung, Zeitbegrenzung oder Remasking-Regel.</p>
+              </section>
+
+              <section id="sensitive-contact-reveal" class="revealed-value" aria-labelledby="revealed-contact-heading" hidden>
+                <span class="badge badge-prototype">Nur fiktive Ansicht</span>
+                <h3 id="revealed-contact-heading">Fiktive Kontaktwerte lokal erklärt</h3>
+                <strong>Telefon: +49 000 000 421</strong>
+                <strong>E-Mail: jana.mueller-kaya@beispiel.invalid</strong>
+                <strong>Adresse: Beispielweg 14 · 63619 Bad Orb · fiktiv</strong>
+                <p>Diese Werte sind ausschließlich Demonstrationsdaten. Ihre Sichtbarkeit ist keine echte Offenlegung, kein Leserrecht, kein Zugriff auf eine Quelle und kein Auditereignis.</p>
+              </section>
+
+              <div class="action-row">
+                <button id="sensitive-toggle" class="btn-teal" type="button" aria-controls="sensitive-contact-reveal" aria-expanded="false">Fiktive Kontaktansicht erläutern</button>
+              </div>
+              <p id="privacy-local-status" class="local-status" role="status">Maskierte Ansicht aktiv. Keine sensible Information wurde abgerufen, übertragen, gespeichert oder protokolliert.</p>
+
+              <section class="section-divider" aria-labelledby="sensitive-requirements-heading">
+                <div class="panel-copy"><h3 id="sensitive-requirements-heading">Was eine spätere Offenlegung braucht</h3><p>Die zukünftige Umsetzung muss den Schutzweg sichtbar und prüfbar machen.</p></div>
+                <ul class="sensitive-list">
+                  <li><span class="detail-label">Zweck / Klassifikation</span><span>Datensparsame Anzeige nach festgelegtem Verwendungszweck und Datenklasse.</span></li>
+                  <li><span class="detail-label">Auth / RBAC</span><span>Identität, Rollen- und Bereichsprüfung sowie non-disclosing denial bei fehlender Berechtigung.</span></li>
+                  <li><span class="detail-label">Audit / Remasking</span><span>Attributiertes Audit, zeit-/kontextgebundene Darstellung und definierte Remasking-Regel.</span></li>
+                  <li><span class="detail-label">Sichere Anzeige</span><span>Server-/Browservertrag, Datenminimierung, Fehlerbehandlung, Caching- und Bildschirm-/Arbeitsplatzschutz.</span></li>
+                </ul>
+              </section>
+            </div>
+          </section>
+
+          <aside class="privacy-notice" aria-labelledby="privacy-boundary-heading">
+            <span class="badge badge-unclear">RBAC unklar</span>
+            <h2 id="privacy-boundary-heading">Keine sichtbare Person = kein Zugriffstest</h2>
+            <p>Der Prototyp kann nur die gewünschte Schutzinteraktion erklären. Er hat keine Sitzung, Rollenlogik, Einwilligungs-/Zweckquelle, sichere Datenübertragung, Anzeigeprotokollierung oder Remasking-Durchsetzung.</p>
+            <button class="btn-warning" type="button" data-prototype-action="Die geplante Privatsphäre-/Auditgrenze wurde lokal erläutert. Es wurde kein Reveal autorisiert oder geloggt.">Grenze erläutern</button>
+          </aside>
+        </div>
+
+        <p class="page-note">Sensitiv-Zustand: Der lokale Reveal/Remask-Schalter ist ausschließlich eine DOM-Demonstration mit fiktiven Werten. Er beweist weder Datenschutzkonformität noch Zugriffsschutz, Audit, sichere Anzeige, Timeout, Remasking, WCAG/BFSG/EAA oder rechtliche Grundlage.</p>
+      </section>
+
+      <!-- ===== State: permission denied ===== -->
+      <section id="state-permission" class="state-panel" aria-labelledby="permission-heading" hidden>
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="permission-heading">Profilzugriff eingeschränkt</h2>
+            <p>Eine spätere Rollen- oder Zweckentscheidung wird nicht als leere Seite oder scheinbar erfolgreiche Profilansicht dargestellt.</p>
+          </div>
+          <span class="badge badge-error">× Zugriff nicht verfügbar</span>
+        </header>
+
+        <section class="persistent-alert permission-alert" role="alert" aria-labelledby="permission-alert-heading">
+          <span class="alert-symbol" aria-hidden="true">×</span>
+          <div class="permission-copy">
+            <h3 id="permission-alert-heading">Kontakt- und Änderungsbereich bleiben nicht sichtbar.</h3>
+            <p>Dies ist ein fiktiver, nicht-offenlegender Denial-Zustand. Der Prototyp kennt keine angemeldete Person, keine Rolle, keinen Zweck, keinen Bereich und keine echte Zugriffsentscheidung.</p>
+          </div>
+        </section>
+
+        <div class="permission-layout">
+          <section class="permission-card" aria-labelledby="permission-action-heading">
+            <div class="panel-copy">
+              <span class="badge badge-unclear">RBAC unklar</span>
+              <h2 id="permission-action-heading">Keine Kontaktansicht oder Profiländerung freigeben</h2>
+              <p>Ein künftiger Dienst müsste mindestens Personalidentität, Rolle, Betrieb, Zweck, Datenklasse, Profilbezug, Zustands-/Versionsregel und Auditvertrag prüfen. Keine dieser Prüfungen ist hier implementiert.</p>
+            </div>
+            <button class="btn-danger" type="button" disabled aria-describedby="permission-disabled-reason">Kontakt anzeigen oder ändern</button>
+            <p id="permission-disabled-reason" class="disabled-explanation">Aktion deaktiviert: keine authentifizierte Sitzung, keine Rollen-/Zweckprüfung, keine Profilquelle, keine Datenklassifikation, keine sichere Offenlegung, keine Persistenz und kein Audit vorhanden.</p>
+            <div class="action-row">
+              <button class="btn-teal" type="button" data-prototype-action="Zugriffsanfrage als lokaler Prototyphinweis gezeigt. Es wurde keine Anfrage gesendet, gespeichert, genehmigt oder protokolliert.">Zugriff anfragen</button>
+              <a class="button-link" href="reservation_detail.html#state-detail">Zu nicht-sensiblem Detailkontext</a>
+            </div>
+          </section>
+
+          <aside class="recovery-card" aria-labelledby="permission-recovery-heading">
+            <span class="badge badge-warning">Sichere Eskalation</span>
+            <h2 id="permission-recovery-heading">Nur den nötigen Kontext behalten</h2>
+            <p>Die nächste sichere Designentscheidung ist eine spätere, nachvollziehbare Zugriffsanfrage oder Rückkehr zum nicht-sensiblen Reservierungs-/Anreisekontext. Der Status darf keine versteckten Kontaktwerte offenlegen.</p>
+            <button class="btn-warning" type="button" data-prototype-action="Der sichere Eskalationsweg wurde lokal beschrieben. Es wurde keine Berechtigungsprüfung oder Übermittlung ausgeführt.">Eskalationsweg erläutern</button>
+          </aside>
+        </div>
+
+        <p class="page-note">Berechtigungs-Zustand: Rolle, Persona, deaktivierte Aktion und Erläuterung sind Designabsicht. Sie sind kein Nachweis für Authentifizierung, RBAC, Zugriffskontrolle, Antragsworkflow, Audit, Persistenz oder sichere Datenverarbeitung.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen Hotel-, Gast-, Profil-, Kontakt-, Reservierungs- und Zimmerdaten. Quellprüfungen können Tokens, Struktur, lokale Zustände und JavaScript-Syntax belegen; sie beweisen keine gerenderte Layoutqualität, Tastatur- oder Screen-Reader-Verhalten, Kontrast, Zoom/Reflow, Zielgrößenmessung, WCAG/BFSG/EAA-Konformität, Authentifizierung, RBAC, Profilquelle, Suche, Datenschutzdurchsetzung, Persistenz, Integration oder rechtliche Endgültigkeit.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html">Anreisen</a>
+    <a href="#state-profile" aria-current="page">Gastprofil</a>
+    <a href="reservation_detail.html#state-detail">Detail</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <span class="switcher-label">Zustand</span>
+    <div class="switcher-controls">
+      <button id="state-button-profile" type="button" data-state-target="state-profile" aria-controls="state-profile" aria-pressed="true">Normal</button>
+      <button id="state-button-duplicate" type="button" data-state-target="state-duplicate" aria-controls="state-duplicate" aria-pressed="false">Dubletten</button>
+      <button id="state-button-sensitive" type="button" data-state-target="state-sensitive" aria-controls="state-sensitive" aria-pressed="false">Sensible Daten</button>
+      <button id="state-button-permission" type="button" data-state-target="state-permission" aria-controls="state-permission" aria-pressed="false">Zugriff</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('profile-context-form');
+      const profileForm = document.getElementById('profile-form');
+      const sensitiveToggle = document.getElementById('sensitive-toggle');
+      const maskedContact = document.getElementById('sensitive-contact-mask');
+      const revealedContact = document.getElementById('sensitive-contact-reveal');
+      const privacyStatus = document.getElementById('privacy-local-status');
+
+      const labels = {
+        'state-profile': 'Normales fiktives Gastprofil angezeigt.',
+        'state-duplicate': 'Fiktiver Dublettenvergleich angezeigt.',
+        'state-sensitive': 'Sensible Kontaktangaben in der standardmäßig maskierten Prototypansicht angezeigt.',
+        'state-permission': 'Fiktiver nicht-offenlegender Berechtigungszustand angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      switcherControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Ursprung und Betrieb lokal aktualisiert. Es wurde keine Route, Suche, Profildatenabfrage, Berechtigungsprüfung oder Speicherung ausgeführt.';
+      });
+
+      profileForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Änderungsrahmen lokal geprüft. Es wurde kein Profil validiert, erstellt, geändert, zusammengeführt, gespeichert oder übermittelt.';
+      });
+
+      sensitiveToggle.addEventListener('click', function () {
+        const isMasked = !maskedContact.hidden;
+        maskedContact.hidden = isMasked;
+        revealedContact.hidden = !isMasked;
+        sensitiveToggle.setAttribute('aria-expanded', String(isMasked));
+
+        if (isMasked) {
+          sensitiveToggle.textContent = 'Maskierte Kontaktansicht wiederherstellen';
+          privacyStatus.textContent = 'Fiktive Kontaktwerte lokal erläutert. Keine sensible Information wurde abgerufen, autorisiert, übertragen, gespeichert oder protokolliert.';
+          liveMessage.textContent = 'Fiktive Kontaktansicht lokal erläutert. Kein echter Wert wurde offengelegt.';
+        } else {
+          sensitiveToggle.textContent = 'Fiktive Kontaktansicht erläutern';
+          privacyStatus.textContent = 'Maskierte Ansicht aktiv. Keine sensible Information wurde abgerufen, übertragen, gespeichert oder protokolliert.';
+          liveMessage.textContent = 'Maskierte fiktive Kontaktansicht wiederhergestellt. Kein Remasking- oder Auditvertrag wird dadurch belegt.';
+        }
+      });
+    }());
+  </script>
+</body>
+</html>

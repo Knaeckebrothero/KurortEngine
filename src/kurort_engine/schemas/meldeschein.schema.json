@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kurort-engine.local/schemas/meldeschein.schema.json",
+  "title": "MeldescheinForm JSON-stdin payload",
+  "description": "AC-1 JSON-stdin Meldeschein payload schema for `python -m kurort_engine meldeschein check-in`. Mirrors the BMG §30 Abs. 1 + Abs. 2 Pflichtangaben enforced by `kurort_engine.MeldescheinForm` (see `repo/src/kurort_engine/meldeschein/__init__.py:86-94`).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "familienname",
+    "vorname",
+    "geburtsdatum",
+    "staatsangehoerigkeit",
+    "anschrift",
+    "anreisedatum",
+    "abreisedatum"
+  ],
+  "properties": {
+    "familienname": {
+      "type": "string",
+      "minLength": 1,
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Familienname (Familienname)."
+    },
+    "vorname": {
+      "type": "string",
+      "minLength": 1,
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Vorname (Vorname)."
+    },
+    "geburtsdatum": {
+      "type": "string",
+      "format": "date",
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Geburtsdatum (ISO-8601 date)."
+    },
+    "staatsangehoerigkeit": {
+      "type": "string",
+      "minLength": 2,
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Staatsangehoerigkeit (ISO-3166 alpha-2 or longer)."
+    },
+    "anschrift": {
+      "type": "string",
+      "minLength": 1,
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Anschrift (Anschrift)."
+    },
+    "anreisedatum": {
+      "type": "string",
+      "format": "date",
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Anreisedatum (ISO-8601 date, arrival date)."
+    },
+    "abreisedatum": {
+      "type": "string",
+      "format": "date",
+      "description": "BMG §30 Abs. 1 Pflichtangabe: Abreisedatum (ISO-8601 date, departure date)."
+    },
+    "ausweis_seriennummer": {
+      "type": ["string", "null"],
+      "description": "BMG §30 Abs. 2 field: Ausweis-Seriennummer (passport or ID-card serial number) for foreign-national guests under BEG IV 2025-01-01."
+    }
+  }
+}

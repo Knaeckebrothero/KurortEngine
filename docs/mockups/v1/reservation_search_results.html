@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservierungssuche und Ergebnisse — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      /* Established typography, spacing, shape, and interaction scale. */
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --font-size-page-title: 20px;
+      --font-size-section-title: 16px;
+      --font-size-body: 14px;
+      --font-size-secondary: 13px;
+      --font-size-label: 12px;
+      --font-size-dense: 11px;
+      --font-size-table-header: 10px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --line-height-base: 1.5;
+      --letter-spacing-label: 0.5px;
+      --space-none: 0;
+      --space-badge-y: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --radius-modal: 12px;
+      --border-width: 1px;
+      --border-emphasis: 3px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --detail-width: calc(var(--space-4xl) * 8);
+      --state-switcher-width: calc(var(--space-4xl) * 11);
+      --results-max-height: calc(var(--space-4xl) * 8);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --motion-none: 0s;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Reset and base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) var(--border-width) var(--accent-color);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: var(--border-width);
+      height: var(--border-width);
+      margin: calc(var(--border-width) * -1);
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-color);
+      border: var(--border-width) solid var(--accent-color);
+      border-radius: var(--radius-control);
+      color: var(--timeline-bg);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--touch-target) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: var(--border-width) solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .brand, .top-actions, .context-strip, .context-values, .badge-row, .action-row, .state-switcher, .mobile-nav, .record-meta, .legend-row, .result-toolbar, .duplicate-choices, .notice-title-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .brand { min-height: var(--touch-target); }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-2xl);
+      height: var(--space-2xl);
+      flex: 0 0 auto;
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .brand-copy, .page-copy, .panel-title-group, .selected-copy, .state-copy, .empty-copy, .alert-copy, .loading-copy, .evidence-copy, .result-person, .mobile-result-copy, .detail-list, .field-group, .privacy-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+
+    .brand-name { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .brand-subtitle, .helper, .context-label, .context-value, .panel-subtitle, .field-help, .detail-label, .result-subtitle, .status-note, .state-note, .page-note, .table-note, .mobile-meta, .evidence-copy p, .privacy-copy p { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: var(--space-badge-y) var(--space-sm);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: var(--font-size-dense);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      line-height: var(--line-height-base);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr);
+      min-height: calc(100vh - calc(var(--touch-target) + var(--space-xl)));
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      padding: var(--space-lg) var(--space-md);
+      background: var(--panel-bg);
+      border-right: var(--border-width) solid var(--border-color);
+    }
+
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label {
+      padding: var(--space-none) var(--space-md);
+      color: var(--text-muted);
+      font-size: var(--font-size-table-header);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: var(--letter-spacing-label);
+      text-transform: uppercase;
+    }
+
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-left: var(--border-emphasis) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: var(--font-size-secondary);
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+
+    .nav-link:hover { background: var(--surface-0); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); font-size: var(--font-size-label); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .sidebar-boundary {
+      display: grid;
+      gap: var(--space-xs);
+      margin-top: auto;
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .sidebar-boundary strong { color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-semibold); }
+    .sidebar-boundary p { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .workspace {
+      display: grid;
+      align-content: start;
+      gap: var(--space-lg);
+      min-width: var(--space-none);
+      padding: var(--space-xl);
+      padding-bottom: calc(var(--space-4xl) * 2);
+    }
+
+    .context-strip {
+      justify-content: space-between;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .context-values { min-width: var(--space-none); }
+    .context-label { letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .context-divider { color: var(--surface-2); }
+
+    .boundary-notice, .search-panel, .results-panel, .selected-panel, .state-card, .evidence-card, .privacy-card {
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+
+    .boundary-notice {
+      display: grid;
+      grid-template-columns: auto minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      border-left: var(--border-emphasis) solid var(--color-peach);
+    }
+
+    .boundary-symbol { color: var(--color-peach); font-size: var(--font-size-section-title); line-height: var(--line-height-base); }
+    .boundary-notice h2 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .boundary-notice p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .search-panel { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .section-heading, .panel-heading, .state-heading, .selected-header, .mobile-result-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    h1 { color: var(--text-primary); font-size: var(--font-size-page-title); font-weight: var(--font-weight-semibold); }
+    h2 { color: var(--text-primary); font-size: var(--font-size-section-title); font-weight: var(--font-weight-semibold); }
+    h3 { color: var(--text-primary); font-size: var(--font-size-body); font-weight: var(--font-weight-semibold); }
+    .page-copy p, .panel-title-group p, .state-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .search-form { display: grid; grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 3), 1fr) minmax(calc(var(--space-4xl) * 3), 1fr) auto; gap: var(--space-md); align-items: end; }
+    .field-group { min-width: var(--space-none); }
+    .field-label { color: var(--text-secondary); font-size: var(--font-size-label); font-weight: var(--font-weight-medium); }
+
+    input, select, button { font: inherit; }
+    input[type="search"], select {
+      width: 100%;
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-primary);
+      font-size: var(--font-size-body);
+    }
+
+    input[type="search"]::placeholder { color: var(--text-muted); }
+    .filter-row { display: flex; align-items: center; gap: var(--space-sm); min-height: var(--touch-target); }
+    input[type="checkbox"] { width: var(--space-lg); height: var(--space-lg); accent-color: var(--accent-color); }
+    .filter-row label { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--surface-0);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: var(--font-size-secondary);
+      font-weight: var(--font-weight-medium);
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+
+    button:not([disabled]):hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); transform: translateY(calc(var(--border-width) * -1)); }
+    button:not([disabled]):active { background: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); border-color: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-secondary { background: var(--panel-bg); border-color: var(--border-color); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+
+    .search-actions { display: grid; gap: var(--space-sm); min-width: max-content; }
+    .search-actions button { width: 100%; }
+
+    .active-context {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(var(--space-none), 1fr));
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-control);
+    }
+
+    .context-item { display: grid; gap: var(--space-xs); min-width: var(--space-none); }
+    .context-item strong { overflow-wrap: anywhere; color: var(--text-primary); font-size: var(--font-size-secondary); font-weight: var(--font-weight-medium); }
+    .context-item span { color: var(--text-muted); font-size: var(--font-size-dense); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+
+    .form-boundary {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      color: var(--text-muted);
+      font-size: var(--font-size-label);
+    }
+
+    .form-boundary strong { color: var(--color-peach); font-weight: var(--font-weight-semibold); }
+
+    .state-panel { display: grid; gap: var(--space-lg); min-width: var(--space-none); }
+    .results-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 5), var(--detail-width)); gap: var(--space-lg); align-items: start; }
+    .results-panel, .selected-panel { overflow: hidden; }
+    .panel-heading, .selected-header, .mobile-result-heading { padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: var(--border-width) solid var(--border-color); }
+    .panel-body, .selected-body, .state-card-body { display: grid; gap: var(--space-md); padding: var(--space-lg); }
+
+    .result-toolbar { justify-content: space-between; color: var(--text-secondary); font-size: var(--font-size-label); }
+    .result-toolbar strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .result-toolbar span { color: var(--text-muted); }
+
+    .table-scroll { max-height: var(--results-max-height); overflow: auto; border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 18); border-collapse: collapse; font-size: var(--font-size-secondary); }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-muted); font-size: var(--font-size-label); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: var(--border-width) solid var(--border-color); text-align: left; vertical-align: top; }
+    th { position: sticky; top: var(--space-none); z-index: 1; background: var(--surface-0); color: var(--text-muted); font-size: var(--font-size-table-header); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    tbody tr { background: var(--panel-bg); transition: background var(--motion-fast), border-color var(--motion-fast); }
+    tbody tr:hover { background: var(--surface-0); }
+    tbody tr.is-selected { background: var(--surface-0); box-shadow: inset var(--border-emphasis) var(--space-none) var(--accent-color); }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    td { color: var(--text-secondary); }
+    .guest-name { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
+    .record-id, time { color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--font-size-label); }
+    .cell-stack { display: grid; gap: var(--space-xs); min-width: calc(var(--space-4xl) * 2); }
+    .table-action { min-width: calc(var(--space-4xl) * 2); }
+
+    .status-stack { display: grid; gap: var(--space-xs); }
+    .status-stack small { color: var(--text-muted); font-size: var(--font-size-dense); }
+
+    .selected-body { gap: var(--space-lg); }
+    .selected-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+    .detail-list { list-style: none; }
+    .detail-list li { display: grid; gap: var(--space-xs); padding: var(--space-sm) var(--space-none); border-bottom: var(--border-width) solid var(--border-color); }
+    .detail-list li:last-child { border-bottom: var(--space-none); }
+    .detail-label { letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .detail-value { color: var(--text-primary); font-size: var(--font-size-secondary); overflow-wrap: anywhere; }
+
+    .privacy-card, .evidence-card { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--timeline-bg); }
+    .privacy-card { border-left: var(--border-emphasis) solid var(--color-teal); }
+    .evidence-card { border-left: var(--border-emphasis) solid var(--color-blue); }
+    .privacy-card h3, .evidence-card h3 { color: var(--text-primary); font-size: var(--font-size-body); }
+    .privacy-copy strong, .evidence-copy strong { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .mobile-result-list { display: none; gap: var(--space-sm); list-style: none; }
+    .mobile-result-card { display: grid; gap: var(--space-md); padding: var(--space-md); background: var(--surface-0); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-card); }
+    .mobile-result-card.is-selected { border-left: var(--border-emphasis) solid var(--accent-color); }
+    .mobile-result-card h3 { font-size: var(--font-size-secondary); }
+    .mobile-result-card p { color: var(--text-secondary); font-size: var(--font-size-label); }
+    .mobile-result-card footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+
+    .state-card { display: grid; overflow: hidden; }
+    .state-heading { padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: var(--border-width) solid var(--border-color); }
+    .state-card-body { min-height: calc(var(--space-4xl) * 5); }
+    .empty-card { align-items: center; justify-items: center; padding: var(--space-3xl) var(--space-xl); text-align: center; }
+    .empty-copy { max-width: calc(var(--space-4xl) * 9); }
+    .empty-symbol { color: var(--color-blue); font-size: var(--space-4xl); line-height: var(--line-height-base); }
+    .empty-copy p, .alert-copy p, .loading-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .loading-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 4), 1fr); gap: var(--space-lg); }
+    .loading-copy { padding: var(--space-lg); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .skeleton-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .skeleton-row { display: grid; grid-template-columns: minmax(calc(var(--space-4xl) * 3), 2fr) minmax(calc(var(--space-4xl) * 2), 1fr) minmax(calc(var(--space-4xl) * 2), 1fr); gap: var(--space-md); padding: var(--space-md); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .skeleton-bar { min-height: var(--space-md); background: var(--surface-0); border-radius: var(--radius-badge); }
+    .skeleton-bar.short { max-width: calc(var(--space-4xl) * 2); }
+    .skeleton-bar.medium { max-width: calc(var(--space-4xl) * 3); }
+
+    .duplicate-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 5), 1fr); gap: var(--space-lg); }
+    .persistent-alert {
+      display: grid;
+      grid-template-columns: auto minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--timeline-bg);
+      border: var(--border-width) solid var(--color-yellow);
+      border-left: var(--border-emphasis) solid var(--color-yellow);
+      border-radius: var(--radius-card);
+    }
+    .alert-symbol { color: var(--color-yellow); font-size: var(--font-size-section-title); }
+    .duplicate-choices { margin-top: var(--space-md); }
+
+    .comparison-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .comparison-item { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; gap: var(--space-md); align-items: center; padding: var(--space-md); background: var(--surface-0); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .comparison-item strong { color: var(--text-primary); font-size: var(--font-size-secondary); }
+    .comparison-item p { color: var(--text-secondary); font-size: var(--font-size-label); }
+
+    .overflow-layout { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 5), 1fr); gap: var(--space-lg); }
+    .overflow-scroll { max-height: var(--results-max-height); overflow: auto; padding: var(--space-sm); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .overflow-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .overflow-item { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) auto; align-items: center; gap: var(--space-md); padding: var(--space-sm); background: var(--panel-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .overflow-item strong { color: var(--text-primary); font-size: var(--font-size-secondary); overflow-wrap: anywhere; }
+    .overflow-item span { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--font-size-label); }
+    .overflow-copy { display: grid; gap: var(--space-md); }
+    .overflow-copy p { color: var(--text-secondary); font-size: var(--font-size-secondary); }
+
+    .source-error-layout { display: grid; grid-template-columns: auto minmax(var(--space-none), 1fr); gap: var(--space-md); padding: var(--space-lg); background: var(--timeline-bg); border: var(--border-width) solid var(--color-red); border-left: var(--border-emphasis) solid var(--color-red); border-radius: var(--radius-card); }
+    .source-error-layout .alert-symbol { color: var(--color-red); }
+
+    .legend-row { padding: var(--space-md); background: var(--timeline-bg); border: var(--border-width) solid var(--border-color); border-radius: var(--radius-control); }
+    .legend-copy { color: var(--text-muted); font-size: var(--font-size-label); }
+
+    .mobile-nav { display: none; }
+
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      width: min(var(--state-switcher-width), calc(100% - calc(var(--space-lg) * 2)));
+      justify-content: flex-end;
+      padding: var(--space-sm);
+      background: var(--panel-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-sm) var(--space-xl) var(--timeline-bg);
+    }
+
+    .switcher-label { color: var(--text-muted); font-size: var(--font-size-dense); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-label); text-transform: uppercase; }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: var(--font-size-dense); }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+
+    @media (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-xs); }
+      .brand-copy, .nav-copy, .nav-label, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); }
+      .results-layout, .loading-layout, .duplicate-layout, .overflow-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .selected-panel { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(calc(var(--space-4xl) * 5), 1fr); }
+      .selected-header { grid-column: 1 / -1; }
+      .selected-body { grid-column: 1 / -1; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+      .selected-body .privacy-card, .selected-body .evidence-card { align-self: start; }
+      .search-form { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .search-actions { display: flex; grid-column: 1 / -1; min-width: var(--space-none); }
+      .search-actions button { width: auto; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + calc(var(--space-4xl) * 2)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { justify-content: flex-start; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      .workspace { gap: var(--space-md); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-values { gap: var(--space-xs); }
+      .boundary-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .search-panel { padding: var(--space-md); }
+      .search-form, .active-context { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .search-actions { display: grid; }
+      .search-actions button { width: 100%; }
+      .results-layout { gap: var(--space-md); }
+      .results-panel .table-scroll { display: none; }
+      .mobile-result-list { display: grid; }
+      .selected-panel { display: grid; }
+      .selected-body { display: grid; grid-template-columns: minmax(var(--space-none), 1fr); }
+      .state-card-body { min-height: calc(var(--space-4xl) * 4); padding: var(--space-md); }
+      .empty-card { padding: var(--space-2xl) var(--space-lg); }
+      .skeleton-row { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .comparison-item, .overflow-item { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .comparison-item .badge, .overflow-item .badge { width: fit-content; }
+      .persistent-alert, .source-error-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-md)); left: var(--space-sm); width: auto; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .switcher-label { display: none; }
+      .mobile-nav {
+        position: fixed;
+        right: var(--space-none);
+        bottom: var(--space-none);
+        left: var(--space-none);
+        z-index: var(--z-mobile-nav);
+        display: flex;
+        align-items: stretch;
+        justify-content: space-around;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        background: var(--panel-bg);
+        border-top: var(--border-width) solid var(--border-color);
+      }
+      .mobile-nav a {
+        display: grid;
+        place-items: center;
+        min-width: var(--touch-target);
+        min-height: var(--touch-target);
+        padding: var(--space-xs) var(--space-sm);
+        border: var(--border-width) solid var(--border-color);
+        border-radius: var(--radius-control);
+        color: var(--text-secondary);
+        font-size: var(--font-size-dense);
+        text-align: center;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: var(--motion-none) !important;
+        scroll-behavior: auto;
+        transition-duration: var(--motion-none) !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Proposed component mapping only: SearchWorkspace, ReservationResultsTable,
+    MobileResultCard, SelectedReservationContext, and SearchStateSwitcher are
+    prototype design contracts. No production browser component or route exists.
+  -->
+  <a class="skip-link" href="#search-workspace">Zum Suchbereich springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland ERP">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Betriebsarbeitsplatz · Bad Orb</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisstatus der Ansicht">
+      <span class="badge badge-prototype">◈ Prototype</span>
+      <span class="badge badge-warning">! Keine Live-Suche</span>
+      <span class="badge badge-planned">⌁ Backend erforderlich</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <div class="brand" aria-hidden="true">
+        <span class="brand-mark">HR</span>
+        <span class="brand-copy"><span class="brand-name">Arbeitsplatz</span></span>
+      </div>
+
+      <nav class="nav-group" aria-label="Tägliche Aufgaben">
+        <p class="nav-label">Tägliche Arbeit</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#main-content"><span class="nav-symbol" aria-hidden="true">◷</span><span class="nav-copy">Heute</span><span class="nav-count">6</span></a></li>
+          <li><a class="nav-link" href="#main-content"><span class="nav-symbol" aria-hidden="true">↗</span><span class="nav-copy">Anreisen</span><span class="nav-count">8</span></a></li>
+          <li><a class="nav-link" href="#main-content"><span class="nav-symbol" aria-hidden="true">↘</span><span class="nav-copy">Abreisen</span><span class="nav-count">5</span></a></li>
+          <li><a class="nav-link" href="#search-workspace" aria-current="page"><span class="nav-symbol" aria-hidden="true">⌕</span><span class="nav-copy">Suche &amp; Reservierungen</span><span class="nav-count">aktiv</span></a></li>
+        </ul>
+      </nav>
+
+      <nav class="nav-group" aria-label="Nachweise und Hinweise">
+        <p class="nav-label">Nachweise</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="#prototype-boundary"><span class="nav-symbol" aria-hidden="true">◫</span><span class="nav-copy">Nachweise</span><span class="nav-count">2</span></a></li>
+          <li><a class="nav-link" href="#prototype-boundary"><span class="nav-symbol" aria-hidden="true">!</span><span class="nav-copy">Hinweise</span><span class="nav-count">3</span></a></li>
+        </ul>
+      </nav>
+
+      <section class="sidebar-boundary" aria-label="Prototypgrenze">
+        <span class="badge badge-unclear">RBAC unklar</span>
+        <strong>Keine Sitzung nachgewiesen</strong>
+        <p>Rolle, Berechtigung, Speicherung und Suche brauchen einen separaten Vertrag.</p>
+      </section>
+    </aside>
+
+    <main id="main-content" class="workspace">
+      <section class="context-strip" aria-label="Aktueller Arbeitskontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">•</span>
+          <span class="context-label">Schicht</span><span class="context-value">Frühdienst · Beispiel</span>
+        </div>
+        <span class="badge badge-teal">⊙ Fiktive Beispieldaten</span>
+      </section>
+
+      <section id="prototype-boundary" class="boundary-notice" aria-labelledby="boundary-heading">
+        <span class="boundary-symbol" aria-hidden="true">!</span>
+        <div class="page-copy">
+          <div class="notice-title-row">
+            <h1 id="boundary-heading">Reservierungssuche und Ergebnisse</h1>
+            <span class="badge badge-prototype">Prototyp</span>
+          </div>
+          <p><strong>Keine Live-Suche.</strong> Die sichtbaren Personen, Reservierungen, Zimmer und Trefferzahlen sind fiktiv. Die aktuelle Codebasis zeigt lokale Kurtaxe-Modelle und CLI-Verträge, aber keine durchsuchbare PMS-/Postgres-Quelle, Browser-API, Sitzungs- oder Berechtigungsprüfung.</p>
+        </div>
+      </section>
+
+      <section id="search-workspace" class="search-panel" aria-labelledby="search-heading">
+        <div class="section-heading">
+          <div class="page-copy">
+            <h2 id="search-heading">Suchkontext festlegen</h2>
+            <p>Suchbegriff und Filter bleiben sichtbar, wenn ein Ergebnis, ein Hinweis oder ein Ausnahmezustand geprüft wird.</p>
+          </div>
+          <span class="badge badge-info">⌕ Ansicht mit Beispieldaten</span>
+        </div>
+
+        <form id="prototype-search-form" class="search-form" novalidate>
+          <div class="field-group">
+            <label class="field-label" for="search-query">Gast oder Reservierungsnummer</label>
+            <input id="search-query" name="query" type="search" value="Müller" autocomplete="off" aria-describedby="search-help">
+            <span id="search-help" class="field-help">Nur Prototypansicht: Eingaben lösen keine Suche, Speicherung oder Übertragung aus.</span>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="search-scope">Suchbereich</label>
+            <select id="search-scope" name="scope">
+              <option value="gast-reservierung">Gast &amp; Reservierung</option>
+              <option value="gast">Nur Gastname</option>
+              <option value="reservierung">Nur Reservierungsnummer</option>
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="search-status">Aufenthaltsbezug</label>
+            <select id="search-status" name="status">
+              <option value="alle">Alle fiktiven Aufenthalte</option>
+              <option value="aktiv">Aktuell oder anreisend</option>
+              <option value="vergangen">Vergangene Aufenthalte</option>
+            </select>
+          </div>
+
+          <div class="search-actions" aria-label="Prototypaktionen">
+            <button id="prototype-search-button" class="btn-primary" type="submit">⌕ Beispielansicht aktualisieren</button>
+            <button id="reset-search-button" class="btn-secondary" type="button">Filter zurücksetzen</button>
+          </div>
+        </form>
+
+        <div class="filter-row">
+          <input id="similar-name-filter" name="similar-name-filter" type="checkbox" checked>
+          <label for="similar-name-filter">Ähnliche Namen als manuellen Prüfhinweis markieren</label>
+        </div>
+
+        <div class="active-context" aria-label="Aktiver Such- und Filterkontext">
+          <div class="context-item"><span>Suchbegriff</span><strong id="active-query">Müller</strong></div>
+          <div class="context-item"><span>Suchbereich</span><strong id="active-scope">Gast &amp; Reservierung</strong></div>
+          <div class="context-item"><span>Aufenthaltsbezug</span><strong id="active-status">Alle fiktiven Aufenthalte</strong></div>
+          <div class="context-item"><span>Ansichtsstatus</span><strong id="active-count">5 fiktive Treffer</strong></div>
+        </div>
+
+        <p class="form-boundary"><strong>Backend, Datenschutz und RBAC erforderlich:</strong> Suchindex, Zweckbindung, Datenminimierung, Rollenprüfung, Ergebnisfilterung, Ranking, Pagination, Fehlervertrag, Audit und dauerhafte Auswahl sind nicht belegt.</p>
+        <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">5 fiktive Treffer für Müller angezeigt. Keine Live-Suche.</p>
+      </section>
+
+      <!-- ===== State: populated results ===== -->
+      <section id="state-results" class="state-panel" aria-labelledby="results-heading">
+        <div class="results-layout">
+          <section class="results-panel" aria-labelledby="results-heading">
+            <header class="panel-heading">
+              <div class="panel-title-group">
+                <h2 id="results-heading">Fiktive Suchergebnisse</h2>
+                <p>Verdichtete Arbeitsliste mit einem nächsten Schritt pro Datensatz.</p>
+              </div>
+              <span class="badge badge-prototype">5 Treffer · Beispiel</span>
+            </header>
+            <div class="panel-body">
+              <div class="result-toolbar">
+                <strong>Sortierung: manuell demonstriert</strong>
+                <span>Rangfolge und Vollständigkeit: <strong>Planned</strong></span>
+              </div>
+
+              <div class="table-scroll" tabindex="0" aria-label="Fiktive Suchergebnisse als Tabelle; horizontales und vertikales Scrollen möglich">
+                <table>
+                  <caption>Fiktive Treffer für „Müller“. Persönliche Adressen, Geburtsdaten, Dokumente, Zahlungs- und Gesundheitsdaten werden nicht gezeigt.</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Gast / Reservierung</th>
+                      <th scope="col">Aufenthalt</th>
+                      <th scope="col">Zimmer</th>
+                      <th scope="col">Prüfstatus</th>
+                      <th scope="col">Nächster Schritt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="is-selected" data-result-row="RES-BO-2026-0716-014">
+                      <td><div class="cell-stack"><span class="guest-name">Jana Müller-Kaya</span><span class="record-id">RES-BO-2026-0716-014</span><span class="result-subtitle">Fiktiver Datensatz · 2 Gäste</span></div></td>
+                      <td><div class="cell-stack"><time datetime="2026-07-16">16.07.2026</time><span>bis 23.07.2026 · Anreise heute</span></div></td>
+                      <td><div class="cell-stack"><span>214 · Beispiel</span><span class="result-subtitle">Zimmerbezug nicht geprüft</span></div></td>
+                      <td><div class="status-stack"><span class="badge badge-warning">! Nachweis prüfen</span><small>Meldeschein-Kontext: Prototype</small></div></td>
+                      <td><button class="table-action select-result" type="button" data-record="RES-BO-2026-0716-014" data-guest="Jana Müller-Kaya" data-stay="16.–23.07.2026 · Zimmer 214 · fiktiv">Kontext wählen</button></td>
+                    </tr>
+                    <tr data-result-row="RES-BO-2026-0628-087">
+                      <td><div class="cell-stack"><span class="guest-name">Jörg Müller</span><span class="record-id">RES-BO-2026-0628-087</span><span class="result-subtitle">Fiktiver Datensatz · 1 Gast</span></div></td>
+                      <td><div class="cell-stack"><time datetime="2026-07-10">10.07.2026</time><span>bis 17.07.2026 · Abreise morgen</span></div></td>
+                      <td><div class="cell-stack"><span>108 · Beispiel</span><span class="result-subtitle">Aufenthalt nicht live geprüft</span></div></td>
+                      <td><div class="status-stack"><span class="badge badge-teal">⊙ Kontext vollständig</span><small>Nur fiktive Anzeige</small></div></td>
+                      <td><button class="table-action select-result" type="button" data-record="RES-BO-2026-0628-087" data-guest="Jörg Müller" data-stay="10.–17.07.2026 · Zimmer 108 · fiktiv">Kontext wählen</button></td>
+                    </tr>
+                    <tr data-result-row="RES-BO-2026-0702-041">
+                      <td><div class="cell-stack"><span class="guest-name">Dr. Anke Müller-Stein</span><span class="record-id">RES-BO-2026-0702-041</span><span class="result-subtitle">Fiktiver Datensatz · 1 Gast</span></div></td>
+                      <td><div class="cell-stack"><time datetime="2026-07-18">18.07.2026</time><span>bis 29.07.2026 · Anreise geplant</span></div></td>
+                      <td><div class="cell-stack"><span>302 · Beispiel</span><span class="result-subtitle">Keine Verfügbarkeit abgeleitet</span></div></td>
+                      <td><div class="status-stack"><span class="badge badge-info">i Vorschau</span><small>Reservierungsquelle: Planned</small></div></td>
+                      <td><button class="table-action select-result" type="button" data-record="RES-BO-2026-0702-041" data-guest="Dr. Anke Müller-Stein" data-stay="18.–29.07.2026 · Zimmer 302 · fiktiv">Kontext wählen</button></td>
+                    </tr>
+                    <tr data-result-row="RES-BO-2026-0511-203">
+                      <td><div class="cell-stack"><span class="guest-name">Sibel Müller</span><span class="record-id">RES-BO-2026-0511-203</span><span class="result-subtitle">Fiktiver Datensatz · Begleitperson möglich</span></div></td>
+                      <td><div class="cell-stack"><time datetime="2026-06-29">29.06.2026</time><span>bis 06.07.2026 · vergangen</span></div></td>
+                      <td><div class="cell-stack"><span>117 · Beispiel</span><span class="result-subtitle">Historie nicht verbunden</span></div></td>
+                      <td><div class="status-stack"><span class="badge badge-unclear">? Quelle unklar</span><small>Keine Historienabfrage</small></div></td>
+                      <td><button class="table-action select-result" type="button" data-record="RES-BO-2026-0511-203" data-guest="Sibel Müller" data-stay="29.06.–06.07.2026 · Zimmer 117 · fiktiv">Kontext wählen</button></td>
+                    </tr>
+                    <tr data-result-row="RES-BO-2026-0722-006">
+                      <td><div class="cell-stack"><span class="guest-name">Michael und Frida Müller</span><span class="record-id">RES-BO-2026-0722-006</span><span class="result-subtitle">Fiktiver Datensatz · 2 Gäste</span></div></td>
+                      <td><div class="cell-stack"><time datetime="2026-07-22">22.07.2026</time><span>bis 26.07.2026 · Anreise geplant</span></div></td>
+                      <td><div class="cell-stack"><span>205 · Beispiel</span><span class="result-subtitle">Zimmerbezug nicht bestätigt</span></div></td>
+                      <td><div class="status-stack"><span class="badge badge-warning">! Ähnlicher Name</span><small>Manueller Vergleich erforderlich</small></div></td>
+                      <td><button class="table-action select-result" type="button" data-record="RES-BO-2026-0722-006" data-guest="Michael und Frida Müller" data-stay="22.–26.07.2026 · Zimmer 205 · fiktiv">Kontext wählen</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <section class="mobile-result-list" aria-labelledby="mobile-results-heading">
+                <header class="mobile-result-heading">
+                  <div class="panel-title-group">
+                    <h3 id="mobile-results-heading">Priorisierte mobile Ergebnislisten</h3>
+                    <p>Keine zusammengeschobene Desktop-Tabelle.</p>
+                  </div>
+                  <span class="badge badge-prototype">5 Beispieltreffer</span>
+                </header>
+                <ul class="mobile-result-list">
+                  <li class="mobile-result-card is-selected"><div class="mobile-result-copy"><h3>Jana Müller-Kaya</h3><span class="record-id">RES-BO-2026-0716-014</span><p>16.–23.07.2026 · Zimmer 214 · Nachweis prüfen</p></div><footer><span class="badge badge-warning">! Nachweis prüfen</span><button class="select-result" type="button" data-record="RES-BO-2026-0716-014" data-guest="Jana Müller-Kaya" data-stay="16.–23.07.2026 · Zimmer 214 · fiktiv">Kontext wählen</button></footer></li>
+                  <li class="mobile-result-card"><div class="mobile-result-copy"><h3>Jörg Müller</h3><span class="record-id">RES-BO-2026-0628-087</span><p>10.–17.07.2026 · Zimmer 108 · Kontext vollständig</p></div><footer><span class="badge badge-teal">⊙ Kontext vollständig</span><button class="select-result" type="button" data-record="RES-BO-2026-0628-087" data-guest="Jörg Müller" data-stay="10.–17.07.2026 · Zimmer 108 · fiktiv">Kontext wählen</button></footer></li>
+                  <li class="mobile-result-card"><div class="mobile-result-copy"><h3>Dr. Anke Müller-Stein</h3><span class="record-id">RES-BO-2026-0702-041</span><p>18.–29.07.2026 · Zimmer 302 · Vorschau</p></div><footer><span class="badge badge-info">i Vorschau</span><button class="select-result" type="button" data-record="RES-BO-2026-0702-041" data-guest="Dr. Anke Müller-Stein" data-stay="18.–29.07.2026 · Zimmer 302 · fiktiv">Kontext wählen</button></footer></li>
+                </ul>
+              </section>
+            </div>
+          </section>
+
+          <aside id="selected-record" class="selected-panel" aria-labelledby="selected-heading">
+            <header class="selected-header">
+              <div class="panel-title-group">
+                <h2 id="selected-heading">Ausgewählter Kontext</h2>
+                <p>Die Auswahl ist lokal und nicht gespeichert.</p>
+              </div>
+              <span class="badge badge-prototype">Prototype</span>
+            </header>
+            <div class="selected-body">
+              <div class="selected-copy">
+                <h3 id="selected-guest">Jana Müller-Kaya</h3>
+                <p id="selected-stay">16.–23.07.2026 · Zimmer 214 · fiktiv</p>
+              </div>
+              <ul class="detail-list" aria-label="Ausgewählte fiktive Reservierung">
+                <li><span class="detail-label">Reservierung</span><span id="selected-record-id" class="detail-value record-id">RES-BO-2026-0716-014</span></li>
+                <li><span class="detail-label">Quelle</span><span class="detail-value">Fiktive Prototypdaten · keine Datenbankabfrage</span></li>
+                <li><span class="detail-label">Geplante Rückkehr</span><span class="detail-value">Filter, Suchbegriff und Auswahl müssten später gespeichert werden.</span></li>
+              </ul>
+              <div class="privacy-card">
+                <div class="privacy-copy">
+                  <span class="badge badge-teal">⊙ Datenminimierung</span>
+                  <h3>Keine sensiblen Werte im Treffer</h3>
+                  <p>Adresse, Geburtsdatum, Ausweis, Zahlungs- und Gesundheitsdaten sind bewusst nicht Bestandteil dieser fiktiven Liste. Eine spätere Offenlegung braucht Zweck, RBAC, Audit und Remasking.</p>
+                </div>
+              </div>
+              <div class="evidence-card">
+                <div class="evidence-copy">
+                  <span class="badge badge-planned">⌁ Backend erforderlich</span>
+                  <h3>Nachweisgrenze</h3>
+                  <p><strong>Operational:</strong> lokale Guest/Reservation-Modelle für die Kurtaxe. <strong>Planned:</strong> Suchquelle, Ranking, Berechtigung, Persistenz und Browser-Aktion.</p>
+                </div>
+                <div class="action-row">
+                  <button type="button" class="btn-warning" data-state-target="state-duplicate" aria-controls="state-duplicate">! Ähnliche Namen prüfen</button>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="legend-row" aria-label="Einordnung der sichtbaren Informationen">
+          <span class="badge badge-prototype">Prototype</span><span class="legend-copy">fiktive Beispiele und lokale Auswahl</span>
+          <span class="badge badge-planned">Planned</span><span class="legend-copy">Browser-/Backend-/PMS-Vertrag erforderlich</span>
+          <span class="badge badge-unclear">Unclear</span><span class="legend-copy">RBAC, Suchautorität und Audit nicht nachgewiesen</span>
+        </div>
+      </section>
+
+      <!-- ===== State: no results ===== -->
+      <section id="state-empty" class="state-panel" aria-labelledby="empty-heading" hidden>
+        <section class="state-card">
+          <header class="state-heading">
+            <div class="state-copy"><h2 id="empty-heading">Keine passenden fiktiven Treffer</h2><p>Der aktuelle Such- und Filterkontext bleibt sichtbar oberhalb dieses Zustands.</p></div>
+            <span class="badge badge-info">i Kein Ergebnis ≠ kein Gast</span>
+          </header>
+          <div class="state-card-body empty-card">
+            <span class="empty-symbol" aria-hidden="true">⌕</span>
+            <div class="empty-copy">
+              <h3>Für „Schmitt-Longueville“ gibt es in den Beispieldaten keinen passenden Treffer.</h3>
+              <p>Dieser Prototyp kann weder bestätigen, dass eine Person nicht im Hotel- oder PMS-Bestand existiert, noch eine Berechtigung, Vollständigkeit oder Aktualität bewerten. Prüfen Sie künftig Suchbereich, Schreibweise und Berechtigung mit einer echten Datenquelle.</p>
+            </div>
+            <div class="action-row">
+              <button type="button" class="btn-primary" data-state-target="state-results" aria-controls="state-results">Zu Beispieltreffern</button>
+              <button type="button" class="btn-secondary" data-state-target="state-loading" aria-controls="state-loading">Ladezustand demonstrieren</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ===== State: loading ===== -->
+      <section id="state-loading" class="state-panel" aria-labelledby="loading-heading" hidden>
+        <section class="state-card" aria-busy="true">
+          <header class="state-heading">
+            <div class="state-copy"><h2 id="loading-heading">Ladezustand der Prototypansicht</h2><p>Strukturerhalt statt scheinbarer Sofort-Ergebnisse.</p></div>
+            <span class="badge badge-warning">◷ Lädt · Prototype</span>
+          </header>
+          <div class="state-card-body loading-layout">
+            <div class="loading-copy" role="status">
+              <span class="badge badge-prototype">Keine Anfrage ausgelöst</span>
+              <h3>Beispiel für einen späteren Abruf</h3>
+              <p>Der Zustand zeigt nur die vorgesehene Arbeitsstruktur. Ein echter Abruf bräuchte eine Suchquelle, Zeitüberschreitungs- und Fehlersemantik, Berechtigungsprüfung und datensparsame Ergebnislogik.</p>
+              <div class="action-row"><button type="button" class="btn-secondary" data-state-target="state-source-error" aria-controls="state-source-error">Fehlerzustand zeigen</button></div>
+            </div>
+            <ul class="skeleton-list" aria-label="Platzhalter für zukünftige Suchergebnisse">
+              <li class="skeleton-row"><span class="skeleton-bar medium"></span><span class="skeleton-bar short"></span><span class="skeleton-bar short"></span></li>
+              <li class="skeleton-row"><span class="skeleton-bar medium"></span><span class="skeleton-bar short"></span><span class="skeleton-bar short"></span></li>
+              <li class="skeleton-row"><span class="skeleton-bar medium"></span><span class="skeleton-bar short"></span><span class="skeleton-bar short"></span></li>
+            </ul>
+          </div>
+        </section>
+      </section>
+
+      <!-- ===== State: duplicate guest warning ===== -->
+      <section id="state-duplicate" class="state-panel" aria-labelledby="duplicate-heading" hidden>
+        <section class="state-card">
+          <header class="state-heading">
+            <div class="state-copy"><h2 id="duplicate-heading">Ähnliche Gastnamen: manuelle Prüfung</h2><p>Vergleich zeigt nur nicht-sensible, fiktive Aufenthaltskontexte.</p></div>
+            <span class="badge badge-warning">! 3 ähnliche Namen</span>
+          </header>
+          <div class="state-card-body duplicate-layout">
+            <div class="persistent-alert" role="alert">
+              <span class="alert-symbol" aria-hidden="true">!</span>
+              <div class="alert-copy">
+                <h3>Kein automatischer Abgleich oder Zusammenführen</h3>
+                <p>Die Namen allein beweisen keine Identität. Vor einem späteren Öffnen oder Bearbeiten müssten Mitarbeitende anhand zulässiger, kontextbezogener Merkmale prüfen. Dieses Mockup erstellt, verschmilzt oder bestätigt keine Personen- oder Reservierungsdaten.</p>
+                <div class="duplicate-choices">
+                  <button type="button" class="btn-primary" data-state-target="state-results" aria-controls="state-results">Zur Ergebnisprüfung</button>
+                  <button type="button" class="btn-secondary" data-state-target="state-overflow" aria-controls="state-overflow">Überlaufbeispiel ansehen</button>
+                </div>
+              </div>
+            </div>
+            <div class="state-copy">
+              <h3>Fiktiver Vergleichsrahmen</h3>
+              <ul class="comparison-list" aria-label="Ähnliche fiktive Namen">
+                <li class="comparison-item"><div><strong>Jana Müller-Kaya</strong><p>RES-BO-2026-0716-014 · 16.–23.07.2026 · Zimmer 214</p></div><span class="badge badge-warning">Prüfen</span></li>
+                <li class="comparison-item"><div><strong>Jana Müller</strong><p>RES-BO-2026-0514-126 · 08.–12.07.2026 · Zimmer 121</p></div><span class="badge badge-unclear">Unklar</span></li>
+                <li class="comparison-item"><div><strong>Johanna Müller-Kaya</strong><p>RES-BO-2026-0729-018 · 29.07.–02.08.2026 · Zimmer 216</p></div><span class="badge badge-info">Vorschau</span></li>
+              </ul>
+              <div class="privacy-card"><div class="privacy-copy"><span class="badge badge-planned">⌁ Datenschutz / RBAC</span><p>Welche Vergleichsmerkmale, Rollen, Protokolle und Offenlegungsregeln zulässig sind, ist in dieser Ansicht nicht entschieden.</p></div></div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ===== State: long query and 10+ results overflow ===== -->
+      <section id="state-overflow" class="state-panel" aria-labelledby="overflow-heading" hidden>
+        <section class="state-card">
+          <header class="state-heading">
+            <div class="state-copy"><h2 id="overflow-heading">Lange Eingabe und Ergebnisüberlauf</h2><p>Der Such- und Filterkontext bleibt erhalten; die Trefferzahl und der nächste Prüfweg verschwinden nicht.</p></div>
+            <span class="badge badge-info">12 fiktive Treffer</span>
+          </header>
+          <div class="state-card-body overflow-layout">
+            <div class="overflow-copy">
+              <span class="badge badge-prototype">Langtext · Prototype</span>
+              <h3>„Dr. med. Anja-Luise von der Hohenlohe-Müller de la Tour“</h3>
+              <p>Die lange fiktive Eingabe ist im aktiven Suchkontext oben sichtbar. Die Liste zeigt 12 Beispieldatensätze in einem beschrifteten Scrollbereich. Eine echte Pagination, Rangfolge, Ergebnisvollständigkeit und Zugriffskontrolle sind <strong>Planned</strong>.</p>
+              <div class="privacy-card"><div class="privacy-copy"><span class="badge badge-teal">⊙ Mobile Regel</span><p>Auf Mobilgeräten werden priorisierte Ergebnis-Karten statt einer gequetschten Mehrspaltentabelle verwendet. Die Anzahl weiterer Treffer bleibt textlich sichtbar.</p></div></div>
+              <div class="action-row"><button type="button" class="btn-secondary" data-state-target="state-results" aria-controls="state-results">Zur Standardansicht</button></div>
+            </div>
+            <div class="overflow-scroll" tabindex="0" aria-label="12 fiktive Treffer in einer scrollbaren Ergebnisliste">
+              <ul class="overflow-list">
+                <li class="overflow-item"><div><strong>Dr. med. Anja-Luise von der Hohenlohe-Müller de la Tour</strong><span>RES-BO-2026-0801-001 · 01.–08.08.2026 · Zimmer 301</span></div><span class="badge badge-warning">Prüfen</span></li>
+                <li class="overflow-item"><div><strong>Anja-Luise Müller</strong><span>RES-BO-2026-0721-022 · 21.–28.07.2026 · Zimmer 303</span></div><span class="badge badge-info">Vorschau</span></li>
+                <li class="overflow-item"><div><strong>Andrej Müller-Hofmann</strong><span>RES-BO-2026-0719-028 · 19.–24.07.2026 · Zimmer 112</span></div><span class="badge badge-teal">Kontext</span></li>
+                <li class="overflow-item"><div><strong>Anna-Luise de la Tour</strong><span>RES-BO-2026-0717-044 · 17.–22.07.2026 · Zimmer 207</span></div><span class="badge badge-unclear">Unklar</span></li>
+                <li class="overflow-item"><div><strong>Anton Müller</strong><span>RES-BO-2026-0720-055 · 20.–25.07.2026 · Zimmer 102</span></div><span class="badge badge-info">Vorschau</span></li>
+                <li class="overflow-item"><div><strong>Anja M. Hohenlohe</strong><span>RES-BO-2026-0722-061 · 22.–26.07.2026 · Zimmer 219</span></div><span class="badge badge-warning">Prüfen</span></li>
+                <li class="overflow-item"><div><strong>Amélie Müller-Béranger</strong><span>RES-BO-2026-0723-068 · 23.–30.07.2026 · Zimmer 305</span></div><span class="badge badge-info">Vorschau</span></li>
+                <li class="overflow-item"><div><strong>A. L. von der Hohenlohe</strong><span>RES-BO-2026-0725-072 · 25.–31.07.2026 · Zimmer 115</span></div><span class="badge badge-unclear">Unklar</span></li>
+                <li class="overflow-item"><div><strong>Anja Luise Müller-Kaya</strong><span>RES-BO-2026-0727-079 · 27.07.–03.08.2026 · Zimmer 208</span></div><span class="badge badge-warning">Prüfen</span></li>
+                <li class="overflow-item"><div><strong>Anette Müller</strong><span>RES-BO-2026-0728-083 · 28.07.–01.08.2026 · Zimmer 106</span></div><span class="badge badge-info">Vorschau</span></li>
+                <li class="overflow-item"><div><strong>Alina von Hohenlohe</strong><span>RES-BO-2026-0730-090 · 30.07.–05.08.2026 · Zimmer 310</span></div><span class="badge badge-teal">Kontext</span></li>
+                <li class="overflow-item"><div><strong>August Müller</strong><span>RES-BO-2026-0802-096 · 02.–09.08.2026 · Zimmer 120</span></div><span class="badge badge-info">Vorschau</span></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- ===== State: source error / offline boundary from audit ===== -->
+      <section id="state-source-error" class="state-panel" aria-labelledby="source-error-heading" hidden>
+        <section class="state-card">
+          <header class="state-heading">
+            <div class="state-copy"><h2 id="source-error-heading">Suchquelle nicht verfügbar</h2><p>Ein Fehler wird nicht als „keine Treffer“ dargestellt.</p></div>
+            <span class="badge badge-error">× Quelle nicht verfügbar</span>
+          </header>
+          <div class="state-card-body">
+            <div class="source-error-layout" role="alert">
+              <span class="alert-symbol" aria-hidden="true">×</span>
+              <div class="alert-copy">
+                <h3>Für den gezeigten Suchkontext sind keine Daten abrufbar.</h3>
+                <p>Dies ist ein Prototypzustand, nicht der Nachweis einer Offline-Funktion. Eine spätere Wiederholung braucht eine echte Fehlerklasse, eine sichere Retry-/Timeout-Strategie, Berechtigungsprüfung, Verbindungsstatus und ein Auditmodell.</p>
+                <div class="action-row">
+                  <button type="button" class="btn-primary" data-state-target="state-loading" aria-controls="state-loading">Ladezustand demonstrieren</button>
+                  <button type="button" class="btn-secondary" data-state-target="state-results" aria-controls="state-results">Zu Beispieldaten</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="#main-content">Heute</a>
+    <a href="#main-content">Anreisen</a>
+    <a href="#search-workspace" aria-current="page">Suche</a>
+    <a href="#prototype-boundary">Hinweise</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <span class="switcher-label">Zustand</span>
+    <button id="state-button-results" type="button" data-state-target="state-results" data-query="Müller" data-scope="gast-reservierung" data-status="alle" data-count="5 fiktive Treffer" aria-controls="state-results" aria-pressed="true">Treffer</button>
+    <button id="state-button-empty" type="button" data-state-target="state-empty" data-query="Schmitt-Longueville" data-scope="gast" data-status="aktiv" data-count="Keine fiktiven Treffer" aria-controls="state-empty" aria-pressed="false">Keine Treffer</button>
+    <button id="state-button-loading" type="button" data-state-target="state-loading" data-query="Müller" data-scope="gast-reservierung" data-status="alle" data-count="Ladezustand · Prototype" aria-controls="state-loading" aria-pressed="false">Lädt</button>
+    <button id="state-button-duplicate" type="button" data-state-target="state-duplicate" data-query="Müller" data-scope="gast" data-status="alle" data-count="3 ähnliche Namen" aria-controls="state-duplicate" aria-pressed="false">Doppelung</button>
+    <button id="state-button-overflow" type="button" data-state-target="state-overflow" data-query="Dr. med. Anja-Luise von der Hohenlohe-Müller de la Tour" data-scope="gast-reservierung" data-status="alle" data-count="12 fiktive Treffer" aria-controls="state-overflow" aria-pressed="false">10+ Überlauf</button>
+    <button id="state-button-error" type="button" data-state-target="state-source-error" data-query="Müller" data-scope="gast-reservierung" data-status="aktiv" data-count="Quelle nicht verfügbar" aria-controls="state-source-error" aria-pressed="false">Quelle fehlt</button>
+  </div>
+
+  <script>
+    (function () {
+      const statePanels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateButtons = Array.from(document.querySelectorAll('[data-state-target]'));
+      const queryInput = document.getElementById('search-query');
+      const scopeSelect = document.getElementById('search-scope');
+      const statusSelect = document.getElementById('search-status');
+      const activeQuery = document.getElementById('active-query');
+      const activeScope = document.getElementById('active-scope');
+      const activeStatus = document.getElementById('active-status');
+      const activeCount = document.getElementById('active-count');
+      const liveMessage = document.getElementById('prototype-live');
+      const form = document.getElementById('prototype-search-form');
+      const resetButton = document.getElementById('reset-search-button');
+
+      function optionText(selectElement) {
+        return selectElement.options[selectElement.selectedIndex].text;
+      }
+
+      function updateContext(count, message) {
+        activeQuery.textContent = queryInput.value.trim() || 'Kein Begriff';
+        activeScope.textContent = optionText(scopeSelect);
+        activeStatus.textContent = optionText(statusSelect);
+        activeCount.textContent = count;
+        liveMessage.textContent = message;
+      }
+
+      function setSelectValue(selectElement, value) {
+        const optionExists = Array.from(selectElement.options).some(function (option) {
+          return option.value === value;
+        });
+        if (optionExists) {
+          selectElement.value = value;
+        }
+      }
+
+      function activateState(targetId, sourceButton) {
+        const targetPanel = document.getElementById(targetId);
+        if (!targetPanel) {
+          return;
+        }
+
+        statePanels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        stateButtons.forEach(function (button) {
+          const isSelected = button.dataset.stateTarget === targetId;
+          button.setAttribute('aria-pressed', String(isSelected));
+        });
+
+        if (sourceButton && sourceButton.dataset.query) {
+          queryInput.value = sourceButton.dataset.query;
+          setSelectValue(scopeSelect, sourceButton.dataset.scope);
+          setSelectValue(statusSelect, sourceButton.dataset.status);
+          updateContext(
+            sourceButton.dataset.count || 'Prototypzustand',
+            'Prototypzustand „' + sourceButton.textContent.trim() + '“ angezeigt. Keine Live-Suche wurde ausgeführt.'
+          );
+        } else {
+          updateContext('Prototypzustand', 'Prototypzustand angezeigt. Keine Live-Suche wurde ausgeführt.');
+        }
+      }
+
+      stateButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          activateState(button.dataset.stateTarget, button);
+        });
+      });
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        activateState('state-results', null);
+        updateContext(
+          '5 fiktive Treffer',
+          'Beispielansicht für „' + (queryInput.value.trim() || 'Kein Begriff') + '“ aktualisiert. Es wurde keine Live-Suche, Speicherung oder Übertragung ausgeführt.'
+        );
+      });
+
+      resetButton.addEventListener('click', function () {
+        queryInput.value = 'Müller';
+        scopeSelect.value = 'gast-reservierung';
+        statusSelect.value = 'alle';
+        activateState('state-results', document.getElementById('state-button-results'));
+      });
+
+      Array.from(document.querySelectorAll('.select-result')).forEach(function (button) {
+        button.addEventListener('click', function () {
+          const recordId = button.dataset.record;
+          const guest = button.dataset.guest;
+          const stay = button.dataset.stay;
+          document.getElementById('selected-guest').textContent = guest;
+          document.getElementById('selected-stay').textContent = stay;
+          document.getElementById('selected-record-id').textContent = recordId;
+          Array.from(document.querySelectorAll('[data-result-row]')).forEach(function (row) {
+            row.classList.toggle('is-selected', row.dataset.resultRow === recordId);
+          });
+          updateContext(
+            activeCount.textContent,
+            'Fiktiver Kontext für ' + guest + ' ausgewählt. Die Auswahl wird nicht gespeichert und öffnet keinen Datensatz.'
+          );
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

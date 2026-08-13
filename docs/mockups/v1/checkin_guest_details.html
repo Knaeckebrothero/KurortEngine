@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in: Gastdetails — Hotel Rheinland Design Mockup</title>
+  <style>
+    /* ===== Catppuccin Mocha Design Tokens ===== */
+    :root {
+      --app-bg: #1e1e2e;
+      --panel-bg: #181825;
+      --panel-header-bg: #1e1e2e;
+      --timeline-bg: #11111b;
+      --surface-0: #313244;
+      --surface-1: #45475a;
+      --surface-2: #585b70;
+      --border-color: #313244;
+      --text-primary: #cdd6f4;
+      --text-secondary: #a6adc8;
+      --text-muted: #8b92a8;
+      --accent-color: #cba6f7;
+      --accent-hover: #b4befe;
+      --color-red: #f38ba8;
+      --color-green: #a6e3a1;
+      --color-yellow: #f9e2af;
+      --color-blue: #89b4fa;
+      --color-peach: #fab387;
+      --color-teal: #94e2d5;
+      --color-pink: #f5c2e7;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      --font-mono: monospace;
+      --space-none: 0;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-compact: 10px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-lg-plus: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --radius-badge: 4px;
+      --radius-control: 6px;
+      --radius-card: 8px;
+      --focus-width: 2px;
+      --touch-target: 44px;
+      --sidebar-width: calc(var(--space-4xl) * 5);
+      --sidebar-compact-width: calc(var(--touch-target) + var(--space-xl));
+      --state-switcher-width: calc(var(--space-4xl) * 12);
+      --motion-fast: 0.15s ease;
+      --motion-standard: 0.2s ease;
+      --z-mobile-nav: 20;
+      --z-state-switcher: 40;
+    }
+
+    /* ===== Foundations ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: var(--space-none); padding: var(--space-none); }
+    html, body {
+      min-height: 100%;
+      background: var(--app-bg);
+      color: var(--text-primary);
+      color-scheme: dark;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { min-height: 100vh; }
+    [hidden] { display: none !important; }
+    button, input, select, textarea { font: inherit; }
+    ::-webkit-scrollbar { width: var(--space-sm); height: var(--space-sm); }
+    ::-webkit-scrollbar-track { background: var(--panel-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface-1); border-radius: var(--radius-badge); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--surface-2); }
+    :focus-visible { outline: var(--focus-width) solid var(--accent-color); outline-offset: var(--space-xs); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      border-color: var(--accent-color) !important;
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .skip-link {
+      position: fixed;
+      top: var(--space-md);
+      left: var(--space-md);
+      z-index: var(--z-state-switcher);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-control);
+      color: var(--timeline-bg);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transform: translateY(calc(var(--space-4xl) * -2));
+      transition: transform var(--motion-standard);
+    }
+    .skip-link:focus-visible { transform: translateY(var(--space-none)); }
+
+    /* ===== Shell ===== */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      min-height: calc(var(--space-4xl) + var(--space-xl));
+      padding: var(--space-md) var(--space-xl);
+      background: var(--panel-header-bg);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+    .brand, .top-actions, .badge-row, .action-row, .context-values, .state-switcher, .mobile-nav, .switcher-controls, .step-badges, .context-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: var(--space-3xl);
+      height: var(--space-3xl);
+      background: var(--surface-0);
+      border: 1px solid var(--color-teal);
+      border-radius: var(--radius-card);
+      color: var(--color-teal);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .brand-copy, .page-copy, .panel-copy, .state-copy, .field-group, .record-copy, .notice-copy, .step-copy, .side-copy, .action-copy, .comparison-copy {
+      display: grid;
+      gap: var(--space-xs);
+      min-width: var(--space-none);
+    }
+    .brand-name { color: var(--text-primary); font-size: 16px; font-weight: 600; }
+    .brand-subtitle, .page-copy p, .panel-copy p, .state-copy p, .field-help, .notice-copy p, .record-copy p, .step-copy p, .side-copy p, .action-copy p, .page-note, .disabled-reason, .comparison-copy p { color: var(--text-secondary); font-size: 13px; }
+    .app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(var(--space-none), 1fr); min-height: calc(100vh - calc(var(--space-4xl) + var(--space-xl))); }
+    .sidebar { display: flex; flex-direction: column; gap: var(--space-xl); padding: var(--space-lg) var(--space-md); background: var(--panel-bg); border-right: 1px solid var(--border-color); }
+    .nav-group { display: grid; gap: var(--space-sm); }
+    .nav-label { padding: var(--space-none) var(--space-md); color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .nav-list { display: grid; gap: var(--space-xs); list-style: none; }
+    .nav-link {
+      display: grid;
+      grid-template-columns: var(--space-lg) minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: var(--touch-target);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .nav-link:hover { background: var(--surface-0); border-color: var(--surface-1); color: var(--text-primary); }
+    .nav-link:active { background: var(--surface-2); }
+    .nav-link[aria-current="page"] { background: var(--surface-0); border-left-color: var(--accent-color); color: var(--text-primary); }
+    .nav-symbol { color: var(--text-muted); text-align: center; }
+    .nav-link[aria-current="page"] .nav-symbol { color: var(--accent-color); }
+    .nav-count { color: var(--text-muted); font-size: 11px; }
+    .sidebar-boundary { display: grid; gap: var(--space-sm); margin-top: auto; padding: var(--space-md); background: var(--timeline-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .sidebar-boundary h2 { color: var(--text-primary); font-size: 14px; font-weight: 600; }
+    .sidebar-boundary p { color: var(--text-secondary); font-size: 12px; }
+
+    main { display: grid; align-content: start; gap: var(--space-lg); min-width: var(--space-none); padding: var(--space-xl); padding-bottom: calc(var(--space-4xl) * 3); }
+    .context-strip { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); flex-wrap: wrap; }
+    .context-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .context-value { color: var(--text-secondary); font-size: 13px; }
+    .context-divider { color: var(--surface-2); }
+
+    /* ===== Shared primitives ===== */
+    h1 { color: var(--text-primary); font-size: 20px; font-weight: 600; line-height: 1.3; }
+    h2 { color: var(--text-primary); font-size: 16px; font-weight: 600; line-height: 1.35; }
+    h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.4; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      width: fit-content;
+      padding: 2px var(--space-sm);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-badge);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-prototype { border-color: var(--color-peach); color: var(--color-peach); }
+    .badge-planned, .badge-info { border-color: var(--color-blue); color: var(--color-blue); }
+    .badge-warning, .badge-unclear { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .badge-error { border-color: var(--color-red); color: var(--color-red); }
+    .badge-success { border-color: var(--color-green); color: var(--color-green); }
+    .badge-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .badge-peach { border-color: var(--color-peach); color: var(--color-peach); }
+    button, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface-0);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-standard);
+    }
+    button:not([disabled]):hover, .button-link:hover { background: var(--surface-1); border-color: var(--surface-1); color: var(--text-primary); }
+    button:not([disabled]):active, .button-link:active { background: var(--surface-2); border-color: var(--surface-2); transform: translateY(var(--space-none)); }
+    button[disabled] { background: var(--surface-0); color: var(--text-muted); cursor: not-allowed; }
+    .btn-primary { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .btn-primary:not([disabled]):hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--timeline-bg); }
+    .btn-warning { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .btn-danger { border-color: var(--color-red); color: var(--color-red); }
+    .btn-teal { border-color: var(--color-teal); color: var(--color-teal); }
+    .panel, .side-card, .notice-card, .context-panel, .comparison-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    .panel-heading, .side-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); background: var(--panel-header-bg); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+    .panel-body, .side-body { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .state-panel { display: grid; gap: var(--space-lg); }
+    .state-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); padding: var(--space-none) var(--space-xs); flex-wrap: wrap; }
+    .boundary-notice, .persistent-alert, .context-boundary, .conflict-notice {
+      display: grid;
+      grid-template-columns: var(--space-xl) minmax(var(--space-none), 1fr);
+      gap: var(--space-md);
+      padding: var(--space-lg);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--color-peach);
+      border-radius: var(--radius-card);
+    }
+    .persistent-alert { border-left-color: var(--color-red); }
+    .context-boundary { border-left-color: var(--color-blue); }
+    .conflict-notice { border-left-color: var(--color-yellow); }
+    .notice-symbol { color: var(--color-peach); font-size: 20px; text-align: center; }
+    .persistent-alert .notice-symbol { color: var(--color-red); }
+    .context-boundary .notice-symbol { color: var(--color-blue); }
+    .conflict-notice .notice-symbol { color: var(--color-yellow); }
+    .notice-copy strong { color: var(--text-primary); }
+    .page-note { padding: var(--space-md); background: var(--timeline-bg); border-left: 3px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-muted); font-size: 12px; }
+    .mono { color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; overflow-wrap: anywhere; }
+
+    /* ===== Context and stepper ===== */
+    .context-panel { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+    .context-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+    .context-form { display: grid; grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr) auto; align-items: end; gap: var(--space-md); }
+    .field-group { align-content: start; }
+    label { color: var(--text-primary); font-size: 13px; font-weight: 500; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 40px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-control);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    input[readonly] { color: var(--text-secondary); }
+    input::placeholder, textarea::placeholder { color: var(--text-muted); }
+    textarea { min-height: calc(var(--space-4xl) * 2); resize: vertical; }
+    .field-help { color: var(--text-muted); font-size: 12px; }
+    .context-boundary { color: var(--text-secondary); font-size: 13px; }
+    .context-boundary strong { color: var(--color-blue); }
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(var(--space-none), 1fr));
+      gap: var(--space-sm);
+      list-style: none;
+    }
+    .stepper li {
+      display: grid;
+      grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr);
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: calc(var(--space-4xl) + var(--space-lg));
+      padding: var(--space-sm) var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .stepper li.is-complete { border-left-color: var(--color-green); }
+    .stepper li.is-current { background: var(--surface-0); border-color: var(--accent-color); border-left-color: var(--accent-color); }
+    .stepper li.is-pending { border-left-color: var(--color-yellow); }
+    .step-number { display: grid; place-items: center; width: var(--space-2xl); height: var(--space-2xl); border: 1px solid var(--border-color); border-radius: var(--radius-badge); color: var(--text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+    .is-complete .step-number { border-color: var(--color-green); color: var(--color-green); }
+    .is-current .step-number { border-color: var(--accent-color); color: var(--accent-color); }
+    .is-pending .step-number { border-color: var(--color-yellow); color: var(--color-yellow); }
+    .step-copy h3 { color: var(--text-primary); }
+    .step-copy p { font-size: 12px; }
+    .step-badges { margin-top: var(--space-xs); }
+
+    /* ===== Guest detail layouts ===== */
+    .work-layout, .conflict-layout { display: grid; grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 6), 1fr); gap: var(--space-lg); align-items: start; }
+    .side-stack { display: grid; gap: var(--space-lg); }
+    .record-card {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      gap: var(--space-lg);
+      align-items: start;
+      padding: var(--space-lg);
+      background: var(--surface-0);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+      box-shadow: var(--space-none) var(--space-none) var(--space-none) 1px var(--accent-color);
+    }
+    .record-status { display: grid; justify-items: end; gap: var(--space-xs); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .summary-card, .guest-context-card, .evidence-card, .mobile-guest-card {
+      display: grid;
+      gap: var(--space-xs);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .summary-card span, .guest-context-card span, .evidence-card span, .mobile-guest-card span { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-card strong, .guest-context-card strong, .evidence-card strong, .mobile-guest-card strong { color: var(--text-primary); font-size: 13px; overflow-wrap: anywhere; }
+    .summary-card small, .guest-context-card small, .evidence-card small, .mobile-guest-card small { color: var(--text-secondary); font-size: 12px; }
+    .guest-context-grid { display: grid; grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .guest-context-card.is-primary { border-left: 3px solid var(--accent-color); }
+    .guest-context-card.is-companion { border-left: 3px solid var(--color-teal); }
+    .guest-context-card.is-address { border-left: 3px solid var(--color-blue); }
+    .guest-form { display: grid; gap: var(--space-lg); }
+    .form-section { display: grid; gap: var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--border-color); }
+    .form-section:first-child { padding-top: var(--space-none); border-top: var(--space-none); }
+    .form-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-md); }
+    .form-grid.address-grid { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+    .form-grid .full-span { grid-column: 1 / -1; }
+    .next-action {
+      display: grid;
+      grid-template-columns: minmax(var(--space-none), 1fr) auto;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: var(--timeline-bg);
+      border: 1px solid var(--accent-color);
+      border-radius: var(--radius-card);
+    }
+    .next-action p { color: var(--text-secondary); font-size: 13px; }
+    .detail-list, .return-links, .dependency-list { display: grid; gap: var(--space-sm); list-style: none; }
+    .detail-list li, .return-links li, .dependency-list li {
+      display: grid;
+      grid-template-columns: minmax(calc(var(--space-4xl) * 2), 1fr) minmax(var(--space-none), 2fr);
+      gap: var(--space-md);
+      padding: var(--space-sm) var(--space-none);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .detail-list li:last-child, .return-links li:last-child, .dependency-list li:last-child { border-bottom: var(--space-none); }
+    .detail-label { color: var(--text-muted); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .detail-value, .return-links a, .dependency-list span { color: var(--text-secondary); font-size: 13px; overflow-wrap: anywhere; }
+    .return-links a { color: var(--accent-hover); }
+    .error-summary {
+      display: grid;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      background: var(--timeline-bg);
+      border: 1px solid var(--color-red);
+      border-radius: var(--radius-card);
+    }
+    .error-summary strong { color: var(--color-red); }
+    .error-summary p, .error-summary a { color: var(--text-secondary); font-size: 13px; }
+    .error-summary ol { display: grid; gap: var(--space-xs); padding-left: var(--space-lg); }
+    .error-summary a { color: var(--color-red); }
+    .invalid-input { border-color: var(--color-red) !important; }
+    .field-error { color: var(--color-red); font-size: 12px; }
+    .disabled-reason { color: var(--text-muted); font-size: 12px; }
+    .comparison-table-wrap { overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-card); }
+    table { width: 100%; min-width: calc(var(--space-4xl) * 12); border-collapse: collapse; font-size: 12px; }
+    caption { padding: var(--space-sm) var(--space-md); background: var(--timeline-bg); color: var(--text-secondary); text-align: left; }
+    th, td { padding: var(--space-compact) var(--space-md); border-bottom: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+    th { background: var(--surface-0); color: var(--text-muted); font-size: 10px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    td { color: var(--text-secondary); }
+    td strong { color: var(--text-primary); font-size: 13px; }
+    tbody tr:last-child td { border-bottom: var(--space-none); }
+    .mobile-guest-list { display: none; }
+
+    /* ===== Review controls ===== */
+    .state-switcher {
+      position: fixed;
+      right: var(--space-lg);
+      bottom: var(--space-lg);
+      z-index: var(--z-state-switcher);
+      max-width: var(--state-switcher-width);
+      padding: var(--space-sm);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-card);
+    }
+    .state-switcher button { min-height: var(--space-2xl); padding: var(--space-xs) var(--space-sm); font-size: 11px; }
+    .state-switcher button[aria-pressed="true"] { background: var(--accent-color); border-color: var(--accent-color); color: var(--timeline-bg); }
+    .mobile-nav { display: none; }
+
+    @media (min-width: 1280px) {
+      main { padding-right: var(--space-2xl); padding-left: var(--space-2xl); }
+      .work-layout, .conflict-layout { grid-template-columns: minmax(var(--space-none), 2fr) minmax(calc(var(--space-4xl) * 7), calc(var(--space-4xl) * 8)); }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .app-shell { grid-template-columns: var(--sidebar-compact-width) minmax(var(--space-none), 1fr); }
+      .sidebar { align-items: center; padding: var(--space-lg) var(--space-sm); }
+      .nav-label, .nav-text, .nav-count, .sidebar-boundary { display: none; }
+      .nav-link { grid-template-columns: var(--space-lg); justify-content: center; width: var(--touch-target); padding: var(--space-sm); border-left: 1px solid var(--border-color); border-bottom: 3px solid var(--border-color); }
+      .nav-link[aria-current="page"] { border-left-color: var(--border-color); border-bottom-color: var(--accent-color); }
+      .context-form { grid-template-columns: minmax(var(--space-none), 1fr) minmax(var(--space-none), 1fr); }
+      .context-actions { grid-column: 1 / -1; }
+      .stepper { grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); }
+      .work-layout, .conflict-layout { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .side-stack { grid-template-columns: repeat(2, minmax(var(--space-none), 1fr)); }
+      .side-stack .wide-on-tablet { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 768px) {
+      body { padding-bottom: calc(var(--touch-target) + var(--space-4xl)); }
+      .app-header { align-items: flex-start; padding: var(--space-md); }
+      .top-actions { width: 100%; }
+      .app-shell { display: block; }
+      .sidebar { display: none; }
+      main { gap: var(--space-lg); padding: var(--space-md); padding-bottom: calc(var(--space-4xl) * 3); }
+      .context-strip { align-items: flex-start; }
+      .context-divider, .context-value.is-secondary { display: none; }
+      .boundary-notice, .persistent-alert, .context-boundary, .conflict-notice { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .notice-symbol { display: none; }
+      .context-form, .stepper, .work-layout, .conflict-layout, .summary-grid, .guest-context-grid, .form-grid, .form-grid.address-grid, .side-stack { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-card { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .record-status { justify-items: start; }
+      .stepper li { grid-template-columns: var(--space-2xl) minmax(var(--space-none), 1fr); }
+      .panel-body, .side-body, .context-panel { padding: var(--space-md); }
+      .next-action { grid-template-columns: minmax(var(--space-none), 1fr); }
+      .next-action button { width: 100%; }
+      .detail-list li, .return-links li, .dependency-list li { grid-template-columns: minmax(var(--space-none), 1fr); gap: var(--space-xs); }
+      .comparison-table-wrap { display: none; }
+      .mobile-guest-list { display: grid; gap: var(--space-sm); }
+      .state-switcher { right: var(--space-sm); bottom: calc(var(--touch-target) + var(--space-xl)); left: var(--space-sm); max-width: none; flex-wrap: nowrap; overflow-x: auto; }
+      .state-switcher button { min-height: var(--touch-target); flex: 0 0 auto; }
+      .mobile-nav { position: fixed; right: var(--space-none); bottom: var(--space-none); left: var(--space-none); z-index: var(--z-mobile-nav); display: grid; grid-template-columns: repeat(3, minmax(var(--space-none), 1fr)); gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: var(--panel-bg); border-top: 1px solid var(--border-color); }
+      .mobile-nav a { display: grid; place-items: center; min-height: var(--touch-target); padding: var(--space-sm); background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-secondary); font-size: 11px; text-align: center; text-decoration: none; }
+      .mobile-nav a[aria-current="page"] { background: var(--surface-0); border-color: var(--accent-color); color: var(--text-primary); }
+      .mobile-nav a:hover { background: var(--surface-0); color: var(--text-primary); }
+      button, .button-link, input, select, textarea { min-height: var(--touch-target); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms; animation-iteration-count: 1; scroll-behavior: auto; transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Proposed design composition only. GuestDetailsStep, CompanionContext, AddressEditor,
+       ErrorSummary, and ConflictReview are descriptive mockup names, not browser routes,
+       API endpoints, source paths, data contracts, or implemented components. -->
+  <a class="skip-link" href="#guest-details-workspace">Zu den Gastdetails springen</a>
+
+  <header class="app-header">
+    <div class="brand" aria-label="Hotel Rheinland Arbeitsbereich">
+      <span class="brand-mark" aria-hidden="true">HR</span>
+      <div class="brand-copy">
+        <span class="brand-name">Hotel Rheinland</span>
+        <span class="brand-subtitle">Rezeption · Check-in-Arbeitsablauf</span>
+      </div>
+    </div>
+    <div class="top-actions" aria-label="Nachweisgrenzen des Prototyps">
+      <span class="badge badge-prototype">Prototyp · lokale Ansicht</span>
+      <span class="badge badge-planned">Keine Live-Validierung</span>
+      <span class="badge badge-unclear">RBAC unklar</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Arbeitsbereiche">
+      <nav class="nav-group" aria-label="Rezeption">
+        <p class="nav-label">Rezeption</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="arrivals_queue.html#arrivals-title"><span class="nav-symbol" aria-hidden="true">↳</span><span class="nav-text">Anreisen</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="reservation_detail.html#state-detail"><span class="nav-symbol" aria-hidden="true">▤</span><span class="nav-text">Aufenthalt</span><span class="nav-count">Fiktiv</span></a></li>
+          <li><a class="nav-link" href="checkin_overview.html#state-ready"><span class="nav-symbol" aria-hidden="true">✓</span><span class="nav-text">Check-in-Übersicht</span><span class="nav-count">K-01</span></a></li>
+          <li><a class="nav-link" href="#state-valid" aria-current="page"><span class="nav-symbol" aria-hidden="true">◉</span><span class="nav-text">Gastdetails</span><span class="nav-count">Schritt 1</span></a></li>
+        </ul>
+      </nav>
+      <nav class="nav-group" aria-label="Ausgewählter Kontext">
+        <p class="nav-label">Gast &amp; Aufenthalt</p>
+        <ul class="nav-list">
+          <li><a class="nav-link" href="guest_profile.html#state-profile"><span class="nav-symbol" aria-hidden="true">◌</span><span class="nav-text">Gastprofil</span><span class="nav-count">Dateilink</span></a></li>
+          <li><a class="nav-link" href="#guest-details-return-links"><span class="nav-symbol" aria-hidden="true">↩</span><span class="nav-text">Prüfbezüge</span><span class="nav-count">Lokal</span></a></li>
+        </ul>
+      </nav>
+      <section class="sidebar-boundary" aria-labelledby="guest-details-sidebar-boundary-title">
+        <span class="badge badge-planned">Backend erforderlich</span>
+        <h2 id="guest-details-sidebar-boundary-title">Keine gemeinsame Sitzung</h2>
+        <p>Die lokalen Dokumentlinks teilen weder Aufenthalt, Eingaben, Auswahl, Konfliktstatus, Berechtigung noch eine Rückkehrposition.</p>
+      </section>
+    </aside>
+
+    <main id="guest-details-workspace">
+      <section class="context-strip" aria-label="Fiktiver Check-in-Kontext">
+        <div class="context-values">
+          <span class="context-label">Betrieb</span><span class="context-value">Hotel Rheinland · Bad Orb</span>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Arbeitstag</span><time class="context-value" datetime="2026-07-16">16. Juli 2026</time>
+          <span class="context-divider" aria-hidden="true">·</span>
+          <span class="context-label">Rolle</span><span class="context-value is-secondary">Rezeption · Beispielrolle, keine Anmeldung</span>
+        </div>
+        <span class="badge badge-teal">Jana Müller-Kaya · synthetisch</span>
+      </section>
+
+      <section class="boundary-notice" aria-labelledby="guest-details-page-title">
+        <span class="notice-symbol" aria-hidden="true">!</span>
+        <div class="notice-copy">
+          <h1 id="guest-details-page-title">Check-in: Gastdetails prüfen</h1>
+          <p>Schritt 1 sammelt einen minimalen, fiktiven Hauptgast-, Begleit- und Anschriftenkontext vor dem Meldeschein. Die vier Zustände zeigen Form- und Recovery-Muster, keine aus einer Quelle gelesenen oder rechtlich geprüften Personendaten.</p>
+          <div class="badge-row" aria-label="Grenzen dieses Gastdetails-Prototyps">
+            <span class="badge badge-planned">Keine Live-Suche</span>
+            <span class="badge badge-planned">Kein Save oder Resume</span>
+            <span class="badge badge-unclear">Keine Sitzung oder RBAC</span>
+            <span class="badge badge-prototype">Keine Persistenz</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="context-panel" aria-labelledby="guest-details-context-title">
+        <header class="context-heading">
+          <div class="page-copy">
+            <h2 id="guest-details-context-title">Fiktiver Aufenthalts- und Rückkehrrahmen</h2>
+            <p>Die Controls erläutern eine spätere Kontextübergabe. Sie ändern keine Reservierung, kein Profil, keine Begleitperson und keine Anschrift.</p>
+          </div>
+          <span class="badge badge-info">Keine Live-Quelle</span>
+        </header>
+        <form id="guest-details-context-form" class="context-form" novalidate>
+          <div class="field-group">
+            <label for="guest-details-origin">Statischer Einstieg</label>
+            <select id="guest-details-origin" name="origin">
+              <option value="arrivals">Anreisen · Beispiel</option>
+              <option value="stay-detail">Reservierungsdetail · Beispiel</option>
+              <option value="checkin">Check-in-Übersicht · Beispiel</option>
+            </select>
+            <span class="field-help">Kein gespeicherter Filter, keine Browserroute und keine gemeinsame Auswahl.</span>
+          </div>
+          <div class="field-group">
+            <label for="guest-details-return">Vorgesehene Rückkehr</label>
+            <select id="guest-details-return" name="return-scope">
+              <option value="arrivals">Anreisen · 16.07.2026 · fiktiver Filter</option>
+              <option value="stay-detail">Reservierungsdetail · fiktiver Kontext</option>
+              <option value="checkin">Check-in-Übersicht · Schritt 1</option>
+            </select>
+            <span class="field-help">Speichern, Resume, Konfliktprüfung und Fokus-Rückkehr benötigen spätere Browser-/API-Verträge.</span>
+          </div>
+          <div class="context-actions" aria-label="Lokale Kontextaktionen">
+            <button class="btn-teal" type="submit">Kontext lokal erläutern</button>
+            <a class="button-link" href="checkin_overview.html#state-ready">Zur Check-in-Übersicht</a>
+          </div>
+        </form>
+        <p class="context-boundary"><span class="notice-symbol" aria-hidden="true">i</span><span><strong>Geplant / Backend erforderlich:</strong> datenschutzgerecht gescopter Aufenthalt, Gast- und Begleitquellen, Anschriftenregeln, Duplikaten-/Versionsmodell, Validierung, Authentifizierung, RBAC, Speicherung, Resume, Konfliktauflösung und Audit. Diese Datei führt keinen dieser Vorgänge aus.</span></p>
+      </section>
+
+      <p id="prototype-live" class="sr-only" aria-live="polite" aria-atomic="true">Gültiger fiktiver Gastdetails-Zustand angezeigt.</p>
+
+      <!-- ===== State: valid synthetic guest-detail example ===== -->
+      <section id="state-valid" class="state-panel" aria-labelledby="valid-state-title" data-state-kind="valid">
+        <header class="state-heading">
+          <div class="state-copy">
+            <h2 id="valid-state-title">Gültiger Beispielzustand: Details vor Meldeschein prüfen</h2>
+            <p>Das Beispiel zeigt vollständig aussehende Werte im gewünschten Formatraster. „Gültig“ bezeichnet nur diesen statischen Reviewzustand — keine Live-Validierung, kein Speichern und keine rechtliche Prüfung.</p>
+          </div>
+          <div class="badge-row"><span class="badge badge-teal">Kontext vollständig dargestellt</span><span class="badge badge-planned">Schritt 2: Meldeschein</span></div>
+        </header>
+
+        <ol class="stepper" aria-label="Fiktive Check-in-Schrittfolge">
+          <li class="is-current"><span class="step-number" aria-hidden="true">1</span><div class="step-copy"><h3>Gastdetails</h3><p>Hauptgast, Begleitperson und Anschrift prüfen.</p><div class="step-badges"><span class="badge badge-teal">Aktueller Schritt</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">2</span><div class="step-copy"><h3>Meldeschein</h3><p>Erst nach der Gastdetails-Prüfung weiter.</p><div class="step-badges"><span class="badge badge-prototype">Stub-Format später prüfen</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">3</span><div class="step-copy"><h3>Kurtaxe &amp; Befreiung</h3><p>Keine Buchung oder Ausnahme ableiten.</p><div class="step-badges"><span class="badge badge-planned">Geplant</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">4</span><div class="step-copy"><h3>Kurkarte</h3><p>Vorschau ist keine Zustellung.</p><div class="step-badges"><span class="badge badge-prototype">Prototyp</span></div></div></li>
+          <li class="is-pending"><span class="step-number" aria-hidden="true">5</span><div class="step-copy"><h3>Dokumentreview</h3><p>Keine Abschlusswirkung behaupten.</p><div class="step-badges"><span class="badge badge-planned">Geplant</span></div></div></li>
+        </ol>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="valid-form-title">
+            <header class="panel-heading">
+              <div class="panel-copy">
+                <h2 id="valid-form-title">Fiktiver Hauptgast, Begleitperson und Anschrift</h2>
+                <p>Beschriftete native Felder zeigen den notwendigen späteren Eingaberahmen. Alle Werte sind synthetisch; keine Quelle wird gelesen, abgeglichen oder gespeichert.</p>
+              </div>
+              <span class="badge badge-prototype">Keine Validierung ausgeführt</span>
+            </header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Ausgewählter synthetischer Aufenthaltskontext">
+                <div class="record-copy">
+                  <span class="badge badge-teal">Ausgewählt · lokal</span>
+                  <h2>Jana Müller-Kaya</h2>
+                  <p class="mono">RES-BO-2026-0716-014</p>
+                  <p>16.–23.07.2026 · 2 synthetische Gäste · Zimmer 214 als ungeprüfter Beispielkontext.</p>
+                </div>
+                <div class="record-status">
+                  <span class="badge badge-warning">Zimmerstatus unklar</span>
+                  <span class="badge badge-unclear">RBAC unklar</span>
+                </div>
+              </section>
+
+              <div class="summary-grid" aria-label="Fiktive Aufenthaltskerndaten">
+                <article class="summary-card"><span>Aufenthalt</span><strong>16.–23.07.2026</strong><small>7 Nächte · keine bestätigte Anreise</small></article>
+                <article class="summary-card"><span>Gäste</span><strong>2 Personen · Beispiel</strong><small>Begleitperson ist nicht automatisch zugeordnet</small></article>
+                <article class="summary-card"><span>Nächster Schritt</span><strong>Meldeschein</strong><small>Erst nach sichtbarer Details-Prüfung</small></article>
+              </div>
+
+              <div class="guest-context-grid" aria-label="Fiktive Gast- und Adresskontexte">
+                <article class="guest-context-card is-primary"><span>Hauptgast</span><strong>Jana Müller-Kaya</strong><small>Fiktiver Personenkontext; keine Profilquelle, keine Identitätsprüfung.</small></article>
+                <article class="guest-context-card is-companion"><span>Weitere Person</span><strong>Samir Kaya · fiktiv</strong><small>Begleitkontext, keine automatische Verwandtschafts- oder Berechtigungsannahme.</small></article>
+                <article class="guest-context-card is-address"><span>Anschrift</span><strong>Beispielweg 14 · 63619 Bad Orb</strong><small>Formatbeispiel; keine Adresse wurde validiert, normalisiert oder gespeichert.</small></article>
+                <article class="guest-context-card"><span>Datenschutz</span><strong>Minimum necessary</strong><small>Fiktive Werte sind keine Freigabe zur Offenlegung realer Daten.</small></article>
+              </div>
+
+              <form id="valid-guest-details-form" class="guest-form" novalidate>
+                <section class="form-section" aria-labelledby="valid-primary-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="valid-primary-title">Hauptgast · fiktiver Pflichtkontext</h3><p>Beispielhafte Angaben, nicht aus einer Reservierungs- oder Gastquelle übernommen.</p></div><span class="badge badge-teal">Primär</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="valid-primary-family-name">Familienname</label><input id="valid-primary-family-name" name="primary-family-name" type="text" value="Müller-Kaya" aria-describedby="valid-primary-family-name-help" autocomplete="off"><span id="valid-primary-family-name-help" class="field-help">Fiktiver Wert; keine Personensuche oder Dublettenprüfung.</span></div>
+                    <div class="field-group"><label for="valid-primary-given-name">Vorname</label><input id="valid-primary-given-name" name="primary-given-name" type="text" value="Jana" aria-describedby="valid-primary-given-name-help" autocomplete="off"><span id="valid-primary-given-name-help" class="field-help">Sichtbarer Formatraster, keine Identitätsprüfung.</span></div>
+                    <div class="field-group"><label for="valid-primary-birth-date">Geburtsdatum</label><input id="valid-primary-birth-date" name="primary-birth-date" type="date" value="1989-02-11" aria-describedby="valid-primary-birth-date-help"><span id="valid-primary-birth-date-help" class="field-help">Keine Alters-, Rechts- oder Quellenprüfung.</span></div>
+                    <div class="field-group"><label for="valid-primary-nationality">Staatsangehörigkeit</label><select id="valid-primary-nationality" name="primary-nationality" aria-describedby="valid-primary-nationality-help"><option value="de" selected>Deutschland · fiktive Auswahl</option><option value="pt">Portugal · fiktive Auswahl</option><option value="other">Andere · fiktive Auswahl</option></select><span id="valid-primary-nationality-help" class="field-help">Keine gesetzliche Validierung oder Dokumentenprüfung.</span></div>
+                    <div class="field-group"><label for="valid-primary-contact-scope">Kontakt- / Offenlegungsrahmen</label><select id="valid-primary-contact-scope" name="primary-contact-scope" aria-describedby="valid-primary-contact-scope-help"><option value="minimum" selected>Minimum necessary · fiktiv</option><option value="review">Spätere Prüfung erforderlich</option></select><span id="valid-primary-contact-scope-help" class="field-help">Keine Einwilligung, Berechtigung oder Offenlegung.</span></div>
+                    <div class="field-group"><label for="valid-primary-reference">Fiktive Profilreferenz</label><input id="valid-primary-reference" name="primary-reference" type="text" value="GP-BO-PROTOTYP-014" readonly aria-describedby="valid-primary-reference-help"><span id="valid-primary-reference-help" class="field-help">Lokaler Beispielwert, keine Datenbank-ID.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="valid-companion-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="valid-companion-title">Weitere Person · fiktiver Begleitkontext</h3><p>Begleitpersonen erhalten ihren eigenen späteren Pflicht- und Datenschutzzusammenhang; eine Anzahl ersetzt keine Prüfung.</p></div><span class="badge badge-teal">1 weitere Person</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="valid-companion-family-name">Familienname der weiteren Person</label><input id="valid-companion-family-name" name="companion-family-name" type="text" value="Kaya" aria-describedby="valid-companion-family-name-help" autocomplete="off"><span id="valid-companion-family-name-help" class="field-help">Keine automatische Zuordnung zum Hauptgast.</span></div>
+                    <div class="field-group"><label for="valid-companion-given-name">Vorname der weiteren Person</label><input id="valid-companion-given-name" name="companion-given-name" type="text" value="Samir" aria-describedby="valid-companion-given-name-help" autocomplete="off"><span id="valid-companion-given-name-help" class="field-help">Fiktiver Wert; keine Profil- oder Identitätsquelle.</span></div>
+                    <div class="field-group"><label for="valid-companion-birth-date">Geburtsdatum der weiteren Person</label><input id="valid-companion-birth-date" name="companion-birth-date" type="date" value="1991-08-03" aria-describedby="valid-companion-birth-date-help"><span id="valid-companion-birth-date-help" class="field-help">Kein Abgleich, keine gesetzliche Prüfung.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="valid-address-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="valid-address-title">Anschrift · strukturierter Beispielrahmen</h3><p>Die sichtbare Adresse bleibt ein Formularmuster. Sie wird nicht gegen Land, Postleitzahl, Person oder Meldedaten geprüft.</p></div><span class="badge badge-info">Adresse · fiktiv</span></div>
+                  <div class="form-grid address-grid">
+                    <div class="field-group full-span"><label for="valid-address-line-one">Straße und Hausnummer</label><input id="valid-address-line-one" name="address-line-one" type="text" value="Beispielweg 14" aria-describedby="valid-address-line-one-help" autocomplete="off"><span id="valid-address-line-one-help" class="field-help">Keine Adressnormalisierung, Geocodierung oder Speicherung.</span></div>
+                    <div class="field-group"><label for="valid-address-postcode">Postleitzahl</label><input id="valid-address-postcode" name="address-postcode" type="text" value="63619" aria-describedby="valid-address-postcode-help" autocomplete="off"><span id="valid-address-postcode-help" class="field-help">Formatbeispiel, keine postalische Prüfung.</span></div>
+                    <div class="field-group"><label for="valid-address-city">Ort</label><input id="valid-address-city" name="address-city" type="text" value="Bad Orb" aria-describedby="valid-address-city-help" autocomplete="off"><span id="valid-address-city-help" class="field-help">Keine Quelle, kein Abgleich mit Aufenthalt.</span></div>
+                    <div class="field-group"><label for="valid-address-country">Land</label><select id="valid-address-country" name="address-country" aria-describedby="valid-address-country-help"><option value="de" selected>Deutschland · fiktive Auswahl</option><option value="pt">Portugal · fiktive Auswahl</option><option value="other">Andere · fiktive Auswahl</option></select><span id="valid-address-country-help" class="field-help">Keine Länder- oder Rechtsregel durchgeführt.</span></div>
+                    <div class="field-group"><label for="valid-address-note">Adresshinweis für spätere Prüfung</label><input id="valid-address-note" name="address-note" type="text" value="Keine zusätzliche Anschrift im fiktiven Szenario" aria-describedby="valid-address-note-help" autocomplete="off"><span id="valid-address-note-help" class="field-help">Der Hinweis erzeugt keine Notiz oder Aufgabe.</span></div>
+                  </div>
+                </section>
+
+                <section class="next-action" aria-labelledby="valid-next-action-title">
+                  <div class="action-copy"><span class="badge badge-planned">Nächste menschliche Entscheidung</span><h3 id="valid-next-action-title">Zum Meldeschein-Kontext erst nach fachlicher Prüfung</h3><p>Die lokale Aktion kann nur den Prototyphinweis aktualisieren. Sie validiert keine Pflichtfelder, startet keinen Meldeschein, speichert nichts und erzeugt keine gemeinsame Session.</p></div><button class="btn-primary" type="submit">Meldeschein-Schritt erläutern</button>
+                </section>
+              </form>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Gültiger Gastdetails-Zustand: Grenzen und Prüfbezüge">
+            <section class="side-card" aria-labelledby="valid-boundaries-title">
+              <header class="side-heading"><div class="side-copy"><h2 id="valid-boundaries-title">Prüfgrenzen bleiben sichtbar</h2><p>Ein vollständig wirkendes Formular ist kein validierter oder gespeicherter Datensatz.</p></div><span class="badge badge-warning">Nicht final</span></header>
+              <div class="side-body"><ul class="detail-list"><li><span class="detail-label">Validierung</span><span class="detail-value">Keine Live- oder serverseitige Pflichtfeld-, Datums-, Adress-, Dubletten- oder Rechtsprüfung.</span></li><li><span class="detail-label">Speichern</span><span class="detail-value">Kein Gast, keine Begleitperson und keine Anschrift wird erstellt, aktualisiert oder persistiert.</span></li><li><span class="detail-label">Resume</span><span class="detail-value">Kein Entwurf, keine Sitzung, kein Rückkehrmarker und keine Konflikt-/Lockregel.</span></li><li><span class="detail-label">RBAC / Audit</span><span class="detail-value">Keine Authentifizierung, Rollenentscheidung, Zweckprüfung, Offenlegungs- oder Änderungsprotokollierung.</span></li></ul></div>
+            </section>
+            <section class="side-card wide-on-tablet" id="guest-details-return-links" aria-labelledby="valid-links-title">
+              <header class="side-heading"><div class="side-copy"><h2 id="valid-links-title">Statische Prüfbezüge</h2><p>Lokale HTML-Dokumente, keine Produktnavigation.</p></div><span class="badge badge-info">Dateilinks</span></header>
+              <div class="side-body"><ul class="return-links"><li><span class="detail-label">Aufenthalt</span><span><a href="reservation_detail.html#state-detail">RES-BO-2026-0716-014 im Reservierungsdetail lesen</a><br><span class="field-help">Keine gemeinsame Auswahl, Quelle oder Persistenz.</span></span></li><li><span class="detail-label">Profil</span><span><a href="guest_profile.html#state-profile">Jana Müller-Kaya im minimierten Gastprofil lesen</a><br><span class="field-help">Keine Profilquelle, Offenlegung oder RBAC-Prüfung.</span></span></li><li><span class="detail-label">Check-in</span><span><a href="checkin_overview.html#state-ready">Schrittfolge in der Check-in-Übersicht lesen</a><br><span class="field-help">Kein geleiteter Workflow, keine Rückkehrposition.</span></span></li></ul></div>
+            </section>
+          </aside>
+        </div>
+        <p class="page-note">Gültiger Beispielzustand: Der Prototyp zeigt Formstruktur, Schrittfolge und lokale DOM-Interaktion. Er beweist keine gerenderte Layoutqualität, keine Tastatur-/Screen-Reader-Prüfung, keine WCAG/BFSG/EAA-Konformität, keine Live-Validierung, keine Speicherung, keine Authentifizierung, keine RBAC-Entscheidung, keine Quelle, keine Meldeschein-Erzeugung und keine rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: required details missing ===== -->
+      <section id="state-missing" class="state-panel" aria-labelledby="missing-state-title" data-state-kind="missing" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="missing-state-title">Fehlende Pflichtangaben: Korrektur vor Meldeschein</h2><p>Ein fehlender Wert bleibt als sichtbarer Blocker mit verlinkter Fehlerzusammenfassung und Feldhinweis erhalten. Die Darstellung führt keine echte Validierung aus.</p></div>
+          <div class="badge-row"><span class="badge badge-error">3 Angaben prüfen</span><span class="badge badge-warning">Nicht fortsetzen</span></div>
+        </header>
+
+        <section class="persistent-alert" role="alert" aria-labelledby="missing-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="missing-alert-title">Meldeschein-Schritt noch nicht als bereit behandeln</h3><p>Für Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span> fehlen im fiktiven Korrekturszenario Pflichtwerte. Der Blocker verhindert nur eine falsche Erfolgssprache; er ist kein serverseitiger Fehler, keine rechtliche Entscheidung und keine gespeicherte Sperre.</p></div>
+        </section>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="missing-form-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="missing-form-title">Fiktive Korrekturfelder</h2><p>Die Fehlerübersicht verweist auf die betroffenen Kontrollen. Feldtexte bleiben als Korrekturhilfe sichtbar und hängen nicht allein von Farbe ab.</p></div><span class="badge badge-prototype">Keine Validierung ausgeführt</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver Aufenthaltskontext mit fehlenden Angaben">
+                <div class="record-copy"><span class="badge badge-warning">Korrekturkontext · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · 2 synthetische Gäste · Schritt 1 bleibt vor Meldeschein aktiv.</p></div>
+                <div class="record-status"><span class="badge badge-error">Pflichtwerte fehlen</span><span class="badge badge-unclear">Keine Quelle</span></div>
+              </section>
+
+              <form id="missing-guest-details-form" class="guest-form" novalidate>
+                <nav id="missing-error-summary" class="error-summary" aria-label="Fehlerzusammenfassung für fiktive Gastdetails">
+                  <strong>3 Pflichtangaben vor einem späteren Meldeschein-Schritt korrigieren</strong>
+                  <p>Die Links beschreiben die notwendige lokale Korrekturreihenfolge. Kein Feld wird gelesen, geprüft, angenommen, gespeichert oder übermittelt.</p>
+                  <ol>
+                    <li><a href="#missing-primary-nationality">Staatsangehörigkeit des Hauptgasts ergänzen</a></li>
+                    <li><a href="#missing-companion-birth-date">Geburtsdatum der weiteren Person ergänzen</a></li>
+                    <li><a href="#missing-address-postcode">Postleitzahl der Anschrift ergänzen</a></li>
+                  </ol>
+                </nav>
+
+                <section class="form-section" aria-labelledby="missing-primary-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="missing-primary-title">Hauptgast · fehlende Staatsangehörigkeit</h3><p>Der Name bleibt nur als fiktiver Kontext sichtbar; keine Profil- oder Dokumentquelle wird befragt.</p></div><span class="badge badge-error">Pflichtfeld</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="missing-primary-family-name">Familienname</label><input id="missing-primary-family-name" name="missing-primary-family-name" type="text" value="Müller-Kaya" readonly aria-describedby="missing-primary-family-name-help"><span id="missing-primary-family-name-help" class="field-help">Fiktiver Kontext, kein gelesenes Profil.</span></div>
+                    <div class="field-group"><label for="missing-primary-given-name">Vorname</label><input id="missing-primary-given-name" name="missing-primary-given-name" type="text" value="Jana" readonly aria-describedby="missing-primary-given-name-help"><span id="missing-primary-given-name-help" class="field-help">Keine Identitäts- oder Berechtigungsprüfung.</span></div>
+                    <div class="field-group"><label for="missing-primary-nationality">Staatsangehörigkeit</label><select id="missing-primary-nationality" name="missing-primary-nationality" class="invalid-input" aria-invalid="true" aria-describedby="missing-primary-nationality-help missing-primary-nationality-error"><option value="" selected>Bitte ergänzen · fiktives Feld</option><option value="de">Deutschland · fiktive Auswahl</option><option value="other">Andere · fiktive Auswahl</option></select><span id="missing-primary-nationality-help" class="field-help">Eine spätere Regel benötigt Inhalts-, Daten- und Rechtevertrag.</span><span id="missing-primary-nationality-error" class="field-error">Pflichtangabe fehlt im fiktiven Szenario. Keine echte Validierung oder Dokumentenprüfung wurde ausgeführt.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="missing-companion-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="missing-companion-title">Weitere Person · fehlendes Geburtsdatum</h3><p>Die Begleitperson ist als eigener Prüfgegenstand sichtbar und wird nicht aus der Hauptperson abgeleitet.</p></div><span class="badge badge-error">Pflichtfeld</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="missing-companion-family-name">Familienname der weiteren Person</label><input id="missing-companion-family-name" name="missing-companion-family-name" type="text" value="Kaya" readonly aria-describedby="missing-companion-family-name-help"><span id="missing-companion-family-name-help" class="field-help">Keine Begleitpersonenquelle oder Zuordnung.</span></div>
+                    <div class="field-group"><label for="missing-companion-given-name">Vorname der weiteren Person</label><input id="missing-companion-given-name" name="missing-companion-given-name" type="text" value="Samir" readonly aria-describedby="missing-companion-given-name-help"><span id="missing-companion-given-name-help" class="field-help">Nur fiktive Datensparsamkeit.</span></div>
+                    <div class="field-group"><label for="missing-companion-birth-date">Geburtsdatum der weiteren Person</label><input id="missing-companion-birth-date" name="missing-companion-birth-date" class="invalid-input" type="date" value="" aria-invalid="true" aria-describedby="missing-companion-birth-date-help missing-companion-birth-date-error"><span id="missing-companion-birth-date-help" class="field-help">Keine Alters-, Rechts- oder Meldeprüfung.</span><span id="missing-companion-birth-date-error" class="field-error">Pflichtangabe fehlt im fiktiven Szenario. Eine echte Prüfung braucht eine zulässige Quelle und Validierungsregeln.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="missing-address-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="missing-address-title">Anschrift · fehlende Postleitzahl</h3><p>Die Anschrift bleibt strukturiert, ohne aus der Darstellung eine Prüfung, Normalisierung oder Datenübernahme abzuleiten.</p></div><span class="badge badge-error">Pflichtfeld</span></div>
+                  <div class="form-grid address-grid">
+                    <div class="field-group full-span"><label for="missing-address-line-one">Straße und Hausnummer</label><input id="missing-address-line-one" name="missing-address-line-one" type="text" value="Beispielweg 14" readonly aria-describedby="missing-address-line-one-help"><span id="missing-address-line-one-help" class="field-help">Fiktiver Kontext, keine validierte Anschrift.</span></div>
+                    <div class="field-group"><label for="missing-address-postcode">Postleitzahl</label><input id="missing-address-postcode" name="missing-address-postcode" class="invalid-input" type="text" value="" aria-invalid="true" aria-describedby="missing-address-postcode-help missing-address-postcode-error" autocomplete="off"><span id="missing-address-postcode-help" class="field-help">Kein postalischer Dienst oder Länderformat abgefragt.</span><span id="missing-address-postcode-error" class="field-error">Pflichtangabe fehlt im fiktiven Szenario. Adresse ist nicht als gültig oder gespeichert zu behandeln.</span></div>
+                    <div class="field-group"><label for="missing-address-city">Ort</label><input id="missing-address-city" name="missing-address-city" type="text" value="Bad Orb" readonly aria-describedby="missing-address-city-help"><span id="missing-address-city-help" class="field-help">Keine Orts- oder Aufenthaltsquelle.</span></div>
+                  </div>
+                </section>
+
+                <section class="next-action" aria-labelledby="missing-next-action-title">
+                  <div class="action-copy"><span class="badge badge-warning">Korrektur zuerst</span><h3 id="missing-next-action-title">Keine stille Fortsetzung zum Meldeschein</h3><p>Eine spätere Umsetzung müsste Feldfehler, Datenscope, Berechtigung und sichere Rückkehr prüfen. Die deaktivierte Aktion speichert nichts und zeigt keinen echten Workflowzustand.</p></div><button class="btn-primary" type="button" disabled aria-describedby="missing-forward-reason">Zum Meldeschein fortsetzen</button>
+                </section>
+                <p id="missing-forward-reason" class="disabled-reason">Deaktiviert: Pflichtwerte, Datenquelle, Validierungsregeln, Authentifizierung, RBAC, Speicherung, Resume, Konfliktmodell und Audit sind nicht nachgewiesen.</p>
+              </form>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Fehlende Angaben: sichere Recovery">
+            <section class="side-card" aria-labelledby="missing-recovery-title"><header class="side-heading"><div class="side-copy"><h2 id="missing-recovery-title">Sicherer Korrekturweg</h2><p>Fehlende Angaben werden nicht automatisch ergänzt oder umgangen.</p></div><span class="badge badge-warning">Manuelle Prüfung</span></header><div class="side-body"><ul class="dependency-list"><li><span class="detail-label">1. Kontext</span><span>Hauptgast, weitere Person und betroffene Anschrift datensparsam im später autorisierten Rahmen prüfen.</span></li><li><span class="detail-label">2. Korrektur</span><span>Feldbezogene Regeln und Fehlerantworten erst mit einem validen Browser-/API-Vertrag anwenden.</span></li><li><span class="detail-label">3. Folge</span><span>Erst danach eine fachliche Meldeschein-Prüfung anbieten; nicht aus diesem Prototypzustand fortsetzen.</span></li></ul><button class="btn-warning" type="button" data-prototype-action="Fiktiver Korrekturweg lokal erläutert. Es wurde kein Feld validiert, keine Quelle befragt, keine Korrektur gespeichert und kein Meldeschein-Schritt gestartet.">Korrekturweg erläutern</button></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="missing-boundary-title"><header class="side-heading"><div class="side-copy"><h2 id="missing-boundary-title">Warum der Blocker kein Live-Fehler ist</h2><p>Die sichtbare Nachricht ist ein Designmuster für eine spätere Autorität.</p></div><span class="badge badge-prototype">Statisch</span></header><div class="side-body"><p class="field-help">Es gibt keine serverseitige Fehlerhülle, Datenquelle, Sitzung, Rollenprüfung, Speicherung, Arbeitsliste, Retry-Warteschlange, Auditspur oder Meldeschein-Transaktion. Diese Seite zeigt lediglich, wo spätere Informationen und Recovery sichtbar bleiben müssen.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Fehlende-Pflichtangaben-Zustand: Die Fehlerzusammenfassung, die Feldanker, `aria-invalid` und die deaktivierte Folgeaktion sind statische, überprüfbare Designabsicht. Sie beweisen keine reale Validierung, gesetzliche Auslegung, Korrektur, Speicherung, Berechtigung, Resume-Logik oder rechtliche Sperre.</p>
+      </section>
+
+      <!-- ===== State: international address ===== -->
+      <section id="state-international" class="state-panel" aria-labelledby="international-state-title" data-state-kind="international" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="international-state-title">Internationale Anschrift: Format bewahren, nicht normalisieren</h2><p>Ein langes, länderspezifisches Beispiel prüft, ob der Formrahmen internationale Namen und Anschriftszeilen aufnehmen kann. Die Darstellung validiert weder die Adresse noch ihren rechtlichen oder postalischen Status.</p></div>
+          <div class="badge-row"><span class="badge badge-info">Internationales Format</span><span class="badge badge-planned">Keine Länderregel</span></div>
+        </header>
+
+        <div class="work-layout">
+          <section class="panel" aria-labelledby="international-form-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="international-form-title">Fiktiver Aufenthalt mit internationaler Anschrift</h2><p>Die gemeinsame Stay-Fixture bleibt sichtbar, während die Anschrift mit eigener Zeilenstruktur und Country-Kontext dargestellt wird.</p></div><span class="badge badge-prototype">Keine Adressprüfung</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Synthetischer Aufenthaltskontext für internationale Anschrift">
+                <div class="record-copy"><span class="badge badge-teal">Ausgewählt · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · Hauptgast und eine weitere Person bleiben als fiktiver Kontext erhalten.</p></div>
+                <div class="record-status"><span class="badge badge-info">Adresse international</span><span class="badge badge-unclear">RBAC unklar</span></div>
+              </section>
+
+              <div class="guest-context-grid" aria-label="Internationaler Kontext für Hauptgast, weitere Person und Anschrift">
+                <article class="guest-context-card is-primary"><span>Hauptgast</span><strong>Jana Müller-Kaya</strong><small>Statischer Personenkontext, keine Identitäts- oder Quellenprüfung.</small></article>
+                <article class="guest-context-card is-companion"><span>Weitere Person</span><strong>Samir Kaya · fiktiv</strong><small>Eigene spätere Pflichtangaben, keine automatische Ableitung.</small></article>
+                <article class="guest-context-card is-address"><span>Internationale Anschrift</span><strong>Rua do Comércio 148, 3.º Esq.</strong><small>1200-270 Lisboa · Portugal · rein synthetisch.</small></article>
+                <article class="guest-context-card"><span>Formatabsicht</span><strong>Zeilen nicht abschneiden</strong><small>Kein geocoding, kein postalischer Abgleich, keine Normalisierung.</small></article>
+              </div>
+
+              <form id="international-guest-details-form" class="guest-form" novalidate>
+                <section class="form-section" aria-labelledby="international-primary-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="international-primary-title">Hauptgast und weitere Person · fiktive Kontextwerte</h3><p>Der Personenkontext ist nötig, ohne dass eine internationale Anschrift als Personen- oder Berechtigungsnachweis gilt.</p></div><span class="badge badge-teal">2 Personen</span></div>
+                  <div class="form-grid">
+                    <div class="field-group"><label for="international-primary-name">Hauptgast</label><input id="international-primary-name" name="international-primary-name" type="text" value="Jana Müller-Kaya" readonly aria-describedby="international-primary-name-help"><span id="international-primary-name-help" class="field-help">Kein Gastprofil gelesen oder angepasst.</span></div>
+                    <div class="field-group"><label for="international-companion-name">Weitere Person</label><input id="international-companion-name" name="international-companion-name" type="text" value="Samir Kaya" readonly aria-describedby="international-companion-name-help"><span id="international-companion-name-help" class="field-help">Keine Zuordnung, Verwandtschaft oder Rechteannahme.</span></div>
+                    <div class="field-group"><label for="international-stay-reference">Fiktive Aufenthaltsreferenz</label><input id="international-stay-reference" name="international-stay-reference" type="text" value="RES-BO-2026-0716-014" readonly aria-describedby="international-stay-reference-help"><span id="international-stay-reference-help" class="field-help">Keine Datenbank-ID und kein Persistenzbezug.</span></div>
+                  </div>
+                </section>
+
+                <section class="form-section" aria-labelledby="international-address-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="international-address-title">Anschrift außerhalb deutscher Formatannahmen</h3><p>Zeilenfolge, diakritische Zeichen und lokale Postleitzahlen werden sichtbar bewahrt. Eine spätere Länderregel muss explizit geliefert werden.</p></div><span class="badge badge-info">Portugal · Beispiel</span></div>
+                  <div class="form-grid address-grid">
+                    <div class="field-group full-span"><label for="international-address-line-one">Adresszeile 1</label><input id="international-address-line-one" name="international-address-line-one" type="text" value="Rua do Comércio 148, 3.º Esq." aria-describedby="international-address-line-one-help" autocomplete="off"><span id="international-address-line-one-help" class="field-help">Lange internationale Anschriftszeile; keine Normalisierung oder Kürzung.</span></div>
+                    <div class="field-group full-span"><label for="international-address-line-two">Adresszeile 2</label><input id="international-address-line-two" name="international-address-line-two" type="text" value="Freguesia da Misericórdia" aria-describedby="international-address-line-two-help" autocomplete="off"><span id="international-address-line-two-help" class="field-help">Optionale Strukturzeile, keine postalische Bestätigung.</span></div>
+                    <div class="field-group"><label for="international-address-postcode">Postleitzahl</label><input id="international-address-postcode" name="international-address-postcode" type="text" value="1200-270" aria-describedby="international-address-postcode-help" autocomplete="off"><span id="international-address-postcode-help" class="field-help">Kein Länderformat validiert.</span></div>
+                    <div class="field-group"><label for="international-address-city">Ort</label><input id="international-address-city" name="international-address-city" type="text" value="Lisboa" aria-describedby="international-address-city-help" autocomplete="off"><span id="international-address-city-help" class="field-help">Keine externe Orts- oder Adressquelle.</span></div>
+                    <div class="field-group"><label for="international-address-region">Region / Bezirk</label><input id="international-address-region" name="international-address-region" type="text" value="Lisboa" aria-describedby="international-address-region-help" autocomplete="off"><span id="international-address-region-help" class="field-help">Keine Gebietsklassifikation oder Rechtswirkung.</span></div>
+                    <div class="field-group"><label for="international-address-country">Land</label><select id="international-address-country" name="international-address-country" aria-describedby="international-address-country-help"><option value="pt" selected>Portugal · fiktive Auswahl</option><option value="de">Deutschland · fiktive Auswahl</option><option value="other">Andere · fiktive Auswahl</option></select><span id="international-address-country-help" class="field-help">Keine Länder-, Dokumenten- oder Meldeprüfung.</span></div>
+                  </div>
+                </section>
+
+                <section class="next-action" aria-labelledby="international-next-action-title">
+                  <div class="action-copy"><span class="badge badge-planned">Format prüfen, nicht speichern</span><h3 id="international-next-action-title">Meldeschein erst nach späterer Fach- und Adressprüfung</h3><p>Die lokale Prototypaktion zeigt nur, dass internationale Anschriften nicht still in ein deutsches Schema gepresst werden dürfen. Keine Adresse wird bestätigt, gespeichert oder übermittelt.</p></div><button class="btn-primary" type="submit">Formatgrenze erläutern</button>
+                </section>
+              </form>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Internationale Anschrift: Schutz- und Formathinweise">
+            <section class="side-card" aria-labelledby="international-rules-title"><header class="side-heading"><div class="side-copy"><h2 id="international-rules-title">Keine stille Lokalisierung</h2><p>Internationaler Inhalt bleibt lesbar, ohne erfundene Validierung oder Rechtsaussage.</p></div><span class="badge badge-warning">Regel erforderlich</span></header><div class="side-body"><ul class="detail-list"><li><span class="detail-label">Darstellung</span><span class="detail-value">Lange Zeilen, diakritische Zeichen und mehrere Anschriftsebenen bleiben als Inhalt sichtbar.</span></li><li><span class="detail-label">Validierung</span><span class="detail-value">Format, Postleitzahl, Land, Wohnsitz, Rechtsgrundlage und Personenzuordnung benötigen künftige Regeln und Quellen.</span></li><li><span class="detail-label">Datenschutz</span><span class="detail-value">Sichtbarkeit ersetzt keine Zweckprüfung, Authentifizierung, RBAC, sichere Anzeige oder Auditierung.</span></li><li><span class="detail-label">Folge</span><span class="detail-value">Kein Meldeschein, keine Speicherung, keine Einreichung und kein Dokument wird aus diesem Szenario erzeugt.</span></li></ul></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="international-mobile-title"><header class="side-heading"><div class="side-copy"><h2 id="international-mobile-title">Mobiler Task-Modus</h2><p>Auf engem Raum werden Feldgruppen gestapelt, statt die Anschrift zu schneiden oder in eine Desktop-Tabelle zu pressen.</p></div><span class="badge badge-info">44px intent</span></header><div class="side-body"><p class="field-help">Die CSS-Regeln definieren einen einspaltigen Aufgabenmodus mit mindestens 44px hohen Primär-, Formular-, State- und Navigationscontrols. Das ist keine gemessene Geräte- oder Browserprüfung.</p></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Internationale-Anschrift-Zustand: Die Beispielwerte testen die statische Inhaltsstruktur. Sie beweisen keine richtige Anschrift, keine postalische oder gesetzliche Validität, keine Übersetzung, keine Speicherung, keine Berechtigung, keine Meldeschein-Eignung oder rechtliche Finalität.</p>
+      </section>
+
+      <!-- ===== State: conflicting edit ===== -->
+      <section id="state-conflict" class="state-panel" aria-labelledby="conflict-state-title" data-state-kind="conflict" hidden>
+        <header class="state-heading">
+          <div class="state-copy"><h2 id="conflict-state-title">Konfligierende Bearbeitung: Nicht still überschreiben</h2><p>Ein synthetischer Vergleich zeigt, wie eine spätere abweichende Anschriftsänderung vor einem Save sichtbar bleiben könnte. Es gibt keine tatsächliche Sperre, Quelle, Sitzung, Version oder Konflikterkennung.</p></div>
+          <div class="badge-row"><span class="badge badge-error">Konflikt · fiktiv</span><span class="badge badge-warning">Manuelle Prüfung</span></div>
+        </header>
+
+        <section class="conflict-notice" role="alert" aria-labelledby="conflict-alert-title">
+          <span class="notice-symbol" aria-hidden="true">!</span>
+          <div class="notice-copy"><h3 id="conflict-alert-title">Vorgeschlagene Anschrift nicht automatisch übernehmen</h3><p>Der dargestellte Unterschied betrifft Jana Müller-Kaya / <span class="mono">RES-BO-2026-0716-014</span>. Die Quelle, Zeit und Version sind ausdrücklich fiktive UI-Felder; sie belegen weder einen anderen Mitarbeitenden noch eine reale Änderung oder Sperre.</p></div>
+        </section>
+
+        <div class="conflict-layout">
+          <section class="comparison-card" aria-labelledby="conflict-comparison-title">
+            <header class="panel-heading"><div class="panel-copy"><h2 id="conflict-comparison-title">Fiktiver Vergleich vor einer späteren Änderung</h2><p>Der Vergleich erhält Hauptgast, Begleitperson, Aufenthaltsbezug und betroffene Adresse sichtbar. Er führt keinen Merge, kein Save und keine Auflösung aus.</p></div><span class="badge badge-prototype">Keine Versionsquelle</span></header>
+            <div class="panel-body">
+              <section class="record-card" aria-label="Fiktiver Aufenthaltskontext mit Bearbeitungskonflikt">
+                <div class="record-copy"><span class="badge badge-warning">Konfliktkontext · lokal</span><h2>Jana Müller-Kaya</h2><p class="mono">RES-BO-2026-0716-014</p><p>16.–23.07.2026 · weitere Person Samir Kaya · Anschrift als betroffener fiktiver Bereich.</p></div>
+                <div class="record-status"><span class="badge badge-error">Nicht überschreiben</span><span class="badge badge-unclear">Lock unklar</span></div>
+              </section>
+
+              <div class="guest-context-grid" aria-label="Fiktiver Konfliktkontext für Personen und Anschrift">
+                <article class="guest-context-card is-primary"><span>Hauptgast</span><strong>Jana Müller-Kaya</strong><small>Keine echte Gastakte oder Quelle.</small></article>
+                <article class="guest-context-card is-companion"><span>Weitere Person</span><strong>Samir Kaya · fiktiv</strong><small>Bleibt Kontext, nicht Konfliktursache.</small></article>
+                <article class="guest-context-card is-address"><span>Betroffener Bereich</span><strong>Anschrift</strong><small>Kein Nachweis für eine korrekte oder aktuelle Adresse.</small></article>
+                <article class="guest-context-card"><span>Fiktiver Zeitpunkt</span><strong>16.07.2026 · 09:42</strong><small>Kein Serverzeitstempel oder Auditereignis.</small></article>
+              </div>
+
+              <div class="comparison-table-wrap">
+                <table>
+                  <caption>Fiktiver Anschriftenvergleich. Keine Zeile ist eine Datenquelle, ein Versionsnachweis, eine Sperre, eine Zusammenführung oder eine gespeicherte Änderung.</caption>
+                  <thead><tr><th scope="col">Feld</th><th scope="col">Lokaler Beispielwert</th><th scope="col">Fiktiver vorgeschlagener Wert</th><th scope="col">Sichere Folge</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Straße / Hausnummer</strong></td><td>Beispielweg 14</td><td>Kurstraße 8</td><td>Quelle, Zweck und Personenzuordnung später prüfen; nicht automatisch ersetzen.</td></tr>
+                    <tr><td><strong>Postleitzahl / Ort</strong></td><td>63619 Bad Orb</td><td>63619 Bad Orb</td><td>Gleicher Ort beweist keine richtige Anschrift oder Berechtigung.</td></tr>
+                    <tr><td><strong>Quelle / Version</strong></td><td><span class="badge badge-unclear">Lokale DOM-Anzeige</span></td><td><span class="badge badge-warning">Fiktiv · „spätere Rezeption“</span></td><td>Kein Akteur, keine Zeit, keine Version und kein Lock sind real nachgewiesen.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="mobile-guest-list" aria-label="Mobile Karten für den fiktiven Anschriftenvergleich">
+                <article class="mobile-guest-card"><span>Straße / Hausnummer</span><strong>Beispielweg 14 → Kurstraße 8</strong><small>Keine Quelle prüfen, nicht automatisch ersetzen.</small></article>
+                <article class="mobile-guest-card"><span>Postleitzahl / Ort</span><strong>63619 Bad Orb → 63619 Bad Orb</strong><small>Gleicher Ort beweist keine richtige Anschrift.</small></article>
+                <article class="mobile-guest-card"><span>Quelle / Version</span><strong>Fiktive Gegenüberstellung</strong><small>Kein Akteur, keine Sitzung, keine Sperre und kein Audit.</small></article>
+              </div>
+
+              <form id="conflict-guest-details-form" class="guest-form" novalidate>
+                <section class="form-section" aria-labelledby="conflict-edit-title">
+                  <div class="form-section-heading"><div class="panel-copy"><h3 id="conflict-edit-title">Lokaler fiktiver Änderungsrahmen</h3><p>Die beschrifteten Felder veranschaulichen, welche Eingabe nach einem späteren Vergleich geprüft werden müsste. Sie führen keine Aktion aus.</p></div><span class="badge badge-warning">Review erforderlich</span></div>
+                  <div class="form-grid address-grid">
+                    <div class="field-group"><label for="conflict-source-context">Fiktiver Quellenkontext</label><input id="conflict-source-context" name="conflict-source-context" type="text" value="Spätere Rezeption · fiktiv" readonly aria-describedby="conflict-source-context-help"><span id="conflict-source-context-help" class="field-help">Keine authentifizierte Person, keine Rolle und kein Auditnachweis.</span></div>
+                    <div class="field-group"><label for="conflict-version-context">Fiktiver Versionshinweis</label><input id="conflict-version-context" name="conflict-version-context" type="text" value="Version / Sperre unklar" readonly aria-describedby="conflict-version-context-help"><span id="conflict-version-context-help" class="field-help">Kein Serverstand, keine Sperre und keine Merge-Semantik.</span></div>
+                    <div class="field-group full-span"><label for="conflict-proposed-address">Vorgeschlagene Anschrift</label><input id="conflict-proposed-address" name="conflict-proposed-address" type="text" value="Kurstraße 8 · 63619 Bad Orb" aria-describedby="conflict-proposed-address-help" autocomplete="off"><span id="conflict-proposed-address-help" class="field-help">Ein lokaler Vorschlag ist keine korrekte, autorisierte oder gespeicherte Anschrift.</span></div>
+                  </div>
+                  <div class="action-row"><button class="btn-danger" type="button" disabled aria-describedby="conflict-save-reason">Änderung speichern</button><button class="btn-warning" type="submit">Vergleichsgrenze erläutern</button><button class="btn-teal" type="button" data-state-target="state-valid" aria-controls="state-valid">Ohne Änderung zum Beispiel</button></div>
+                  <p id="conflict-save-reason" class="disabled-reason">Speichern deaktiviert: keine Datenquelle, keine frühere Version, keine Authentifizierung, keine Rollen-/Zweckprüfung, keine Konflikt-/Lock-/Merge-Regel, keine Persistenz und kein Audit sind nachgewiesen.</p>
+                </section>
+              </form>
+            </div>
+          </section>
+
+          <aside class="side-stack" aria-label="Konflikt: sichere Rückkehr und Abhängigkeiten">
+            <section class="side-card" aria-labelledby="conflict-recovery-title"><header class="side-heading"><div class="side-copy"><h2 id="conflict-recovery-title">Sichere Folge statt Merge</h2><p>Eine spätere Anwendung braucht eine nachvollziehbare Entscheidung, nicht den stillen Ersatz eines Werts.</p></div><span class="badge badge-peach">Eskalation</span></header><div class="side-body"><ul class="dependency-list"><li><span class="detail-label">Quelle</span><span>Autoritative aktuelle Gast-/Adressquelle, Datum, Scope und Datenminimierung bestimmen.</span></li><li><span class="detail-label">Konflikt</span><span>Version, Lock, Vergleich, sichere Rückkehr, Abbruch und idempotente Auflösung explizit modellieren.</span></li><li><span class="detail-label">Rechte</span><span>Identität, Betrieb, Zweck, Les-/Schreibrecht und nicht-offenlegenden Denial prüfen.</span></li><li><span class="detail-label">Audit</span><span>Eine künftige Änderung braucht einen dauerhaften, zuordenbaren Ereignisvertrag; dieser Prototyp besitzt keinen.</span></li></ul><button class="btn-warning" type="button" data-prototype-action="Fiktiver Konfliktweg lokal erläutert. Es wurde keine Quelle verglichen, keine Sperre gesetzt, keine Änderung zusammengeführt oder gespeichert.">Konfliktweg erläutern</button></div></section>
+            <section class="side-card wide-on-tablet" aria-labelledby="conflict-next-title"><header class="side-heading"><div class="side-copy"><h2 id="conflict-next-title">Meldeschein bleibt nachgeordnet</h2><p>Ein Konflikt in den Gastdetails muss zuerst transparent geprüft werden; der Meldeschein wird nicht durch einen fiktiven Save umgangen.</p></div><span class="badge badge-planned">Schrittfolge</span></header><div class="side-body"><p class="field-help">Die nächste fachliche Oberfläche ist der Meldeschein erst nach einer späteren, autorisierten und validierten Entscheidung. Dieser Status startet keine Dokumenterzeugung, keine Vorschau, keinen Download, keine Einreichung und keine rechtliche Handlung.</p><a class="button-link" href="checkin_overview.html#state-ready">Check-in-Schrittfolge lesen</a></div></section>
+          </aside>
+        </div>
+        <p class="page-note">Konflikt-Zustand: Der Vergleich schützt gegen falsche Erfolgssprache und silent overwrite. Er beweist keine echte Version, Quelle, Sperre, Mehrbenutzeraktion, Berechtigung, Merge-Entscheidung, Speicherung, Auditierung oder nachgelagerte Meldeschein-Erzeugung.</p>
+      </section>
+
+      <p class="page-note">Designprototyp mit ausschließlich synthetischen deutschen und internationalen Gast-, Begleit-, Aufenthalts- und Anschriftsdaten. Der State-Switcher und Formularaktionen verändern nur lokale DOM-Hinweise. Sie führen keine Suche, Browserroute, API-Anfrage, Datenbankaktion, Validierung, Speicherung, Resume, gemeinsame Sitzung, Authentifizierung, RBAC, Konfliktauflösung, Dokumenterzeugung, Download, Einreichung oder rechtliche Entscheidung aus.</p>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile Aufgaben">
+    <a href="arrivals_queue.html#arrivals-title">Anreisen</a>
+    <a href="#state-valid" aria-current="page">Gastdetails</a>
+    <a href="checkin_overview.html#state-ready">Check-in</a>
+  </nav>
+
+  <div class="state-switcher" role="group" aria-label="Prototypzustand wechseln">
+    <button id="state-button-valid" type="button" data-state-target="state-valid" aria-controls="state-valid" aria-pressed="true">Gültig</button>
+    <button id="state-button-missing" type="button" data-state-target="state-missing" aria-controls="state-missing" aria-pressed="false">Pflichtangaben</button>
+    <button id="state-button-international" type="button" data-state-target="state-international" aria-controls="state-international" aria-pressed="false">International</button>
+    <button id="state-button-conflict" type="button" data-state-target="state-conflict" aria-controls="state-conflict" aria-pressed="false">Konflikt</button>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll('.state-panel'));
+      const stateControls = Array.from(document.querySelectorAll('[data-state-target]'));
+      const switcherControls = Array.from(document.querySelectorAll('.state-switcher [data-state-target]'));
+      const prototypeActions = Array.from(document.querySelectorAll('[data-prototype-action]'));
+      const liveMessage = document.getElementById('prototype-live');
+      const contextForm = document.getElementById('guest-details-context-form');
+      const validForm = document.getElementById('valid-guest-details-form');
+      const internationalForm = document.getElementById('international-guest-details-form');
+      const conflictForm = document.getElementById('conflict-guest-details-form');
+      const labels = {
+        'state-valid': 'Gültiger fiktiver Gastdetails-Zustand angezeigt.',
+        'state-missing': 'Fiktiver Zustand mit fehlenden Pflichtangaben angezeigt.',
+        'state-international': 'Fiktiver Zustand mit internationaler Anschrift angezeigt.',
+        'state-conflict': 'Fiktiver Konfliktzustand für Gastdetails angezeigt.'
+      };
+
+      function activateState(targetId) {
+        const target = document.getElementById(targetId);
+        if (!target) {
+          return;
+        }
+
+        panels.forEach(function (panel) {
+          panel.hidden = panel.id !== targetId;
+        });
+
+        switcherControls.forEach(function (control) {
+          control.setAttribute('aria-pressed', String(control.dataset.stateTarget === targetId));
+        });
+
+        liveMessage.textContent = labels[targetId] || 'Prototypzustand angezeigt.';
+      }
+
+      stateControls.forEach(function (control) {
+        control.addEventListener('click', function () {
+          activateState(control.dataset.stateTarget);
+        });
+      });
+
+      prototypeActions.forEach(function (control) {
+        control.addEventListener('click', function () {
+          liveMessage.textContent = control.dataset.prototypeAction;
+        });
+      });
+
+      contextForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktiver Gastdetails-Kontext lokal erläutert. Es wurde keine Route, Suche, Quelle, Berechtigungsprüfung, Speicherung oder Wiederaufnahme ausgeführt.';
+      });
+
+      validForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Meldeschein-Schritt als lokale Prototypgrenze erläutert. Es wurde kein Feld validiert, kein Gast gespeichert, kein Workflow fortgesetzt und kein Meldeschein erzeugt.';
+      });
+
+      internationalForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Internationale Adressformatgrenze lokal erläutert. Es wurde keine Anschrift validiert, normalisiert, gespeichert oder an einen Meldeschein übergeben.';
+      });
+
+      conflictForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        liveMessage.textContent = 'Fiktive Konfliktgrenze lokal erläutert. Es wurde keine Quelle verglichen, keine Sperre gesetzt, keine Änderung zusammengeführt oder gespeichert.';
+      });
+    }());
+  </script>
+</body>
+</html>
