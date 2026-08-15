@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Rheinland Reception Standard — Heute am Empfang</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --canvas: #F4F6F7;
+      --surface: #FFFFFF;
+      --surface-raised: #FFFFFF;
+      --surface-subtle: #F0F3F4;
+      --surface-hover: #EAF7F9;
+      --text-primary: #172329;
+      --text-secondary: #52636B;
+      --text-disabled: #6E8189;
+      --border-subtle: #C8D1D5;
+      --border-strong: #6E8189;
+      --primary: #075D73;
+      --primary-hover: #064B5D;
+      --on-primary: #FFFFFF;
+      --selection-bg: #EAF7F9;
+      --selection-indicator: #075D73;
+      --focus-ring: #A94700;
+      --status-success-bg: #DCEFE5;
+      --status-success-fg: #165C3A;
+      --status-warning-bg: #FFF0C7;
+      --status-warning-fg: #704700;
+      --status-danger-bg: #F9DDDD;
+      --status-danger-fg: #8B2525;
+      --status-info-bg: #DCECF7;
+      --status-info-fg: #124D70;
+      --rail-bg: #12313B;
+      --rail-fg: #F5FAFB;
+      --rail-muted: #BFD0D6;
+      --rail-selected-bg: #D1EFF3;
+      --rail-selected-fg: #12313B;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --radius-sm: 4px;
+      --radius-control: 8px;
+      --radius-card: 12px;
+      --radius-modal: 16px;
+      --radius-badge: 999px;
+      --elevation-1: 0 1px 2px rgb(23 35 41 / 8%);
+      --elevation-2: 0 4px 16px rgb(23 35 41 / 12%);
+      --elevation-3: 0 12px 32px rgb(23 35 41 / 18%);
+      --motion-fast: 120ms ease-out;
+      --motion-standard: 180ms ease-out;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --canvas: #10191D;
+      --surface: #18252B;
+      --surface-raised: #213239;
+      --surface-subtle: #233238;
+      --surface-hover: #213944;
+      --text-primary: #EEF4F5;
+      --text-secondary: #B7C6CC;
+      --text-disabled: #78909A;
+      --border-subtle: #455961;
+      --border-strong: #78909A;
+      --primary: #80D1DF;
+      --primary-hover: #A8DDE5;
+      --on-primary: #08272F;
+      --selection-bg: #213944;
+      --selection-indicator: #80D1DF;
+      --focus-ring: #FFB36B;
+      --status-success-bg: #173D2C;
+      --status-success-fg: #A7E4C2;
+      --status-warning-bg: #493710;
+      --status-warning-fg: #FFDC85;
+      --status-danger-bg: #4D2426;
+      --status-danger-fg: #FFB5B7;
+      --status-info-bg: #163443;
+      --status-info-fg: #A8D8F0;
+      --rail-bg: #091317;
+      --rail-fg: #EEF4F5;
+      --rail-muted: #A8BBC2;
+      --rail-selected-bg: #80D1DF;
+      --rail-selected-fg: #08272F;
+      --elevation-1: 0 1px 2px rgb(0 0 0 / 28%);
+      --elevation-2: 0 6px 20px rgb(0 0 0 / 36%);
+      --elevation-3: 0 16px 40px rgb(0 0 0 / 48%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --canvas: #10191D;
+        --surface: #18252B;
+        --surface-raised: #213239;
+        --surface-subtle: #233238;
+        --surface-hover: #213944;
+        --text-primary: #EEF4F5;
+        --text-secondary: #B7C6CC;
+        --text-disabled: #78909A;
+        --border-subtle: #455961;
+        --border-strong: #78909A;
+        --primary: #80D1DF;
+        --primary-hover: #A8DDE5;
+        --on-primary: #08272F;
+        --selection-bg: #213944;
+        --selection-indicator: #80D1DF;
+        --focus-ring: #FFB36B;
+        --status-success-bg: #173D2C;
+        --status-success-fg: #A7E4C2;
+        --status-warning-bg: #493710;
+        --status-warning-fg: #FFDC85;
+        --status-danger-bg: #4D2426;
+        --status-danger-fg: #FFB5B7;
+        --status-info-bg: #163443;
+        --status-info-fg: #A8D8F0;
+        --rail-bg: #091317;
+        --rail-fg: #EEF4F5;
+        --rail-muted: #A8BBC2;
+        --rail-selected-bg: #80D1DF;
+        --rail-selected-fg: #08272F;
+        --elevation-1: 0 1px 2px rgb(0 0 0 / 28%);
+        --elevation-2: 0 6px 20px rgb(0 0 0 / 36%);
+        --elevation-3: 0 16px 40px rgb(0 0 0 / 48%);
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--canvas); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 232px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .work-rail {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: var(--space-5);
+      padding: var(--space-4) var(--space-3);
+      background: var(--rail-bg);
+      color: var(--rail-fg);
+      border-inline-end: 1px solid rgb(255 255 255 / 12%);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 44px;
+      padding: var(--space-2);
+    }
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 2px solid #80D1DF;
+      border-radius: var(--radius-control);
+      color: #D1EFF3;
+      font-weight: 800;
+    }
+    .brand-copy { display: grid; min-width: 0; line-height: 1.25; }
+    .brand-copy strong { font-size: 14px; }
+    .brand-copy span { color: var(--rail-muted); font-size: 12px; }
+    .rail-label {
+      margin: 0 0 var(--space-2);
+      padding-inline: var(--space-3);
+      color: var(--rail-muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .rail-nav, .rail-filter-list { display: grid; gap: var(--space-1); }
+    .rail-nav a, .rail-filter {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-2);
+      min-height: 44px;
+      padding: var(--space-2) var(--space-3);
+      border: 0;
+      border-inline-start: 3px solid transparent;
+      border-radius: var(--radius-control);
+      background: transparent;
+      color: var(--rail-fg);
+      text-align: start;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .rail-nav a:hover, .rail-filter:hover { background: rgb(255 255 255 / 9%); }
+    .rail-nav a[aria-current="page"], .rail-filter[aria-pressed="true"] {
+      border-inline-start-color: var(--primary);
+      background: var(--rail-selected-bg);
+      color: var(--rail-selected-fg);
+      font-weight: 750;
+    }
+    .rail-count {
+      min-width: 24px;
+      padding: 1px 6px;
+      border: 1px solid currentColor;
+      border-radius: var(--radius-badge);
+      font-size: 12px;
+      line-height: 18px;
+      text-align: center;
+    }
+    .shift-card {
+      display: grid;
+      gap: var(--space-1);
+      margin-top: auto;
+      padding: var(--space-3);
+      border: 1px solid rgb(255 255 255 / 18%);
+      border-radius: var(--radius-card);
+      color: var(--rail-muted);
+      font-size: 12px;
+    }
+    .shift-card strong { color: var(--rail-fg); font-size: 14px; }
+
+    .workspace { min-width: 0; }
+    .topbar {
+      display: flex;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      min-height: 68px;
+      padding: var(--space-3) var(--space-6);
+      border-bottom: 1px solid var(--border-subtle);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--elevation-1);
+      backdrop-filter: blur(10px);
+    }
+    .topbar-copy { display: grid; min-width: 0; }
+    .topbar-copy strong { font-size: 16px; }
+    .topbar-copy span { color: var(--text-secondary); font-size: 14px; }
+    .topbar-actions, .theme-switch { display: flex; align-items: center; gap: var(--space-2); }
+    .theme-switch {
+      padding: 3px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-control);
+      background: var(--surface-subtle);
+    }
+    .theme-button {
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .theme-button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+
+    .page {
+      display: grid;
+      gap: var(--space-5);
+      width: min(1600px, 100%);
+      margin-inline: auto;
+      padding: var(--space-6) var(--space-8) var(--space-12);
+    }
+    .page-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: var(--space-5);
+      flex-wrap: wrap;
+    }
+    .eyebrow {
+      margin: 0 0 var(--space-1);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: var(--space-1); font-size: clamp(26px, 3vw, 32px); line-height: 1.2; }
+    h2 { margin-bottom: 0; font-size: 20px; line-height: 1.4; }
+    h3 { margin-bottom: var(--space-1); font-size: 16px; line-height: 1.5; }
+    .lede { max-width: 760px; margin-bottom: 0; color: var(--text-secondary); }
+
+    .button {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: 8px 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-control);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .button:hover { background: var(--surface-hover); }
+    .button-primary { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+    .button-primary:hover { border-color: var(--primary-hover); background: var(--primary-hover); }
+    .button-compact { min-height: 36px; padding: 7px 10px; font-size: 14px; }
+    .shortcut {
+      padding: 1px 5px;
+      border: 1px solid currentColor;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      opacity: .8;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-3);
+    }
+    .metric {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+      padding: var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .metric-label, .metric-detail { color: var(--text-secondary); }
+    .metric-label { font-size: 14px; font-weight: 650; }
+    .metric strong { font-size: 30px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .metric-detail { font-size: 14px; }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: var(--space-4);
+      align-items: start;
+    }
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surface-subtle);
+      flex-wrap: wrap;
+    }
+    .panel-subtitle { margin: var(--space-1) 0 0; color: var(--text-secondary); font-size: 14px; }
+    .filter-row { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+    .filter {
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-badge);
+      background: var(--surface);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .filter[aria-pressed="true"] { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+
+    .queue-caption {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+    .queue-caption strong { color: var(--text-primary); }
+    .queue-list { margin: 0; padding: 0; list-style: none; }
+    .queue-row {
+      display: grid;
+      grid-template-columns: 72px minmax(220px, 1.25fr) 112px minmax(220px, 1fr) auto;
+      gap: var(--space-3);
+      align-items: center;
+      min-height: 78px;
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+      transition: background var(--motion-fast);
+    }
+    .queue-row:first-child { border-top: 0; }
+    .queue-row:hover { background: var(--surface-hover); }
+    .queue-row.is-selected {
+      background: var(--selection-bg);
+      box-shadow: inset 3px 0 0 var(--selection-indicator);
+    }
+    .arrival-time { display: grid; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .arrival-time time { font-family: var(--font-mono); font-size: 15px; font-weight: 800; }
+    .arrival-time span { color: var(--text-secondary); font-size: 12px; }
+    .guest { display: grid; min-width: 0; }
+    .guest strong { overflow-wrap: anywhere; font-size: 15px; line-height: 1.35; }
+    .guest span, .stay, .status-detail { color: var(--text-secondary); font-size: 13px; }
+    .reservation { font-family: var(--font-mono); }
+    .stay { font-variant-numeric: tabular-nums; }
+    .status-stack { display: grid; justify-items: start; gap: var(--space-1); min-width: 0; }
+    .status {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border: 1px solid currentColor;
+      border-radius: var(--radius-badge);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.3;
+    }
+    .status::before { content: ""; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
+    .status-success { background: var(--status-success-bg); color: var(--status-success-fg); }
+    .status-warning { background: var(--status-warning-bg); color: var(--status-warning-fg); }
+    .status-danger { background: var(--status-danger-bg); color: var(--status-danger-fg); }
+    .status-info { background: var(--status-info-bg); color: var(--status-info-fg); }
+    .row-action { justify-self: end; }
+
+    .queue-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+
+    .side-stack { display: grid; gap: var(--space-4); }
+    .side-panel { padding: var(--space-4); }
+    .exception-list, .proof-list { display: grid; gap: var(--space-2); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+    .exception {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: var(--space-2);
+      padding: var(--space-3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      background: var(--surface-subtle);
+    }
+    .exception-symbol {
+      display: grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--status-warning-bg);
+      color: var(--status-warning-fg);
+      font-weight: 900;
+    }
+    .exception.is-danger .exception-symbol { background: var(--status-danger-bg); color: var(--status-danger-fg); }
+    .exception p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+    .exception strong { display: block; margin-bottom: 2px; color: var(--text-primary); font-size: 14px; }
+
+    .resume-card {
+      padding: var(--space-4);
+      border-inline-start: 3px solid var(--status-info-fg);
+      background: var(--status-info-bg);
+      color: var(--status-info-fg);
+    }
+    .resume-card p { margin-bottom: var(--space-3); color: inherit; }
+    .resume-card .eyebrow { color: inherit; }
+
+    .proof-panel { padding: var(--space-4); }
+    .proof-list li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-2);
+      align-items: center;
+      padding-block: var(--space-2);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .proof-list li:first-child { border-top: 0; }
+    .proof-name { display: grid; }
+    .proof-name strong { font-size: 14px; }
+    .proof-name span { color: var(--text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+
+    .operational-note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-inline-start: 3px solid var(--status-info-fg);
+      border-radius: var(--radius-card);
+      background: var(--status-info-bg);
+      color: var(--status-info-fg);
+    }
+    .operational-note p { margin: 0; color: inherit; }
+
+    .mobile-nav { display: none; }
+
+    @media (max-width: 1250px) {
+      .page { padding-inline: var(--space-6); }
+      .work-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+      .queue-row { grid-template-columns: 64px minmax(200px, 1fr) minmax(210px, .9fr) auto; }
+      .stay { display: none; }
+    }
+
+    @media (max-width: 1000px) {
+      .app-shell { grid-template-columns: 72px minmax(0, 1fr); }
+      .work-rail { align-items: center; padding-inline: var(--space-2); }
+      .brand-copy, .rail-label, .rail-text, .rail-count, .rail-filter-list, .shift-card { display: none; }
+      .brand { padding: 0; }
+      .rail-nav a { grid-template-columns: 20px; justify-content: center; width: 48px; padding: var(--space-2); border-inline-start: 0; border-bottom: 3px solid transparent; }
+      .rail-nav a[aria-current="page"] { border-bottom-color: var(--primary); }
+      .work-grid { grid-template-columns: minmax(0, 1fr); }
+      .side-stack { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .side-panel, .proof-panel, .resume-card { min-width: 0; }
+    }
+
+    @media (max-width: 760px) {
+      .app-shell { display: block; }
+      .work-rail { display: none; }
+      .topbar { position: static; padding: var(--space-3) var(--space-4); }
+      .topbar-copy span { display: none; }
+      .topbar-actions > .button { display: none; }
+      .theme-button { min-height: 40px; }
+      .page { gap: var(--space-4); padding: var(--space-4) var(--space-4) 88px; }
+      .page-heading { align-items: start; }
+      .page-heading .button { width: 100%; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metric { padding: var(--space-3); }
+      .metric strong { font-size: 26px; }
+      .panel-header { align-items: start; padding: var(--space-3); }
+      .filter-row { width: 100%; }
+      .filter { min-height: 44px; flex: 1; }
+      .queue-caption { padding-inline: var(--space-3); }
+      .queue-row {
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: var(--space-2) var(--space-3);
+        padding: var(--space-3);
+      }
+      .arrival-time { grid-row: 1 / span 2; align-self: start; }
+      .guest { grid-column: 2; }
+      .status-stack { grid-column: 2; }
+      .row-action { grid-column: 2; justify-self: stretch; }
+      .row-action .button { width: 100%; min-height: 44px; }
+      .side-stack { grid-template-columns: minmax(0, 1fr); }
+      .queue-footer { padding-inline: var(--space-3); }
+      .mobile-nav {
+        display: grid;
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 10;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-1);
+        padding: var(--space-1);
+        border-top: 1px solid var(--border-subtle);
+        background: var(--surface-raised);
+        box-shadow: var(--elevation-2);
+      }
+      .mobile-nav a {
+        display: grid;
+        min-height: 52px;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: var(--radius-control);
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .mobile-nav a[aria-current="page"] { border-color: var(--primary); background: var(--selection-bg); color: var(--text-primary); }
+    }
+
+    @media (max-width: 430px) {
+      .metrics { grid-template-columns: minmax(0, 1fr); }
+      .theme-button { padding-inline: 8px; font-size: 13px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="work-rail" aria-label="Arbeitsnavigation">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span class="brand-copy"><strong>Hotel Rheinland</strong><span>ERP · Empfang Bad Orb</span></span>
+      </div>
+
+      <nav aria-label="Empfangsbereiche">
+        <p class="rail-label">Empfang</p>
+        <div class="rail-nav">
+          <a href="#heute" aria-current="page"><span aria-hidden="true">◷</span><span class="rail-text">Heute</span><span class="rail-count">17</span></a>
+          <a href="#ankuenfte"><span aria-hidden="true">↳</span><span class="rail-text">Ankünfte</span><span class="rail-count">8</span></a>
+          <a href="#"><span aria-hidden="true">←</span><span class="rail-text">Abreisen</span><span class="rail-count">6</span></a>
+          <a href="#"><span aria-hidden="true">▦</span><span class="rail-text">Zimmerplan</span></a>
+          <a href="#"><span aria-hidden="true">⌕</span><span class="rail-text">Gäste</span></a>
+        </div>
+      </nav>
+
+      <section aria-labelledby="queue-filter-label">
+        <p class="rail-label" id="queue-filter-label">Ankunftsfilter</p>
+        <div class="rail-filter-list">
+          <button class="rail-filter" type="button" aria-pressed="true"><span aria-hidden="true">●</span><span>Alle Ankünfte</span><span class="rail-count">8</span></button>
+          <button class="rail-filter" type="button" aria-pressed="false"><span aria-hidden="true">!</span><span>Mit Prüfung</span><span class="rail-count">3</span></button>
+          <button class="rail-filter" type="button" aria-pressed="false"><span aria-hidden="true">✓</span><span>Anreisebereit</span><span class="rail-count">4</span></button>
+          <button class="rail-filter" type="button" aria-pressed="false"><span aria-hidden="true">↻</span><span>Fortsetzen</span><span class="rail-count">1</span></button>
+        </div>
+      </section>
+
+      <section class="shift-card" aria-label="Aktiver Schichtkontext">
+        <strong>Frühschicht · 07:00–15:00</strong>
+        <span>Mara Keller · Rezeption</span>
+        <span>28 von 33 Zimmern belegt</span>
+      </section>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-copy">
+          <strong>Hotel Rheinland · Bad Orb</strong>
+          <span>Freitag, 14. August 2026 · Frühschicht</span>
+        </div>
+        <div class="topbar-actions">
+          <button class="button" type="button">Gast suchen <span class="shortcut" aria-hidden="true">⌘ K</span></button>
+          <div class="theme-switch" role="group" aria-label="Farbschema der Vorschau">
+            <button class="theme-button" type="button" data-theme-choice="light" aria-pressed="false">Hell</button>
+            <button class="theme-button" type="button" data-theme-choice="dark" aria-pressed="false">Dunkel</button>
+            <button class="theme-button" type="button" data-theme-choice="auto" aria-pressed="true">Auto</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="page" id="heute">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">Rezeption · Schichtübersicht</p>
+            <h1>Heute am Empfang</h1>
+            <p class="lede">Der nächste Gast, fehlende Nachweise und genau ein nächster Schritt bleiben im Blick — auch wenn mehrere Ankünfte gleichzeitig eintreffen.</p>
+          </div>
+          <button class="button button-primary" type="button">Nächste Ankunft öffnen</button>
+        </header>
+
+        <section class="metrics" aria-label="Tageskennzahlen">
+          <article class="metric"><span class="metric-label">Ankünfte</span><strong>8</strong><span class="metric-detail">3 vor 14:00 Uhr</span></article>
+          <article class="metric"><span class="metric-label">Abreisen</span><strong>6</strong><span class="metric-detail">2 Rechnungen offen</span></article>
+          <article class="metric"><span class="metric-label">Im Haus</span><strong>41</strong><span class="metric-detail">28 Zimmer belegt</span></article>
+          <article class="metric"><span class="metric-label">Klärfälle</span><strong>3</strong><span class="metric-detail">Meldeschein oder Kurtaxe</span></article>
+        </section>
+
+        <div class="work-grid">
+          <section class="panel" id="ankuenfte" aria-labelledby="arrivals-title">
+            <header class="panel-header">
+              <div>
+                <h2 id="arrivals-title">Ankunftswarteschlange</h2>
+                <p class="panel-subtitle">Zeit · Gast · Zimmer · Nachweis oder Blocker · nächster Schritt</p>
+              </div>
+              <div class="filter-row" aria-label="Filter der Ankunftswarteschlange">
+                <button class="filter" type="button" aria-pressed="true">Alle 8</button>
+                <button class="filter" type="button" aria-pressed="false">Prüfen 3</button>
+                <button class="filter" type="button" aria-pressed="false">Bereit 4</button>
+              </div>
+            </header>
+
+            <div class="queue-caption"><strong>Fokus: nächste erwartete Ankunft</strong><span>Auswahl und Filter bleiben beim Öffnen eines Nachweises erhalten.</span></div>
+
+            <ol class="queue-list">
+              <li class="queue-row is-selected">
+                <div class="arrival-time"><time datetime="2026-08-14T13:30">13:30</time><span>in 18 Min.</span></div>
+                <div class="guest"><strong>Dr. Wilhelmine Schlotterbeck-von der Mühlen</strong><span><span class="reservation">R-260814-21</span> · 2 Personen</span></div>
+                <div class="stay">Zimmer 21<br>4 Nächte</div>
+                <div class="status-stack"><span class="status status-warning">Meldeschein prüfen</span><span class="status-detail">PDF erzeugt · Unterschrift fehlt · nicht übermittelt</span></div>
+                <div class="row-action"><button class="button button-primary button-compact" type="button">Check-in fortsetzen</button></div>
+              </li>
+
+              <li class="queue-row">
+                <div class="arrival-time"><time datetime="2026-08-14T14:00">14:00</time><span>heute</span></div>
+                <div class="guest"><strong>Aylin Kaya</strong><span><span class="reservation">R-260814-12</span> · 1 Person</span></div>
+                <div class="stay">Zimmer 12<br>7 Nächte</div>
+                <div class="status-stack"><span class="status status-success">Anreisebereit</span><span class="status-detail">Pflichtangaben und lokale Nachweise vollständig</span></div>
+                <div class="row-action"><button class="button button-primary button-compact" type="button">Einchecken</button></div>
+              </li>
+
+              <li class="queue-row">
+                <div class="arrival-time"><time datetime="2026-08-14T14:15">14:15</time><span>heute</span></div>
+                <div class="guest"><strong>Hans-Peter Baumgärtner</strong><span><span class="reservation">R-260814-07</span> · 2 Personen</span></div>
+                <div class="stay">Zimmer 7<br>3 Nächte</div>
+                <div class="status-stack"><span class="status status-danger">Kurtaxe klären</span><span class="status-detail">Befreiung angegeben · Nachweis fehlt · Abschluss blockiert</span></div>
+                <div class="row-action"><button class="button button-compact" type="button">Nachweis prüfen</button></div>
+              </li>
+
+              <li class="queue-row">
+                <div class="arrival-time"><time datetime="2026-08-14T16:30">16:30</time><span>spät</span></div>
+                <div class="guest"><strong>Familie Özdemir-Kowalski</strong><span><span class="reservation">R-260814-31</span> · 2 Erwachsene, 1 Kind</span></div>
+                <div class="stay">Zimmer 31<br>5 Nächte</div>
+                <div class="status-stack"><span class="status status-info">PDF erzeugt</span><span class="status-detail">Meldeschein-Vorschau vorhanden · keine externe Übermittlung belegt</span></div>
+                <div class="row-action"><button class="button button-compact" type="button">Details öffnen</button></div>
+              </li>
+            </ol>
+
+            <footer class="queue-footer"><span>4 weitere Ankünfte nach 17:00 Uhr</span><button class="button button-compact" type="button">Alle 8 Ankünfte anzeigen</button></footer>
+          </section>
+
+          <aside class="side-stack" aria-label="Prüfungen und Nachweise">
+            <section class="panel side-panel" aria-labelledby="exceptions-title">
+              <p class="eyebrow">Aktiv prüfen</p>
+              <h2 id="exceptions-title">Kurort-Ausnahmen</h2>
+              <p class="panel-subtitle">Drei Vorgänge brauchen eine Entscheidung vor Abschluss.</p>
+              <ul class="exception-list">
+                <li class="exception is-danger"><span class="exception-symbol" aria-hidden="true">!</span><div><strong>Zimmer 7 · Kurtaxe</strong><p>Befreiungsnachweis fehlt. Berechnung und Abschluss bleiben blockiert.</p></div></li>
+                <li class="exception"><span class="exception-symbol" aria-hidden="true">!</span><div><strong>Zimmer 21 · Meldeschein</strong><p>PDF ist erzeugt, die Unterschrift fehlt. Nicht als übermittelt kennzeichnen.</p></div></li>
+                <li class="exception"><span class="exception-symbol" aria-hidden="true">!</span><div><strong>Zimmer 18 · Rechnung</strong><p>Zwei Positionen sind noch offen. Vor Abreise gemeinsam prüfen.</p></div></li>
+              </ul>
+            </section>
+
+            <section class="panel resume-card" aria-labelledby="resume-title">
+              <p class="eyebrow">Wiederaufnahme · 12:48</p>
+              <h2 id="resume-title">Ein Gespräch wartet.</h2>
+              <p><strong>Emil Wagner · Zimmer 18</strong><br>Schritt 2 von 4 · Meldeschein-Angaben prüfen.</p>
+              <button class="button" type="button">Fortsetzung öffnen</button>
+            </section>
+
+            <section class="panel proof-panel" aria-labelledby="proof-title">
+              <p class="eyebrow">Ausgewählte Ankunft</p>
+              <h2 id="proof-title">Nachweise · Zimmer 21</h2>
+              <ul class="proof-list">
+                <li><span class="proof-name"><strong>Meldeschein PDF</strong><span>meldeschein_R-260814-21.pdf</span></span><span class="status status-info">Erzeugt</span></li>
+                <li><span class="proof-name"><strong>Unterschrift</strong><span>Vor Abschluss erforderlich</span></span><span class="status status-warning">Fehlt</span></li>
+                <li><span class="proof-name"><strong>Kurkarte</strong><span>Vorschau, keine Geräteausgabe belegt</span></span><span class="status status-info">Vorschau</span></li>
+              </ul>
+              <button class="button" type="button">Nachweise öffnen <span class="shortcut" aria-hidden="true">F8</span></button>
+            </section>
+          </aside>
+        </div>
+
+        <aside class="operational-note" aria-label="Hinweis zur Statuswahrheit">
+          <span aria-hidden="true">i</span>
+          <p><strong>Statuswahrheit:</strong> „Erzeugt“ bedeutet in dieser Ansicht, dass ein lokaler Output existiert. Es bedeutet nicht automatisch unterschrieben, übermittelt, zugestellt, installiert, bezahlt oder rechtlich final.</p>
+        </aside>
+      </main>
+
+      <nav class="mobile-nav" aria-label="Mobile Arbeitsnavigation">
+        <a href="#heute" aria-current="page">Heute</a>
+        <a href="#ankuenfte">Ankünfte</a>
+        <a href="#exceptions-title">Prüfen</a>
+      </nav>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const buttons = document.querySelectorAll('[data-theme-choice]');
+
+      function chooseTheme(choice) {
+        if (choice === 'auto') root.removeAttribute('data-theme');
+        else root.setAttribute('data-theme', choice);
+
+        buttons.forEach(function (button) {
+          button.setAttribute('aria-pressed', String(button.dataset.themeChoice === choice));
+        });
+      }
+
+      buttons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          chooseTheme(button.dataset.themeChoice);
+        });
+      });
+    }());
+  </script>
+</body>
+</html>
