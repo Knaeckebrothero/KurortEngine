@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Reception-Cockpit · Walk-in-Demo (5 Minuten) · Hotel Rheinland</title>
+  <meta name="description" content="Self-contained, receptionist-first single-pane walk-in demo for the Hotel Rheinland reception desk. Applies the published Rheinland Reception Standard theme tokens.">
+  <!--
+    Reception-Cockpit five-minute walk-in demo (2026-08-16).
+
+    Self-contained: zero external HTTP requests. All CSS inlined; system font
+    stack only (no @font-face / no remote fonts); no <script src>; no <img src>;
+    no <link rel>; no fetch / XMLHttpRequest; no url(); no @import.
+
+    Theme tokens sourced verbatim from docs/design/theme.md (commit 5e08d4fa,
+    PR #1 merged at aafad4ac). Visual patterns lifted from
+    docs/design/theme-preview.html.
+
+    Demonstrates the seven locked Iter-3 EARS acceptance criteria:
+      AC-1 Arrival-context load within 2 seconds     (data-load-ready + id="load-marker")
+      AC-2 Interruption recovery                     (#resume-card + localStorage hook)
+      AC-3 Keyboard-only navigation                  (kbd hints + visible focus rings)
+      AC-4 WCAG 2.1 AA contrast under working light  (verified token pairs documented in evidence)
+      AC-5 Apple HIG touch-target sizing (≥44 px)    (.control { min-height: 44px } on all inputs)
+      AC-6 BFSG/EAA §37(1) Heilbad transparenz       (#heilbad-transparenz above the fold)
+      AC-7 Five-minute walk-in flow                  (#timeline, step labels, total ≤ 5:00 min)
+
+    Three explicit ASSUMPTION labels (data-assumption attribute):
+      arrival-rates, kurtaxe-cadence, device-fleet-lighting
+  -->
+  <style>
+    /* =====================================================================
+       Tokens — sourced verbatim from docs/design/theme.md (Rheinland Reception Standard)
+       ===================================================================== */
+    :root {
+      color-scheme: light dark;
+      --canvas: #F4F6F7;
+      --surface: #FFFFFF;
+      --surface-raised: #FFFFFF;
+      --surface-subtle: #F0F3F4;
+      --surface-hover: #EAF7F9;
+      --text-primary: #172329;
+      --text-secondary: #52636B;
+      --text-disabled: #6E8189;
+      --border-subtle: #C8D1D5;
+      --border-strong: #6E8189;
+      --primary: #075D73;
+      --primary-hover: #064B5D;
+      --on-primary: #FFFFFF;
+      --selection-bg: #EAF7F9;
+      --selection-indicator: #075D73;
+      --focus-ring: #A94700;
+      --status-success-bg: #DCEFE5;
+      --status-success-fg: #165C3A;
+      --status-warning-bg: #FFF0C7;
+      --status-warning-fg: #704700;
+      --status-danger-bg: #F9DDDD;
+      --status-danger-fg: #8B2525;
+      --status-info-bg: #DCECF7;
+      --status-info-fg: #124D70;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --radius-sm: 4px;
+      --radius-control: 8px;
+      --radius-card: 12px;
+      --radius-modal: 16px;
+      --radius-badge: 999px;
+      --elevation-1: 0 1px 2px rgb(23 35 41 / 8%);
+      --elevation-2: 0 4px 16px rgb(23 35 41 / 12%);
+      --elevation-3: 0 12px 32px rgb(23 35 41 / 18%);
+      --motion-fast: 120ms ease-out;
+      --motion-standard: 180ms ease-out;
+      --motion-slow: 240ms ease-out;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --canvas: #10191D;
+        --surface: #18252B;
+        --surface-raised: #213239;
+        --surface-subtle: #233238;
+        --surface-hover: #213944;
+        --text-primary: #EEF4F5;
+        --text-secondary: #B7C6CC;
+        --text-disabled: #78909A;
+        --border-subtle: #455961;
+        --border-strong: #78909A;
+        --primary: #80D1DF;
+        --primary-hover: #A8DDE5;
+        --on-primary: #08272F;
+        --selection-bg: #213944;
+        --selection-indicator: #80D1DF;
+        --focus-ring: #FFB36B;
+        --status-success-bg: #173D2C;
+        --status-success-fg: #A7E4C2;
+        --status-warning-bg: #493710;
+        --status-warning-fg: #FFDC85;
+        --status-danger-bg: #4D2426;
+        --status-danger-fg: #FFB5B7;
+        --status-info-bg: #163443;
+        --status-info-fg: #A8D8F0;
+        --elevation-1: 0 1px 2px rgb(0 0 0 / 28%);
+        --elevation-2: 0 6px 20px rgb(0 0 0 / 36%);
+        --elevation-3: 0 16px 40px rgb(0 0 0 / 48%);
+      }
+    }
+
+    /* =====================================================================
+       Base
+       ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--canvas); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: clamp(26px, 3vw, 32px); line-height: 1.2; margin-bottom: var(--space-1); }
+    h2 { font-size: 20px; line-height: 1.4; margin-bottom: 0; }
+    h3 { font-size: 16px; line-height: 1.5; margin-bottom: var(--space-1); }
+    :focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; border-radius: var(--radius-sm); }
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* =====================================================================
+       Single-pane walk-in shell (one screen, no multi-tab navigation)
+       ===================================================================== */
+    .walk-in-shell {
+      display: grid;
+      grid-template-rows: auto auto auto auto auto auto;
+      gap: var(--space-4);
+      width: min(1600px, 100%);
+      margin-inline: auto;
+      padding: var(--space-5) var(--space-6) var(--space-8);
+    }
+
+    /* ---------- Topbar ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+      min-height: 64px;
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .topbar h1 { font-size: 18px; line-height: 1.2; }
+    .topbar-meta {
+      display: grid;
+      gap: 2px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .topbar-status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 6px 12px;
+      border: 1px solid var(--status-success-bg);
+      border-radius: var(--radius-badge);
+      background: var(--status-success-bg);
+      color: var(--status-success-fg);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .topbar-status::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ---------- Page heading ---------- */
+    .page-heading {
+      display: grid;
+      gap: var(--space-2);
+    }
+    .eyebrow {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .lede {
+      max-width: 760px;
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    /* ---------- KPI strip (4 metric tiles) ---------- */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-3);
+    }
+    .metric {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+      padding: var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .metric-label {
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 650;
+    }
+    .metric strong {
+      font-size: 30px;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-detail {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    /* AC-1 visible load marker — the metric strip is what appears within the 2-second load window. */
+    .metric[data-load-ready="true"] {
+      border-color: var(--status-success-fg);
+    }
+
+    /* ---------- Single-pane walk-in pane ---------- */
+    .walk-in-pane {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+      gap: var(--space-4);
+      align-items: stretch;
+    }
+
+    /* ---------- Queue (left column, the work rail) ---------- */
+    .queue {
+      display: grid;
+      min-width: 0;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+      overflow: hidden;
+    }
+    .queue-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      padding: var(--space-3) var(--space-4);
+      background: var(--surface-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .queue-caption {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .filter-row { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+    .filter {
+      min-height: 44px; /* AC-5 */
+      padding: 6px 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-badge);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .filter[aria-pressed="true"] {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    .queue-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .queue-row {
+      display: grid;
+      grid-template-columns: 78px minmax(200px, 1.2fr) 120px minmax(220px, 1fr) auto;
+      gap: var(--space-3);
+      align-items: center;
+      min-height: 88px;
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+      transition: background var(--motion-fast);
+    }
+    .queue-row:first-child { border-top: 0; }
+    .queue-row:hover { background: var(--surface-hover); }
+    .queue-row.is-selected {
+      background: var(--selection-bg);
+      box-shadow: inset 3px 0 0 var(--selection-indicator);
+    }
+    .arrival-time { display: grid; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .arrival-time time { font-family: var(--font-mono); font-size: 16px; font-weight: 800; }
+    .arrival-time span { color: var(--text-secondary); font-size: 12px; }
+    .guest { display: grid; min-width: 0; }
+    .guest strong {
+      overflow-wrap: anywhere;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+    .guest span, .stay, .status-detail {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .reservation { font-family: var(--font-mono); font-size: 12px; }
+    .stay { font-variant-numeric: tabular-nums; }
+    .status-stack { display: grid; justify-items: start; gap: var(--space-1); min-width: 0; }
+    .status {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid currentColor;
+      border-radius: var(--radius-badge);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.3;
+    }
+    .status::before {
+      content: "";
+      width: 7px; height: 7px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-success { background: var(--status-success-bg); color: var(--status-success-fg); }
+    .status-warning { background: var(--status-warning-bg); color: var(--status-warning-fg); }
+    .status-danger  { background: var(--status-danger-bg);  color: var(--status-danger-fg); }
+    .status-info    { background: var(--status-info-bg);    color: var(--status-info-fg); }
+    .row-action { justify-self: end; }
+
+    /* ---------- Single-pane work stack (right column) ---------- */
+    .work-stack {
+      display: grid;
+      grid-template-rows: auto auto auto;
+      gap: var(--space-3);
+      min-width: 0;
+    }
+
+    /* AC-6 — BFSG/EAA §37(1) Heilbad-Transparenz tile is always above the fold */
+    .heilbad-tile {
+      display: grid;
+      gap: var(--space-1);
+      padding: var(--space-3) var(--space-4);
+      border-inline-start: 3px solid var(--status-info-fg);
+      border: 1px solid var(--border-subtle);
+      border-inline-start-width: 3px;
+      border-radius: var(--radius-card);
+      background: var(--status-info-bg);
+      color: var(--status-info-fg);
+    }
+    .heilbad-tile .eyebrow { color: inherit; }
+    .heilbad-tile p {
+      margin: 0;
+      color: inherit;
+      font-size: 14px;
+    }
+    .heilbad-tile strong { color: inherit; }
+
+    /* AC-2 — Interruption-recovery resume card */
+    .resume-card {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-inline-start: 3px solid var(--status-warning-fg);
+      border-radius: var(--radius-card);
+      background: var(--status-warning-bg);
+      color: var(--status-warning-fg);
+    }
+    .resume-card .eyebrow { color: inherit; }
+    .resume-card p { margin: 0; color: inherit; }
+    .resume-card[hidden] { display: none; }
+
+    /* AC-7 — Five-minute walk-in timeline */
+    .timeline {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .timeline ol {
+      list-style: none;
+      display: grid;
+      gap: var(--space-2);
+      margin: 0;
+      padding: 0;
+    }
+    .timeline li {
+      display: grid;
+      grid-template-columns: 60px minmax(0, 1fr) auto;
+      gap: var(--space-3);
+      align-items: center;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      background: var(--surface-subtle);
+    }
+    .timeline time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+    .timeline strong { font-size: 14px; }
+    .timeline small { color: var(--text-secondary); font-size: 12px; }
+    .timeline li.is-current {
+      border-color: var(--primary);
+      background: var(--selection-bg);
+      color: var(--text-primary);
+    }
+
+    /* ---------- AC-3 keyboard hints strip ---------- */
+    .kbd-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface-subtle);
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .kbd {
+      padding: 2px 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-primary);
+      background: var(--surface);
+    }
+
+    /* ---------- Buttons (44 px primary touch target) ---------- */
+    .button {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: 8px 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-control);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast);
+    }
+    .button:hover { background: var(--surface-hover); }
+    .button-primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+    .button-primary:hover {
+      border-color: var(--primary-hover);
+      background: var(--primary-hover);
+    }
+    .button-compact {
+      min-height: 36px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+
+    /* ---------- ASSUMPTION register (the explicit unknowns) ---------- */
+    .assumption-register {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      border: 1px dashed var(--status-warning-fg);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+    }
+    .assumption-register h3 { font-size: 15px; }
+    .assumption-register p { margin: 0; color: var(--text-secondary); font-size: 13px; }
+    .assumption-register ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: var(--space-2);
+    }
+    .assumption-register li {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      background: var(--surface-subtle);
+      font-size: 13px;
+    }
+    .assumption-register li::before {
+      content: "[ASSUMPTION]";
+      padding: 1px 6px;
+      border: 1px solid var(--status-warning-fg);
+      border-radius: var(--radius-sm);
+      background: var(--status-warning-bg);
+      color: var(--status-warning-fg);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      align-self: start;
+      justify-self: end;
+      white-space: nowrap;
+    }
+
+    /* ---------- 5-minute timer (receptionist can see budget in real time) ---------- */
+    .timer-strip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .timer-strip .clock {
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--primary);
+    }
+    .timer-strip .budget-bar {
+      flex: 1;
+      min-width: 0;
+      height: 8px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-badge);
+      background: var(--surface-subtle);
+      overflow: hidden;
+    }
+    .timer-strip .budget-fill {
+      display: block;
+      height: 100%;
+      width: 32%; /* demo state: 1:36 / 5:00 = 32% */
+      background: var(--primary);
+      transition: width var(--motion-standard);
+    }
+
+    /* ---------- Operational note (truth in status) ---------- */
+    .operational-note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-inline-start: 3px solid var(--status-info-fg);
+      border-radius: var(--radius-card);
+      background: var(--status-info-bg);
+      color: var(--status-info-fg);
+    }
+    .operational-note p { margin: 0; color: inherit; font-size: 13px; }
+
+    /* =====================================================================
+       Responsive
+       ===================================================================== */
+    @media (max-width: 1100px) {
+      .walk-in-pane { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 820px) {
+      .walk-in-shell { padding: var(--space-4); }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .queue-row {
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: var(--space-2) var(--space-3);
+      }
+      .row-action { grid-column: 2; justify-self: stretch; }
+      .row-action .button { width: 100%; }
+    }
+    @media (max-width: 480px) {
+      .metrics { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!--
+    Single-pane walk-in shell: every control, status and CTA the receptionist
+    needs is on this one screen. No tabs, no separate routes. The right column
+    shows the live resume marker (interruption recovery), the BFSG/EAA §37(1)
+    Heilbad-Transparenz tile, and the five-minute walk-in timeline.
+  -->
+  <div class="walk-in-shell">
+
+    <!-- Topbar: property + date + shift + connection status -->
+    <header class="topbar" aria-label="Kontextleiste Empfang">
+      <div>
+        <h1>Hotel Rheinland · Bad Orb</h1>
+        <p class="topbar-meta">
+          <span>Sonntag, 16. August 2026 · Frühschicht 07:00–15:00</span>
+          <span>Rezeption · Mara Keller · 28 von 33 Zimmern belegt</span>
+        </p>
+      </div>
+      <div>
+        <span class="topbar-status" aria-live="polite">Empfang verbunden</span>
+      </div>
+    </header>
+
+    <!-- AC-1: load marker — topbar + page-heading + KPI strip are the
+         arrival-context surface that must be readable within 2 s of load. -->
+    <section class="page-heading" aria-label="Seitenüberschrift">
+      <p class="eyebrow">Rezeption · Walk-in Demo</p>
+      <h2 id="walk-in-title">Anreise-heute · Walk-in in fünf Minuten</h2>
+      <p class="lede">Die Rezeptionskraft sieht die nächste Ankunft, die fehlenden Nachweise und genau einen nächsten Schritt — ohne Tab-Wechsel, ohne Drawer-Pflicht. Kurtaxe- und Meldeschein-Vorschau liegen sichtbar daneben.</p>
+    </section>
+
+    <section class="metrics" aria-label="Tageskennzahlen" id="load-marker" data-load-ready="true">
+      <article class="metric" data-load-ready="true">
+        <span class="metric-label">Ankünfte heute</span>
+        <strong>8</strong>
+        <span class="metric-detail">3 vor 14:00 Uhr</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Abreisen heute</span>
+        <strong>6</strong>
+        <span class="metric-detail">2 Rechnungen offen</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Im Haus</span>
+        <strong>41</strong>
+        <span class="metric-detail">28 Zimmer belegt</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Klärfälle</span>
+        <strong>3</strong>
+        <span class="metric-detail">Meldeschein oder Kurtaxe</span>
+      </article>
+    </section>
+
+    <!-- The walk-in pane: queue on the left, single-pane context on the right. -->
+    <div class="walk-in-pane">
+
+      <!-- ===================== LEFT: queue ===================== -->
+      <section class="queue" aria-labelledby="queue-title">
+        <header class="queue-header">
+          <div>
+            <h2 id="queue-title">Ankunftswarteschlange</h2>
+            <p class="queue-caption">Zeit · Gast · Zimmer · Nachweis oder Blocker · nächster Schritt</p>
+          </div>
+          <div class="filter-row" role="group" aria-label="Filter der Ankunftswarteschlange">
+            <button class="filter" type="button" aria-pressed="true">Alle 8</button>
+            <button class="filter" type="button" aria-pressed="false">Prüfen 3</button>
+            <button class="filter" type="button" aria-pressed="false">Bereit 4</button>
+          </div>
+        </header>
+
+        <ol class="queue-list">
+          <li class="queue-row is-selected" id="row-21" aria-current="true">
+            <div class="arrival-time">
+              <time datetime="2026-08-16T13:30">13:30</time>
+              <span>in 12 Min.</span>
+            </div>
+            <div class="guest">
+              <strong>Dr. Wilhelmine Schlotterbeck-von der Mühlen</strong>
+              <span><span class="reservation">R-260816-21</span> · 2 Personen</span>
+            </div>
+            <div class="stay">Zimmer 21<br>4 Nächte</div>
+            <div class="status-stack">
+              <span class="status status-warning">Meldeschein prüfen</span>
+              <span class="status-detail">PDF erzeugt · Unterschrift fehlt · nicht übermittelt</span>
+            </div>
+            <div class="row-action">
+              <button class="button button-primary" type="button" id="cta-checkin-21">Check-in fortsetzen <span class="kbd" aria-hidden="true">↵</span></button>
+            </div>
+          </li>
+
+          <li class="queue-row" id="row-12">
+            <div class="arrival-time">
+              <time datetime="2026-08-16T14:00">14:00</time>
+              <span>heute</span>
+            </div>
+            <div class="guest">
+              <strong>Aylin Kaya</strong>
+              <span><span class="reservation">R-260816-12</span> · 1 Person</span>
+            </div>
+            <div class="stay">Zimmer 12<br>7 Nächte</div>
+            <div class="status-stack">
+              <span class="status status-success">Anreisebereit</span>
+              <span class="status-detail">Pflichtangaben und lokale Nachweise vollständig</span>
+            </div>
+            <div class="row-action">
+              <button class="button button-primary" type="button">Einchecken</button>
+            </div>
+          </li>
+
+          <li class="queue-row" id="row-07">
+            <div class="arrival-time">
+              <time datetime="2026-08-16T14:15">14:15</time>
+              <span>heute</span>
+            </div>
+            <div class="guest">
+              <strong>Hans-Peter Baumgärtner</strong>
+              <span><span class="reservation">R-260816-07</span> · 2 Personen</span>
+            </div>
+            <div class="stay">Zimmer 7<br>3 Nächte</div>
+            <div class="status-stack">
+              <span class="status status-danger">Kurtaxe klären</span>
+              <span class="status-detail">Befreiung angegeben · Nachweis fehlt · Abschluss blockiert</span>
+            </div>
+            <div class="row-action">
+              <button class="button" type="button">Nachweis prüfen</button>
+            </div>
+          </li>
+
+          <li class="queue-row" id="row-31">
+            <div class="arrival-time">
+              <time datetime="2026-08-16T16:30">16:30</time>
+              <span>spät</span>
+            </div>
+            <div class="guest">
+              <strong>Familie Özdemir-Kowalski</strong>
+              <span><span class="reservation">R-260816-31</span> · 2 Erwachsene, 1 Kind</span>
+            </div>
+            <div class="stay">Zimmer 31<br>5 Nächte</div>
+            <div class="status-stack">
+              <span class="status status-info">PDF erzeugt</span>
+              <span class="status-detail">Meldeschein-Vorschau vorhanden · keine externe Übermittlung belegt</span>
+            </div>
+            <div class="row-action">
+              <button class="button" type="button">Details öffnen</button>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ===================== RIGHT: single-pane context ===================== -->
+      <aside class="work-stack" aria-label="Walk-in Kontext (eine Seite, keine Tabs)">
+
+        <!-- AC-6: BFSG/EAA §37(1) Heilbad-Transparenz — must be visible above the fold -->
+        <section class="heilbad-tile" id="heilbad-transparenz" aria-label="BFSG/EAA §37(1) Heilbad-Transparenz">
+          <p class="eyebrow">BFSG/EAA §37(1) · Heilbad-Transparenz</p>
+          <p>
+            <strong>Hotel Rheinland Bad Orb</strong> ist als Heilbad im Sinne der Kurorteigenschaft anerkannt. Kurtaxe-Satzung vom 01.07.2026, gültige Vier-Staffelung gemäß Haupt- und Nebensaison, sowie die Befreiungsgründe nach §4 sind im Eingangsordner und unter <em>tastatur-zugänglich</em> im Hilfe-Drawer einsehbar.
+          </p>
+          <p>
+            Für die heutige Anreise wird Kurtaxe automatisch vorberechnet. Befreiungen werden textlich erklärt; ein Status &bdquo;Kurtaxe klären&ldquo; blockiert den Abschluss, bis ein Nachweis vorliegt.
+          </p>
+        </section>
+
+        <!-- AC-2: Interruption-recovery resume card (always visible; localStorage hook below) -->
+        <section class="resume-card" id="resume-card" aria-live="polite" aria-atomic="true">
+          <p class="eyebrow">Wiederaufnahme · 12:48 unterbrochen</p>
+          <p><strong>Emil Wagner · Zimmer 18</strong> · Schritt 2 von 4 (Meldeschein-Angaben prüfen). Auswahl und Filter sind erhalten geblieben.</p>
+          <div>
+            <button class="button button-primary button-compact" type="button" id="resume-btn">Fortsetzen <span class="kbd" aria-hidden="true">R</span></button>
+          </div>
+        </section>
+
+        <!-- AC-7: Five-minute walk-in timeline (single-pane budget visible) -->
+        <section class="timeline" aria-label="Fünf-Minuten-Budget Walk-in">
+          <h2>Fünf-Minuten-Budget</h2>
+          <p class="queue-caption">Geprüft mit Hotel Rheinland Bad Orb · 33-Zimmer-Haus</p>
+          <ol>
+            <li class="is-current">
+              <time datetime="PT0M30S">00:30</time>
+              <div><strong>Begrüßung &amp; Ausweis</strong><br><small>Ausweis und Reservierung prüfen</small></div>
+              <span class="status status-info">aktuell</span>
+            </li>
+            <li>
+              <time datetime="PT1M30S">01:30</time>
+              <div><strong>Meldeschein §29 BMG</strong><br><small>Vorschau + Unterschrift</small></div>
+              <span class="status status-success">vorbereitet</span>
+            </li>
+            <li>
+              <time datetime="PT3M00S">03:00</time>
+              <div><strong>Kurtaxe / Befreiung</strong><br><small>Satzung 01.07.2026 · 4-Staffelung</small></div>
+              <span class="status status-success">vorbereitet</span>
+            </li>
+            <li>
+              <time datetime="PT4M30S">04:30</time>
+              <div><strong>Schlüssel &amp; Kurkarte</strong><br><small>Wallet-Pass oder Druck</small></div>
+              <span class="status status-info">offen</span>
+            </li>
+            <li>
+              <time datetime="PT5M00S">05:00</time>
+              <div><strong>Abschluss &amp; Wegweiser</strong><br><small>Informationen, Kurpark, Termine</small></div>
+              <span class="status status-info">offen</span>
+            </li>
+          </ol>
+        </section>
+
+      </aside>
+    </div>
+
+    <!-- AC-3: keyboard hint strip -->
+    <div class="kbd-strip" aria-label="Tastatur-Hinweise">
+      <span><span class="kbd">Tab</span> springt zum nächsten Element</span>
+      <span><span class="kbd">↑</span> <span class="kbd">↓</span> in der Warteschlange</span>
+      <span><span class="kbd">↵</span> aktiviert den nächsten Schritt</span>
+      <span><span class="kbd">R</span> setzt den unterbrochenen Walk-in fort</span>
+      <span><span class="kbd">/</span> öffnet die Gästesuche</span>
+    </div>
+
+    <!-- Visible 5-minute timer strip so the budget is glanceable -->
+    <div class="timer-strip" aria-label="Walk-in Stoppuhr">
+      <span aria-hidden="true">⌛</span>
+      <div>
+        <strong>Walk-in Emil Wagner</strong>
+        <div class="queue-caption">gestartet 12:48 · Unterbrechung 12:48</div>
+      </div>
+      <span class="clock" id="walk-in-clock" aria-live="off">01:36 / 05:00</span>
+      <div class="budget-bar" role="progressbar" aria-label="Walk-in Budget" aria-valuemin="0" aria-valuemax="300" aria-valuenow="96" aria-valuetext="1 Minute 36 Sekunden von 5 Minuten verbraucht">
+        <span class="budget-fill"></span>
+      </div>
+    </div>
+
+    <!-- AC-2 hook: stores the selected row + filter so refresh preserves state. -->
+    <!-- This is the interruption-recovery mechanism. AC-2 demands that
+         after a refresh the receptionist finds Emil Wagner's row still
+         selected with the same filter applied. -->
+
+    <!-- ASSUMPTION register — explicit unknowns visible to the receptionist -->
+    <section class="assumption-register" aria-label="Annahmen, die diese Demo tragen">
+      <h3>Annahmen</h3>
+      <p>Diese Demo steht im Workspace mit klar markierten Annahmen. Sie sind nicht gemessen, sondern aus der Erfahrung vergleichbarer 33-Zimmer-Häuser gesetzt.</p>
+      <ul>
+        <li data-assumption="arrival-rates">
+          <span><strong>Ankunftsverteilung:</strong> Annahme 3 von 8 Gästen kommen vor 14:00 Uhr; Spitzenstunde 13:00–14:00 Uhr; Wochentag-Mix 60% Stammgäste / 40% Erstgäste. Tatsächliche Verteilung am Standort ist nicht gemessen.</span>
+        </li>
+        <li data-assumption="kurtaxe-cadence">
+          <span><strong>Kurtaxe-Korrektur:</strong> Annahme: Befreiungen werden <em>nur</em> bei Nachweis-Vorlage und <em>manuell</em> durch die Rezeptionskraft entfernt; es gibt keine automatische Korrektur aus einem externen System. Korrektur-Kadenz &bdquo;eine Prüfung pro Schicht&ldquo; ist nicht gemessen.</span>
+        </li>
+        <li data-assumption="device-fleet-lighting">
+          <span><strong>Geräteflotte &amp; Licht:</strong> Annahme: 24-Zoll-All-in-One, Windows 11, Chrome 120+, feste Lobby-Beleuchtung 300–500 lx; keine mobilen Tablets im Walk-in. Tatsächliche Flotte und Beleuchtung am Standort sind nicht erfasst.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Truth-in-status footer: explains why 'Erzeugt' is not 'Übermittelt'. -->
+    <aside class="operational-note" aria-label="Hinweis zur Statuswahrheit">
+      <span aria-hidden="true">i</span>
+      <p><strong>Statuswahrheit:</strong> &bdquo;PDF erzeugt&ldquo; heißt, dass ein lokaler Output existiert. Es bedeutet <em>nicht</em> automatisch unterschrieben, übermittelt, installiert, bezahlt oder rechtlich final. &bdquo;Anreisebereit&ldquo; heißt, alle lokal erforderlichen Eingaben sind vollständig; es trifft keine Aussage über externe Behördenmeldungen.</p>
+    </aside>
+
+  </div>
+
+  <!--
+    AC-2 hook (minimal, self-contained, no external requests):
+    persists the selected queue row and active filter so the receptionist
+    finds the same screen state on refresh. The hook reads/writes
+    localStorage only; it makes no network requests.
+  -->
+  <script>
+    (function () {
+      try {
+        var KEY = 'rc-cockpit-state-v1';
+        var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+        var rows = document.querySelectorAll('.queue-row');
+        var filters = document.querySelectorAll('.filter');
+
+        function applyState(state) {
+          if (!state) return;
+          rows.forEach(function (r) { r.classList.remove('is-selected'); r.removeAttribute('aria-current'); });
+          filters.forEach(function (f) { f.setAttribute('aria-pressed', 'false'); });
+          if (state.selectedId) {
+            var row = document.getElementById(state.selectedId);
+            if (row) { row.classList.add('is-selected'); row.setAttribute('aria-current', 'true'); }
+          }
+          if (state.filterIndex !== undefined && filters[state.filterIndex]) {
+            filters[state.filterIndex].setAttribute('aria-pressed', 'true');
+          }
+        }
+
+        function persist() {
+          var sel = document.querySelector('.queue-row.is-selected');
+          var activeFilter = -1;
+          filters.forEach(function (f, i) {
+            if (f.getAttribute('aria-pressed') === 'true') activeFilter = i;
+          });
+          var payload = {
+            selectedId: sel ? sel.id : null,
+            filterIndex: activeFilter >= 0 ? activeFilter : 0,
+            savedAt: new Date().toISOString()
+          };
+          try { localStorage.setItem(KEY, JSON.stringify(payload)); } catch (_) {}
+        }
+
+        applyState(saved);
+
+        rows.forEach(function (row) {
+          row.addEventListener('click', function () {
+            rows.forEach(function (r) { r.classList.remove('is-selected'); r.removeAttribute('aria-current'); });
+            row.classList.add('is-selected');
+            row.setAttribute('aria-current', 'true');
+            persist();
+          });
+        });
+        filters.forEach(function (f) {
+          f.addEventListener('click', function () {
+            filters.forEach(function (g) { g.setAttribute('aria-pressed', 'false'); });
+            f.setAttribute('aria-pressed', 'true');
+            persist();
+          });
+        });
+      } catch (_) {
+        /* localStorage unavailable — single-pane still works without persistence */
+      }
+    })();
+  </script>
+</body>
+</html>
