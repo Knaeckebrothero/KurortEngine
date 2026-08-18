@@ -1,0 +1,80 @@
+# KurortEngine — .dockerignore
+# Excludes files that must NOT be copied into the Docker build context.
+# Keeps the image small and prevents accidental leakage of secrets or
+# development artefacts into the production image.
+
+# Git metadata
+.git
+.gitignore
+.gitattributes
+
+# Virtualenv and local Python site-packages — the image installs the
+# package from pyproject.toml + src/; it must not include the host's
+# .venv, lib/, or lib64/ directories.
+.venv
+venv
+env
+lib
+lib64
+
+# Test suite — the image is a runtime artefact, not a test runner.
+tests/
+test/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+
+# Test artefacts and reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.tox/
+.nox/
+.cache
+
+# Editor and IDE state
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Project documentation that is NOT served by the container
+# (the container only serves docs/design/reception-cockpit-demo.html).
+# Excluding the rest keeps the image lean.
+docs/avv_kaskade/
+docs/ui-research/
+docs/PROVENANCE.md
+
+# Output artefacts (the smoke report and coverage reports are not shipped
+# in the image; they are operator-side documents, not runtime data).
+output/
+
+# Local configuration overrides — must never leak into the image.
+*.local.yaml
+*.secret.yaml
+*.local.yml
+*.secret.yml
+.env
+.env.local
+.env.*.local
+
+# Build / packaging artefacts
+*.egg-info/
+build/
+dist/
+*.egg
+
+# CI / CD configuration
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Plan and note files (operator runbook is copied explicitly via Dockerfile)
+plan.md
+PLAN.md
+*.md.local

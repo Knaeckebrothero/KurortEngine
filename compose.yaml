@@ -1,0 +1,49 @@
+# KurortEngine — single-service Docker Compose deployment.
+#
+# Up:      docker compose up -d
+# Health:  curl -fsS http://localhost:${PORT:-8080}/healthz
+# Logs:    docker compose logs kurort-engine
+# Down:    docker compose down
+#
+# NO secrets: block (the application has no secret values; the design
+# contract forbids it). NO environment: block with secret values. The only
+# runtime configuration is the PORT override, defaulted to 8080.
+
+services:
+  kurort-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kurortengine:dev
+    container_name: kurort-engine
+    restart: unless-stopped
+    ports:
+      # Honour the operator's $PORT override; default to 8080 to match the
+      # spec's done_when contract and the server's default bind port.
+      - "${PORT:-8080}:8080"
+    volumes:
+      # Named volume for any future persistent state. Currently the engine
+      # is a static-demo + health-check service and writes nothing here, but
+      # the volume is declared so an operator can attach it to a real
+      # data path later without editing this file.
+      - kurort-engine-data:/var/lib/kurort-engine
+    healthcheck:
+      # /healthz returns 200 OK with body 'ok\n'. The probe uses only
+      # the Python stdlib so no extra packages are pulled into the image.
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz',timeout=2).read()==b'ok\\n' else 1)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    # No environment: block with secret values. The server reads $PORT
+    # internally; the host-level port mapping above is the only knob.
+
+volumes:
+  kurort-engine-data:
+    # Named volume. Anonymous volumes are forbidden by the spec to keep
+    # the data path predictable across `docker compose down && up` cycles.
+    driver: local
