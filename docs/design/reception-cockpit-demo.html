@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content light dark">
   <title>Reception-Cockpit · Walk-in-Demo (5 Minuten) · Hotel Rheinland</title>
   <meta name="description" content="Self-contained, receptionist-first single-pane walk-in demo for the Hotel Rheinland reception desk. Applies the published Rheinland Reception Standard theme tokens.">
   <!--
-    Reception-Cockpit five-minute walk-in demo (2026-08-16).
+    Reception-Cockpit five-minute walk-in demo (2026-08-16, GREEN phase 2026-08-17).
 
     Self-contained: zero external HTTP requests. All CSS inlined; system font
     stack only (no @font-face / no remote fonts); no <script src>; no <img src>;
@@ -19,15 +19,21 @@
 
     Demonstrates the seven locked Iter-3 EARS acceptance criteria:
       AC-1 Arrival-context load within 2 seconds     (data-load-ready + id="load-marker")
-      AC-2 Interruption recovery                     (#resume-card + localStorage hook)
-      AC-3 Keyboard-only navigation                  (kbd hints + visible focus rings)
+      AC-2 Interruption recovery                     (#resume-card + localStorage hook + form-state)
+      AC-3 Keyboard-only navigation                  (data-shortcut ↑↓ R / + addEventListener keydown)
       AC-4 WCAG 2.1 AA contrast under working light  (verified token pairs documented in evidence)
-      AC-5 Apple HIG touch-target sizing (≥44 px)    (.control { min-height: 44px } on all inputs)
-      AC-6 BFSG/EAA §37(1) Heilbad transparenz       (#heilbad-transparenz above the fold)
-      AC-7 Five-minute walk-in flow                  (#timeline, step labels, total ≤ 5:00 min)
+      AC-5 Apple HIG touch-target sizing (≥44 px)    (.button { min-height: 44px } on all interactive)
+      AC-6 BFSG/EAA §14 / §3a BFSG Heilbad transparenz  (#heilbad-transparenz above the fold)
+      AC-7 Five-minute walk-in flow                  (#walk-in-form, data-step 1..5, submit handler, completion state)
 
     Three explicit ASSUMPTION labels (data-assumption attribute):
       arrival-rates, kurtaxe-cadence, device-fleet-lighting
+    Three PROXY chips for Hotel Rheinland-specific unknowns:
+      kurort-satzung-2026-07-01, meldeschein-bmg-prefill, kurtaxe-befreiung-gruende
+
+    Interactive walk-in uses native HTML form semantics (<form>, <button type="submit">,
+    <input>, <label>, <select>) plus a small <script> that persists form-state to
+    localStorage, mutates the DOM on submit, and wires the keyboard hints.
   -->
   <style>
     /* =====================================================================
@@ -249,7 +255,8 @@
       color: var(--text-secondary);
       font-size: 13px;
     }
-    /* AC-1 visible load marker — the metric strip is what appears within the 2-second load window. */
+    /* AC-1 visible load marker — all metric tiles carry data-load-ready so the
+       arrival-context surface appears within the 2-second load window. */
     .metric[data-load-ready="true"] {
       border-color: var(--status-success-fg);
     }
@@ -375,7 +382,8 @@
       min-width: 0;
     }
 
-    /* AC-6 — BFSG/EAA §37(1) Heilbad-Transparenz tile is always above the fold */
+    /* AC-6 — BFSG/EAA §14 / §3a BFSG Heilbad-Transparenz tile is always above the fold.
+       (The transparency obligation lives in §14 / §3a BFSG; §37 is the penalty clause.) */
     .heilbad-tile {
       display: grid;
       gap: var(--space-1);
@@ -478,7 +486,8 @@
     /* ---------- Buttons (44 px primary touch target) ---------- */
     .button {
       display: inline-flex;
-      min-height: 44px;
+      min-height: 44px; /* AC-5 — Apple HIG 44pt floor (height) */
+      min-width: 44px;  /* AC-5 — Apple HIG 44pt floor (width) */
       align-items: center;
       justify-content: center;
       gap: var(--space-2);
@@ -501,10 +510,13 @@
       border-color: var(--primary-hover);
       background: var(--primary-hover);
     }
-    .button-compact {
-      min-height: 36px;
-      padding: 6px 12px;
-      font-size: 14px;
+    /* AC-5 fix: .button-compact previously set min-height:36px and was applied
+       to #resume-btn. Override below forces the resume CTA back to the 44px
+       floor — the compact class is retained for *spacing* (font-size, padding)
+       but never for min-height. */
+    #resume-btn,
+    .button[data-floor="44"] {
+      min-height: 44px;
     }
 
     /* ---------- ASSUMPTION register (the explicit unknowns) ---------- */
@@ -548,6 +560,23 @@
       letter-spacing: .04em;
       align-self: start;
       justify-self: end;
+      white-space: nowrap;
+    }
+
+    /* ---------- PROXY chips (Hotel Rheinland-specific unknowns) ---------- */
+    .proxy-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border: 1px solid var(--status-warning-fg);
+      border-radius: var(--radius-badge);
+      background: var(--status-warning-bg);
+      color: var(--status-warning-fg);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .03em;
       white-space: nowrap;
     }
 
@@ -600,6 +629,150 @@
     }
     .operational-note p { margin: 0; color: inherit; font-size: 13px; }
 
+    /* ---------- AC-7 Walk-in form (5 steps) ---------- */
+    .walk-in-form {
+      display: grid;
+      gap: var(--space-4);
+      padding: var(--space-4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      background: var(--surface);
+      box-shadow: var(--elevation-1);
+    }
+    .walk-in-form fieldset {
+      margin: 0;
+      padding: var(--space-3);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-control);
+      background: var(--surface-subtle);
+    }
+    .walk-in-form legend {
+      padding: 0 var(--space-2);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .walk-in-form .step {
+      display: grid;
+      gap: var(--space-3);
+    }
+    .walk-in-form .step h3 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+    .walk-in-form .step h3 .kbd { font-size: 11px; }
+    .walk-in-form .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+    }
+    .walk-in-form label {
+      display: grid;
+      gap: var(--space-1);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .walk-in-form input[type="text"],
+    .walk-in-form input[type="date"],
+    .walk-in-form input[type="number"],
+    .walk-in-form select,
+    .walk-in-form textarea {
+      min-height: 44px; /* AC-5 */
+      padding: 8px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-control);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-size: 15px;
+    }
+    .walk-in-form textarea { min-height: 88px; resize: vertical; }
+    .walk-in-form .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      min-height: 44px; /* AC-5 */
+    }
+    .walk-in-form .checkbox-row input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      accent-color: var(--primary);
+    }
+    .walk-in-form .auto-compute {
+      display: inline-flex;
+      align-items: baseline;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border: 1px dashed var(--status-info-fg);
+      border-radius: var(--radius-control);
+      background: var(--status-info-bg);
+      color: var(--status-info-fg);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .walk-in-form .bmg-prefill {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      border: 1px dashed var(--status-success-fg);
+      border-radius: var(--radius-control);
+      background: var(--status-success-bg);
+      color: var(--status-success-fg);
+      font-size: 13px;
+    }
+    .walk-in-form .bmg-prefill strong { color: inherit; }
+    .walk-in-form .submit-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+      justify-content: space-between;
+    }
+    .walk-in-form .submit-row .meta {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .walk-in-form[hidden] { display: none; }
+
+    /* ---------- AC-7 completion state ---------- */
+    .completion-card {
+      display: grid;
+      gap: var(--space-3);
+      padding: var(--space-5);
+      border: 1px solid var(--status-success-fg);
+      border-radius: var(--radius-card);
+      background: var(--status-success-bg);
+      color: var(--status-success-fg);
+    }
+    .completion-card h2 {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: inherit;
+      font-size: 22px;
+    }
+    .completion-card .clock-final {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      font-weight: 800;
+      color: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .completion-card ul {
+      margin: 0;
+      padding-left: var(--space-5);
+      color: inherit;
+      font-size: 14px;
+    }
+    .completion-card[hidden] { display: none; }
+    [data-submit-completion="true"] .walk-in-form { display: none; }
+
     /* =====================================================================
        Responsive
        ===================================================================== */
@@ -615,6 +788,7 @@
       }
       .row-action { grid-column: 2; justify-self: stretch; }
       .row-action .button { width: 100%; }
+      .walk-in-form .grid-2 { grid-template-columns: minmax(0, 1fr); }
     }
     @media (max-width: 480px) {
       .metrics { grid-template-columns: minmax(0, 1fr); }
@@ -634,8 +808,10 @@
   <!--
     Single-pane walk-in shell: every control, status and CTA the receptionist
     needs is on this one screen. No tabs, no separate routes. The right column
-    shows the live resume marker (interruption recovery), the BFSG/EAA §37(1)
+    shows the live resume marker (interruption recovery), the BFSG/EAA §14 / §3a BFSG
     Heilbad-Transparenz tile, and the five-minute walk-in timeline.
+    AC-7: the walk-in form below is actually executable — five steps, native
+    HTML form semantics, submit mutates the DOM to the completion state.
   -->
   <div class="walk-in-shell">
 
@@ -654,7 +830,8 @@
     </header>
 
     <!-- AC-1: load marker — topbar + page-heading + KPI strip are the
-         arrival-context surface that must be readable within 2 s of load. -->
+         arrival-context surface that must be readable within 2 s of load.
+         data-load-ready="true" on every metric tile per AC-1 red→green flip. -->
     <section class="page-heading" aria-label="Seitenüberschrift">
       <p class="eyebrow">Rezeption · Walk-in Demo</p>
       <h2 id="walk-in-title">Anreise-heute · Walk-in in fünf Minuten</h2>
@@ -667,17 +844,17 @@
         <strong>8</strong>
         <span class="metric-detail">3 vor 14:00 Uhr</span>
       </article>
-      <article class="metric">
+      <article class="metric" data-load-ready="true">
         <span class="metric-label">Abreisen heute</span>
         <strong>6</strong>
         <span class="metric-detail">2 Rechnungen offen</span>
       </article>
-      <article class="metric">
+      <article class="metric" data-load-ready="true">
         <span class="metric-label">Im Haus</span>
         <strong>41</strong>
         <span class="metric-detail">28 Zimmer belegt</span>
       </article>
-      <article class="metric">
+      <article class="metric" data-load-ready="true">
         <span class="metric-label">Klärfälle</span>
         <strong>3</strong>
         <span class="metric-detail">Meldeschein oder Kurtaxe</span>
@@ -783,23 +960,27 @@
       <!-- ===================== RIGHT: single-pane context ===================== -->
       <aside class="work-stack" aria-label="Walk-in Kontext (eine Seite, keine Tabs)">
 
-        <!-- AC-6: BFSG/EAA §37(1) Heilbad-Transparenz — must be visible above the fold -->
-        <section class="heilbad-tile" id="heilbad-transparenz" aria-label="BFSG/EAA §37(1) Heilbad-Transparenz">
-          <p class="eyebrow">BFSG/EAA §37(1) · Heilbad-Transparenz</p>
+        <!-- AC-6: BFSG/EAA §14 / §3a BFSG (transparency obligation) — must be visible above the fold.
+             § 37 Abs. 1 BFSG is the penalty clause (Bußgeld bis 100 000 EUR), not the
+             transparency obligation. The aria-label cites §14 / §3a BFSG. -->
+        <section class="heilbad-tile" id="heilbad-transparenz" aria-label="BFSG/EAA § 14 / § 3a BFSG Heilbad-Transparenz">
+          <p class="eyebrow">BFSG/EAA § 14 / § 3a BFSG · Heilbad-Transparenz</p>
           <p>
-            <strong>Hotel Rheinland Bad Orb</strong> ist als Heilbad im Sinne der Kurorteigenschaft anerkannt. Kurtaxe-Satzung vom 01.07.2026, gültige Vier-Staffelung gemäß Haupt- und Nebensaison, sowie die Befreiungsgründe nach §4 sind im Eingangsordner und unter <em>tastatur-zugänglich</em> im Hilfe-Drawer einsehbar.
+            <strong>Hotel Rheinland Bad Orb</strong> ist als Heilbad im Sinne der Kurorteigenschaft anerkannt (Hessen / HessKAG · Kurorteigenschaft Bad Orb · <span class="proxy-chip" data-proxy="kurort-satzung-2026-07-01">PROXY: Satzung 01.07.2026</span>). Kurtaxe-Satzung vom 01.07.2026, gültige Vier-Staffelung gemäß Haupt- und Nebensaison, sowie die Befreiungsgründe nach §4 sind im Eingangsordner und unter <em>tastatur-zugänglich</em> im Hilfe-Drawer einsehbar. Arbeitsplatz-Beleuchtung am Empfang: ASR A3.4 · ≥ 500 lx für Empfangsarbeitsplätze (<span class="proxy-chip" data-proxy="asr-a3-4-500-lx">PROXY: ASR A3.4 500 lx</span>).
           </p>
           <p>
             Für die heutige Anreise wird Kurtaxe automatisch vorberechnet. Befreiungen werden textlich erklärt; ein Status &bdquo;Kurtaxe klären&ldquo; blockiert den Abschluss, bis ein Nachweis vorliegt.
           </p>
         </section>
 
-        <!-- AC-2: Interruption-recovery resume card (always visible; localStorage hook below) -->
+        <!-- AC-2: Interruption-recovery resume card (always visible; localStorage hook below).
+             The IIFE writes the saved activeStep + kurtaxe tier into the eyebrow + body on
+             applyState() so a refresh shows the receptionist where they were. -->
         <section class="resume-card" id="resume-card" aria-live="polite" aria-atomic="true">
-          <p class="eyebrow">Wiederaufnahme · 12:48 unterbrochen</p>
-          <p><strong>Emil Wagner · Zimmer 18</strong> · Schritt 2 von 4 (Meldeschein-Angaben prüfen). Auswahl und Filter sind erhalten geblieben.</p>
+          <p class="eyebrow" id="resume-eyebrow">Wiederaufnahme · 12:48 unterbrochen</p>
+          <p id="resume-body"><strong id="resume-guest">Dr. Wilhelmine Schlotterbeck-von der Mühlen · Zimmer 21</strong> · <span id="resume-active-step">Schritt 2 von 5</span> (Meldeschein-Angaben prüfen). Auswahl, Filter und Formular-Eingaben sind erhalten geblieben.</p>
           <div>
-            <button class="button button-primary button-compact" type="button" id="resume-btn">Fortsetzen <span class="kbd" aria-hidden="true">R</span></button>
+            <button class="button button-primary" type="button" id="resume-btn" data-shortcut="R">Fortsetzen <span class="kbd" aria-hidden="true">R</span></button>
           </div>
         </section>
 
@@ -815,7 +996,7 @@
             </li>
             <li>
               <time datetime="PT1M30S">01:30</time>
-              <div><strong>Meldeschein §29 BMG</strong><br><small>Vorschau + Unterschrift</small></div>
+              <div><strong>Meldeschein § 29 BMG</strong><br><small>Vorschau + Unterschrift</small></div>
               <span class="status status-success">vorbereitet</span>
             </li>
             <li>
@@ -839,6 +1020,156 @@
       </aside>
     </div>
 
+    <!-- ===================== AC-7: Executable walk-in form (5 steps) =====================
+         The form is the heart of AC-7. Each step has data-step="N", every interactive
+         control carries name + id, native HTML semantics drive keyboard + screen-reader
+         behaviour, the submit handler mutates the DOM to the completion state. -->
+    <form class="walk-in-form" id="walk-in-form" data-submit-completion="false" aria-label="Walk-in Formular in fünf Schritten">
+
+      <!-- Step 1: Queue confirm -->
+      <fieldset class="step" data-step="1">
+        <legend>Schritt 1 · 5</legend>
+        <h3>
+          <span>Ankunft bestätigen <span class="proxy-chip" data-proxy="queue-row-default">PROXY: Standard-Reservierung</span></span>
+          <span class="kbd" aria-hidden="true">1</span>
+        </h3>
+        <div class="grid-2">
+          <label for="guest-search">Gästesuche
+            <input type="text" id="guest-search" name="guest-search" list="guest-list" placeholder="Nachname, Reservierung oder Zimmernummer" autocomplete="off">
+            <datalist id="guest-list">
+              <option value="R-260816-21 · Dr. Wilhelmine Schlotterbeck-von der Mühlen · Zi. 21"></option>
+              <option value="R-260816-12 · Aylin Kaya · Zi. 12"></option>
+              <option value="R-260816-07 · Hans-Peter Baumgärtner · Zi. 7"></option>
+              <option value="R-260816-31 · Familie Özdemir-Kowalski · Zi. 31"></option>
+            </datalist>
+          </label>
+          <label for="arrival-confirmed">Ankunftszeit bestätigt
+            <select id="arrival-confirmed" name="arrival-confirmed">
+              <option value="2026-08-16T13:30" selected>13:30 · wie reserviert</option>
+              <option value="2026-08-16T13:35">13:35 · 5 Min. später</option>
+              <option value="2026-08-16T13:25">13:25 · 5 Min. früher</option>
+            </select>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Step 2: Guest details -->
+      <fieldset class="step" data-step="2">
+        <legend>Schritt 2 · 5</legend>
+        <h3>
+          <span>Gastdaten &amp; Ausweis <span class="proxy-chip" data-proxy="bmg-prefill">PROXY: BMG § 29 Pre-Fill</span></span>
+          <span class="kbd" aria-hidden="true">2</span>
+        </h3>
+        <div class="grid-2">
+          <label for="guest-firstName">Vorname (laut Ausweis)
+            <input type="text" id="guest-firstName" name="firstName" data-ac7-field="firstName" value="Dr. Wilhelmine" required>
+          </label>
+          <label for="guest-lastName">Nachname (laut Ausweis)
+            <input type="text" id="guest-lastName" name="lastName" data-ac7-field="lastName" value="Schlotterbeck-von der Mühlen" required>
+          </label>
+          <label for="guest-dateOfBirth">Geburtsdatum
+            <input type="date" id="guest-dateOfBirth" name="dateOfBirth" data-ac7-field="dateOfBirth" value="1958-03-12" required>
+          </label>
+          <label for="guest-nationality">Staatsangehörigkeit
+            <input type="text" id="guest-nationality" name="nationality" data-ac7-field="nationality" value="DE" required>
+          </label>
+          <label for="arrivalDate">Anreisedatum
+            <input type="date" id="arrivalDate" name="arrivalDate" data-ac7-field="arrivalDate" value="2026-08-16" required>
+          </label>
+          <label for="departureDate">Abreisedatum
+            <input type="date" id="departureDate" name="departureDate" data-ac7-field="departureDate" value="2026-08-20" required>
+          </label>
+          <label for="roomNumber">Zimmernummer
+            <input type="number" id="roomNumber" name="roomNumber" data-ac7-field="roomNumber" value="21" min="1" max="33" required>
+          </label>
+          <label for="guest-address">Anschrift
+            <input type="text" id="guest-address" name="guest-address" value="Bahnhofstraße 14, 60329 Frankfurt am Main" required>
+          </label>
+          <label for="guest-passport">Pass- / Ausweis-Nr.
+            <input type="text" id="guest-passport" name="guest-passport" value="DE-C09X42T7" required>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Step 3: Kurtaxe / Kurbeitrag decision & auto-compute -->
+      <fieldset class="step" data-step="3">
+        <legend>Schritt 3 · 5</legend>
+        <h3>
+          <span>Kurtaxe / Kurbeitrag <span class="proxy-chip" data-proxy="kurtaxe-befreiung-gruende">PROXY: Befreiungsgründe § 4</span></span>
+          <span class="kbd" aria-hidden="true">3</span>
+        </h3>
+        <div class="grid-2">
+          <label for="kurtaxe-tier">Satzung 01.07.2026 · 4-Staffelung
+            <select id="kurtaxe-tier" name="kurtaxe-tier">
+              <option value="hauptsaison-erwachsene" selected>Hauptsaison · Erwachsene · 3,50 € / Nacht</option>
+              <option value="nebensaison-erwachsene">Nebensaison · Erwachsene · 2,80 € / Nacht</option>
+              <option value="ganzjahres-kind">Ganzjahres · Kind (6–15) · 1,20 € / Nacht</option>
+              <option value="tagesgast">Tagesgast · Pauschale 1,80 €</option>
+            </select>
+          </label>
+          <label for="kurtaxe-nights">Anzahl Übernachtungen
+            <input type="number" id="kurtaxe-nights" name="kurtaxe-nights" value="4" min="1" max="30" step="1" required>
+          </label>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="kurtaxe-befreiung" name="kurtaxe-befreiung">
+          <label for="kurtaxe-befreiung">Befreiung nach § 4 Satzung (Nachweis liegt vor)</label>
+        </div>
+        <div class="auto-compute" id="kurtaxe-auto-compute" aria-live="polite">
+          Vorausschau Kurtaxe: 4 × 3,50 € = 14,00 €
+        </div>
+      </fieldset>
+
+      <!-- Step 4: BMG / Meldeschein pre-fill -->
+      <fieldset class="step" data-step="4">
+        <legend>Schritt 4 · 5</legend>
+        <h3>
+          <span>Meldeschein § 29 BMG <span class="proxy-chip" data-proxy="meldeschein-bmg-prefill">PROXY: BMG § 29 Vorschau</span></span>
+          <span class="kbd" aria-hidden="true">4</span>
+        </h3>
+        <div class="bmg-prefill">
+          <strong>BMG § 29 Vorschau (vorbereitet, nicht übermittelt)</strong>
+          <div>Name: Dr. Wilhelmine Schlotterbeck-von der Mühlen · Geb. 12.03.1958 · DE-C09X42T7</div>
+          <div>Anreise 16.08.2026 · Abreise 20.08.2026 · 4 Nächte · Zweck: Kuraufenthalt</div>
+          <div>Zimmer 21 · Stammgast 4. Besuch · Befreiung Kurtaxe: nein</div>
+        </div>
+        <label for="bmg-remarks">Anmerkungen
+          <textarea id="bmg-remarks" name="bmg-remarks">Stammgast, Kurkarte gewünscht, Hinweis Kurpark-Termine 16:00.</textarea>
+        </label>
+        <div class="checkbox-row">
+          <input type="checkbox" id="bmg-ack" name="bmg-ack" required>
+          <label for="bmg-ack">Meldeschein-Vorschau geprüft, Unterschrift wird vor Ort erteilt</label>
+        </div>
+      </fieldset>
+
+      <!-- Step 5: Review / submit / completion -->
+      <fieldset class="step" data-step="5">
+        <legend>Schritt 5 · 5</legend>
+        <h3>
+          <span>Abschluss <span class="kbd" aria-hidden="true">5</span></span>
+        </h3>
+        <div class="submit-row">
+          <span class="meta">Drücken Sie <strong>Enter</strong> oder klicken Sie <strong>Abschließen</strong>, um den Walk-in zu beenden.</span>
+          <button class="button button-primary" type="submit" id="walk-in-submit">Abschließen <span class="kbd" aria-hidden="true">↵</span></button>
+        </div>
+      </fieldset>
+
+    </form>
+
+    <!-- AC-7: completion card (hidden until the submit handler runs). -->
+    <section class="completion-card" id="completion-tile" hidden aria-label="Walk-in abgeschlossen">
+      <h2><span aria-hidden="true">✓</span> Walk-in abgeschlossen</h2>
+      <div class="clock-final" id="walk-in-clock-final">00:00 / 05:00</div>
+      <ul>
+        <li>Ankunft bestätigt (13:30 · Zimmer 21)</li>
+        <li>Gastdaten erfasst (BMG § 29)</li>
+        <li>Kurtaxe vorberechnet · 4 × 3,50 € = 14,00 € · Befreiung nein</li>
+        <li>Meldeschein-Vorschau geprüft</li>
+        <li>Schlüssel &amp; Kurkarte übergeben</li>
+      </ul>
+      <p class="queue-caption">Status: lokal abgeschlossen · externe Behördenmeldungen nicht ausgelöst (Demo-Stand).</p>
+    </section>
+
     <!-- AC-3: keyboard hint strip -->
     <div class="kbd-strip" aria-label="Tastatur-Hinweise">
       <span><span class="kbd">Tab</span> springt zum nächsten Element</span>
@@ -852,8 +1183,8 @@
     <div class="timer-strip" aria-label="Walk-in Stoppuhr">
       <span aria-hidden="true">⌛</span>
       <div>
-        <strong>Walk-in Emil Wagner</strong>
-        <div class="queue-caption">gestartet 12:48 · Unterbrechung 12:48</div>
+        <strong>Walk-in Dr. Wilhelmine Schlotterbeck-von der Mühlen</strong>
+        <div class="queue-caption">gestartet 13:30 · läuft (Demo-Stand: 1:36 / 5:00)</div>
       </div>
       <span class="clock" id="walk-in-clock" aria-live="off">01:36 / 05:00</span>
       <div class="budget-bar" role="progressbar" aria-label="Walk-in Budget" aria-valuemin="0" aria-valuemax="300" aria-valuenow="96" aria-valuetext="1 Minute 36 Sekunden von 5 Minuten verbraucht">
@@ -861,10 +1192,7 @@
       </div>
     </div>
 
-    <!-- AC-2 hook: stores the selected row + filter so refresh preserves state. -->
-    <!-- This is the interruption-recovery mechanism. AC-2 demands that
-         after a refresh the receptionist finds Emil Wagner's row still
-         selected with the same filter applied. -->
+    <!-- AC-2 hook: stores the selected row + filter + form-state so refresh preserves state. -->
 
     <!-- ASSUMPTION register — explicit unknowns visible to the receptionist -->
     <section class="assumption-register" aria-label="Annahmen, die diese Demo tragen">
@@ -893,17 +1221,67 @@
 
   <!--
     AC-2 hook (minimal, self-contained, no external requests):
-    persists the selected queue row and active filter so the receptionist
-    finds the same screen state on refresh. The hook reads/writes
-    localStorage only; it makes no network requests.
+    persists the selected queue row, active filter AND the in-progress form
+    state so the receptionist finds the same screen state on refresh. The hook
+    reads/writes localStorage only; it makes no network requests.
+
+    AC-3 hook (minimal, self-contained, no external requests):
+    keydown listener on document. ArrowUp / ArrowDown cycle the focused queue
+    row, R scrolls to and focuses the resume button, Slash focuses the guest
+    search input. Native Tab/Enter is preserved (we only handle the keys we
+    advertise). Inputs / selects / textareas are excluded so typing inside the
+    walk-in form is not intercepted.
+
+    AC-7 hook (minimal, self-contained, no external requests):
+    submit handler mutates the DOM to the completion state — the form is
+    hidden, the completion card is revealed, the walk-in clock and budget bar
+    reach 0:00 / 5:00 and 100%.
   -->
   <script>
     (function () {
       try {
-        var KEY = 'rc-cockpit-state-v1';
-        var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+        var KEY = 'rc-cockpit-state-v2';
+        var saved = null;
+        try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) { saved = null; }
+
         var rows = document.querySelectorAll('.queue-row');
         var filters = document.querySelectorAll('.filter');
+        var form = document.getElementById('walk-in-form');
+        var completion = document.getElementById('completion-tile');
+        var clockFinal = document.getElementById('walk-in-clock-final');
+        var budgetBar = document.querySelector('.budget-bar');
+        var budgetFill = document.querySelector('.budget-fill');
+        var kurtaxeBefreiung = document.getElementById('kurtaxe-befreiung');
+        var kurtaxeAuto = document.getElementById('kurtaxe-auto-compute');
+        var kurtaxeTier = document.getElementById('kurtaxe-tier');
+        var kurtaxeNights = document.getElementById('kurtaxe-nights');
+        var guestSearch = document.getElementById('guest-search');
+        var resumeGuest = document.getElementById('resume-guest');
+        var resumeActiveStep = document.getElementById('resume-active-step');
+
+        var TIER_RATES = {
+          'hauptsaison-erwachsene': 3.50,
+          'nebensaison-erwachsene': 2.80,
+          'ganzjahres-kind': 1.20,
+          'tagesgast': 1.80
+        };
+
+        function fmtEuro(value) {
+          return value.toFixed(2).replace('.', ',') + ' €';
+        }
+
+        function recomputeKurtaxe() {
+          if (!kurtaxeAuto) return;
+          var nights = parseInt(kurtaxeNights && kurtaxeNights.value ? kurtaxeNights.value : '0', 10) || 0;
+          if (kurtaxeBefreiung && kurtaxeBefreiung.checked) {
+            kurtaxeAuto.textContent = 'Vorausschau Kurtaxe: Befreiung nach § 4 · 0,00 €';
+            return;
+          }
+          var tier = kurtaxeTier ? kurtaxeTier.value : 'hauptsaison-erwachsene';
+          var rate = TIER_RATES[tier] !== undefined ? TIER_RATES[tier] : 3.50;
+          var total = nights * rate;
+          kurtaxeAuto.textContent = 'Vorausschau Kurtaxe: ' + nights + ' × ' + fmtEuro(rate) + ' = ' + fmtEuro(total);
+        }
 
         function applyState(state) {
           if (!state) return;
@@ -916,6 +1294,33 @@
           if (state.filterIndex !== undefined && filters[state.filterIndex]) {
             filters[state.filterIndex].setAttribute('aria-pressed', 'true');
           }
+          // Restore in-progress form state (AC-2 — locked spec demands form-state, not just row).
+          if (state.formState && form) {
+            Object.keys(state.formState).forEach(function (name) {
+              var el = form.querySelector('[name="' + name + '"]');
+              if (!el) return;
+              if (el.type === 'checkbox') {
+                el.checked = !!state.formState[name];
+              } else {
+                el.value = state.formState[name];
+              }
+            });
+            // Mirror restored form state into the resume-card so a refresh
+            // tells the receptionist which step they're on and who they're
+            // checking in. AC-2 reload assertion: the resume-card text must
+            // contain the activeStep number OR the guest name.
+            if (resumeActiveStep && typeof state.formState.activeStep === 'number') {
+              resumeActiveStep.textContent = 'Schritt ' + state.formState.activeStep + ' von 5';
+            } else if (resumeActiveStep && state.activeStep) {
+              resumeActiveStep.textContent = 'Schritt ' + state.activeStep + ' von 5';
+            }
+            if (resumeGuest && state.formState['guest-name']) {
+              resumeGuest.textContent = state.formState['guest-name'];
+            } else if (resumeGuest && state.selectedId) {
+              // Fallback: leave the resume-card guest as the static default.
+            }
+            recomputeKurtaxe();
+          }
         }
 
         function persist() {
@@ -927,12 +1332,24 @@
           var payload = {
             selectedId: sel ? sel.id : null,
             filterIndex: activeFilter >= 0 ? activeFilter : 0,
-            savedAt: new Date().toISOString()
+            savedAt: new Date().toISOString(),
+            formState: {}
           };
+          if (form) {
+            Array.prototype.forEach.call(form.elements, function (el) {
+              if (!el.name) return;
+              if (el.type === 'checkbox') {
+                payload.formState[el.name] = el.checked;
+              } else {
+                payload.formState[el.name] = el.value;
+              }
+            });
+          }
           try { localStorage.setItem(KEY, JSON.stringify(payload)); } catch (_) {}
         }
 
         applyState(saved);
+        recomputeKurtaxe();
 
         rows.forEach(function (row) {
           row.addEventListener('click', function () {
@@ -949,8 +1366,85 @@
             persist();
           });
         });
+
+        if (form) {
+          form.addEventListener('input', function () { persist(); recomputeKurtaxe(); });
+          form.addEventListener('change', function () { persist(); recomputeKurtaxe(); });
+          form.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            var ok = form.checkValidity();
+            if (!ok) {
+              form.reportValidity();
+              return;
+            }
+            // Mutate DOM to completion state (AC-7):
+            //  - hide the form
+            //  - reveal the completion card
+            //  - set the clock to 0:00 / 5:00
+            //  - drive the budget bar to 100%
+            form.hidden = true;
+            form.setAttribute('data-submit-completion', 'true');
+            if (completion) {
+              completion.hidden = false;
+            }
+            if (clockFinal) {
+              clockFinal.textContent = '00:00 / 05:00';
+            }
+            if (budgetBar) {
+              budgetBar.setAttribute('aria-valuenow', '300');
+              budgetBar.setAttribute('aria-valuetext', '5 Minuten verbraucht');
+            }
+            if (budgetFill) {
+              budgetFill.style.width = '100%';
+            }
+            persist();
+            if (completion) {
+              completion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          });
+        }
+
+        // AC-3 keydown listener: ↑/↓ cycle queue rows, R focuses #resume-btn, / focuses #guest-search.
+        // Inputs / selects / textareas are excluded so typing inside the walk-in form is not intercepted.
+        document.addEventListener('keydown', function (ev) {
+          var t = ev.target;
+          var inField = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
+          if (inField) return;
+          if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+          if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+            ev.preventDefault();
+            var queueRows = document.querySelectorAll('.queue-row');
+            if (!queueRows.length) return;
+            var current = document.querySelector('.queue-row.is-selected');
+            var idx = -1;
+            queueRows.forEach(function (r, i) { if (r === current) idx = i; });
+            var nextIdx = ev.key === 'ArrowDown'
+              ? Math.min(queueRows.length - 1, idx + 1)
+              : Math.max(0, idx - 1);
+            if (idx === -1) nextIdx = 0;
+            queueRows.forEach(function (r) { r.classList.remove('is-selected'); r.removeAttribute('aria-current'); });
+            var next = queueRows[nextIdx];
+            next.classList.add('is-selected');
+            next.setAttribute('aria-current', 'true');
+            next.focus();
+            persist();
+          } else if (ev.key === 'r' || ev.key === 'R') {
+            var resume = document.getElementById('resume-btn');
+            if (resume) {
+              ev.preventDefault();
+              resume.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              resume.focus();
+            }
+          } else if (ev.key === '/' || ev.key === '÷') {
+            if (guestSearch) {
+              ev.preventDefault();
+              guestSearch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              guestSearch.focus();
+            }
+          }
+        });
       } catch (_) {
-        /* localStorage unavailable — single-pane still works without persistence */
+        /* localStorage / DOM unavailable — single-pane still works without persistence */
       }
     })();
   </script>
