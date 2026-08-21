@@ -49,6 +49,6 @@ USER app
 EXPOSE 8080
 
 # Use exec form so signals (SIGTERM from `docker stop`) reach the process.
-# `python -m kurort_engine` is the canonical entry point; the server module
+# `python -m kurort_engine.server` is the canonical entry point; the server module
 # (src/kurort_engine/server.py) reads $PORT and binds 0.0.0.0:<port>.
-CMD ["python", "-m", "kurort_engine"]
+CMD ["python", "-m", "kurort_engine.server"]

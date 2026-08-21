@@ -1,0 +1,187 @@
+---
+# KurortEngine — PR #3 container entrypoint fix
+# Branch: fix/pr3-container-entrypoint-server-module (stacked on feature/docker-compose-deployment)
+# Base: main @ 439e506
+# Head before fix: feature/docker-compose-deployment @ 28e93ec26b0e1612b6e5e4f31a792f8ec64e26bc
+feature: pr3-entrypoint-fix
+intent: >-
+  Fix the broken default container command on PR #3 so that the deployed
+  KurortEngine image starts the stdlib HTTP server (`python -m
+  kurort_engine.server`) on 0.0.0.0:${PORT:-8080}, instead of the CLI-help
+  invocation `python -m kurort_engine` that prints argparse usage and exits 0.
+  This is a bounded correction: Dockerfile CMD + compose.yaml + new
+  regression test file ONLY. No production code (server.py) edits, no
+  workflow edits, no PR #2 / PR #4 / main edits.
+created: 2026-08-20
+job_id: 6ce5bc4c-b773-4027-b47f-55d5308c92bb
+owner: developer
+dependencies:
+  - "src/kurort_engine/server.py (must already expose serve() at module scope)"
+  - "Dockerfile (must exist on PR #3 head)"
+  - "compose.yaml (must exist on PR #3 head)"
+out_of_scope:
+  - "Refactoring src/kurort_engine/server.py"
+  - "Rewriting the operator runbook docs/ops/docker-compose-deployment.md"
+  - "Adding a `serve` subcommand to src/kurort_engine/__main__.py"
+  - "Modifying .github/workflows/"
+  - "Force-pushing, moving, or rewriting PR #2 / PR #4 / main"
+  - "Replacing the published Reception-Cockpit artefact"
+  - "Introducing new third-party runtime dependencies (FastAPI, uvicorn, ...)"
+  - "Claiming a real container run (runtime unavailable in this sandbox)"
+  - "Pushing directly to main"
+
+## Bounded scenario (verbatim from the kickoff)
+- The published `Dockerfile` ends with
+  `CMD ["python", "-m", "kurort_engine"]`. Because the CLI entry point
+  (`src/kurort_engine/__main__.py`) does NOT register a `serve`
+  subcommand, that command prints argparse usage and exits 0. The HTTP
+  server (`src/kurort_engine/server.py`) is never invoked, no port is
+  bound, and the container's healthcheck at `http://127.0.0.1:8080/healthz`
+  cannot succeed.
+- The published `compose.yaml` has no `command:` override, so the broken
+  Dockerfile CMD is what really runs at container start.
+- The real, already-published HTTP entrypoint is `python -m
+  kurort_engine.server` (per `src/kurort_engine/server.py:__all__` and
+  the module's `serve(host='0.0.0.0', port=int(os.environ.get('PORT',
+  '8080')))`).
+
+## Acceptance criteria (EARS)
+
+- id: AC-E1
+  category: Event-driven
+  statement: >-
+    When the operator runs the published image (or `docker compose up -d`),
+    the container's effective default command MUST invoke the
+    `kurort_engine.server` module such that the imported server's
+    `serve()` is bound on 0.0.0.0:${PORT:-8080}. The effective command
+    MUST NOT be the bare `python -m kurort_engine` invocation that
+    triggers the CLI parser's help-and-exit path.
+  test_oracle: tests/test_pr3_entrypoint_fix.py::test_e1_dockerfile_cmd_targets_server_module_not_cli_help
+  preconditions:
+    - "Worker has read repos/KurortEngine/Dockerfile on feature/docker-compose-deployment HEAD (28e93ec) and computed the failure-mode baseline."
+    - "Dockerfile CMD is in exec form (a JSON array), so the check is purely textual."
+
+- id: AC-E2
+  category: State-driven
+  statement: >-
+    While the effective command is computed from `compose.yaml` (overrides
+    the image's CMD when present), the effective command that
+    `docker compose up` would execute MUST resolve to the
+    `kurort_engine.server` module. That is: either `compose.yaml` carries
+    no `command:` block (in which case the Dockerfile CMD controls) OR
+    any `command:` block present MUST itself invoke the
+    `kurort_engine.server` module — it MUST NOT re-point the deployed
+    command at the CLI-help path.
+  test_oracle: tests/test_pr3_entrypoint_fix.py::test_e2_compose_yaml_effective_command_targets_server
+  preconditions:
+    - "compose.yaml is a YAML document; the test parses it with python stdlib (yaml.safe_load) and inspects the `services.kurort-engine.command` key (if present)."
+
+- id: AC-E3
+  category: Event-driven
+  statement: >-
+    When the same module form the container will use is invoked directly
+    in the workspace (`python -m kurort_engine.server` with `PORT`
+    pointing at an ephemeral port), the server MUST bind on that port,
+    serve `GET /healthz` with HTTP 200 and body `b"ok\n"` (Content-Type
+    `text/plain; charset=utf-8`), AND serve `GET /` with HTTP 200 and a
+    body that begins with the static-demo banner and contains the
+    Reception-Cockpit walk-in artefact's `id="load-marker"` element.
+    The server MUST also emit exactly one startup log line on stdout of
+    the form `kurort-engine serve: listening on 0.0.0.0:<port> (/healthz, /)`.
+  test_oracle: tests/test_pr3_entrypoint_fix.py::test_e3_direct_server_invocation_healthz_and_root
+  preconditions:
+    - "The test binds the server on 127.0.0.1:<ephemeral port> via a worker thread, probes /healthz and / with stdlib urllib.request, captures stdout, and shuts the server down cleanly."
+    - "The test does NOT mock `kurort_engine.server`; it calls the real module."
+
+- id: AC-E4
+  category: Unwanted-behavior
+  statement: >-
+    If the bounded fix touches any of the following, the build is
+    INVALID: `.github/workflows/` (any file), the file tree of PR #2's
+    commits (`feature/reception-cockpit-functional-walk-in`,
+    `0256d6db88bc9c74db4affb5d723dcac964add7d`), the file tree of PR #4's
+    commits (`fix/pr2-reception-cockpit-harness-and-browser-proof`
+    `bea4c6d148f7dd4ad7b9fd0016c75476030beaa7` /
+    `feat/pr4-reception-cockpit-e2e-coverage-follow-up`
+    `ddde0f0`), or the protected `main` branch (`origin/main` at
+    `439e506`). The fix MUST also stay inside the bounded set of files
+    (Dockerfile, compose.yaml, tests/test_pr3_entrypoint_fix.py, and the
+    two spec files under spec/pr3_entrypoint_fix/); diff stat on the
+    follow-up branch MUST show ≤ 5 changed files.
+  test_oracle: tests/test_pr3_entrypoint_fix.py::test_e4_diff_scope_respects_forbidden_edits
+  preconditions:
+    - "Worker runs `git diff --name-only <base>..HEAD` against the integration base and asserts the file list contains only paths under {(Dockerfile, compose.yaml, tests/test_pr3_entrypoint_fix.py, spec/pr3_entrypoint_fix/*)}."
+    - "Worker runs `git rev-parse origin/main` and asserts it equals 439e506."
+    - "Worker runs `git rev-parse origin/feature/reception-cockpit-functional-walk-in` and asserts it equals 0256d6db88bc9c74db4affb5d723dcac964add7d."
+    - "Worker runs `git rev-parse origin/fix/pr2-reception-cockpit-harness-and-browser-proof` and asserts it equals bea4c6d148f7dd4ad7b9fd0016c75476030beaa7."
+    - "Diff-confined assertion runs only on the worker tree if the worker has the follow-up branch checked out; in this sandbox the test asserts the file-list invariant on the staged diff instead."
+
+- id: AC-E5
+  category: Ubiquitous
+  statement: >-
+    The full Python test suite MUST exit 0 with all tests passing
+    while the bounded fix is applied. The suite MUST include the
+    existing 7 PR #3 tests on `feature/docker-compose-deployment`
+    (5 in tests/test_server.py + 2 in tests/test_deployment_artifacts.py)
+    AND the new tests/test_pr3_entrypoint_fix.py (4 tests for
+    AC-E1..AC-E4). The test command MUST be runnable in the
+    container-safe developer workspace (no VM, no container runtime).
+  test_oracle: tests/test_pr3_entrypoint_fix.py::test_e5_full_python_test_suite_passes
+  preconditions:
+    - "Worker runs `python -m pytest tests/ -q` and asserts the exit code is 0 and the summary line contains `passed` (no `failed`, no `error`)."
+
+## Test oracle paths (summary)
+
+- `tests/test_pr3_entrypoint_fix.py::test_e1_dockerfile_cmd_targets_server_module_not_cli_help`
+- `tests/test_pr3_entrypoint_fix.py::test_e2_compose_yaml_effective_command_targets_server`
+- `tests/test_pr3_entrypoint_fix.py::test_e3_direct_server_invocation_healthz_and_root`
+- `tests/test_pr3_entrypoint_fix.py::test_e4_diff_scope_respects_forbidden_edits`
+- `tests/test_pr3_entrypoint_fix.py::test_e5_full_python_test_suite_passes`
+
+## done_when (exact commands that must pass)
+
+The bounded fix is COMPLETE when ALL of the following are true in the
+container-safe developer workspace:
+
+1. `python -m pytest tests/test_pr3_entrypoint_fix.py -x -v` exits 0 with
+   4 tests passed (AC-E1, AC-E2, AC-E3, AC-E4).
+2. `python -m pytest tests/ -q` exits 0 with all tests passed (existing 7
+   PR #3 tests + 4 new tests; AC-E5).
+3. `python -m kurort_engine.server` (invoked with `PORT=<ephemeral>` env)
+   binds on the ephemeral port, accepts `GET /healthz` (200, `ok\n`),
+   accepts `GET /` (200, Reception-Cockpit banner present), and emits
+   exactly one startup log line on stdout of the form
+   `kurort-engine serve: listening on 0.0.0.0:<port> (/healthz, /)`. The
+   server is shut down cleanly with SIGTERM.
+4. `git diff --name-only origin/main..HEAD` shows ≤ 5 files: `Dockerfile`,
+   `compose.yaml`, `tests/test_pr3_entrypoint_fix.py`, `spec/pr3_entrypoint_fix/spec.yaml`,
+   `spec/pr3_entrypoint_fix/spec_lock.md`. NO `__main__.py`, NO `server.py`,
+   NO `.github/workflows/*`.
+5. `git rev-parse origin/main` equals `439e506a` AND
+   `git rev-parse origin/feature/reception-cockpit-functional-walk-in`
+   equals `0256d6db88bc9c74db4affb5d723dcac964add7d` AND
+   `git rev-parse origin/fix/pr2-reception-cockpit-harness-and-browser-proof`
+   equals `bea4c6d148f7dd4ad7b9fd0016c75476030beaa7` AND
+   `git rev-parse origin/feat/pr4-reception-cockpit-e2e-coverage-follow-up`
+   equals `ddde0f0…` (the published head at the time of the fix; recorded
+   at run time).
+6. The follow-up branch is pushed to
+   `origin/fix/pr3-container-entrypoint-server-module` and a stacked PR
+   is opened targeting `feature/docker-compose-deployment`.
+7. `output/kurortengine-pr3-entrypoint-fix-report.md` (workspace-root
+   deliverable) exists and records base/head SHAs, files changed, exact
+   tests + server probes, PR / ref evidence, limitations (no container
+   runtime), and clean-tree proof.
+
+## limitations (must be reported)
+
+- The worker sandbox has no container runtime. Claim AC-E1, AC-E2 in
+  the literal CMD sense (string assertions on `Dockerfile` and
+  `compose.yaml`) and AC-E3 by direct module invocation; do NOT claim a
+  container `docker run` or `docker compose up` as if it were
+  performed on this host.
+- Hosted CI / VM verification of the actual container is a SEPARATE
+  blocked chain and is NOT closed by this job.
+- A push to `origin/fix/pr3-container-entrypoint-server-module` may be
+  REJECTED (e.g. branch protection, missing approval); rejection /
+  NO-OP is recorded verbatim as real evidence.
