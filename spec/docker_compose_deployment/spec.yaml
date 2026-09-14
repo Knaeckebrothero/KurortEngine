@@ -1,0 +1,63 @@
+feature: docker-compose-deployment
+intent: "Ship a self-hostable Docker Compose deployment for KurortEngine that brings up a single stdlib-only HTTP server exposing a health endpoint and the published Reception-Cockpit walk-in artefact (labelled static-demo) on $PORT, with no runtime external-network dependency and no secrets — so an operator can `docker compose up` and curl the service from a small server."
+
+acceptance_criteria:
+  - id: AC-1
+    ears: "Ubiquitous: The kurort_engine HTTP server, when started, shall bind to the socket address (`0.0.0.0`, `${PORT:-8080}`) and accept HTTP/1.1 requests on the routes `/healthz` and `/`; and the server shall not require any environment variable other than `PORT` (default `8080`) to start."
+    test_oracle: tests/test_server.py::test_ac1_server_binds_on_port_and_accepts_two_routes
+  - id: AC-2
+    ears: "Event-driven: When the server receives `GET /healthz`, the server shall respond with status `200 OK`, `Content-Type: text/plain; charset=utf-8`, and body `ok\\n` (exactly two bytes: `o`, `k`, then a newline); and the server shall not emit any other body bytes."
+    test_oracle: tests/test_server.py::test_ac2_healthz_returns_200_ok_body
+  - id: AC-3
+    ears: "Event-driven: When the server receives `GET /`, the server shall respond with status `200 OK`, `Content-Type: text/html; charset=utf-8`, and a body whose first 1024 bytes begin with the static-demo banner prefix containing the literal token `Static demo — published Reception-Cockpit walk-in artefact` and whose remainder contains the canonical marker `id=\"load-marker\"` from the published source artefact `docs/design/reception-cockpit-demo.html`."
+    test_oracle: tests/test_server.py::test_ac3_root_serves_labelled_reception_cockpit_artefact
+  - id: AC-4
+    ears: "State-driven: While the server is running, exactly one startup log line shall be written to stdout of the form `kurort-engine serve: listening on 0.0.0.0:<port> (/healthz, /)` where `<port>` is the actual bound port; and the server shall emit no other stdout/stderr lines during a clean start (no Python traceback, no `DeprecationWarning`)."
+    test_oracle: tests/test_server.py::test_ac4_startup_log_line_on_stdout
+  - id: AC-5
+    ears: "Unwanted-behavior: When the server receives a request whose path is not `/healthz` and not `/` (including `GET /does-not-exist`, `GET /static`, `GET /api/v1/anything`), the server shall respond with status `404 Not Found`, `Content-Type: text/plain; charset=utf-8`, and body `not found\\n`; and the server shall emit no Python traceback to stdout or stderr in any 404 case."
+    test_oracle: tests/test_server.py::test_ac5_unknown_route_returns_404_no_traceback
+  - id: AC-6
+    ears: "Unwanted-behavior: The shipped deployment artifacts shall satisfy four security-and-portability properties simultaneously: (a) `Dockerfile` runs the process as user `app` with UID `65532` (non-root), (b) `compose.yaml` declares no `secrets:` block, (c) the named volume `kurort-engine-data` is mounted at `/var/lib/kurort-engine` inside the container via `compose.yaml`, and (d) the published port mapping is `${PORT:-8080}:8080`."
+    test_oracle: tests/test_deployment_artifacts.py::test_ac6_dockerfile_and_compose_yaml_security_constraints
+  - id: AC-7
+    ears: "State-driven: While the feature branch `feature/docker-compose-deployment` exists in the repository, the shipped delivery contract shall simultaneously satisfy five deployment-hygiene properties: (a) the job artifact `output/kurortengine-deployment-smoke-report.md` exists at the workspace root and contains the branch name, the exact commit SHA, the PR URL, the environment, every verification command with exit code and faithful output, the URLs probed, the logs, the limitations, and clean-tree proof; (b) `.dockerignore` exists at the repository root and excludes `.git`, `.venv`, `tests/`, `__pycache__/`, `*.local.yaml`, `*.secret.yaml`, and at least one entry that prevents the local Python site-packages from being copied into the image; (c) `docs/ops/docker-compose-deployment.md` exists at the repository root and contains an operator runbook with sections for build, start, health probe, human-visible probe, log inspection, and shutdown; (d) the change is committed on a branch whose name is `feature/docker-compose-deployment` (created from current `main` HEAD) and a pull request is open against `main`; (e) the change does NOT depend on or modify the unmerged branch `feature/reception-cockpit-functional-walk-in` (PR #2)."
+    test_oracle: tests/test_deployment_artifacts.py::test_ac7_delivery_contract_artifacts
+
+not_included:
+  - "Modifying the published `docs/design/reception-cockpit-demo.html` artefact (served verbatim with a banner prefix; no in-place edits)."
+  - "Dependence on PR #2 (`feature/reception-cockpit-functional-walk-in`) or any executable walk-in JS — main is the source of truth."
+  - "Database / persistent PostgreSQL / Redis / external service slices (`compose.yaml` runs a single service; no third-party dependencies)."
+  - "Production secrets — `compose.yaml` declares no `secrets:` block and no `environment:` block with secret values."
+  - "External network at runtime — image build may `pip install` from PyPI; the running container must not require outbound network access."
+  - "TLS termination — operators are expected to put the container behind a reverse proxy if they need HTTPS."
+  - "Multi-host / swarm / Kubernetes orchestration — single-host Docker Compose only."
+  - "Re-implementing the CLI subcommands — the container does NOT wrap or re-expose `kurort-engine` over HTTP; the CLI remains terminal-only."
+  - "A live channel-manager connector, a live DATEV export, or any other backend wiring the static Reception-Cockpit HTML does not have."
+  - "Helm charts, k8s manifests, or ArgoCD pipelines."
+  - "axe-core CI audit on the served HTML — that is a separate ticket."
+  - "Resolving the 2 pre-existing test failures from `tests/test_a11y_guest_pwa.py` and `tests/test_audit_isolation.py` — both are out of scope (Documented KurortEngine defects per `README.md` Known issues #1)."
+
+done_when:
+  - "shasum -a 256 spec/docker_compose_deployment/spec.yaml matches the SHA-256 recorded in `spec/docker_compose_deployment/spec_lock.md` PROTECTED block (byte-identical)."
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/test_server.py tests/test_deployment_artifacts.py -v --override-ini=\"addopts=--tb=short\" returns 7+ passed, 0 failed, 0 error, 0 skipped (the 7 AC tests)."
+  - "PYTHONPATH=src .venv/bin/python -m pytest tests/ -q runs and reports no NEW failures beyond the 2 pre-existing audit-log-isolation failures (the documented baseline)."
+  - "PYTHONPATH=src .venv/bin/python -m kurort_engine serve --port 18099 starts a server; a separate `curl -sS http://127.0.0.1:18099/healthz` returns `ok`; `curl -sS http://127.0.0.1:18099/` returns HTML beginning with the static-demo banner; `curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:18099/does-not-exist` returns `404`."
+  - "Dockerfile line `USER app` is present and the `app` user is created with `UID 65532`."
+  - "`compose.yaml` does NOT contain a `secrets:` block."
+  - "`compose.yaml` declares the named volume `kurort-engine-data` mounted at `/var/lib/kurort-engine` inside the `kurort-engine` service."
+  - "`compose.yaml` declares the port mapping `${PORT:-8080}:8080` for the `kurort-engine` service."
+  - "Traceability matrix in `spec_lock.md` shows every AC-* mapped to one passing test or to a `done_when` clause that exercises the contract end-to-end."
+  - "ruff check src/kurort_engine/server.py exits 0 (no lint regressions on the new module)."
+  - "On a host that has Docker / Compose: `docker build -t kurortengine:dev .` exits 0; `docker compose up -d` exits 0; `curl -fsS http://localhost:${PORT:-8080}/healthz` returns `ok`; `curl -fsS http://localhost:${PORT:-8080}/` returns HTML beginning with the static-demo banner; `docker compose logs kurort-engine | head -n 100` shows the startup log line; `docker compose down` exits 0."
+
+assumptions:
+  - "SPEC LOCATION: spec lives at `repo/spec/docker_compose_deployment/spec.yaml` (the package-level convention used by the 8 prior SHIPPED iter-N specs in this repository)."
+  - "Docker availability on the executor host is DECOUPLED from source-artifact shipping. The artifacts ship regardless; the smoke sequence in the deliverable report is recorded faithfully (passes on a host with Docker / BLOCKED on this Kubernetes-pod sandbox without Docker)."
+  - "The published Reception-Cockpit HTML at `docs/design/reception-cockpit-demo.html` is the source of truth for the served human-visible surface. The server serves the file verbatim with a banner prefix; the file itself is not modified."
+  - "stdlib `http.server` is sufficient for the hosted surface: it has no third-party deps, no external network at runtime, runs as any user, and answers HTTP/1.1 on a single thread per requests. We use `ThreadingHTTPServer` so concurrent probes do not block."
+  - "`PORT` is the only environment variable the server reads. Default is 8080. `HOST` is fixed at `0.0.0.0` because the container must be reachable from outside its network namespace."
+  - "The 2 pre-existing test failures (audit-log-isolation) are out of scope; they are documented KurortEngine defects from `README.md` §Known issues #1."
+  - "Operators who need HTTPS terminate TLS at a reverse proxy (Caddy, Traefik, nginx) in front of the container; the container itself is HTTP-only."
+  - "Container-user UID 65532 is the distroless-style non-root ID recommended by Chainguard / distroless base-image guidance; it is high enough to avoid clashing with host UIDs and is uniformly non-zero."
+  - "The `kurort-engine serve` CLI subcommand binds the same module under `python -m kurort_engine` so operators can rehearse locally without Docker."
