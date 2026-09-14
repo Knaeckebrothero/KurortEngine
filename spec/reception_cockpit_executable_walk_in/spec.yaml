@@ -1,0 +1,289 @@
+# =============================================================================
+# spec.yaml — reception-cockpit-executable-walk-in
+# Kurort-vertical Reception-Cockpit demo, made executable as a five-minute
+# German receptionist walk-in flow.
+# Upstream: commit 439e506a (origin/main HEAD) — static-snapshot demo + evidence.
+# Owner: Developer (this job)
+# =============================================================================
+#
+# Background:
+#   * The published demo at docs/design/reception-cockpit-demo.html (958 lines,
+#     commit 439e506a) DOCUMENTS the 7 locked Iter-3 EARS ACs (AC-1..AC-7) but
+#     fails 3 of them: AC-3 keyboard shortcuts advertised-but-unimplemented,
+#     AC-5 resume-card CTA at 36 px (Apple HIG 44 pt floor missed), AC-7
+#     demo is a static snapshot — no walk-in form, no Kurtaxe auto-compute, no
+#     BMG pre-fill, no submit.
+#   * The 4 prior-passing criteria (AC-1 arrival-context <2s, AC-2 interruption
+#     recovery for selected row + filter, AC-4 WCAG 2.1 AA contrast under
+#     working light, AC-6 BFSG-EAA Heilbad-Transparenz above the fold) MUST NOT
+#     regress. Seven-joint rule stands: one FAIL → overall FAIL.
+#   * Three evidence-anchor corrections are folded into the new spec:
+#       (1) Hessen / HessKAG / HKG are the applicable Kurort laws (Bad Orb);
+#       (2) BFSG § 37 Abs. 1 is the PENALTY clause (Bußgeld bis 100 000 EUR),
+#           NOT the transparency obligation — that lives at BFSG-EAA § 14 / § 3a
+#           BFSG implementing EAA Art. 3(2);
+#       (3) ASR A3.4 establishes a 500 lx reception-work floor (the prior
+#           "300–500 lx" range understated the floor).
+#
+# Module surface (this cycle):
+#   * EDIT `docs/design/reception-cockpit-demo.html` — REWRITE only; preserved
+#     theme tokens (verbatim from docs/design/theme.md @ 5e08d4fa), preserved
+#     marker attrs for the 4 passing ACs, NEW walk-in form + steps, NEW JS
+#     handlers (keydown, submit, restore), NEW `<script>` block extension.
+#   * EDIT `docs/design/reception-cockpit-demo-evidence.md` — update AC mapping,
+#     cite corrected anchors (§37 vs §14, ASR A3.4 500 lx, Hessen/HessKAG).
+#   * CREATE `tests/test_reception_cockpit_demo.py` — pure stdlib HTML parser +
+#     DOM-stub JS harness; one pytest function per AC (AC-1..AC-7 = 7 tests).
+#   * CREATE `output/reception-cockpit-runtime-verification.md` — runtime check
+#     report (branch, commit, PR URL, commands run, raw output, per-AC verdict,
+#     residual limitations, clean-tree proof).
+#   * CREATE feature branch `feature/reception-cockpit-functional-walk-in`,
+#     commit, push, open PR against `main`.
+#
+# Anti-drift discipline:
+#   * NO edits to src/kurort_engine/** (the demo is docs/, not src/).
+#   * NO edits to existing tests/** files; the only new test file is
+#     tests/test_reception_cockpit_demo.py.
+#   * NO new theme tokens — every CSS custom property stays sourced verbatim
+#     from docs/design/theme.md (PR #1 → aafad4ac main HEAD).
+#   * NO remote HTTP — `<link rel`, `<script src`, `<img src`, `srcset`,
+#     `fetch(`, `XMLHttpRequest`, `url(`, `@import`, `@font-face` all stay
+#     at zero matches inside the demo HTML.
+# =============================================================================
+
+feature: reception-cockpit-executable-walk-in
+iteration: 1
+owner: developer
+created: 2026-08-17
+predecessor: >-
+  Iter-3 publication at commit 439e506a (origin/main HEAD). Three open
+  HIGH-severity defects filed against that commit:
+  `reception-cockpit-demo-439e506a-ac3-keyboard-shortcuts-unimplemented`,
+  `reception-cockpit-demo-439e506a-ac5-resume-card-cta-36px`, and
+  `reception-cockpit-demo-439e506a-ac7-no-walk-in-flow`. This spec closes
+  all three in one coherent increment and forbids any regression of the
+  four prior-passing ACs (AC-1, AC-2, AC-4, AC-6). The seven-joint rule
+  (`iter-3-reception-cockpit-locked-ears-acceptance-criteria-7-acs`)
+  stands.
+
+# -----------------------------------------------------------------------------
+# intent — one-sentence purpose of the feature
+# -----------------------------------------------------------------------------
+intent: >-
+  Make the published Reception-Cockpit demo at docs/design/reception-cockpit-demo.html
+  an executable five-minute German receptionist walk-in flow (select/open arrival
+  → enter required guest details → Kurtaxe / Kurbeitrag decision or computation
+  using the published Bad Orb rates → BMG / Meldeschein pre-fill → review/submit
+  → completion), implementing the advertised Up/Down queue navigation, `R`
+  resume, and `/` guest-search action, persisting ACTIVE in-progress form state
+  across interruption/reload (not merely selected row), keeping every interactive
+  target at ≥ 44 × 44 CSS px, preserving native Tab/Enter and visible focus,
+  keeping Hotel Rheinland-specific unknowns visibly labelled PROXY/ASSUMPTION,
+  correcting three evidence anchors (Hessen/HessKAG applicability, BFSG § 37
+  penalty clause vs BFSG-EAA § 14 / § 3a BFSG transparency obligation, ASR A3.4
+  500 lx reception-work floor), proving the flow by automated runtime tests, and
+  shipping the result as a GitHub PR against `main` with a verifiable runtime
+  verification report.
+
+# -----------------------------------------------------------------------------
+# acceptance_criteria — 7 EARS-format ACs (preserved verbatim from the existing
+# evidence file AC-1..AC-7; sharpened to actually-runnable conditions for the
+# 3 previously-failing criteria)
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+  - id: AC-1
+    ears: >-
+      While the Reception-Cockpit demo is opened directly in a browser (or
+      served as a static file under docs/design/), the document shall be
+      fully self-contained: the `<section class="metrics" id="load-marker"
+      data-load-ready="true">` marker shall be the first content block after
+      the heading; the `data-load-ready="true"` marker shall appear on every
+      metric tile; and the file content shall contain zero matches for any
+      of `http://`, `https://`, `<link rel`, `<script src`, `<img src`,
+      `srcset=`, `fetch(`, `XMLHttpRequest`, `url(`, `@import`, `@font-face`
+      so arrival context is present at first paint with no fetch / XHR.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac1_arrival_context_load_marker_and_self_contained_scan
+
+  - id: AC-2
+    ears: >-
+      When the receptionist refreshes the page (or the browser tab is
+      reloaded), the demo shall restore (a) the previously selected queue
+      row id, (b) the previously active filter index, AND (c) any
+      in-progress walk-in form state — specifically the active step number,
+      every form field value, the recorded Kurtaxe decision, and the
+      recorded BMG / Meldeschein pre-fill state — by reading them from a
+      single localStorage key (`rc-cockpit-state-v2` or higher); and the
+      resume-card `<section id="resume-card" aria-live="polite">` shall be
+      rendered with the restored context, or be visibly hidden when no
+      walk-in is in progress.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac2_interruption_recovery_includes_in_progress_form_state
+
+  - id: AC-3
+    ears: >-
+      While focus is anywhere inside the demo document, the receptionist
+      shall be able to (a) press `ArrowDown` / `ArrowUp` to move the
+      selection to the next / previous `.queue-row` (wrapping is NOT
+      required; clamping at the ends IS required), (b) press `r` or `R`
+      to activate the `#resume-btn` (or its successor) and resume the
+      in-progress walk-in, and (c) press `/` to focus the guest-search
+      input (or to reveal one); native Tab / Enter shall continue to
+      traverse and activate the form's primary controls in visual order;
+      and these shortcuts shall be implemented via a single `keydown`
+      listener attached to `document`, which shall ignore key events that
+      originate from `<input>`, `<select>`, or `<textarea>` so as not to
+      hijack typing in those controls.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac3_keyboard_shortcuts_up_down_r_and_slash_implemented
+
+  - id: AC-4
+    ears: >-
+      The demo's theme tokens shall match the published Rheinland
+      Reception Standard (docs/design/theme.md @ 5e08d4fa, PR #1 →
+      aafad4ac) without modification: every `--text-primary`,
+      `--text-secondary`, `--primary`, `--on-primary`,
+      `--status-success-bg`, `--status-success-fg`,
+      `--status-warning-bg`, `--status-warning-fg`,
+      `--status-danger-bg`, `--status-danger-fg`,
+      `--status-info-bg`, `--status-info-fg`, `--border-strong`,
+      `--surface`, `--surface-subtle`, `--selection-bg`,
+      `--selection-indicator`, and `--focus-ring` value used in the demo
+      shall be byte-identical to the source theme.md value; the
+      `prefers-color-scheme: dark` block shall override only the same
+      semantic names; and every status badge shall carry a German text
+      label (Anreisebereit / Meldeschein prüfen / Kurtaxe klären /
+      PDF erzeugt / vorbereitet / aktuell / offen) plus a 7 px leading
+      dot so status is never colour-only.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac4_theme_tokens_match_published_rheinland_reception_standard
+
+  - id: AC-5
+    ears: >-
+      Every interactive target in the demo (`.button`, `.filter`,
+      `.queue-row`, every form control, every chip, every list item that
+      acts as an action target, every step indicator, every submit
+      button) shall resolve to a computed `min-height` of at least 44
+      CSS px AND a computed `min-width` of at least 44 CSS px; in
+      particular the resume-card CTA at `#resume-btn` (or its successor)
+      shall NOT carry any class that resolves to a 36 px min-height, and
+      the `.button-compact` rule (if any remains) shall declare
+      `min-height: 44px`.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac5_every_interactive_target_at_least_44x44_css_px
+
+  - id: AC-6
+    ears: >-
+      The BFSG / EAA Heilbad-Transparenz tile shall be visible above the
+      fold in the desktop and mobile layouts, with an `aria-label` and
+      tile copy that cite the BFSG / EAA transparency obligation
+      correctly (BFSG-EAA § 14 / § 3a BFSG implementing EAA Art. 3(2)),
+      NOT BFSG § 37 Abs. 1 (which is the penalty clause — Bußgeld bis
+      100 000 EUR); the tile shall name the Kurorteigenschaft anerkannt
+      status for Bad Orb, the Kurtaxe-Satzung effective date
+      (01.07.2026), the four-Staffelung (Haupt- / Nebensaison), the
+      § 4 Befreiungsgründe, and the blocking rule for the "Kurtaxe
+      klären" status; the Kurort-law anchor shall be Hessen / HessKAG
+      (Hessisches Kommunalabgabengesetz), not Hessen-KAG-as-revenue-law.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac6_bfsg_eaa_heilbad_transparenz_visible_and_anchor_correct
+
+  - id: AC-7
+    ears: >-
+      While the receptionist executes the demo's flow, the demo shall
+      expose a real walk-in consisting of five ordered, time-budgeted
+      steps (00:30, 01:30, 03:00, 04:30, 05:00; cumulative ≤ 5:00) —
+      Step 1 select/open arrival from the queue (≥ 1 row must support
+      opening), Step 2 enter required guest details (first name, last
+      name, date of birth, nationality, arrival date, departure date,
+      room number), Step 3 make a Kurtaxe / Kurbeitrag decision or
+      auto-compute using the published Bad Orb Satzung 01.07.2026
+      4-Staffelung (Hauptsaison / Nebensaison / Ganzjahres / Tagesgast)
+      against the entered length-of-stay AND the entered exemption
+      flag, Step 4 provide a BMG / Meldeschein § 29 pre-fill path
+      (auto-populating the entered guest details into the BMG form
+      preview), Step 5 review and submit the walk-in to a completion
+      surface; on submission the demo shall transition to a completion
+      state (the walk-in clock at 0:00 / 5:00, the budget bar at 100%,
+      the completion tile rendered, the resume-card hidden) and shall
+      persist the completion to the same localStorage key from AC-2 so
+      a refresh preserves the completion state.
+    test_oracle: >-
+      repo/tests/test_reception_cockpit_demo.py::test_ac7_five_minute_walk_in_flow_is_actually_executable
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries
+# -----------------------------------------------------------------------------
+not_included:
+  - "Live Kurtaxe remittance (CSV export / HessKAG monthly reporting) — a separate ticket; the demo computes the per-guest Kurtaxe amount using the published Satzung rates but does not write a remittance file."
+  - "Live channel-manager integration (Booking.com / HRS MinStay two-way sync) — queue rows remain seeded as in the prior commit."
+  - "axe-core CI integration — theme contrast pairs are documented per theme.md §Checked light-scheme pairs (WebAIM-verified); a CI audit pass is a separate ticket."
+  - "Production deployment of the demo beyond a static-file serve (no CDN, no TLS provisioning, no kiosk-mode build)."
+  - "Real BFSG-EAA Barrierefreiheitserklärung publication on hotel-rheinland.de — ops/marketing action."
+  - "Edits to any file under src/kurort_engine/** — the demo is docs/, the engine is src/; this ticket does not touch the engine."
+  - "Edits to any existing test file under tests/ — only tests/test_reception_cockpit_demo.py is new; the 177 prior tests stay byte-identical."
+  - "New theme tokens, new font requests, new CSS variables — every CSS custom property used in the rewritten demo is sourced verbatim from docs/design/theme.md."
+  - "External network dependencies of any kind — no `<link rel`, no `<script src`, no `<img src`, no remote fonts, no fetch, no XHR, no @import, no @font-face, no analytics."
+  - "Adoption of a frontend framework (React / Vue / Svelte / Alpine / htmx) — vanilla JS only, no npm packages."
+  - "Deutsch ↔ English localisation toggle — German only; the receptionist tool is German-first per the existing copy."
+
+# -----------------------------------------------------------------------------
+# assumptions — recorded per spec.yaml convention
+# -----------------------------------------------------------------------------
+assumptions:
+  - "Workspace root is `/home/agent-host/workspace`; `repos/KurortEngine` is the canonical project root for this job (per memory)."
+  - "Test framework is pytest 7+ (per repos/KurortEngine/pyproject.toml:42-44). Test command `cd repos/KurortEngine && python -m pytest tests/test_reception_cockpit_demo.py -x -v` is the per-AC runner. Full-suite runner: `cd repos/KurortEngine && python -m pytest tests/ -q` — expect 177 SHIPPED baseline + 7 new demo tests = 184 passed, 0 failed (note: pre-existing 2 failing tests in tests/test_a11y_guest_pwa.py::test_ac2 and tests/test_audit_isolation.py::test_ac2 remain as-is per README known-issues; they are NOT in the new test file's failure surface)."
+  - "The seven locked ACs are verbatim from `iter-3-reception-cockpit-locked-ears-acceptance-criteria-7-acs`. The three evidence-anchor corrections (Hessen/HessKAG, BFSG § 37 vs § 14, ASR A3.4 500 lx) come from the task brief and from the prior KB notes; they are NOT rework of the AC text but are explicit corrections to the evidence anchors cited in the rewritten docs/design/reception-cockpit-demo-evidence.md."
+  - "The Bad Orb Satzung 01.07.2026 4-Staffelung rates are pre-loaded into the demo as a JS constant; the test does NOT assert specific cent-amounts (those would be policy-bound), only that the form computes a non-empty EUR amount per length-of-stay × tier × exemption flag."
+  - "Hotel Rheinland-specific defaults (room-numbering, breakfast price, reservation-id format, default operational state) are pre-loaded with PROXY chips — the test asserts the PROXY chips render on the relevant form fields."
+  - "Three existing ASSUMPTION chips (`arrival-rates`, `kurtaxe-cadence`, `device-fleet-lighting`) carry forward verbatim from commit 439e506a; the `device-fleet-lighting` chip's text is updated to cite the ASR A3.4 500 lx floor."
+  - "PROXY ≠ ASSUMPTION: PROXY means 'a plausible stand-in pending operator confirmation'; ASSUMPTION means 'an unmeasured fact used for sizing/budgeting'. Both render with the same visual chip; only the prefix differs."
+  - "Auto-compute correctness is checked structurally (compute fires on inputs, returns non-empty EUR amount, applies the exemption flag) — not numerically (specific cents would be policy-bound and may change)."
+  - "LOC budget: ~700 HTML/CSS/JS lines delta (rewrite of docs/design/reception-cockpit-demo.html from 958 to ~1300 lines) + ~150 evidence-file lines delta + ~280 test LOC + ~150 verification-report LOC + 1 PR description = ~1280 total = inside the <=1500 envelope per task brief."
+  - "Branch name: `feature/reception-cockpit-functional-walk-in`. PR base: `main`. PR title: `feat: make Reception-Cockpit demo executable five-minute walk-in (AC-3, AC-5, AC-7)`. Commit message: `feat(reception-cockpit): executable five-minute walk-in flow (closes AC-3, AC-5, AC-7; preserves AC-1, AC-2, AC-4, AC-6)`."
+  - "`gh` CLI is NOT installed in the workspace shell; PR creation uses `git push` + `repo_open_pr` against the GitHub remote (origin remote carries an oauth2 token); if `repo_open_pr` is unavailable the worker sends a blocking officer message per task brief."
+
+# -----------------------------------------------------------------------------
+# done_when — concrete commands that must pass
+# -----------------------------------------------------------------------------
+done_when:
+  - "cd repos/KurortEngine && python -m pytest tests/test_reception_cockpit_demo.py -x -v 2>&1 | tail -40   # expect: 7 tests collected, 7 passed (AC-1..AC-7 green)"
+  - "cd repos/KurortEngine && python -m pytest tests/ -q 2>&1 | tail -20   # expect: 184 passed, 0 failed (177 SHIPPED baseline + 7 new demo tests); 2 pre-existing README-known-issues failures remain as they are in README (not in the new test file's scope)"
+  - "grep -c 'data-load-ready=\"true\"' repos/KurortEngine/docs/design/reception-cockpit-demo.html   # expect: ≥ 5 (the metrics strip id + each metric tile)"
+  - "grep -c 'id=\"load-marker\"' repos/KurortEngine/docs/design/reception-cockpit-demo.html   # expect: 1"
+  - "grep -nE 'http://|https://|<link rel|<script src|<img src|srcset=|fetch\\(|XMLHttpRequest|url\\(|@import|@font-face' repos/KurortEngine/docs/design/reception-cockpit-demo.html | wc -l   # expect: 0 (no remote HTTP)"
+  - "grep -n 'min-height' repos/KurortEngine/docs/design/reception-cockpit-demo.html | grep -E '3[0-9]px' | wc -l   # expect: 0 (no <44 px min-height declarations remain)"
+  - "grep -n 'button-compact' repos/KurortEngine/docs/design/reception-cockpit-demo.html | wc -l   # expect: 0 OR the rule's min-height is 44 px (per AC-5)"
+  - "grep -n 'aria-label=\"BFSG' repos/KurortEngine/docs/design/reception-cockpit-demo.html | head -1   # expect: aria-label cites § 14 / § 3a, NOT § 37"
+  - "grep -n 'ASR A3.4' repos/KurortEngine/docs/design/reception-cockpit-demo.html | head -1   # expect: ≥ 1 match (the 500 lx floor is cited)"
+  - "grep -n 'HessKAG\\|Hessisches Kommunalabgabengesetz\\|HKG' repos/KurortEngine/docs/design/reception-cockpit-demo-evidence.md | head -1   # expect: ≥ 1 match"
+  - "python -m http.server 8765 --directory repos/KurortEngine/docs 2>&1   # expect: serves on :8765"
+  - "curl -sSI http://127.0.0.1:8765/design/reception-cockpit-demo.html | head -1   # expect: HTTP/1.0 200 OK"
+  - "curl -sS http://127.0.0.1:8765/design/reception-cockpit-demo.html | grep -c 'data-step'   # expect: ≥ 5 (one per walk-in step)"
+  - "git -C repos/KurortEngine status --short --branch   # expect: branch is feature/reception-cockpit-functional-walk-in, working tree clean except untracked output/"
+  - "git -C repos/KurortEngine push origin feature/reception-cockpit-functional-walk-in   # expect: exit 0; remote branch exists"
+  - "Traceability matrix in spec/reception_cockpit_executable_walk_in/spec_lock.md shows all 7 ACs at status green after Phase 3 (green) close; each row has a non-empty test_oracle path that resolves to a real test function in tests/test_reception_cockpit_demo.py."
+  - "file_exists projects/kurortengine-reception-cockpit-walk-in/output/reception-cockpit-runtime-verification.md   # expect: exists (the contract deliverable)"
+
+# -----------------------------------------------------------------------------
+# AC-to-deliverable cross-check (self-verify at spec exit)
+# -----------------------------------------------------------------------------
+deliverable_mapping:
+  D1_spec_yaml:                                  [AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7]
+  D2_spec_lock_md:                               [AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7]
+  D3_plan_md:                                    [D1, D2, D4, D5, D6]
+  D4_reception_cockpit_demo_html_REWRITE:        [AC-1, AC-2, AC-3, AC-5, AC-6, AC-7]
+  D5_reception_cockpit_demo_evidence_md_EDIT:    [AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7]
+  D6_test_reception_cockpit_demo_py_NEW:         [AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7]
+  D7_feature_branch_and_PR:                      [all]
+  D8_runtime_verification_md_NEW:                [all]
+
+# -----------------------------------------------------------------------------
+# AC-to-EARS-template distribution (per pinned memory protocol)
+# -----------------------------------------------------------------------------
+ears_template_distribution:
+  ubiquitous:         []                                  # none — every AC is event/state-driven
+  event_driven:       [AC-1, AC-2, AC-3, AC-4, AC-5, AC-7]  # load / refresh / keydown / token-match / target-size / submit
+  state_driven:       [AC-6]                              # above-the-fold visibility in current layout
+  unwanted_behavior:  [AC-2, AC-5]                        # silent form-state loss / <44 px target floor
+  optional:           []                                  # none

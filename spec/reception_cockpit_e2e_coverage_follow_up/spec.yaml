@@ -1,0 +1,247 @@
+# =============================================================================
+# spec.yaml — reception-cockpit-e2e-coverage-follow-up
+# Kurort-vertical Reception-Cockpit follow-up: extend the PR #4 Playwright/
+# Chromium suite so the executable walk-in is covered as a real end-to-end
+# workflow (5-step walk-in, every Kurtaxe Staffelung boundary, keyboard-only
+# completion, completion-tile final state, mid-flow + completed-flow persistence
+# across reload). This is an EXTENSION spec — it does NOT mutate the published
+# PR #4 deliverables (spec/reception_cockpit_executable_walk_in/*,
+# docs/design/reception-cockpit-demo.html, tests/test_reception_cockpit_*.py).
+# Upstream: PR #4 head bea4c6d148f7dd4ad7b9fd0016c75476030beaa7 on
+# branch fix/pr2-reception-cockpit-harness-and-browser-proof.
+# Owner: Developer (this job)
+# =============================================================================
+#
+# Background:
+#   * The PR #4 candidate already ships 9 Playwright/Chromium tests in
+#     tests/test_reception_cockpit_browser.py covering AC-3 keyboard shortcuts,
+#     AC-2 interruption persistence, AC-7 submit-reveals-completion, AC-1
+#     metric-tile-visibility. It does NOT cover: the per-step flow itself,
+#     the 4-Staffelung × nights × befreiung boundary table, full keyboard-only
+#     walk-in, completion-tile content (not just visibility), and completed-flow
+#     persistence across reload.
+#   * The published PR #4 demo at docs/design/reception-cockpit-demo.html (1451
+#     lines) implements an executable 5-step walk-in (form @L1027, 7 BMG fields
+#     @L1064-1089, 4-Staffelung kurtaxe select @L1103-1108, completion tile
+#     @L1160). The submission handler at L1373-1404 hides the form, reveals
+#     the completion tile, and sets the clock to 00:00 / 05:00 — but the
+#     completion-tile body text (L1163-1169) is HARD-CODED to a literal sample
+#     guest, not derived from the form state. `persist()` at L1326-1349 writes
+#     formState but has no completionState branch. The completion tile does NOT
+#     carry a completion timestamp. There is NO "Neuer Walk-in" / reset control.
+#   * This spec is the EARS contract for the additional Playwright coverage
+#     that surfaces those gaps. The phase-3 RED step does NOT implement the
+#     missing demo features — it only writes tests that FAIL with
+#     AssertionError on the current PR #4 demo. Phase-3 GREEN (verify) does
+#     NOT mutate the demo HTML or the locked PR #4 spec; it PRESERVES the
+#     failing tests as issue notes with severity+evidence+anchor+smallest
+#     remediation.
+#
+# Module surface (this cycle):
+#   * EXTEND tests/test_reception_cockpit_browser.py with 6 new test functions
+#     covering AC-E1..AC-E6. Reuse the existing demo_server + browser + page
+#     fixtures.
+#   * NO edits to docs/design/reception-cockpit-demo.html (PR #4 immutable).
+#   * NO edits to src/kurort_engine/** (engine is src/, demo is docs/).
+#   * NO edits to spec/reception_cockpit_executable_walk_in/* (locked).
+#   * NO edits to tests/test_reception_cockpit_demo.py or
+#     tests/test_reception_cockpit_harness_fidelity.py (sibling suites).
+#   * CREATE output/reception-cockpit-e2e-coverage-report.md — the job-root
+#     contract deliverable (per task_brief.md).
+#   * CREATE branch feat/pr4-reception-cockpit-e2e-coverage-follow-up, commit,
+#     push, open PR against main.
+#
+# Anti-drift discipline:
+#   * NO edits to src/kurort_engine/**.
+#   * NO edits to the published PR #4 demo HTML or its spec lock.
+#   * NO edits to existing tests/** files outside the targeted Playwright
+#     module (tests/test_reception_cockpit_browser.py).
+#   * NO pytest.skip / @pytest.mark.skip / @pytest.mark.xfail / assert True /
+#     empty body / mock-the-unit-under-test. Failing tests are preserved as
+#     issue notes — never weakened or deleted.
+# =============================================================================
+
+feature: reception-cockpit-e2e-coverage-follow-up
+iteration: 1
+owner: developer
+created: 2026-08-20
+predecessor: >-
+  PR #4 candidate at head bea4c6d148f7dd4ad7b9fd0016c75476030beaa7 on branch
+  fix/pr2-reception-cockpit-harness-and-browser-proof. PR #4 spec.yaml SHA-256
+  `139160b508797deddf696b19aa1c103626b066a1c0c8309c06d2aca0d6500d4b`. PR #4
+  AC block SHA-256 `c5fa32abb8173d1e0d317e4b15e30f6cc13aecfb83d1aa652932c53ea819be96`.
+  PR #4 ships 9 Playwright/Chromium tests; this extension adds 6 new tests
+  (AC-E1..AC-E6) covering the gaps called out in instructions.md.
+
+# -----------------------------------------------------------------------------
+# intent — one-sentence purpose of the feature
+# -----------------------------------------------------------------------------
+intent: >-
+  Extend the repository-local Playwright/Chromium suite established by PR #4
+  so the Reception-Cockpit walk-in is covered as a real end-to-end workflow:
+  every step of the 5-step walk-in is exercised, every implemented Kurtaxe/
+  Kurbeitrag Staffelung boundary plus adjacent values is enumerated, the
+  walk-in is completable by keyboard only, the completion tile's final state
+  and content are asserted, and both mid-flow and completed-flow state are
+  verified to survive a full page reload — with honest failures preserved
+  as issue notes rather than weakened assertions.
+
+# -----------------------------------------------------------------------------
+# acceptance_criteria — 6 EARS-format ACs extending (NOT replacing) PR #4 ACs
+# -----------------------------------------------------------------------------
+acceptance_criteria:
+  - id: AC-E1
+    ears: >-
+      When a real or role-played receptionist drives the demo through all
+      five walk-in steps (step 1 select/open arrival, step 2 enter required
+      guest details, step 3 make Kurtaxe/Kurbeitrag decision or auto-compute,
+      step 4 BMG/Meldeschein §29 pre-fill, step 5 review and submit) AND
+      submits the form, the demo shall transition to a completion state in
+      which the completion tile `#completion-tile` is revealed (hidden=false),
+      the walk-in clock `#walk-in-clock-final` reads 00:00 / 05:00, AND
+      the completion tile's body carries the entered guest's full name, the
+      entered arrival date and departure date, the computed Kurbeitrag total
+      formatted as EUR with two decimals (e.g. "14,00 €"), AND a completion
+      timestamp (a `<time>` element with a `datetime` attribute or a
+      `data-completed-at` attribute on the completion tile).
+    test_oracle: >-
+      tests/test_reception_cockpit_browser.py::test_e2e_full_five_step_walk_in_reaches_completion
+
+  - id: AC-E2
+    ears: >-
+      While the receptionist has entered values into one or more step 2
+      (Gastdaten) fields and the demo registers an activeStep value greater
+      than 1 in localStorage `rc-cockpit-state-v2`, then on a full page
+      reload (or browser refresh), the demo shall restore the same step 2
+      field values into their respective inputs, the displayed active step
+      shall equal the saved activeStep (the `#resume-active-step` element
+      shall carry "Schritt N von 5" with N equal to the saved value), AND
+      the entered guest name shall be mirrored into the `#resume-guest`
+      element.
+    test_oracle: >-
+      tests/test_reception_cockpit_browser.py::test_mid_flow_persistence_repopulates_after_reload
+
+  - id: AC-E3
+    ears: >-
+      When the walk-in has been submitted to completion (AC-E1 has fired),
+      the demo shall persist the completion state to the same localStorage
+      key `rc-cockpit-state-v2`, AND on a full page reload the completion
+      tile `#completion-tile` shall be revealed (hidden=false) and the walk-in
+      form `#walk-in-form` shall remain hidden (hidden=true), AND the
+      completion timestamp displayed on the completion tile shall be stable
+      (equal to the timestamp recorded at the moment of first completion —
+      a reload must NOT reset the completion timestamp to the current page
+      load time).
+    test_oracle: >-
+      tests/test_reception_cockpit_browser.py::test_completed_flow_persistence_keeps_completion_tile_after_reload
+
+  - id: AC-E4
+    ears: >-
+      For every implemented Staffelung tier in the demo (`hauptsaison-erwachsene`
+      = 3,50 € / Nacht, `nebensaison-erwachsene` = 2,80 € / Nacht,
+      `ganzjahres-kind` = 1,20 € / Nacht, `tagesgast` = 1,80 € Pauschale)
+      AND for adjacent boundary values (1 Nacht vs 2 Nächte vs 30 Nächte;
+      Kind age 6 vs 15 vs 16 entered via the dateOfBirth field; Tagesgast
+      with 0 Übernachtungen), the demo's auto-computed Kurtaxe total
+      displayed in `#kurtaxe-auto-compute` shall equal (a) tier_rate × nights
+      for per-night tiers, OR (b) the Pauschale flat 1,80 € for Tagesgast,
+      AND the total shall be formatted as EUR with two decimals (e.g.
+      "14,00 €") AND the visible breakdown text shall contain the rate
+      label and the per-night line item (e.g. "4 × 3,50 € = 14,00 €").
+    test_oracle: >-
+      tests/test_reception_cockpit_browser.py::test_staffelung_boundary_table
+
+  - id: AC-E5
+    ears: >-
+      While a keyboard-only user (no pointer input) drives the demo, the
+      receptionist shall be able to (a) Tab through every interactive
+      element of the 5-step walk-in form in DOM order, (b) observe a
+      visible focus ring on every focused element (WCAG 2.2 SC 2.4.7 Focus
+      Visible), (c) activate any form control's primary action with Enter or
+      Space, (d) advance from step 1 through step 5 using keyboard only, AND
+      (e) reach the completion tile `#completion-tile` revealed without ever
+      using the pointer.
+    test_oracle: >-
+      tests/test_reception_cockpit_browser.py::test_keyboard_only_walk_in
+
+  - id: AC-E6
+    ears: >-
+      The completion tile's final state in the post-submit DOM shall contain:
+      (i) a semantic marker identifying completion (a `<section>` or
+      `<article>` with id `completion-tile` and an aria-label including the
+      word "abgeschlossen" or an equivalent German completion phrase);
+      (ii) the guest's full name as entered in step 2 (concatenated first
+      name + last name, with the literal value entered in the BMG inputs);
+      (iii) the computed Kurbeitrag total formatted as EUR with two decimals
+      (e.g. "14,00 €"); (iv) a date+time stamp of completion (an ISO 8601
+      datetime on a `<time>` element, or a `data-completed-at` attribute on
+      the completion tile); AND (v) at minimum a "Neuer Walk-in" or
+      equivalent reset affordance (a button or link that clears the
+      completed state and re-shows the empty walk-in form).
+    test_oracle: >-
+      tests/test_reception_cockpit_browser.py::test_completion_tile_final_state_content
+
+# -----------------------------------------------------------------------------
+# not_included — explicit scope boundaries
+# -----------------------------------------------------------------------------
+not_included:
+  - "Edits to src/kurort_engine/** — the engine is src/, the demo is docs/, this job does not touch the engine."
+  - "Edits to docs/design/reception-cockpit-demo.html — the published PR #4 demo HTML is immutable; this job only writes tests that observe its behaviour."
+  - "Edits to spec/reception_cockpit_executable_walk_in/spec.yaml or spec_lock.md — the PR #4 spec lock is preserved; this job adds a companion spec in spec/reception_cockpit_e2e_coverage_follow_up/."
+  - "Edits to tests/test_reception_cockpit_demo.py or tests/test_reception_cockpit_harness_fidelity.py — sibling suites stay byte-identical."
+  - "Edits to existing tests/test_reception_cockpit_browser.py test functions — only new test functions are added; the existing 9 tests are byte-identical."
+  - "Implementation of the missing demo features (completion-tile drives from form state, completion timestamp, reset affordance, completed-flow persistence). Those are filed as issue notes; this job does NOT fix them."
+  - "axe-core CI integration — contrast pairs are documented per theme.md; a CI audit pass is a separate ticket."
+  - "Production deployment of the demo beyond a static-file serve (no CDN, no TLS provisioning, no kiosk-mode build)."
+  - "Live Kurtaxe remittance (CSV export / HessKAG monthly reporting) — the demo computes the per-guest Kurtaxe amount using the published Satzung rates but does not write a remittance file."
+  - "External network dependencies of any kind — no new remote HTTP requests of any kind."
+  - "Adoption of a frontend framework (React / Vue / Svelte / Alpine / htmx) — vanilla JS only."
+
+# -----------------------------------------------------------------------------
+# assumptions — recorded per spec.yaml convention
+# -----------------------------------------------------------------------------
+assumptions:
+  - "Workspace root is /home/agent-host/workspace; repos/KurortEngine is the canonical project root for this job."
+  - "Test framework is pytest 7+ (per repos/KurortEngine/pyproject.toml:42-44). The Chromium binary is at /opt/playwright/chromium-1217/chrome-linux64/chrome (per tests/test_reception_cockpit_browser.py:42). The local http.server fixture is at 127.0.0.1:8765 with the demo served from docs/design/reception-cockpit-demo.html."
+  - "Test command (per-AC): cd repos/KurortEngine && python -m pytest tests/test_reception_cockpit_browser.py::test_e2e_full_five_step_walk_in_reaches_completion -x -v. Full-extension runner: cd repos/KurortEngine && python -m pytest tests/test_reception_cockpit_browser.py -v. Full-suite runner: cd repos/KurortEngine && python -m pytest tests/ -q (no regressions to baseline)."
+  - "The PR #4 demo HTML pre-fills step 2 BMG fields with literal values: firstName='Dr. Wilhelmine', lastName='Schlotterbeck-von der Mühlen', dateOfBirth='1958-03-12', nationality='DE', arrivalDate='2026-08-16', departureDate='2026-08-20', roomNumber='21'. AC-E2 tests shall OVERWRITE these values with a fresh identifier (e.g. 'Mara' / 'Kaya') before reload to observe the form-state restoration, not the pre-fill."
+  - "The PR #4 demo's Tagesgast tier is a Pauschale (flat 1,80 €), NOT per-night. AC-E4 must verify that for Tagesgast the auto-compute reads 1,80 € regardless of nights, and for the per-night tiers it reads nights × tier_rate."
+  - "Completion-tile content body (L1163-1169) is HARD-CODED to 'Dr. Wilhelmine Schlotterbeck-von der Mühlen', '13:30 · Zimmer 21', '4 × 3,50 € = 14,00 € · Befreiung nein', etc. AC-E1 and AC-E6 tests will FAIL on this PR #4 commit because the demo does not currently drive the completion tile from the form state — that outcome is preserved as a HIGH-severity issue note, not weakened."
+  - "The `kurtaxe-befreiung` checkbox at L1115 toggles the auto-compute to 'Befreiung nach § 4 · 0,00 €' (line 1277 of the JS). AC-E4 boundary cases must include toggling befreiung.checked to TRUE and verifying the total is 0,00 € regardless of nights/tier."
+  - "Branch name: feat/pr4-reception-cockpit-e2e-coverage-follow-up. PR base: main. PR title: 'test: extend Reception-Cockpit PR #4 Playwright coverage (5-step E2E, Staffelung boundaries, keyboard-only, completion-tile, mid-flow + completed-flow persistence)'. Commit message references AC-E1..AC-E6."
+  - "`gh` CLI is NOT installed in the workspace shell; PR creation uses git push + repo_open_pr against the GitHub remote; if repo_open_pr is unavailable the worker sends a blocking officer message."
+  - "Forbidden test patterns: no pytest.skip / @pytest.mark.skip / @pytest.mark.xfail / assert True / empty body / mock-the-unit-under-test / mirror-the-implementation. Failing tests are preserved as issue notes via kb_write type=issue."
+
+# -----------------------------------------------------------------------------
+# done_when — concrete commands that must pass
+# -----------------------------------------------------------------------------
+done_when:
+  - "cd repos/KurortEngine && python -m pytest tests/test_reception_cockpit_browser.py -v --tb=short 2>&1 | tail -50   # expect: 15 tests collected (9 existing + 6 new); every existing test continues to pass; every new test runs and asserts; the per-AC verdict is recorded in output/reception-cockpit-e2e-coverage-report.md"
+  - "cd repos/KurortEngine && python -m pytest tests/ -q 2>&1 | tail -20   # expect: no regressions; the 2 pre-existing README-known-issues failures (tests/test_a11y_guest_pwa.py::test_ac2 + tests/test_audit_isolation.py::test_ac2) remain as they are in README"
+  - "git -C repos/KurortEngine status --short --branch   # expect: branch is feat/pr4-reception-cockpit-e2e-coverage-follow-up; working tree clean except the new spec/spec_lock/report files and the extended tests/test_reception_cockpit_browser.py"
+  - "git -C repos/KurortEngine push origin feat/pr4-reception-cockpit-e2e-coverage-follow-up   # expect: exit 0; remote branch exists"
+  - "repo_open_pr(repo='KurortEngine', base='main', head='feat/pr4-reception-cockpit-e2e-coverage-follow-up', title='test: extend Reception-Cockpit PR #4 Playwright coverage (5-step E2E, Staffelung boundaries, keyboard-only, completion-tile, mid-flow + completed-flow persistence)', body='extension of PR #4 (#X) — extends tests/test_reception_cockpit_browser.py with 6 new test functions covering AC-E1..AC-E6; preserves PR #4 demo HTML, spec lock, and sibling test suites byte-identical')   # expect: PR URL returned; URL recorded in output/reception-cockpit-e2e-coverage-report.md"
+  - "file_exists output/reception-cockpit-e2e-coverage-report.md   # expect: contract deliverable exists with all 8 sections"
+  - "For every FAILING new test, a kb_write type=issue note exists with severity + evidence + Nielsen-or-WCAG anchor + smallest remediation. 3-7 issues cap; failing tests are never weakened, deleted, or skipped to turn the suite green."
+  - "Traceability matrix in spec/reception_cockpit_e2e_coverage_follow_up/spec_lock.md shows all 6 ACs at status not_started (red phase) or verified (green phase) per the TDD lifecycle. Each row has a non-empty test_oracle path that resolves to a real test function in tests/test_reception_cockpit_browser.py."
+
+# -----------------------------------------------------------------------------
+# AC-to-deliverable cross-check (self-verify at spec exit)
+# -----------------------------------------------------------------------------
+deliverable_mapping:
+  D1_spec_yaml:                                  [AC-E1, AC-E2, AC-E3, AC-E4, AC-E5, AC-E6]
+  D2_spec_lock_md:                               [AC-E1, AC-E2, AC-E3, AC-E4, AC-E5, AC-E6]
+  D3_plan_md:                                    [D1, D2, D4, D5]
+  D4_test_reception_cockpit_browser_py_EXTEND:   [AC-E1, AC-E2, AC-E3, AC-E4, AC-E5, AC-E6]
+  D5_feature_branch_and_PR:                      [all]
+  D6_e2e_coverage_report_md_NEW:                 [all]
+
+# -----------------------------------------------------------------------------
+# AC-to-EARS-template distribution (per pinned protocol)
+# -----------------------------------------------------------------------------
+ears_template_distribution:
+  ubiquitous:         []
+  event_driven:       [AC-E1, AC-E4, AC-E5]
+  state_driven:       [AC-E2, AC-E3, AC-E6]
+  unwanted_behavior:  [AC-E3]      # completed-flow reload must not reset to empty form
+  optional:           []
