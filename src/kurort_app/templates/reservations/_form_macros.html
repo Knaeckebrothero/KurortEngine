@@ -1,0 +1,8 @@
+{# Field-level validation helpers. Import with context so `errors` resolves:
+   {% import "reservations/_form_macros.html" as f with context %} #}
+{% macro error(name) -%}
+  {%- if errors.get(name) %}<span class="error" id="{{ name }}-error">{{ errors[name] }}</span>{% endif -%}
+{%- endmacro %}
+{% macro invalid(name) -%}
+  {%- if errors.get(name) %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif -%}
+{%- endmacro %}

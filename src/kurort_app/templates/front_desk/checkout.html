@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% import "front_desk/_fd.html" as fd %}
+{% block title %}Check-out {{ r.code }}{% endblock %}
+{% block content %}
+{% set g = r.primary_guest %}
+<div class="breadcrumb"><a href="/abreisen">Abreisen</a> / <span class="mono">{{ r.code }}</span></div>
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Check-out</span>
+    <h1>{{ g.full_name if g else r.code }}</h1>
+    <p>{% if r.room %}Zimmer {{ r.room.number }} · {{ r.room.category }} · {% endif %}{{ r.arrival | date }} – {{ r.departure | date }} · {{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</p>
+  </div>
+  <div class="page-actions">{{ ui.reservation_status(r.status) }}</div>
+</div>
+
+{% if not can_check_out %}
+<div class="notice {{ 'info' if r.status == 'checked_out' else 'warning' }} flash" role="status">
+  <p>{% if r.status == 'checked_out' %}<strong>Bereits ausgecheckt</strong>{% if r.checked_out_at %} am {{ r.checked_out_at | date }} um {{ r.checked_out_at | time }}{% endif %}.{% else %}<strong>Check-out nicht möglich.</strong> Die Reservierung ist „{{ r.status | status_label }}“ – nur Gäste im Haus können auschecken.{% endif %}</p>
+</div>
+{% elif early %}
+<div class="notice warning flash" role="status"><p><strong>Vorzeitige Abreise.</strong> Geplant war der {{ r.departure | date('long') }}. Restnächte bitte mit dem Gast klären.</p></div>
+{% endif %}
+
+<div class="fd-checkout">
+  <section class="card" aria-labelledby="bill-title">
+    <header class="card-header"><h2 id="bill-title">Abrechnung (Vorschau)</h2></header>
+    <div class="card-body">
+      <table class="table fd-bill">
+        <tbody>
+          <tr>
+            <th scope="row">Logis<span class="sub">{{ r.nights }} × {{ (r.room.nightly_rate if r.room else 0) | money }}{% if r.package_code %} · Kurpaket {{ r.package_code }}{% endif %}</span></th>
+            <td class="num">{{ balance.room | money }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Kurtaxe<span class="sub">{% if r.kurtaxe %}{{ r.kurtaxe.satzung_label }} · {{ r.kurtaxe.nights }} Nächte{% else %}Kurbeitragssatzung {{ hotel_city }}{% endif %}</span></th>
+            <td class="num">
+              {% if balance.kurtaxe is not none %}{{ balance.kurtaxe | money }}
+              {% else %}<span class="badge warning">Kurtaxe noch nicht berechnet</span>{% endif %}
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr><th scope="row">Gesamt</th><td class="num">{{ balance.total | money }}</td></tr>
+        </tfoot>
+      </table>
+      {% if balance.kurtaxe is none %}
+      <p class="notice warning fd-inline-notice">Kurtaxe noch nicht berechnet. Sie wird im Check-in-Schritt „Kurtaxe“ ermittelt; ohne Berechnung fehlt sie in der Abrechnung.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <aside class="stack">
+    <section class="card" aria-labelledby="party-title">
+      <header class="card-header"><h2 id="party-title">Gäste</h2><span class="badge {{ meldeschein.kind }}">{{ meldeschein.text }}</span></header>
+      <ul class="fd-party" role="list">
+        {% for rg in r.guests %}
+        <li>
+          <span class="guest-name">{{ rg.guest.full_name }}</span>
+          <span class="sub">{{ 'Hauptgast' if rg.is_primary else 'Mitreisend' }}{% if rg.exemption_category %} · {{ rg.exemption_category | exemption_label }}{% endif %}{% if rg.kurkarte_code %} · Kurkarte <span class="mono">{{ rg.kurkarte_code }}</span>{% endif %}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% if can_check_out %}
+    <form class="card card-body fd-confirm" method="post" action="/check-out/{{ r.id }}">
+      <p>Zimmerschlüssel und Kurkarte zurücknehmen, Rechnung aushändigen.</p>
+      <button class="btn primary block" type="submit">Check-out abschließen</button>
+      <a class="btn ghost block" href="/abreisen">Abbrechen</a>
+    </form>
+    {% else %}
+    <a class="btn block" href="/reservierungen/{{ r.id }}">Reservierung ansehen</a>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

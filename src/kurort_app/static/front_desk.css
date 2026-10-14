@@ -1,0 +1,97 @@
+/* Front desk: overview, arrivals, departures, in-house, check-out. */
+
+/* ---------- Metric tiles ---------- */
+.fd-metrics { margin-bottom: var(--space-4); }
+.fd-metric { display: flex; flex-direction: column; gap: 2px; color: inherit; text-decoration: none; transition: border-color var(--motion-fast), box-shadow var(--motion-fast); }
+a.fd-metric:hover { color: inherit; border-color: var(--border-strong); box-shadow: var(--elevation-2); }
+.fd-unit { font-size: 22px; font-weight: 650; margin-left: 2px; color: var(--text-secondary); }
+.fd-meter { margin-top: var(--space-3); height: 6px; border-radius: var(--radius-badge); background: var(--chart-track); overflow: hidden; }
+.fd-meter span { display: block; height: 100%; border-radius: inherit; background: var(--chart-arrival); }
+.fd-meter-amber span { background: var(--chart-departure); }
+.fd-meter-rhine span { background: var(--chart-occupied); }
+
+/* ---------- Layout ---------- */
+.fd-split { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(300px, 1fr); gap: var(--space-4); margin-bottom: var(--space-4); align-items: start; }
+.fd-checkout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-4); align-items: start; }
+.fd-toolbar { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-4); }
+
+/* ---------- Day navigation ---------- */
+.fd-daynav { display: inline-flex; gap: var(--space-1); }
+.fd-daynav .btn { gap: var(--space-1); }
+.fd-daynav .fd-current { background: var(--selection-bg); border-color: var(--selection-indicator); }
+
+/* ---------- Queue rows ---------- */
+.fd-queue td { padding-top: 14px; padding-bottom: 14px; }
+.fd-queue .guest-name { display: block; min-width: 9em; }
+.fd-time { display: block; font-size: 16px; font-weight: 700; line-height: 22px; }
+.fd-room { display: block; font-size: 16px; font-weight: 700; line-height: 22px; }
+.fd-queue tbody tr.fd-next { background: var(--selection-bg); box-shadow: inset 3px 0 0 var(--selection-indicator); }
+.fd-queue tbody tr.fd-done .fd-time,
+.fd-queue tbody tr.fd-done .fd-room { color: var(--text-secondary); }
+.fd-queue .badges + .sub { margin-top: var(--space-1); }
+.fd-note { max-width: 42ch; font-style: italic; margin-top: 2px; }
+.fd-money { font-weight: 650; white-space: nowrap; }
+.fd-sort { color: inherit; text-decoration: none; }
+.fd-sort:hover { color: var(--text-primary); text-decoration: underline; }
+
+/* ---------- Hints (exception radar) ---------- */
+.fd-hints .card-header { gap: var(--space-2); }
+.fd-hint-list { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow-y: auto; }
+.fd-hint {
+  display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: flex-start; justify-content: space-between;
+  padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--border-subtle);
+  border-left: 3px solid transparent;
+}
+.fd-hint:last-child { border-bottom: 0; }
+.fd-hint-danger { border-left-color: var(--status-danger-fg); }
+.fd-hint-warning { border-left-color: var(--color-amber-300); }
+.fd-hint-info { border-left-color: var(--color-blue-500); }
+.fd-hint-body { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); align-items: flex-start; }
+.fd-hint-body p { margin: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+.fd-hint .btn { flex: none; }
+.fd-hint .badge, .fd-queue .badge { white-space: normal; border-radius: var(--radius-control); }
+
+/* ---------- Occupancy chart ---------- */
+.fd-chart-card .card-header { flex-wrap: wrap; }
+.fd-chart-meta { font-size: 14px; font-variant-numeric: tabular-nums; }
+.fd-chart { display: block; width: 100%; height: auto; max-height: 300px; font-family: var(--font-sans); }
+.fd-grid { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 3 4; }
+.fd-grid-cap { stroke: var(--border-strong); stroke-dasharray: 6 4; }
+.fd-axis { fill: var(--text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.fd-axis-day { font-weight: 650; fill: var(--text-primary); }
+.fd-bar-track { fill: var(--chart-track); opacity: 0.6; }
+.fd-bar-fill { fill: var(--color-rhine-300); transition: fill var(--motion-fast); }
+.fd-bar-weekend .fd-bar-fill { fill: var(--color-rhine-400); }
+.fd-bar-today .fd-bar-fill { fill: var(--chart-occupied); }
+.fd-bar:hover .fd-bar-fill { fill: var(--primary); }
+.fd-bar-value { fill: var(--text-primary); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.fd-bar-today .fd-axis-day { fill: var(--primary); }
+.fd-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: var(--space-3) 0 0; font-size: 13px; color: var(--text-secondary); }
+.fd-key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--color-rhine-300); margin-left: var(--space-2); }
+.fd-key:first-child { margin-left: 0; }
+.fd-key-today { background: var(--chart-occupied); }
+.fd-key-cap { background: none; border-top: 2px dashed var(--border-strong); height: 0; border-radius: 0; }
+
+/* ---------- Check-out ---------- */
+.fd-bill th { text-transform: none; letter-spacing: 0; font-size: 15px; line-height: 22px; color: var(--text-primary); background: none; font-weight: 600; position: static; padding: 12px 0; border-bottom: 1px solid var(--border-subtle); text-align: left; }
+.fd-bill td { text-align: right; font-size: 15px; padding: 12px 0; }
+.fd-bill tbody tr:hover { background: none; }
+.fd-bill tfoot th, .fd-bill tfoot td { font-size: 20px; line-height: 28px; font-weight: 750; border-bottom: 0; border-top: 2px solid var(--border-strong); padding-top: var(--space-4); }
+.fd-inline-notice { margin-top: var(--space-4); font-size: 14px; }
+.fd-party { list-style: none; margin: 0; padding: var(--space-2) var(--space-5) var(--space-4); }
+.fd-party li { padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); }
+.fd-party li:last-child { border-bottom: 0; }
+.fd-confirm { display: flex; flex-direction: column; gap: var(--space-2); }
+.fd-confirm p { margin: 0 0 var(--space-2); color: var(--text-secondary); font-size: 14px; }
+
+@media (max-width: 1100px) {
+  .fd-split, .fd-checkout { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .fd-queue thead { display: none; }
+  .fd-queue, .fd-queue tbody, .fd-queue tr, .fd-queue td { display: block; width: 100%; }
+  .fd-queue tr { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+  .fd-queue td { border: 0; padding: var(--space-1) 0; }
+  .fd-queue td.actions { text-align: left; padding-top: var(--space-2); }
+  .fd-queue td.actions .btn { width: 100%; min-height: 44px; }
+}

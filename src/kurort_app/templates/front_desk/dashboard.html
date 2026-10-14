@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% import "front_desk/_fd.html" as fd %}
+{% block title %}Übersicht{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Schichtbeginn · {{ business_date | date('day') }}</span>
+    <h1>Übersicht</h1>
+    <p>{{ open_arrival_count }} {{ 'Anreise' if open_arrival_count == 1 else 'Anreisen' }} offen, {{ open_departure_count }} {{ 'Check-out' if open_departure_count == 1 else 'Check-outs' }} ausstehend{% if hints %}, {{ hints|length }} {{ 'Hinweis' if hints|length == 1 else 'Hinweise' }} zu klären{% endif %}.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="/abreisen">Abreisen öffnen</a>
+    {% if next_arrival %}
+    <a class="btn primary" href="/check-in/{{ next_arrival.id }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+      Nächsten Check-in starten
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<section class="grid grid-4 fd-metrics" aria-label="Kennzahlen heute">
+  <a class="card metric fd-metric" href="/anreisen" data-metric="arrivals" data-value="{{ arrivals|length }}">
+    <div class="metric-label">Anreisen heute</div>
+    <div class="metric-value">{{ arrivals|length }}</div>
+    <div class="metric-note">{{ arrived_count }} angekommen · {{ open_arrival_count }} offen{% if early_count %} · {{ early_count }} vor 14:00{% endif %}</div>
+    <div class="fd-meter" aria-hidden="true"><span style="width: {{ (100 * arrived_count / arrivals|length) | round(0) if arrivals else 0 }}%"></span></div>
+  </a>
+  <a class="card metric fd-metric" href="/abreisen" data-metric="departures" data-value="{{ departure_count }}">
+    <div class="metric-label">Abreisen heute</div>
+    <div class="metric-value">{{ departure_count }}</div>
+    <div class="metric-note">{{ departed_count }} ausgecheckt · {{ open_departure_count }} ausstehend</div>
+    <div class="fd-meter fd-meter-amber" aria-hidden="true"><span style="width: {{ (100 * departed_count / departure_count) | round(0) if departure_count else 0 }}%"></span></div>
+  </a>
+  <a class="card metric fd-metric" href="/im-haus" data-metric="in-house" data-value="{{ guests_in_house }}">
+    <div class="metric-label">Im Haus</div>
+    <div class="metric-value">{{ guests_in_house }}</div>
+    <div class="metric-note">{{ 'Gast' if guests_in_house == 1 else 'Gäste' }} in {{ occupied_rooms }} {{ 'Zimmer' }}</div>
+  </a>
+  <div class="card metric fd-metric" data-metric="occupancy" data-value="{{ occupancy_pct }}">
+    <div class="metric-label">Belegung heute Nacht</div>
+    <div class="metric-value">{{ occupancy_pct }}<span class="fd-unit">%</span></div>
+    <div class="metric-note">{{ tonight }} von {{ capacity }} Zimmern · {{ capacity - tonight }} frei</div>
+    <div class="fd-meter fd-meter-rhine" aria-hidden="true"><span style="width: {{ occupancy_pct }}%"></span></div>
+  </div>
+</section>
+
+<div class="fd-split">
+  <section class="card" aria-labelledby="queue-title">
+    <header class="card-header">
+      <h2 id="queue-title">Heute anreisend</h2>
+      <span class="badge plain num">{{ open_arrival_count }} offen</span>
+      <div class="card-actions"><a class="btn sm ghost" href="/anreisen">Alle Anreisen</a></div>
+    </header>
+    {% if queue %}
+    <div class="table-wrap">
+      <table class="table fd-queue">
+        <thead><tr><th scope="col">Ankunft</th><th scope="col">Gast</th><th scope="col">Zimmer</th><th scope="col">Status</th><th scope="col" class="actions"><span class="sr-only">Aktion</span></th></tr></thead>
+        <tbody>
+        {% for r in queue %}
+          <tr class="{% if r.status != 'reserved' %}fd-done{% endif %}{% if next_arrival and r.id == next_arrival.id %} fd-next{% endif %}">
+            <td>{{ fd.eta(r) }}</td>
+            <td>{{ ui.guest_cell(r) }}</td>
+            <td>{{ fd.room(r) }}</td>
+            <td>{{ fd.flags(flags[r.id]) }}</td>
+            <td class="actions">
+              {% if r.status == 'reserved' %}
+              <a class="btn sm{% if next_arrival and r.id == next_arrival.id %} primary{% endif %}" href="/check-in/{{ r.id }}">Check-in starten</a>
+              {% else %}
+              <a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      {{ ui.empty('Heute keine Anreisen', 'Neue Gäste erscheinen hier, sobald sie für heute gebucht sind.') }}
+    {% endif %}
+  </section>
+
+  <section class="card fd-hints" aria-labelledby="hints-title" id="hinweise">
+    <header class="card-header">
+      <h2 id="hints-title">Hinweise</h2>
+      {% if hints %}<span class="badge warning num">{{ hints|length }} offen</span>{% else %}<span class="badge success">Alles geklärt</span>{% endif %}
+    </header>
+    {% if hints %}
+    <ul class="fd-hint-list" role="list">
+      {% for h in hints %}
+      <li class="fd-hint fd-hint-{{ h.kind }}" data-code="{{ h.reservation.code }}">
+        <div class="fd-hint-body">
+          <span class="badge {{ h.kind }}">{{ h.title }}</span>
+          <p>{{ h.detail }}</p>
+          <span class="sub mono">{{ h.reservation.code }}</span>
+        </div>
+        <a class="btn sm" href="{{ h.href }}">{{ h.action }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ ui.empty('Keine offenen Hinweise', 'Meldescheine, Kurtaxe-Befreiungen und No-Shows sind geklärt.') }}
+    {% endif %}
+  </section>
+</div>
+
+<section class="card fd-chart-card" aria-labelledby="chart-title">
+  <header class="card-header">
+    <h2 id="chart-title">Belegung · nächste {{ chart.bars|length }} Nächte</h2>
+    <span class="muted fd-chart-meta">Ø {{ chart.average_pct }} %{% if chart.peak %} · Spitze {{ chart.peak.weekday }} {{ chart.peak.day }} mit {{ chart.peak.count }} Zimmern{% endif %}</span>
+    <div class="card-actions"><a class="btn sm ghost" href="/zimmerplan">Zimmerplan</a></div>
+  </header>
+  <div class="card-body">
+    <svg class="fd-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-labelledby="chart-svg-title chart-svg-desc" preserveAspectRatio="xMidYMid meet">
+      <title id="chart-svg-title">Belegte Zimmer pro Nacht</title>
+      <desc id="chart-svg-desc">Balkendiagramm der belegten Zimmer für die nächsten {{ chart.bars|length }} Nächte ab heute, bei {{ chart.capacity }} Zimmern Kapazität. Durchschnitt {{ chart.average_pct }} Prozent.</desc>
+      {% for g in chart.gridlines %}
+        <line class="fd-grid{% if loop.last %} fd-grid-cap{% endif %}" x1="{{ chart.pad_l }}" x2="{{ chart.width - chart.pad_r }}" y1="{{ g.y }}" y2="{{ g.y }}"/>
+        <text class="fd-axis" x="{{ chart.pad_l - 8 }}" y="{{ g.y + 4 }}" text-anchor="end">{{ g.label }}</text>
+      {% endfor %}
+      {% for b in chart.bars %}
+        <g class="fd-bar{% if b.is_today %} fd-bar-today{% endif %}{% if b.weekend %} fd-bar-weekend{% endif %}">
+          <title>{{ b.weekday }} {{ b.day }}: {{ b.count }} von {{ chart.capacity }} Zimmern ({{ b.pct }} %)</title>
+          <rect class="fd-bar-track" x="{{ b.x }}" y="{{ chart.capacity_y }}" width="{{ b.w }}" height="{{ chart.baseline - chart.capacity_y }}" rx="4"/>
+          <rect class="fd-bar-fill" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="4"/>
+          <text class="fd-bar-value" x="{{ b.cx }}" y="{{ b.y - 6 }}" text-anchor="middle">{{ b.count }}</text>
+          <text class="fd-axis fd-axis-day" x="{{ b.cx }}" y="{{ chart.label_y }}" text-anchor="middle">{{ 'Heute' if b.is_today else b.weekday }}</text>
+          <text class="fd-axis" x="{{ b.cx }}" y="{{ chart.label2_y }}" text-anchor="middle">{{ b.day }}</text>
+        </g>
+      {% endfor %}
+    </svg>
+    <table class="sr-only">
+      <caption>Belegte Zimmer pro Nacht</caption>
+      <thead><tr><th scope="col">Nacht</th><th scope="col">Belegte Zimmer</th><th scope="col">Auslastung</th></tr></thead>
+      <tbody>
+      {% for b in chart.bars %}<tr><td>{{ b.date | date('long') }}</td><td>{{ b.count }}</td><td>{{ b.pct }} %</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="fd-legend"><span class="fd-key fd-key-today"></span>Heute <span class="fd-key"></span>Folgende Nächte <span class="fd-key fd-key-cap"></span>Kapazität {{ chart.capacity }} Zimmer</p>
+  </div>
+</section>
+{% endblock %}

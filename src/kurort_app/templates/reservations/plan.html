@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Zimmerplan{% endblock %}
+{% block content %}
+<div class="page-header plan-header">
+  <div>
+    <span class="eyebrow">Planung</span>
+    <h1>Zimmerplan</h1>
+    <p class="num">{{ start | date('day') }} – {{ end | date('day') }}{{ end.year }} · {{ room_count }} Zimmer{% if today_info %} · heute {{ today_info.occupied }} belegt ({{ today_info.pct }} %){% endif %}</p>
+  </div>
+  <div class="page-actions plan-nav">
+    <a class="btn" href="{{ prev_url }}" aria-label="Eine Woche zurück">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg> Woche
+    </a>
+    <a class="btn{% if is_default_view %} plan-nav-current{% endif %}" href="{{ today_url }}"{% if is_default_view %} aria-current="date"{% endif %}>Heute</a>
+    <a class="btn" href="{{ next_url }}" aria-label="Eine Woche vor">
+      Woche <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+    <form class="plan-jump" action="/zimmerplan" method="get">
+      <label class="sr-only" for="plan-von">Ab Datum anzeigen</label>
+      <input class="input" id="plan-von" name="von" type="date" value="{{ start.isoformat() }}">
+      <button class="btn" type="submit">Anzeigen</button>
+    </form>
+    <a class="btn primary" href="/reservierungen/neu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Neue Reservierung
+    </a>
+  </div>
+</div>
+
+<div class="plan-legend" aria-label="Legende">
+  <span class="plan-key s-reserved">Reserviert</span>
+  <span class="plan-key s-checked_in">Im Haus</span>
+  <span class="plan-key s-checked_out">Abgereist</span>
+  <span class="plan-key s-no_show">No-Show</span>
+  <span class="plan-key plan-key-today">Heute</span>
+  <span class="muted plan-legend-hint">Balken beginnen am Anreisenachmittag und enden am Abreisevormittag. Freies Feld anklicken, um zu buchen.</span>
+</div>
+
+<div class="plan" role="region" aria-label="Zimmerplan {{ start | date }} bis {{ end | date }}" tabindex="0" style="--plan-days: {{ days|length }}; --plan-halves: {{ days|length * 2 }}">
+  <div class="plan-sheet">
+    <div class="plan-row plan-head">
+      <div class="plan-label plan-corner"><span>Zimmer</span></div>
+      {% for d in days %}
+      <div class="plan-day{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" style="grid-column: {{ d.column }} / span 2"{% if d.is_today %} aria-current="date"{% endif %}>
+        {% if d.month_start %}<span class="plan-month">{{ ['Jan', 'Feb', 'März', 'Apr', 'Mai', 'Juni', 'Juli', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'][d.date.month - 1] }}</span>{% endif %}
+        <span class="plan-wd">{{ ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][d.date.weekday()] }}</span>
+        <span class="plan-dn num">{{ d.date.day }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% for floor in floors %}
+    <div class="plan-floor"><span>{{ floor.floor }}. Etage <span class="muted">· {{ floor.rooms|length }} Zimmer</span></span></div>
+    {% for item in floor.rooms %}
+    {%- set room = item.room -%}
+    <div class="plan-row">
+      <div class="plan-label">
+        <strong class="num">{{ room.number }}</strong>
+        <span class="plan-cat">{{ room.category }} · {{ room.max_occupancy }} P.</span>
+      </div>
+      {% for d in days %}
+        {%- set offset = loop.index0 -%}
+        {%- set cls = 'plan-cell' ~ (' is-today' if d.is_today else '') ~ (' is-weekend' if d.is_weekend else '') ~ (' is-past' if d.is_past else '') -%}
+        {% if offset in item.free %}
+        <a class="{{ cls }} is-free" style="grid-column: {{ d.column }} / span 2" tabindex="-1"
+           href="/reservierungen/neu?zimmer={{ room.number }}&amp;anreise={{ d.iso }}"
+           aria-label="Zimmer {{ room.number }} am {{ d.date | date('day') }} frei – Reservierung anlegen"></a>
+        {% else %}
+        <div class="{{ cls }}" style="grid-column: {{ d.column }} / span 2"></div>
+        {% endif %}
+      {% endfor %}
+      {% for bar in item.bars %}
+      <a class="plan-bar s-{{ bar.r.status }}{% if bar.clip_left %} clip-left{% endif %}{% if bar.clip_right %} clip-right{% endif %}"
+         style="grid-column: {{ bar.start }} / {{ bar.end }}"
+         href="/reservierungen/{{ bar.r.id }}" title="{{ bar.title }}" aria-label="{{ bar.title }}">
+        <span class="plan-bar-name">{{ bar.label }}</span>{% if bar.others > 0 %}<span class="plan-bar-more">+{{ bar.others }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% endfor %}
+
+    <div class="plan-row plan-foot plan-foot-first">
+      <div class="plan-label"><strong>Belegung</strong><span class="plan-cat">belegte Zimmer</span></div>
+      {% for d in days %}
+      <div class="plan-stat{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" style="grid-column: {{ d.column }} / span 2" title="{{ d.occupied }} von {{ room_count }} Zimmern belegt ({{ d.pct }} %)">
+        <span class="num plan-stat-value">{{ d.occupied }}</span>
+        <span class="plan-meter" aria-hidden="true"><span style="width: {{ d.pct }}%"></span></span>
+        <span class="num plan-stat-pct">{{ d.pct }} %</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="plan-row plan-foot">
+      <div class="plan-label"><strong>Anreisen</strong></div>
+      {% for d in days %}<div class="plan-stat plan-stat-small{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" style="grid-column: {{ d.column }} / span 2"><span class="num">{{ d.arrivals or '–' }}</span></div>{% endfor %}
+    </div>
+    <div class="plan-row plan-foot">
+      <div class="plan-label"><strong>Abreisen</strong></div>
+      {% for d in days %}<div class="plan-stat plan-stat-small{% if d.is_today %} is-today{% endif %}{% if d.is_weekend %} is-weekend{% endif %}" style="grid-column: {{ d.column }} / span 2"><span class="num">{{ d.departures or '–' }}</span></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{# Shared presentation macros. Import with:
+   {% import "_macros.html" as ui %} #}
+
+{% macro reservation_status(status) -%}
+  {%- set kinds = {'reserved': 'info', 'checked_in': 'success', 'checked_out': '', 'cancelled': 'danger', 'no_show': 'warning'} -%}
+  <span class="badge {{ kinds.get(status, '') }}">{{ status | status_label }}</span>
+{%- endmacro %}
+
+{% macro meldeschein(status) -%}
+  {%- set kinds = {'offen': 'warning', 'erzeugt': 'info', 'unterschrieben': 'success'} -%}
+  <span class="badge {{ kinds.get(status, '') }}">{{ status | meldeschein_label }}</span>
+{%- endmacro %}
+
+{% macro badge(text, kind='') -%}
+  <span class="badge {{ kind }}">{{ text }}</span>
+{%- endmacro %}
+
+{% macro empty(title, text='') -%}
+  <div class="empty"><strong>{{ title }}</strong>{% if text %}<span>{{ text }}</span>{% endif %}</div>
+{%- endmacro %}
+
+{% macro guest_cell(reservation, link=True) -%}
+  {%- set g = reservation.primary_guest -%}
+  <span class="guest-name">
+    {%- if link %}<a href="/reservierungen/{{ reservation.id }}">{{ g.full_name if g else '–' }}</a>{% else %}{{ g.full_name if g else '–' }}{% endif -%}
+  </span>
+  <span class="sub"><span class="mono">{{ reservation.code }}</span>{% if reservation.guests|length > 1 %} · {{ reservation.guests|length }} Personen{% endif %}</span>
+{%- endmacro %}

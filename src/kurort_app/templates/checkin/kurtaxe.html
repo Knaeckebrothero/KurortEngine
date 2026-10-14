@@ -1,0 +1,72 @@
+{% extends "checkin/_layout.html" %}
+{% block step %}
+{% if error %}
+<div class="notice danger" role="alert"><p><strong>Kurtaxe nicht bestätigt.</strong> {{ error }}</p></div>
+{% endif %}
+
+<form method="post" action="/check-in/{{ r.id }}/kurtaxe" class="stack">
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2>Befreiungen</h2>
+        <span class="sub">Nur mit Nachweis. Ohne Nachweis bleibt der Gast zahlungspflichtig.</span>
+      </div>
+    </div>
+    <div class="card-body ci-exemptions"
+         hx-post="/check-in/{{ r.id }}/kurtaxe/vorschau"
+         hx-trigger="change, input delay:400ms"
+         hx-include="closest form"
+         hx-target="#kurtaxe-table"
+         hx-swap="innerHTML">
+      {% for line in result.lines %}
+      {% set rid = line.reservation_guest_id %}
+      <div class="ci-ex-row">
+        <div class="ci-ex-who">
+          <span class="guest-name">{{ line.name }}</span>
+          <span class="sub">{% if line.age is not none %}{{ line.age }} Jahre · {% endif %}{{ line.band_label }}</span>
+        </div>
+        <div class="field">
+          <label for="ex{{ rid }}_category">Befreiung</label>
+          <select class="select" id="ex{{ rid }}_category" name="ex{{ rid }}_category">
+            <option value="">Keine – zahlungspflichtig</option>
+            {% for key, label in exemption_labels.items() %}
+            <option value="{{ key }}"{% if line.exemption == key %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="ex{{ rid }}_evidence">Nachweis</label>
+          <input class="input" id="ex{{ rid }}_evidence" name="ex{{ rid }}_evidence" type="text" autocomplete="off"
+                 value="{{ line.evidence or '' }}"
+                 placeholder="{{ 'z. B. Ausweis-Nr. oder Bescheinigung' }}"
+                 {% if line.exemption and not line.evidence %}aria-invalid="true"{% endif %}
+                 aria-describedby="ex{{ rid }}_hint">
+          <span class="hint" id="ex{{ rid }}_hint">{{ evidence_hints.get(line.exemption, 'Nur bei gewählter Befreiung nötig.') }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="kt-title">
+    <div class="card-header">
+      <div>
+        <h2 id="kt-title">Berechnung</h2>
+        <span class="sub">{{ satzung_label }} · {{ result.nights }} {{ 'Nacht' if result.nights == 1 else 'Nächte' }}</span>
+      </div>
+    </div>
+    <div id="kurtaxe-table" aria-live="polite">
+      {% include "checkin/_kurtaxe_table.html" %}
+    </div>
+  </section>
+
+  <div class="ci-footer">
+    {% if prev_url %}<a class="btn ghost" href="{{ prev_url }}">Zurück</a>{% endif %}
+    <span class="spacer"></span>
+    <button class="btn primary" type="submit">
+      Kurtaxe bestätigen &amp; weiter
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</form>
+{% endblock %}

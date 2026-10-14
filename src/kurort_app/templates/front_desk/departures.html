@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% import "front_desk/_fd.html" as fd %}
+{% block title %}Abreisen{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <span class="eyebrow">{{ 'Heute' if is_today else 'Abreisetag' }} · {{ day | date('day') }}</span>
+    <h1>Abreisen</h1>
+    <p>{{ day | date('long') }} · {{ open_count }} {{ 'Check-out' if open_count == 1 else 'Check-outs' }} ausstehend · {{ done_count }} erledigt</p>
+  </div>
+  <div class="page-actions">{{ fd.day_nav('/abreisen', day, prev_day, next_day, is_today) }}</div>
+</div>
+
+<section class="card" aria-label="Abreiseliste">
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table fd-queue">
+      <thead>
+        <tr>
+          <th scope="col">Zimmer</th>
+          <th scope="col">Gast</th>
+          <th scope="col">Aufenthalt</th>
+          <th scope="col" class="num">Saldo</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="actions"><span class="sr-only">Aktion</span></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        {% set b = balance[r.id] %}
+        <tr class="{% if r.status == 'checked_out' %}fd-done{% endif %}" data-code="{{ r.code }}">
+          <td>{{ fd.room(r) }}</td>
+          <td>{{ ui.guest_cell(r) }}</td>
+          <td class="num">{{ r.arrival | date('day') }} – {{ r.departure | date('day') }}<span class="sub">{{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span></td>
+          <td class="num fd-money">{{ b.total | money }}<span class="sub">{% if b.kurtaxe is not none %}inkl. {{ b.kurtaxe | money }} Kurtaxe{% else %}Kurtaxe offen{% endif %}</span></td>
+          <td>
+            {% if r.status == 'checked_out' %}
+              <span class="badge">Abgereist{% if r.checked_out_at %} · {{ r.checked_out_at | time }}{% endif %}</span>
+            {% else %}
+              <span class="badges">
+                <span class="badge info">Check-out ausstehend</span>
+                {% if meldeschein[r.id].kind != 'success' %}<span class="badge {{ meldeschein[r.id].kind }}">{{ meldeschein[r.id].text }}</span>{% endif %}
+              </span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            {% if r.status == 'checked_in' %}
+            <a class="btn sm primary" href="/check-out/{{ r.id }}">Check-out</a>
+            {% else %}
+            <a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ ui.empty('Keine Abreisen', 'Für ' ~ (day | date('long')) ~ ' ist keine Abreise geplant.') }}
+  {% endif %}
+</section>
+{% endblock %}

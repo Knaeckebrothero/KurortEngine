@@ -1,0 +1,41 @@
+{# Stay fields shared by the new and edit forms. Expects form, errors, channels, packages + room-field context. #}
+{% import "reservations/_form_macros.html" as f with context %}
+<div class="form-grid">
+  <div class="field span-2">
+    <label for="anreise">Anreise</label>
+    <input class="input" id="anreise" name="anreise" type="date" value="{{ form.get('anreise', '') }}" required{{ f.invalid('anreise') }}
+           hx-get="/reservierungen/verfuegbare-zimmer" hx-trigger="change" hx-target="#room-field" hx-swap="outerHTML"
+           hx-include="[name=anreise],[name=abreise],[name=zimmer],[name=reservierung]">
+    {{ f.error('anreise') }}
+  </div>
+  <div class="field span-2">
+    <label for="abreise">Abreise</label>
+    <input class="input" id="abreise" name="abreise" type="date" value="{{ form.get('abreise', '') }}" required{{ f.invalid('abreise') }}
+           hx-get="/reservierungen/verfuegbare-zimmer" hx-trigger="change" hx-target="#room-field" hx-swap="outerHTML"
+           hx-include="[name=anreise],[name=abreise],[name=zimmer],[name=reservierung]">
+    {{ f.error('abreise') }}
+  </div>
+  <div class="field span-2">
+    <label for="eta">Ankunftszeit <span class="muted">(optional)</span></label>
+    <input class="input" id="eta" name="eta" type="time" value="{{ form.get('eta', '') }}"{{ f.invalid('eta') }}>
+    {{ f.error('eta') }}
+  </div>
+  {% include "reservations/_room_field.html" %}
+  <div class="field span-3">
+    <label for="kanal">Buchungskanal</label>
+    <select class="select" id="kanal" name="kanal">
+      {% for value, label in channels %}<option value="{{ value }}"{% if form.get('kanal') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field span-3">
+    <label for="paket">Kurpaket <span class="muted">(optional)</span></label>
+    <select class="select" id="paket" name="paket">
+      <option value="">Ohne Kurpaket</option>
+      {% for p in packages %}<option value="{{ p.code }}"{% if form.get('paket') == p.code %} selected{% endif %}>{{ p.code }} · {{ p.name }} · {{ p.nights }} Nächte · {{ p.price_eur | money }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field span-6">
+    <label for="notizen">Notizen <span class="muted">(optional)</span></label>
+    <textarea class="textarea" id="notizen" name="notizen" rows="3" placeholder="Wünsche, Hinweise für die Rezeption …">{{ form.get('notizen', '') }}</textarea>
+  </div>
+</div>

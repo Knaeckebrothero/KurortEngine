@@ -28,17 +28,31 @@ dependencies = [
 
 [project.scripts]
 kurort-engine = "kurort_engine.__main__:main"
+kurort-app = "kurort_app.cli:main"
 guest-pwa = "kurort_engine.a11y.guest_pwa.__main__:main"
 
 [project.optional-dependencies]
+# Staff web application (FastAPI + Postgres). The engine itself stays
+# dependency-light; the container image installs `.[web]`.
+web = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0.30",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.13",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "pydantic-settings>=2.4",
+]
 dev = [
+    "httpx>=0.27",
     "pytest>=7",
     "pytest-cov>=4",
     "ruff>=0.1",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/kurort_engine"]
+packages = ["src/kurort_engine", "src/kurort_app"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -51,3 +65,7 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency/parameter markers are designed to be call defaults.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Form", "fastapi.Path", "fastapi.File"]

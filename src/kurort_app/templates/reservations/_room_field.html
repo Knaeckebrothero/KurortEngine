@@ -1,0 +1,32 @@
+<div class="field span-6 room-field" id="room-field">
+  <label for="zimmer">Zimmer</label>
+  <select class="select" id="zimmer" name="zimmer" required
+          hx-get="/reservierungen/verfuegbare-zimmer" hx-trigger="change"
+          hx-target="#room-field" hx-swap="outerHTML"
+          hx-include="[name=anreise],[name=abreise],[name=reservierung]"
+          {% if room_error %}aria-invalid="true" aria-describedby="zimmer-error zimmer-hint"{% else %}aria-describedby="zimmer-hint"{% endif %}>
+    <option value="">Zimmer wählen …</option>
+    {% for category, rooms in room_groups %}
+    <optgroup label="{{ category }}">
+      {% for room in rooms %}
+      {%- set taken = selected_taken and room.number == selected_room -%}
+      <option value="{{ room.number }}"{% if room.number == selected_room %} selected{% endif %}>
+        {{ room.number }} · {{ room.max_occupancy }} {{ 'Person' if room.max_occupancy == 1 else 'Personen' }} · {{ room.nightly_rate | money }} / Nacht{% if taken %} – belegt{% endif %}
+      </option>
+      {% endfor %}
+    </optgroup>
+    {% endfor %}
+  </select>
+  <span class="hint room-hint" id="zimmer-hint">
+    {% if not span_ok %}
+      Zeitraum wählen, um nur freie Zimmer zu sehen.
+    {% elif selected_taken %}
+      <span class="badge warning">Belegt</span> Zimmer {{ selected_room }} ist im gewählten Zeitraum nicht frei – bitte ein anderes wählen.
+    {% elif price is not none %}
+      <span class="badge success">Frei</span> {{ nights }} {{ 'Nacht' if nights == 1 else 'Nächte' }} × {{ nightly_rate | money }} = <strong class="num">{{ price | money }}</strong>
+    {% else %}
+      <span class="num">{{ free_count }}</span> von {{ room_total }} Zimmern frei · {{ nights }} {{ 'Nacht' if nights == 1 else 'Nächte' }}
+    {% endif %}
+  </span>
+  {% if room_error %}<span class="error" id="zimmer-error">{{ room_error }}</span>{% endif %}
+</div>

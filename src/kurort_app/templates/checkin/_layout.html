@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Check-in · {{ primary.full_name if primary else r.code }}{% endblock %}
+{% block content %}
+{% set current = steps | selectattr('status', 'equalto', 'current') | first %}
+<nav class="breadcrumb" aria-label="Pfad">
+  <a href="/anreisen">Anreisen</a> › <a href="/reservierungen/{{ r.id }}">{{ r.code }}</a> › Check-in
+</nav>
+<div class="page-header ci-header">
+  <div>
+    <span class="eyebrow">Check-in · Schritt {{ current.number }} von {{ steps | length }}</span>
+    <h1>{{ primary.full_name if primary else r.code }}</h1>
+    <p>
+      {% if r.room %}Zimmer {{ r.room.number }} · {{ r.room.category }} · {% endif %}
+      {{ r.arrival | date('day') }} – {{ r.departure | date('day') }} · {{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}
+      · {{ r.guests | length }} {{ 'Person' if r.guests | length == 1 else 'Personen' }}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn ghost" href="/anreisen">Unterbrechen</a>
+  </div>
+</div>
+
+{% if late_arrival %}
+<div class="notice warning ci-banner" role="note">
+  <p><strong>Verspätete Anreise.</strong> Geplant war der {{ r.arrival | date('long') }}. Check-in heute nachholen.</p>
+</div>
+{% endif %}
+
+<ol class="ci-stepper" aria-label="Check-in-Schritte">
+  {% for s in steps %}
+  <li class="ci-step is-{{ s.status }}{% if s.done %} is-done{% endif %}">
+    <a href="{{ s.href }}"{% if s.status == 'current' %} aria-current="step"{% endif %}>
+      <span class="ci-step-num" aria-hidden="true">{% if s.done and s.status != 'current' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% else %}{{ s.number }}{% endif %}</span>
+      <span class="ci-step-text">
+        <span class="ci-step-label">{{ s.label }}</span>
+        <span class="ci-step-state">
+          {%- if s.done %}erledigt{% elif s.key == 'abschluss' %}bestätigen{% else %}{{ s.open_count }} offen{% endif -%}
+        </span>
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ol>
+
+<div class="ci-layout">
+  <div class="ci-main">
+    {% block step %}{% endblock %}
+  </div>
+
+  <aside class="ci-aside" aria-label="Reservierung im Blick">
+    <section class="card ci-context">
+      {% if r.room %}
+      <div class="ci-room">
+        <span class="ci-room-num num">{{ r.room.number }}</span>
+        <span class="ci-room-meta"><strong>{{ r.room.category }}</strong><small>{{ r.room.features or '' }}</small></span>
+      </div>
+      {% endif %}
+      <dl class="facts ci-facts">
+        <dt>Reservierung</dt><dd class="mono">{{ r.code }}</dd>
+        <dt>Anreise</dt><dd class="num">{{ r.arrival | date('day') }}{% if r.eta %} · ca. {{ r.eta | time }} Uhr{% endif %}</dd>
+        <dt>Abreise</dt><dd class="num">{{ r.departure | date('day') }}</dd>
+        <dt>Kanal</dt><dd>{{ r.channel | channel_label }}</dd>
+        <dt>Paket</dt><dd>{% if package %}{{ package.name }} <span class="muted">({{ package.code }})</span>{% else %}Logis ohne Paket{% endif %}</dd>
+        <dt>Logis</dt><dd class="num">{{ r.rate_total | money }}</dd>
+        <dt>Kurtaxe</dt>
+        <dd class="num">{% if r.kurtaxe %}{{ r.kurtaxe.amount | money }}{% else %}<span class="muted">noch nicht bestätigt</span>{% endif %}</dd>
+      </dl>
+      <div class="ci-party">
+        <span class="eyebrow">Gäste</span>
+        <ul>
+          {% for rg in r.guests %}
+          <li>
+            <span class="guest-name">{{ rg.guest.full_name }}</span>
+            <span class="badges">
+              {% if rg.is_primary %}<span class="badge plain">Hauptgast</span>{% endif %}
+              {{ ui.meldeschein(rg.meldeschein_status) }}
+              {% if rg.kurkarte_code %}<span class="badge success">Kurkarte</span>{% endif %}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% if r.notes %}
+      <div class="notice ci-note"><p><strong>Notiz:</strong> {{ r.notes }}</p></div>
+      {% endif %}
+      <a class="ci-detail-link" href="/reservierungen/{{ r.id }}">Reservierung öffnen</a>
+    </section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+<div class="table-wrap">
+  <table class="table ci-tax">
+    <thead>
+      <tr>
+        <th scope="col">Gast</th>
+        <th scope="col">Tarifgruppe</th>
+        <th scope="col" class="num">Satz / Tag</th>
+        <th scope="col" class="num">Tage</th>
+        <th scope="col">Befreiung</th>
+        <th scope="col" class="num">Betrag</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in result.lines %}
+      <tr{% if line.blocker %} class="has-blocker"{% endif %}>
+        <td>
+          <span class="guest-name">{{ line.name }}</span>
+          {% if line.age is not none %}<span class="sub">{{ line.age }} Jahre bei Anreise</span>{% endif %}
+        </td>
+        <td>{{ line.band_label }}</td>
+        <td class="num">{{ line.rate_per_day | money if line.rate_per_day is not none else '–' }}</td>
+        <td class="num">{{ line.days }}</td>
+        <td>
+          {% if line.exempt %}
+            <span class="badge success">Befreit · {{ exemption_short[line.exemption] }}</span>
+          {% elif line.exemption %}
+            <span class="badge danger">{{ exemption_short[line.exemption] }} · Nachweis fehlt</span>
+          {% else %}
+            <span class="muted">–</span>
+          {% endif %}
+        </td>
+        <td class="num ci-amount">
+          {% if line.amount is none %}–{% elif line.exempt %}<s class="muted">{{ (line.rate_per_day * line.days) | money }}</s> {{ line.amount | money }}{% else %}{{ line.amount | money }}{% endif %}
+        </td>
+      </tr>
+      {% if line.blocker %}
+      <tr class="ci-blocker-row">
+        <td colspan="6">
+          <span class="badge danger">Kurtaxe klären</span> {{ line.blocker }}
+          {% if line.exemption and line.amount is not none and not line.exempt %}<span class="muted">Folge ohne Nachweis: {{ line.amount | money }} zahlungspflichtig.</span>{% endif %}
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="5">
+          Kurtaxe gesamt
+          <span class="sub">{{ result.payable_days }} zahlungspflichtige Personentage{% if result.exempt_count %} · {{ result.exempt_count }} befreit{% endif %}</span>
+        </th>
+        <td class="num ci-total">{{ result.total | money if result.total is not none else '–' }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+<div class="ci-tax-foot">
+  {% if result.blockers %}
+    <span class="badge warning">Noch nicht bestätigbar · {{ result.blockers | length }} offen</span>
+  {% elif assessed and assessed.amount == result.total and not preview %}
+    <span class="badge success">Bestätigt · {{ assessed.amount | money }} · {{ assessed.computed_at | time }} Uhr</span>
+  {% else %}
+    <span class="badge info">Vorschau · noch nicht bestätigt</span>
+  {% endif %}
+  <span class="muted">Tarife: {% for band in satzung.bands %}{{ band_labels.get(band.name, band.name) }} {{ band.rate_per_day | money }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+</div>

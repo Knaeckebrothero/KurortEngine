@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set lead = r.primary_guest %}
+{% block title %}{{ r.code }} bearbeiten{% endblock %}
+{% set field_labels = {'anreise': 'Anreise', 'abreise': 'Abreise', 'eta': 'Ankunftszeit', 'zimmer': 'Zimmer'} %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Pfad"><a href="/reservierungen">Reservierungen</a> › <a href="/reservierungen/{{ r.id }}" class="mono">{{ r.code }}</a> › Bearbeiten</nav>
+<div class="page-header">
+  <div>
+    <span class="eyebrow mono">{{ r.code }}</span>
+    <h1>Aufenthalt ändern</h1>
+    <p>{{ lead.full_name if lead else '' }} · {{ r.guests|length }} {{ 'Person' if r.guests|length == 1 else 'Personen' }}</p>
+  </div>
+</div>
+
+{% if errors %}
+<div class="notice danger res-error-summary" role="alert" tabindex="-1" id="error-summary">
+  <div>
+    <strong>{{ errors|length }} {{ 'Angabe' if errors|length == 1 else 'Angaben' }} prüfen</strong>
+    <ul>{% for name, message in errors.items() %}<li><a href="#{{ name }}">{{ field_labels.get(name, name) }}: {{ message }}</a></li>{% endfor %}</ul>
+  </div>
+</div>
+{% endif %}
+
+<form class="res-form stack" method="post" action="/reservierungen/{{ r.id }}/bearbeiten" novalidate>
+  <input type="hidden" name="reservierung" value="{{ r.id }}">
+  <section class="card" aria-labelledby="sec-stay">
+    <div class="card-header"><h2 id="sec-stay">Aufenthalt</h2></div>
+    <div class="card-body">{% include "reservations/_stay_fields.html" %}</div>
+  </section>
+  <div class="res-form-actions">
+    <a class="btn ghost" href="/reservierungen/{{ r.id }}">Abbrechen</a>
+    <button class="btn primary" type="submit">Änderungen speichern</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}{% if errors %}<script>document.getElementById('error-summary')?.focus();</script>{% endif %}{% endblock %}

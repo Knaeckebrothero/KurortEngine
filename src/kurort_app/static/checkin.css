@@ -1,0 +1,222 @@
+/* Check-in flow (/check-in/...). Consumes the semantic tokens from app.css. */
+
+.ci-header { margin-bottom: var(--space-4); }
+.ci-banner { margin-bottom: var(--space-4); }
+
+/* ---------- Stepper ---------- */
+.ci-stepper {
+  list-style: none; margin: 0 0 var(--space-6); padding: 0;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2);
+  counter-reset: step;
+}
+.ci-step a {
+  position: relative; display: flex; align-items: center; gap: var(--space-3);
+  min-height: 60px; padding: var(--space-2) var(--space-3);
+  background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
+  color: var(--text-primary); text-decoration: none;
+  transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+.ci-step a:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.ci-step-num {
+  flex: none; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 750; font-size: 14px;
+  background: var(--surface-subtle); color: var(--text-secondary); border: 2px solid var(--border-subtle);
+  font-variant-numeric: tabular-nums;
+}
+.ci-step-num svg { width: 16px; height: 16px; }
+.ci-step-text { display: flex; flex-direction: column; min-width: 0; }
+.ci-step-label { font-weight: 650; font-size: 14px; line-height: 20px; }
+.ci-step-state { font-size: 12px; line-height: 16px; color: var(--text-secondary); }
+.ci-step.is-done .ci-step-num { background: var(--status-success-bg); color: var(--status-success-fg); border-color: var(--status-success-fg); }
+.ci-step.is-current a {
+  background: var(--selection-bg); border-color: var(--selection-indicator);
+  box-shadow: inset 0 -3px 0 var(--selection-indicator);
+}
+.ci-step.is-current .ci-step-num { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.ci-step.is-current .ci-step-state { color: var(--text-primary); }
+
+/* ---------- Layout ---------- */
+.ci-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-6); align-items: start; }
+.ci-main { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.ci-aside { position: sticky; top: 88px; }
+.ci-footer {
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  padding: var(--space-4) 0 0;
+}
+.ci-footer .muted { font-size: 14px; }
+.ci-why { text-align: right; }
+
+/* Context card */
+.ci-context { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+.ci-room { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+.ci-room-num {
+  font-size: 30px; line-height: 1; font-weight: 750; letter-spacing: -0.02em;
+  padding: 10px 12px; border-radius: var(--radius-control);
+  background: var(--primary); color: var(--on-primary);
+}
+.ci-room-meta { display: flex; flex-direction: column; }
+.ci-room-meta small { color: var(--text-secondary); font-size: 13px; line-height: 18px; }
+.ci-facts { grid-template-columns: max-content 1fr; font-size: 14px; }
+.ci-facts dd { font-weight: 600; }
+.ci-party ul { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.ci-party li { display: flex; flex-direction: column; gap: 4px; }
+.ci-party .badge { font-size: 12px; padding: 0 8px; }
+.ci-note { font-size: 14px; }
+.ci-detail-link { font-size: 14px; font-weight: 600; }
+
+/* ---------- Step 1: guests ---------- */
+.ci-errors ul { margin: var(--space-1) 0 0; padding-left: var(--space-5); }
+.ci-errors a { color: inherit; font-weight: 600; }
+.ci-guest { margin: 0; min-width: 0; }
+.ci-guest .card-header h2 { font-size: 18px; }
+.ci-avatar {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--color-rhine-100, #D1EFF3); color: var(--color-rhine-800, #064B5D); font-weight: 750; font-size: 14px;
+}
+.ci-add summary {
+  display: flex; align-items: center; gap: var(--space-2); min-height: 52px; padding: 0 var(--space-5);
+  cursor: pointer; font-weight: 650; color: var(--primary); list-style: none;
+}
+.ci-add summary::-webkit-details-marker { display: none; }
+.ci-add summary svg { width: 18px; height: 18px; }
+.ci-add[open] summary { border-bottom: 1px solid var(--border-subtle); }
+.ci-add .hint { margin: var(--space-3) 0; font-size: 13px; }
+
+/* ---------- Step 2: Meldeschein ---------- */
+.ci-panel { display: flex; flex-direction: column; gap: var(--space-4); }
+.ci-forms { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
+.ci-form-row {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: var(--space-4); align-items: center;
+  padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle);
+  border-left: 3px solid transparent;
+}
+.ci-form-row:last-child { border-bottom: 0; }
+.ci-form-row.is-offen { border-left-color: var(--status-warning-fg); }
+.ci-form-row.is-erzeugt { border-left-color: var(--status-info-fg); background: color-mix(in srgb, var(--status-info-bg) 35%, transparent); }
+.ci-form-row.is-unterschrieben { border-left-color: var(--status-success-fg); }
+.ci-doc-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-control); display: grid; place-items: center;
+  background: var(--surface-subtle); color: var(--text-secondary);
+}
+.ci-doc-icon svg { width: 22px; height: 22px; }
+.is-unterschrieben .ci-doc-icon { background: var(--status-success-bg); color: var(--status-success-fg); }
+.is-erzeugt .ci-doc-icon { background: var(--status-info-bg); color: var(--status-info-fg); }
+.ci-form-name { display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; }
+.ci-form-who .sub { margin-top: 2px; }
+.ci-form-actions { display: flex; gap: var(--space-2); justify-content: flex-end; }
+.ci-form-actions form { margin: 0; }
+.htmx-request .btn, .btn.htmx-request { opacity: 0.6; cursor: progress; }
+
+/* ---------- Step 3: Kurtaxe ---------- */
+.ci-exemptions { display: flex; flex-direction: column; gap: var(--space-4); }
+.ci-ex-row {
+  display: grid; grid-template-columns: minmax(160px, 0.9fr) minmax(250px, 1fr) minmax(220px, 1.3fr);
+  gap: var(--space-4); align-items: start; padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle);
+}
+.ci-ex-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.ci-ex-who { padding-top: 28px; }
+.ci-tax th.num, .ci-tax td.num { text-align: right; white-space: nowrap; }
+.ci-tax td:first-child { min-width: 190px; }
+.ci-tax .badge { white-space: normal; }
+.ci-tax tbody tr.has-blocker td { border-bottom-color: transparent; }
+.ci-blocker-row td { background: color-mix(in srgb, var(--status-danger-bg) 40%, transparent); font-size: 14px; }
+.ci-blocker-row .badge { margin-right: var(--space-2); }
+.ci-blocker-row .muted { display: block; margin-top: 4px; }
+.ci-amount { font-weight: 650; white-space: nowrap; }
+.ci-amount s { font-weight: 400; margin-right: 6px; }
+.ci-tax tfoot th, .ci-tax tfoot td {
+  padding: var(--space-4) 12px; border-top: 2px solid var(--border-strong); background: var(--surface-subtle);
+  text-transform: none; letter-spacing: 0; font-size: 16px; color: var(--text-primary);
+}
+.ci-tax tfoot th { text-align: left; font-weight: 700; }
+.ci-total { font-size: 24px !important; font-weight: 750; white-space: nowrap; }
+.ci-tax-foot {
+  display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;
+  padding: var(--space-3) var(--space-5) var(--space-4); font-size: 13px;
+}
+
+/* ---------- Step 4: Kurkarte ---------- */
+.ci-kk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--space-5); }
+.ci-kk-slot { display: flex; flex-direction: column; gap: var(--space-2); }
+.ci-kk {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: var(--space-4);
+  min-height: 196px; padding: var(--space-5); border-radius: 16px; color: #fff;
+  background:
+    radial-gradient(circle at 110% -20%, rgb(128 209 223 / 45%), transparent 55%),
+    radial-gradient(circle at -10% 120%, rgb(88 175 130 / 40%), transparent 50%),
+    linear-gradient(135deg, #075D73 0%, #064B5D 55%, #165C3A 100%);
+  box-shadow: var(--elevation-2);
+}
+.ci-kk::after {
+  content: ""; position: absolute; inset: auto -40px -60px auto; width: 180px; height: 180px; border-radius: 50%;
+  border: 18px solid rgb(255 255 255 / 6%); pointer-events: none;
+}
+.ci-kk-body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.ci-kk-top { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.ci-kk-brand { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; opacity: 0.9; }
+.ci-kk-badge {
+  font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px;
+  background: rgb(255 255 255 / 16%); border: 1px solid rgb(255 255 255 / 35%);
+}
+.ci-kk-name { font-size: 20px; line-height: 26px; font-weight: 750; overflow-wrap: anywhere; margin-top: var(--space-1); }
+.ci-kk-facts { margin: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.ci-kk-facts div { display: flex; gap: var(--space-2); }
+.ci-kk-facts dt { opacity: 0.75; min-width: 44px; }
+.ci-kk-facts dd { margin: 0; font-weight: 600; }
+.ci-kk-code { margin-top: auto; font-size: 12px; opacity: 0.85; letter-spacing: 0.04em; }
+.ci-kk-qr {
+  align-self: center; background: #fff; border-radius: 10px; padding: 6px; line-height: 0;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 18%); position: relative; z-index: 1;
+}
+.ci-kk-qr svg { width: 100%; height: auto; display: block; }
+.ci-kk.is-empty {
+  grid-template-columns: 1fr; color: var(--text-secondary); background: var(--surface-subtle);
+  border: 2px dashed var(--border-strong); box-shadow: none;
+}
+.ci-kk.is-empty::after { display: none; }
+.ci-kk.is-empty .ci-kk-name { color: var(--text-primary); }
+.ci-kk-meta { display: flex; gap: var(--space-2); flex-wrap: wrap; margin: 0; }
+
+/* ---------- Step 5: completion ---------- */
+.ci-checklist { list-style: none; margin: 0 0 var(--space-5); padding: 0; display: flex; flex-direction: column; }
+.ci-checklist li {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center;
+  padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle);
+}
+.ci-checklist li:last-child { border-bottom: 0; }
+.ci-checklist .sub { display: block; }
+.ci-checklist a { font-size: 14px; font-weight: 600; }
+.ci-check { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; }
+.is-ok .ci-check { background: var(--status-success-fg); }
+.is-ok .ci-check::after { content: ""; width: 10px; height: 6px; border: solid #fff; border-width: 0 0 2.5px 2.5px; transform: translateY(-1px) rotate(-45deg); }
+.is-open .ci-check { border: 2px solid var(--status-warning-fg); background: var(--status-warning-bg); }
+.ci-bill {
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-control); overflow: hidden; font-size: 15px;
+}
+.ci-bill > div { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+.ci-bill > div:last-child { border-bottom: 0; }
+.ci-bill-total { background: var(--surface-subtle); font-weight: 750; font-size: 17px; }
+.ci-complete { min-height: 52px; padding: 0 var(--space-6); font-size: 16px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1200px) {
+  .ci-layout { grid-template-columns: minmax(0, 1fr); }
+  .ci-aside { position: static; }
+  .ci-context { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+  .ci-room { border-bottom: 0; padding-bottom: 0; }
+  .ci-party, .ci-note { flex: 1 1 260px; }
+}
+@media (max-width: 960px) {
+  .ci-stepper { grid-template-columns: repeat(5, minmax(56px, 1fr)); }
+  .ci-step-text { display: none; }
+  .ci-step a { justify-content: center; min-height: 48px; }
+  .ci-step.is-current .ci-step-text { display: none; }
+  .ci-ex-row { grid-template-columns: 1fr; }
+  .ci-ex-who { padding-top: 0; }
+  .ci-form-row { grid-template-columns: 40px minmax(0, 1fr); }
+  .ci-form-actions { grid-column: 2; justify-content: flex-start; }
+}
+@media (max-width: 520px) {
+  .ci-kk { grid-template-columns: 1fr; }
+  .ci-kk-qr { width: 140px; }
+}

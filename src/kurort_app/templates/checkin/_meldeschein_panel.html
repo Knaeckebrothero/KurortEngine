@@ -1,0 +1,65 @@
+{% import "_macros.html" as ui %}
+<div id="meldeschein-panel" class="ci-panel">
+  {% if panel_notice %}
+  <div class="notice {{ panel_notice.kind }}" role="status"><p>{{ panel_notice.text }}</p></div>
+  {% endif %}
+  {% if data_blockers %}
+  <div class="notice warning" role="note">
+    <p><strong>Gästedaten unvollständig.</strong> {{ data_blockers[0].message }}
+      {% if data_blockers | length > 1 %}(+{{ data_blockers | length - 1 }} weitere){% endif %}
+      <a href="/check-in/{{ r.id }}/gaeste">In Schritt 1 ergänzen</a></p>
+  </div>
+  {% endif %}
+
+  <ul class="ci-forms" role="list">
+    {% for rg in r.guests %}
+    {% set target = '/check-in/' ~ r.id ~ '/meldeschein/' ~ rg.id %}
+    <li class="ci-form-row is-{{ rg.meldeschein_status }}">
+      <span class="ci-doc-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>{% if rg.meldeschein_status == 'unterschrieben' %}<path d="M9 14.5l2 2 4-4"/>{% else %}<path d="M9 13h6M9 17h4"/>{% endif %}</svg>
+      </span>
+      <div class="ci-form-who">
+        <span class="ci-form-name"><span class="guest-name">{{ rg.guest.full_name }}</span>{{ ui.meldeschein(rg.meldeschein_status) }}</span>
+        <span class="sub">
+          {%- if rg.meldeschein_form_id %}<span class="mono">{{ rg.meldeschein_form_id }}</span>{% else %}noch kein Formular{% endif -%}
+          {%- if rg.meldeschein_generated_at %} · erzeugt {{ rg.meldeschein_generated_at | time }} Uhr{% endif -%}
+          {%- if rg.meldeschein_signed_at %} · unterschrieben {{ rg.meldeschein_signed_at | time }} Uhr{% endif -%}
+        </span>
+      </div>
+      <div class="ci-form-actions">
+        {% if rg.meldeschein_status == 'offen' %}
+          <form method="post" action="{{ target }}/erzeugen">
+            <button class="btn sm primary" type="submit">PDF erzeugen</button>
+          </form>
+        {% else %}
+          <a class="btn sm" href="/meldeschein/{{ rg.id }}.pdf" target="_blank" rel="noopener">PDF öffnen</a>
+          {% if rg.meldeschein_status == 'erzeugt' %}
+          <form method="post" action="{{ target }}/unterschreiben">
+            <button class="btn sm primary" type="submit">Unterschrift bestätigen</button>
+          </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {% set open_count = r.guests | selectattr('meldeschein_status', 'equalto', 'offen') | list | length %}
+  <div class="ci-footer">
+    {% if open_count > 1 %}
+    <form method="post" action="/check-in/{{ r.id }}/meldeschein/alle">
+      <button class="btn" type="submit">Alle {{ open_count }} erzeugen</button>
+    </form>
+    {% endif %}
+    <span class="spacer"></span>
+    {% if blockers %}
+      <span class="muted ci-why" id="ms-why">{{ blockers | length }} {{ 'Meldeschein wartet' if blockers | length == 1 else 'Meldescheine warten' }} auf Erzeugung oder Unterschrift.</span>
+      <button class="btn primary" type="button" disabled aria-describedby="ms-why">Weiter zur Kurtaxe</button>
+    {% else %}
+      <a class="btn primary" href="{{ next_url }}">
+        Weiter zur Kurtaxe
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    {% endif %}
+  </div>
+</div>

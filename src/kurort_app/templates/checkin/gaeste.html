@@ -1,0 +1,139 @@
+{% extends "checkin/_layout.html" %}
+{% macro field_attrs(row, name) -%}
+  id="g{{ row.rg.id }}_{{ name }}" name="g{{ row.rg.id }}_{{ name }}"
+  {%- if row.errors.get(name) %} aria-invalid="true" aria-describedby="g{{ row.rg.id }}_{{ name }}_err"{% endif %}
+{%- endmacro %}
+{% macro field_error(row, name) -%}
+  {% if row.errors.get(name) %}<span class="error" id="g{{ row.rg.id }}_{{ name }}_err">{{ row.errors[name] }}</span>{% endif %}
+{%- endmacro %}
+{% block step %}
+{% set problems = [] %}
+{% for row in rows %}{% for name, msg in row.errors.items() %}{% set _ = problems.append((row, name, msg)) %}{% endfor %}{% endfor %}
+
+{% if stale_forms %}
+<div class="notice warning" role="status"><p><strong>Meldeschein veraltet:</strong> {{ stale_forms | join(', ') }} – Daten geändert, Meldeschein im nächsten Schritt neu erzeugen.</p></div>
+{% endif %}
+
+{% if problems %}
+<div class="notice danger ci-errors" role="{{ 'alert' if submitted else 'status' }}" tabindex="-1" id="fehler">
+  <div>
+    <p><strong>{{ problems | length }} {{ 'Angabe fehlt' if problems | length == 1 else 'Angaben fehlen' }} für den Meldeschein.</strong></p>
+    <ul>
+      {% for row, name, msg in problems %}
+      <li><a href="#g{{ row.rg.id }}_{{ name }}">{{ row.rg.guest.full_name.strip() or 'Gast' }}: {{ msg }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="/check-in/{{ r.id }}/gaeste" class="stack" novalidate>
+  {% for row in rows %}
+  {% set v = row.v %}
+  <fieldset class="card ci-guest" aria-labelledby="g{{ row.rg.id }}_title">
+    <div class="card-header">
+      <span class="ci-avatar" aria-hidden="true">{{ (v.first_name[:1] ~ v.last_name[:1]) | upper or '?' }}</span>
+      <div>
+        <h2 id="g{{ row.rg.id }}_title">{{ row.rg.guest.full_name }}</h2>
+        <span class="sub">{{ 'Hauptgast' if row.rg.is_primary else 'Mitreisende Person' }}{% if row.age is not none %} · {{ row.age }} Jahre bei Anreise{% endif %}</span>
+      </div>
+      <div class="card-actions">
+        {% if row.errors %}<span class="badge warning">{{ row.errors | length }} offen</span>{% else %}<span class="badge success">Daten vollständig</span>{% endif %}
+        {% if not row.rg.is_primary %}
+        <button class="btn ghost sm" type="submit" form="remove-{{ row.rg.id }}">Entfernen</button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="field span-3">
+          <label for="g{{ row.rg.id }}_first_name">Vorname</label>
+          <input class="input" type="text" autocomplete="off" value="{{ v.first_name }}" {{ field_attrs(row, 'first_name') }}>
+          {{ field_error(row, 'first_name') }}
+        </div>
+        <div class="field span-3">
+          <label for="g{{ row.rg.id }}_last_name">Familienname</label>
+          <input class="input" type="text" autocomplete="off" value="{{ v.last_name }}" {{ field_attrs(row, 'last_name') }}>
+          {{ field_error(row, 'last_name') }}
+        </div>
+        <div class="field span-2">
+          <label for="g{{ row.rg.id }}_birth_date">Geburtsdatum</label>
+          <input class="input num" type="date" max="{{ business_date.isoformat() }}" value="{{ v.birth_date }}" {{ field_attrs(row, 'birth_date') }}>
+          {{ field_error(row, 'birth_date') }}
+        </div>
+        <div class="field span-2">
+          <label for="g{{ row.rg.id }}_nationality">Staatsangehörigkeit</label>
+          <select class="select" {{ field_attrs(row, 'nationality') }}>
+            {% set known = countries | map(attribute=0) | list %}
+            {% if v.nationality not in known %}<option value="{{ v.nationality }}" selected>{{ v.nationality }}</option>{% endif %}
+            {% for code, name in countries %}<option value="{{ code }}"{% if v.nationality == code %} selected{% endif %}>{{ name }}</option>{% endfor %}
+          </select>
+          {{ field_error(row, 'nationality') }}
+        </div>
+        <div class="field span-2">
+          <label for="g{{ row.rg.id }}_disability_pct">GdB <span class="muted">(optional)</span></label>
+          <input class="input num" type="number" min="20" max="100" step="10" inputmode="numeric" value="{{ v.disability_pct }}" {{ field_attrs(row, 'disability_pct') }}>
+          {% if row.errors.get('disability_pct') %}{{ field_error(row, 'disability_pct') }}{% else %}<span class="hint">Laut Schwerbehindertenausweis; ab 70 ermäßigte Kurtaxe.</span>{% endif %}
+        </div>
+        <div class="field span-6">
+          <label for="g{{ row.rg.id }}_street">Straße und Hausnummer</label>
+          <input class="input" type="text" autocomplete="off" value="{{ v.street }}" {{ field_attrs(row, 'street') }}>
+          {{ field_error(row, 'street') }}
+        </div>
+        <div class="field span-2">
+          <label for="g{{ row.rg.id }}_postal_code">PLZ</label>
+          <input class="input num" type="text" autocomplete="off" value="{{ v.postal_code }}" {{ field_attrs(row, 'postal_code') }}>
+          {{ field_error(row, 'postal_code') }}
+        </div>
+        <div class="field span-2">
+          <label for="g{{ row.rg.id }}_city">Ort</label>
+          <input class="input" type="text" autocomplete="off" value="{{ v.city }}" {{ field_attrs(row, 'city') }}>
+          {{ field_error(row, 'city') }}
+        </div>
+        <div class="field span-2">
+          <label for="g{{ row.rg.id }}_country">Land</label>
+          <select class="select" {{ field_attrs(row, 'country') }}>
+            {% if v.country not in known %}<option value="{{ v.country }}" selected>{{ v.country }}</option>{% endif %}
+            {% for code, name in countries %}<option value="{{ code }}"{% if v.country == code %} selected{% endif %}>{{ name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field span-3">
+          <label for="g{{ row.rg.id }}_id_document_number">Ausweis- oder Passnummer {% if v.nationality == 'DE' %}<span class="muted">(optional)</span>{% endif %}</label>
+          <input class="input mono" type="text" autocomplete="off" value="{{ v.id_document_number }}" {{ field_attrs(row, 'id_document_number') }}>
+          {% if row.errors.get('id_document_number') %}{{ field_error(row, 'id_document_number') }}{% else %}<span class="hint">Pflicht für ausländische Gäste (§ 30 Abs. 2 BMG).</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  </fieldset>
+  {% endfor %}
+
+  <div class="ci-footer">
+    <span class="muted">Geänderte Daten setzen einen erzeugten Meldeschein zurück.</span>
+    <span class="spacer"></span>
+    <button class="btn primary" type="submit">
+      Speichern &amp; weiter zum Meldeschein
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </div>
+</form>
+
+{% for row in rows if not row.rg.is_primary %}
+<form id="remove-{{ row.rg.id }}" method="post" action="/check-in/{{ r.id }}/gaeste/{{ row.rg.id }}/entfernen" hidden></form>
+{% endfor %}
+
+<details class="card ci-add"{% if r.guests | length < 2 %} open{% endif %}>
+  <summary>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Mitreisende Person ergänzen
+  </summary>
+  <form method="post" action="/check-in/{{ r.id }}/gaeste/hinzufuegen" class="card-body">
+    <div class="form-grid">
+      <div class="field span-2"><label for="add_first_name">Vorname</label><input class="input" id="add_first_name" name="first_name" type="text" required></div>
+      <div class="field span-2"><label for="add_last_name">Familienname</label><input class="input" id="add_last_name" name="last_name" type="text" value="{{ primary.last_name if primary else '' }}" required></div>
+      <div class="field span-2"><label for="add_birth_date">Geburtsdatum</label><input class="input num" id="add_birth_date" name="birth_date" type="date" max="{{ business_date.isoformat() }}"></div>
+    </div>
+    <p class="hint muted">Anschrift und Staatsangehörigkeit werden vom Hauptgast übernommen und lassen sich danach anpassen.</p>
+    <div class="row"><span class="spacer"></span><button class="btn" type="submit">Person ergänzen</button></div>
+  </form>
+</details>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% import "front_desk/_fd.html" as fd %}
+{% block title %}Anreisen{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <span class="eyebrow">{{ 'Heute' if is_today else 'Anreisetag' }} · {{ day | date('day') }}</span>
+    <h1>Anreisen</h1>
+    <p>{{ day | date('long') }} · {{ counts.alle }} {{ 'Anreise' if counts.alle == 1 else 'Anreisen' }} mit {{ guest_total }} {{ 'Gast' if guest_total == 1 else 'Gästen' }} · {{ counts.offen }} offen</p>
+  </div>
+  <div class="page-actions">{{ fd.day_nav('/anreisen', day, prev_day, next_day, is_today) }}</div>
+</div>
+
+<div class="fd-toolbar">
+  <nav class="chips" aria-label="Filter">
+    {% for key, label in [('alle', 'Alle'), ('offen', 'Offen'), ('angekommen', 'Angekommen')] %}
+    <a class="chip" href="/anreisen?{% if not is_today %}tag={{ day.isoformat() }}&amp;{% endif %}filter={{ key }}"{% if filter == key %} aria-current="true"{% endif %}>
+      {{ label }} <span class="count">{{ counts[key] }}</span>
+    </a>
+    {% endfor %}
+  </nav>
+</div>
+
+<section class="card" aria-label="Anreiseliste">
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table fd-queue">
+      <thead>
+        <tr>
+          <th scope="col">Ankunft</th>
+          <th scope="col">Gast</th>
+          <th scope="col">Zimmer</th>
+          <th scope="col">Personen / Nächte</th>
+          <th scope="col">Status / Hinweis</th>
+          <th scope="col" class="actions"><span class="sr-only">Aktion</span></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        <tr class="{% if r.status != 'reserved' %}fd-done{% endif %}" data-code="{{ r.code }}">
+          <td>{{ fd.eta(r) }}</td>
+          <td>
+            {{ ui.guest_cell(r) }}
+            {% if r.notes %}<span class="sub fd-note">{{ r.notes }}</span>{% endif %}
+          </td>
+          <td>{{ fd.room(r) }}</td>
+          <td>{{ fd.party(r) }}</td>
+          <td>{{ fd.flags(flags[r.id]) }}<span class="sub">{{ r.channel | channel_label }}</span></td>
+          <td class="actions">
+            {% if r.status == 'reserved' and can_check_in %}
+            <a class="btn sm primary" href="/check-in/{{ r.id }}">Check-in starten</a>
+            {% else %}
+            <a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif filter == 'offen' and counts.alle %}
+    {{ ui.empty('Alle Gäste sind angekommen', 'Für diesen Tag ist kein Check-in mehr offen.') }}
+  {% elif filter == 'angekommen' and counts.alle %}
+    {{ ui.empty('Noch niemand angekommen', 'Eingecheckte Gäste erscheinen hier.') }}
+  {% else %}
+    {{ ui.empty('Keine Anreisen', 'Für ' ~ (day | date('long')) ~ ' ist keine Anreise gebucht.') }}
+  {% endif %}
+</section>
+{% endblock %}

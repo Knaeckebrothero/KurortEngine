@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% set lead = r.primary_guest %}
+{% block title %}{{ lead.full_name if lead else r.code }} · {{ r.code }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Pfad"><a href="/reservierungen">Reservierungen</a> › <span class="mono">{{ r.code }}</span></nav>
+
+<div class="page-header res-head">
+  <div>
+    <span class="eyebrow mono">{{ r.code }}</span>
+    <h1 class="res-title">{{ lead.full_name if lead else 'Ohne Gast' }}{% if r.guests|length > 1 %} <span class="res-title-party">+{{ r.guests|length - 1 }}</span>{% endif %}</h1>
+    <div class="badges res-head-badges">
+      {{ ui.reservation_status(r.status) }}
+      <span class="badge plain">{{ r.channel | channel_label }}</span>
+      {% if package %}<span class="badge plain info">Kurpaket {{ package.code }} · {{ package.name }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="page-actions">
+    {% if r.status == 'reserved' %}
+      <a class="btn" href="/reservierungen/{{ r.id }}/bearbeiten">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        Bearbeiten
+      </a>
+      <a class="btn primary" href="/check-in/{{ r.id }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+        Check-in starten
+      </a>
+    {% elif r.status == 'checked_in' %}
+      <a class="btn primary" href="/check-out/{{ r.id }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Check-out
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if warning_count %}
+<div class="notice warning res-blockers" role="status">
+  <div>
+    <strong>{{ warning_count }} {{ 'Punkt' if warning_count == 1 else 'Punkte' }} vor dem nächsten Schritt klären</strong>
+    <ul>
+      {% for row in guest_rows %}{% for w in row.warnings %}<li><strong>{{ row.guest.full_name }}:</strong> {{ w }}</li>{% endfor %}{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<div class="res-layout">
+  <div class="stack">
+    <section class="card" aria-labelledby="stay-h">
+      <div class="card-header"><h2 id="stay-h">Aufenthalt</h2>
+        <div class="card-actions"><a class="btn ghost sm" href="/zimmerplan?von={{ plan_from }}">Im Zimmerplan zeigen</a></div>
+      </div>
+      <div class="card-body">
+        <div class="stay-strip">
+          <div class="stay-end">
+            <span class="eyebrow">Anreise</span>
+            <strong class="num">{{ r.arrival | date('day') }}{{ r.arrival.year }}</strong>
+            <span class="sub">{% if r.eta %}ca. {{ r.eta | time }} Uhr{% else %}Ankunftszeit offen{% endif %}</span>
+          </div>
+          <div class="stay-line" aria-hidden="true"><span>{{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span></div>
+          <div class="stay-end stay-end-right">
+            <span class="eyebrow">Abreise</span>
+            <strong class="num">{{ r.departure | date('day') }}{{ r.departure.year }}</strong>
+            <span class="sub">bis 10:00 Uhr</span>
+          </div>
+        </div>
+        <dl class="facts res-facts">
+          <dt>Zimmer</dt>
+          <dd>{% if r.room %}<strong>{{ r.room.number }}</strong> · {{ r.room.category }} · bis {{ r.room.max_occupancy }} {{ 'Person' if r.room.max_occupancy == 1 else 'Personen' }}{% if r.room.features %}<span class="sub">{{ r.room.features }}</span>{% endif %}{% else %}<span class="muted">Noch nicht zugewiesen</span>{% endif %}</dd>
+          <dt>Kurpaket</dt>
+          <dd>{% if package %}{{ package.code }} · {{ package.name }}<span class="sub">{{ package.nights }} Nächte · {{ package.spa_treatments_total }} Anwendungen · {{ package.price_eur | money }} p. P.{% if package.heilbad_eligible %} · Heilbad-fähig{% endif %}</span>{% else %}<span class="muted">Ohne Kurpaket</span>{% endif %}</dd>
+          <dt>Logis</dt>
+          <dd class="num">{{ r.rate_total | money }}{% if r.room and r.nights %}<span class="sub">{{ r.nights }} × {{ r.room.nightly_rate | money }}</span>{% endif %}</dd>
+          <dt>Kanal</dt>
+          <dd>{{ r.channel | channel_label }}</dd>
+          <dt>Angelegt</dt>
+          <dd class="num">{{ r.created_at | date }} {{ r.created_at | time }}</dd>
+          {% if r.checked_in_at %}<dt>Check-in</dt><dd class="num">{{ r.checked_in_at | date }} {{ r.checked_in_at | time }}</dd>{% endif %}
+          {% if r.checked_out_at %}<dt>Check-out</dt><dd class="num">{{ r.checked_out_at | date }} {{ r.checked_out_at | time }}</dd>{% endif %}
+        </dl>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="guests-h">
+      <div class="card-header"><h2 id="guests-h">Gäste <span class="muted num">({{ r.guests|length }})</span></h2></div>
+      <ul class="guest-list">
+        {% for row in guest_rows %}
+        {%- set g = row.guest -%}{%- set rg = row.rg -%}
+        <li class="guest-item{% if row.warnings %} has-warning{% endif %}">
+          <div class="guest-item-head">
+            <span class="guest-avatar" aria-hidden="true">{{ g.first_name[:1] }}{{ g.last_name[:1] }}</span>
+            <div>
+              <span class="guest-name">{{ g.full_name }}</span>
+              <span class="sub">{% if rg.is_primary %}Hauptgast{% else %}Mitreisend{% endif %}{% if row.age is not none %} · {{ row.age }} Jahre{% endif %}</span>
+            </div>
+            <div class="badges guest-item-badges">
+              {{ ui.meldeschein(rg.meldeschein_status) }}
+              {% if rg.meldeschein_status != 'offen' %}<a class="btn ghost sm" href="/meldeschein/{{ rg.id }}.pdf">PDF</a>{% endif %}
+            </div>
+          </div>
+          <dl class="facts guest-facts">
+            <dt>Geburtsdatum</dt>
+            <dd class="num">{% if g.birth_date %}{{ g.birth_date | date }}{% else %}<span class="badge danger">Fehlt</span>{% endif %}</dd>
+            <dt>Staatsangeh.</dt>
+            <dd>{{ g.nationality }}</dd>
+            <dt>Anschrift</dt>
+            <dd>{% if g.address_line %}{{ g.address_line }}{% if g.country and g.country != 'DE' %}, {{ g.country }}{% endif %}{% else %}<span class="muted">–</span>{% endif %}</dd>
+            {% if g.email or g.phone %}<dt>Kontakt</dt><dd>{% if g.email %}<a href="mailto:{{ g.email }}">{{ g.email }}</a>{% endif %}{% if g.email and g.phone %} · {% endif %}{% if g.phone %}<span class="num">{{ g.phone }}</span>{% endif %}</dd>{% endif %}
+            {% if g.disability_pct %}<dt>Behinderung</dt><dd>GdB {{ g.disability_pct }}</dd>{% endif %}
+            <dt>Kurtaxe</dt>
+            <dd>
+              {% if rg.exemption_category %}
+                {{ rg.exemption_category | exemption_label }}
+                {% if rg.exemption_evidence %}<span class="badge success">Nachweis liegt vor</span><span class="sub">{{ rg.exemption_evidence }}</span>
+                {% else %}<span class="badge warning">Nachweis fehlt</span>{% endif %}
+              {% else %}Regulär{% endif %}
+            </dd>
+            <dt>Kurkarte</dt>
+            <dd>{% if rg.kurkarte_code %}<span class="mono">{{ rg.kurkarte_code }}</span>{% if rg.kurkarte_issued_at %}<span class="sub">ausgegeben {{ rg.kurkarte_issued_at | date }}</span>{% endif %}{% else %}<span class="muted">Noch nicht ausgegeben</span>{% endif %}</dd>
+          </dl>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="card" aria-labelledby="tax-h">
+      <div class="card-header"><h2 id="tax-h">Kurtaxe</h2>
+        {% if r.kurtaxe %}<div class="card-actions"><span class="res-tax-total num">{{ r.kurtaxe.amount | money }}</span></div>{% endif %}
+      </div>
+      {% if r.kurtaxe %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th scope="col">Gast</th><th scope="col">Tarif</th><th scope="col" class="num">Tage</th><th scope="col" class="num">Satz</th><th scope="col" class="num">Betrag</th></tr></thead>
+          <tbody>
+          {% for line in r.kurtaxe.breakdown %}
+            <tr>
+              <td><span class="guest-name">{{ line.name }}</span></td>
+              <td>{% if line.exempt %}<span class="badge success">Befreit</span> <span class="sub">{{ line.exemption | exemption_label }}</span>{% else %}{{ band_labels.get(line.band, line.band) }}{% endif %}</td>
+              <td class="num">{{ line.days }}</td>
+              <td class="num">{% if line.rate_per_day is defined and line.rate_per_day is not none and not line.exempt %}{{ line.rate_per_day | money }}{% else %}–{% endif %}</td>
+              <td class="num"><strong>{% if line.amount is defined and line.amount is not none %}{{ line.amount | money }}{% else %}–{% endif %}</strong></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body res-tax-foot muted">Berechnet {{ r.kurtaxe.computed_at | date }} {{ r.kurtaxe.computed_at | time }} · {{ r.kurtaxe.satzung_label }}</div>
+      {% else %}
+      <div class="card-body muted">Die Kurtaxe wird beim Check-in nach der Kurbeitragssatzung berechnet.</div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="stack">
+    <section class="card" aria-labelledby="notes-h">
+      <div class="card-header"><h2 id="notes-h">Notizen</h2></div>
+      <div class="card-body">{% if r.notes %}<p class="res-notes">{{ r.notes }}</p>{% else %}<p class="muted res-notes">Keine Notizen.</p>{% endif %}</div>
+    </section>
+
+    <section class="card" aria-labelledby="log-h">
+      <div class="card-header"><h2 id="log-h">Verlauf</h2></div>
+      {% if events %}
+      <ol class="timeline">
+        {% for e in events %}
+        <li>
+          <span class="timeline-dot" aria-hidden="true"></span>
+          <div>
+            <p>{{ e.summary }}</p>
+            <span class="sub num">{{ e.at | date }} · {{ e.at | time }} · {{ e.actor }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <div class="card-body muted">Noch keine Einträge.</div>
+      {% endif %}
+    </section>
+
+    {% if r.status == 'reserved' %}
+    <section class="card res-cancel" aria-labelledby="cancel-h">
+      <details>
+        <summary class="card-body"><span id="cancel-h">Reservierung stornieren …</span></summary>
+        <form class="card-body stack" method="post" action="/reservierungen/{{ r.id }}/stornieren">
+          <div class="field">
+            <label for="grund">Grund <span class="muted">(optional)</span></label>
+            <input class="input" id="grund" name="grund" type="text" placeholder="z. B. Krankheit, Terminänderung">
+          </div>
+          <p class="muted res-cancel-note">Das Zimmer wird sofort wieder freigegeben. Die Stornierung wird im Verlauf protokolliert.</p>
+          <button class="btn danger" type="submit">Reservierung stornieren</button>
+        </form>
+      </details>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

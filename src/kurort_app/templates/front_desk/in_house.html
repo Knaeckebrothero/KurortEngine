@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% import "front_desk/_fd.html" as fd %}
+{% block title %}Im Haus{% endblock %}
+{% macro sort_header(key, label) -%}
+  <th scope="col" aria-sort="{{ 'ascending' if sort == key else 'none' }}">
+    <a class="fd-sort" href="/im-haus?sort={{ key }}">{{ label }}{% if sort == key %} <span aria-hidden="true">▲</span>{% endif %}</a>
+  </th>
+{%- endmacro %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Stand · {{ day | date('day') }}</span>
+    <h1>Im Haus</h1>
+    <p>{{ guest_count }} {{ 'Gast' if guest_count == 1 else 'Gäste' }} in {{ room_count }} von {{ capacity }} Zimmern{% if departing_today %} · {{ departing_today }} {{ 'reist' if departing_today == 1 else 'reisen' }} heute ab{% endif %}</p>
+  </div>
+  <div class="page-actions"><a class="btn" href="/abreisen">Abreisen öffnen</a></div>
+</div>
+
+<section class="card" aria-label="Gäste im Haus">
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table fd-queue">
+      <thead>
+        <tr>
+          {{ sort_header('zimmer', 'Zimmer') }}
+          {{ sort_header('gast', 'Gast') }}
+          <th scope="col">Anreise</th>
+          {{ sort_header('abreise', 'Abreise') }}
+          <th scope="col">Personen</th>
+          <th scope="col">Meldeschein</th>
+          <th scope="col" class="actions"><span class="sr-only">Aktion</span></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        {% set left = remaining[r.id] %}
+        <tr data-code="{{ r.code }}">
+          <td>{{ fd.room(r) }}</td>
+          <td>{{ ui.guest_cell(r) }}</td>
+          <td class="num">{{ r.arrival | date('day') }}</td>
+          <td class="num">
+            {{ r.departure | date('day') }}
+            <span class="sub">{% if left <= 0 %}<span class="badge warning">Abreise heute</span>{% elif left == 1 %}noch 1 Nacht{% else %}noch {{ left }} Nächte{% endif %}</span>
+          </td>
+          <td class="num">{{ r.guests|length }}</td>
+          <td><span class="badge {{ meldeschein[r.id].kind }}">{{ meldeschein[r.id].text }}</span></td>
+          <td class="actions">
+            {% if left <= 0 %}
+            <a class="btn sm primary" href="/check-out/{{ r.id }}">Check-out</a>
+            {% else %}
+            <a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    {{ ui.empty('Niemand im Haus', 'Eingecheckte Gäste erscheinen hier.') }}
+  {% endif %}
+</section>
+{% endblock %}

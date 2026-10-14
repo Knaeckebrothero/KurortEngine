@@ -1,0 +1,48 @@
+{# Front-desk presentation macros. Import with:
+   {% import "front_desk/_fd.html" as fd %} #}
+
+{% macro flags(items) -%}
+  <span class="badges">{% for f in items %}<span class="badge {{ f.kind }}">{{ f.text }}</span>{% endfor %}</span>
+{%- endmacro %}
+
+{% macro party(reservation) -%}
+  {%- set n = reservation.guests|length -%}
+  <span class="num">{{ n }} {{ 'Person' if n == 1 else 'Personen' }}</span>
+  <span class="sub num">{{ reservation.nights }} {{ 'Nacht' if reservation.nights == 1 else 'Nächte' }}{% if reservation.package_code %} · Kurpaket {{ reservation.package_code }}{% endif %}</span>
+{%- endmacro %}
+
+{% macro room(reservation) -%}
+  {%- if reservation.room -%}
+    <span class="fd-room num">{{ reservation.room.number }}</span>
+    <span class="sub">{{ reservation.room.category }}</span>
+  {%- else -%}
+    <span class="badge danger">Kein Zimmer</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro day_nav(base, day, prev_day, next_day, is_today) -%}
+  <nav class="fd-daynav" aria-label="Tag wählen">
+    <a class="btn sm" href="{{ base }}?tag={{ prev_day.isoformat() }}" rel="prev">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      <span>{{ prev_day | date('day') }}</span>
+    </a>
+    <a class="btn sm{% if is_today %} fd-current{% endif %}" href="{{ base }}"{% if is_today %} aria-current="date"{% endif %}>Heute</a>
+    <a class="btn sm" href="{{ base }}?tag={{ next_day.isoformat() }}" rel="next">
+      <span>{{ next_day | date('day') }}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+  </nav>
+{%- endmacro %}
+
+{% macro eta(reservation) -%}
+  {%- if reservation.checked_in_at -%}
+    <span class="fd-time num">{{ reservation.checked_in_at | time }}</span>
+    <span class="sub">angekommen</span>
+  {%- elif reservation.eta -%}
+    <span class="fd-time num">{{ reservation.eta | time }}</span>
+    <span class="sub">{{ 'vor 14 Uhr' if reservation.eta.hour < 14 else 'erwartet' }}</span>
+  {%- else -%}
+    <span class="fd-time muted">offen</span>
+    <span class="sub">keine Zeit</span>
+  {%- endif -%}
+{%- endmacro %}

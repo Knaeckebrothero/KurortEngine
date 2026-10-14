@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Reservierungen{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <span class="eyebrow">Planung</span>
+    <h1>Reservierungen</h1>
+    <p>{% if q %}Suche nach „{{ q }}“ in allen Aufenthalten{% elif default_window %}Aktuelle und kommende Aufenthalte{% else %}Alle Aufenthalte im gewählten Zeitraum{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="/reservierungen/neu?walkin=1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="2"/><path d="M10 22l1-7-2-2V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4l-2 2 1 7"/></svg>
+      Walk-in
+    </a>
+    <a class="btn primary" href="/reservierungen/neu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Neue Reservierung
+    </a>
+  </div>
+</div>
+
+<form class="card res-filter" action="/reservierungen" method="get" role="search" aria-label="Reservierungen filtern">
+  <input type="hidden" name="status" value="{{ status }}">
+  {% if alle %}<input type="hidden" name="alle" value="1">{% endif %}
+  <div class="field res-filter-q">
+    <label for="res-q">Suche</label>
+    <input class="input" id="res-q" name="q" type="search" value="{{ q }}" autocomplete="off"
+           placeholder="Name, Reservierungsnummer oder Zimmer"
+           hx-get="/reservierungen" hx-trigger="input changed delay:250ms, search"
+           hx-target="#results" hx-swap="outerHTML" hx-include="closest form" hx-push-url="true">
+  </div>
+  <div class="field">
+    <label for="res-von">Anreise von</label>
+    <input class="input" id="res-von" name="von" type="date" value="{{ von }}">
+  </div>
+  <div class="field">
+    <label for="res-bis">Anreise bis</label>
+    <input class="input" id="res-bis" name="bis" type="date" value="{{ bis }}">
+  </div>
+  <div class="res-filter-actions">
+    <button class="btn primary" type="submit">Filtern</button>
+    {% if q or von or bis or status or alle %}<a class="btn ghost" href="/reservierungen">Zurücksetzen</a>{% endif %}
+  </div>
+</form>
+
+{% include "reservations/_results.html" %}
+{% endblock %}

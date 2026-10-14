@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Nicht gefunden{% endblock %}
+{% block content %}
+<div class="card">
+  {{ ui.empty('Reservierung nicht gefunden', 'Die Reservierung existiert nicht oder wurde entfernt.') }}
+  <div class="card-body res-center"><a class="btn primary" href="/reservierungen">Zur Reservierungsliste</a></div>
+</div>
+{% endblock %}

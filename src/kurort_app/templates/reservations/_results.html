@@ -1,0 +1,83 @@
+{% import "_macros.html" as ui %}
+<section id="results" class="res-results" aria-live="polite" aria-busy="false">
+  <div class="res-toolbar">
+    <nav class="chips" aria-label="Nach Status filtern">
+      {% for key, label in status_filters %}
+        <a class="chip" href="{{ list_url(status=key) }}"{% if status == key %} aria-current="true"{% endif %}>
+          {{ label }} <span class="count">{{ chip_counts[key] }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+    <span class="spacer"></span>
+    {% if default_window %}
+      <a class="res-scope" href="{{ list_url(alle='1') }}">Vergangene Aufenthalte einbeziehen</a>
+    {% elif alle and not q %}
+      <a class="res-scope" href="{{ list_url(alle='') }}">Nur aktuelle und kommende</a>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    {% if rows %}
+    <div class="table-wrap">
+      <table class="table res-table">
+        <caption class="sr-only">Reservierungen, {{ total }} Treffer</caption>
+        <thead>
+          <tr>
+            <th scope="col">Zeitraum</th>
+            <th scope="col">Gast</th>
+            <th scope="col">Zimmer</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="res-col-channel">Kanal</th>
+            <th scope="col" class="num res-col-amount">Logis</th>
+            <th scope="col"><span class="sr-only">Aktion</span></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in rows %}
+          {%- set arriving_today = r.status == 'reserved' and r.arrival == today -%}
+          {%- set leaving = r.status == 'checked_in' and r.departure <= today -%}
+          <tr class="{% if r.status == 'cancelled' %}res-row-cancelled{% endif %}{% if arriving_today %} res-row-today{% endif %}">
+            <td class="num res-span">
+              <span class="res-dates">{{ r.arrival | date('day') }} – {{ r.departure | date('day') }}</span>
+              <span class="sub">{{ r.arrival.year }} · {{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}{% if arriving_today %} · <strong class="res-today">heute</strong>{% endif %}</span>
+            </td>
+            <td>{{ ui.guest_cell(r) }}</td>
+            <td class="num">
+              {% if r.room %}<strong>{{ r.room.number }}</strong><span class="sub">{{ r.room.category }}</span>{% else %}<span class="muted">–</span>{% endif %}
+            </td>
+            <td>{{ ui.reservation_status(r.status) }}</td>
+            <td class="res-col-channel">{{ r.channel | channel_label }}{% if r.package_code %}<span class="sub">Kurpaket {{ r.package_code }}</span>{% endif %}</td>
+            <td class="num res-col-amount">{{ r.rate_total | money }}</td>
+            <td class="actions">
+              {% if arriving_today %}
+                <a class="btn primary sm" href="/check-in/{{ r.id }}">Check-in starten</a>
+              {% elif leaving %}
+                <a class="btn sm" href="/check-out/{{ r.id }}">Check-out</a>
+              {% else %}
+                <a class="btn ghost sm" href="/reservierungen/{{ r.id }}">Details<span class="sr-only"> zu {{ r.code }}</span></a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if pages > 1 %}
+    <nav class="res-pager" aria-label="Seiten">
+      <span class="muted">{{ total }} Treffer · Seite {{ page }} von {{ pages }}</span>
+      <span class="spacer"></span>
+      {% if page > 1 %}<a class="btn sm" href="{{ list_url(seite=page - 1) }}" rel="prev">← Zurück</a>{% else %}<span class="btn sm" aria-disabled="true">← Zurück</span>{% endif %}
+      {% if page < pages %}<a class="btn sm" href="{{ list_url(seite=page + 1) }}" rel="next">Weiter →</a>{% else %}<span class="btn sm" aria-disabled="true">Weiter →</span>{% endif %}
+    </nav>
+    {% else %}
+    <div class="res-pager"><span class="muted">{{ total }} {{ 'Treffer' }}</span></div>
+    {% endif %}
+    {% else %}
+      {% if q %}
+        {{ ui.empty('Keine Reservierung gefunden', 'Für „' ~ q ~ '“ gibt es keinen Treffer. Name, Reservierungsnummer (z. B. R-2610-0042) oder Zimmernummer prüfen.') }}
+      {% else %}
+        {{ ui.empty('Keine Reservierungen', 'Für diese Auswahl liegen keine Aufenthalte vor.') }}
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
