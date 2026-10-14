@@ -38,7 +38,7 @@
       </thead>
       <tbody>
       {% for r in rows %}
-        <tr class="{% if r.status != 'reserved' %}fd-done{% endif %}" data-code="{{ r.code }}">
+        <tr class="{% if r.status != 'reserved' %}fd-done{% endif %}" data-code="{{ r.code }}" data-reservation-id="{{ r.id }}">
           <td>{{ fd.eta(r) }}</td>
           <td>
             {{ ui.guest_cell(r) }}

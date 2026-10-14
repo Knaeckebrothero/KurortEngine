@@ -35,7 +35,7 @@
       <tbody>
       {% for r in rows %}
         {% set left = remaining[r.id] %}
-        <tr data-code="{{ r.code }}">
+        <tr data-code="{{ r.code }}" data-reservation-id="{{ r.id }}">
           <td>{{ fd.room(r) }}</td>
           <td>{{ ui.guest_cell(r) }}</td>
           <td class="num">{{ r.arrival | date('day') }}</td>

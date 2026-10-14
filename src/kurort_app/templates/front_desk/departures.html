@@ -29,7 +29,7 @@
       <tbody>
       {% for r in rows %}
         {% set b = balance[r.id] %}
-        <tr class="{% if r.status == 'checked_out' %}fd-done{% endif %}" data-code="{{ r.code }}">
+        <tr class="{% if r.status == 'checked_out' %}fd-done{% endif %}" data-code="{{ r.code }}" data-reservation-id="{{ r.id }}">
           <td>{{ fd.room(r) }}</td>
           <td>{{ ui.guest_cell(r) }}</td>
           <td class="num">{{ r.arrival | date('day') }} – {{ r.departure | date('day') }}<span class="sub">{{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span></td>

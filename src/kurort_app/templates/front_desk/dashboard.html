@@ -20,7 +20,7 @@
   </div>
 </div>
 
-<section class="grid grid-4 fd-metrics" aria-label="Kennzahlen heute">
+<section class="grid grid-4 fd-metrics" aria-label="Kennzahlen heute" data-widget="metrics">
   <a class="card metric fd-metric" href="/anreisen" data-metric="arrivals" data-value="{{ arrivals|length }}">
     <div class="metric-label">Anreisen heute</div>
     <div class="metric-value">{{ arrivals|length }}</div>
@@ -46,8 +46,8 @@
   </div>
 </section>
 
-<div class="fd-split">
-  <section class="card" aria-labelledby="queue-title">
+<div class="fd-split" data-widget-group="queue-hints">
+  <section class="card" aria-labelledby="queue-title" data-widget="arrivals">
     <header class="card-header">
       <h2 id="queue-title">Heute anreisend</h2>
       <span class="badge plain num">{{ open_arrival_count }} offen</span>
@@ -59,7 +59,7 @@
         <thead><tr><th scope="col">Ankunft</th><th scope="col">Gast</th><th scope="col">Zimmer</th><th scope="col">Status</th><th scope="col" class="actions"><span class="sr-only">Aktion</span></th></tr></thead>
         <tbody>
         {% for r in queue %}
-          <tr class="{% if r.status != 'reserved' %}fd-done{% endif %}{% if next_arrival and r.id == next_arrival.id %} fd-next{% endif %}">
+          <tr class="{% if r.status != 'reserved' %}fd-done{% endif %}{% if next_arrival and r.id == next_arrival.id %} fd-next{% endif %}" data-reservation-id="{{ r.id }}">
             <td>{{ fd.eta(r) }}</td>
             <td>{{ ui.guest_cell(r) }}</td>
             <td>{{ fd.room(r) }}</td>
@@ -81,7 +81,7 @@
     {% endif %}
   </section>
 
-  <section class="card fd-hints" aria-labelledby="hints-title" id="hinweise">
+  <section class="card fd-hints" aria-labelledby="hints-title" id="hinweise" data-widget="hints">
     <header class="card-header">
       <h2 id="hints-title">Hinweise</h2>
       {% if hints %}<span class="badge warning num">{{ hints|length }} offen</span>{% else %}<span class="badge success">Alles geklärt</span>{% endif %}
@@ -105,7 +105,7 @@
   </section>
 </div>
 
-<section class="card fd-chart-card" aria-labelledby="chart-title">
+<section class="card fd-chart-card" aria-labelledby="chart-title" data-widget="occupancy" data-occupancy-days="{{ chart_nights }}">
   <header class="card-header">
     <h2 id="chart-title">Belegung · nächste {{ chart.bars|length }} Nächte</h2>
     <span class="muted fd-chart-meta">Ø {{ chart.average_pct }} %{% if chart.peak %} · Spitze {{ chart.peak.weekday }} {{ chart.peak.day }} mit {{ chart.peak.count }} Zimmern{% endif %}</span>
@@ -124,9 +124,11 @@
           <title>{{ b.weekday }} {{ b.day }}: {{ b.count }} von {{ chart.capacity }} Zimmern ({{ b.pct }} %)</title>
           <rect class="fd-bar-track" x="{{ b.x }}" y="{{ chart.capacity_y }}" width="{{ b.w }}" height="{{ chart.baseline - chart.capacity_y }}" rx="4"/>
           <rect class="fd-bar-fill" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="4"/>
-          <text class="fd-bar-value" x="{{ b.cx }}" y="{{ b.y - 6 }}" text-anchor="middle">{{ b.count }}</text>
+          {% if not chart.dense %}<text class="fd-bar-value" x="{{ b.cx }}" y="{{ b.y - 6 }}" text-anchor="middle">{{ b.count }}</text>{% endif %}
+          {% if b.labelled %}
           <text class="fd-axis fd-axis-day" x="{{ b.cx }}" y="{{ chart.label_y }}" text-anchor="middle">{{ 'Heute' if b.is_today else b.weekday }}</text>
           <text class="fd-axis" x="{{ b.cx }}" y="{{ chart.label2_y }}" text-anchor="middle">{{ b.day }}</text>
+          {% endif %}
         </g>
       {% endfor %}
     </svg>

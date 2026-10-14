@@ -9,10 +9,13 @@
   <link rel="stylesheet" href="/static/front_desk.css?v={{ static_version }}">
   <link rel="stylesheet" href="/static/reservations.css?v={{ static_version }}">
   <link rel="stylesheet" href="/static/checkin.css?v={{ static_version }}">
+  <link rel="stylesheet" href="/static/assistant.css?v={{ static_version }}">
   <script src="/static/htmx.min.js?v={{ static_version }}" defer></script>
+  <script src="/static/assistant.js?v={{ static_version }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-<body>
+<body data-user="{{ current_user.username if current_user else '' }}">
+{% import "_assistant.html" as assistant with context %}
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
 {% macro nav_link(href, label, icon, match=None) -%}
   {%- set active = (nav_path == href) if href == '/' else nav_path.startswith(match or href) -%}
@@ -51,11 +54,7 @@
         {{ business_date | date('long') }}
         <small>Geschäftstag · {{ hotel_name }}</small>
       </div>
-      <form class="search" action="/reservierungen" method="get" role="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <label class="sr-only" for="global-search">Gast suchen</label>
-        <input id="global-search" name="q" type="search" placeholder="Gast suchen – Name, Reservierung oder Zimmer" value="{{ request.query_params.get('q', '') }}" autocomplete="off">
-      </form>
+      {{ assistant.bar() }}
       {% if current_user %}
       <div class="userbox">
         <span class="avatar" aria-hidden="true">{{ current_user.initials }}</span>
@@ -77,6 +76,7 @@
     </main>
   </div>
 </div>
+{{ assistant.drawer() }}
 {% block scripts %}{% endblock %}
 </body>
 </html>

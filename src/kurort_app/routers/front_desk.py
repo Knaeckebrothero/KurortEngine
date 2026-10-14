@@ -32,6 +32,10 @@ from kurort_app.web import STATUS_LABELS, WEEKDAYS, fmt_date, redirect_with_noti
 router = APIRouter()
 
 CHART_NIGHTS = 14
+CHART_NIGHTS_MIN, CHART_NIGHTS_MAX = 7, 60
+CHART_NIGHTS_COOKIE = "kurort_tage"
+# Beyond three weeks per-bar labels collide; label Mondays (and today) only.
+CHART_DENSE_AFTER = 21
 # Statuses that hold a room for a night.
 OCCUPYING = (RESERVED, CHECKED_IN, CHECKED_OUT)
 
@@ -247,6 +251,15 @@ CHART_W, CHART_H = 720, 240
 CHART_PAD_L, CHART_PAD_R, CHART_PAD_T, CHART_PAD_B = 36, 8, 22, 44
 
 
+def chart_nights(raw: str | None) -> int:
+    """The ``tage`` query parameter, clamped to a sensible chart range."""
+    try:
+        value = int(raw) if raw else CHART_NIGHTS
+    except ValueError:
+        return CHART_NIGHTS
+    return min(max(value, CHART_NIGHTS_MIN), CHART_NIGHTS_MAX)
+
+
 def occupancy_chart(counts: list[int], start: date, capacity: int) -> dict:
     capacity = max(capacity, 1)
     plot_w = CHART_W - CHART_PAD_L - CHART_PAD_R
@@ -254,6 +267,7 @@ def occupancy_chart(counts: list[int], start: date, capacity: int) -> dict:
     slot = plot_w / len(counts)
     bar_w = slot * 0.62
     top = max(capacity, max(counts, default=0))
+    dense = len(counts) > CHART_DENSE_AFTER
     bars = []
     for i, count in enumerate(counts):
         night = start + timedelta(days=i)
@@ -273,6 +287,7 @@ def occupancy_chart(counts: list[int], start: date, capacity: int) -> dict:
                 "date": night,
                 "is_today": i == 0,
                 "weekend": night.weekday() >= 5,
+                "labelled": not dense or i == 0 or night.weekday() == 0,
             }
         )
     gridlines = []
@@ -295,6 +310,7 @@ def occupancy_chart(counts: list[int], start: date, capacity: int) -> dict:
         "bars": bars,
         "gridlines": gridlines,
         "peak": peak,
+        "dense": dense,
         "average_pct": round(100 * sum(counts) / (capacity * len(counts))) if counts else 0,
     }
 
@@ -314,13 +330,17 @@ def _parse_day(raw: str | None) -> date:
 
 
 @router.get("/", response_class=HTMLResponse)
-def dashboard(request: Request, session: Session = Depends(get_session)) -> HTMLResponse:
+def dashboard(
+    request: Request, tage: str = "", session: Session = Depends(get_session)
+) -> HTMLResponse:
     day = today()
+    # The assistant remembers a chart range in a cookie; an explicit ?tage= wins.
+    nights = chart_nights(tage or request.cookies.get(CHART_NIGHTS_COOKIE))
     arrivals = _arrivals(session, day)
     departures = _departures(session, day)
     in_house = _in_house(session)
     capacity = _room_count(session)
-    counts = _occupancy_by_night(session, day, CHART_NIGHTS)
+    counts = _occupancy_by_night(session, day, nights)
 
     arrived = [r for r in arrivals if r.status in (CHECKED_IN, CHECKED_OUT)]
     open_arrivals = [r for r in arrivals if r.status == RESERVED]
@@ -347,6 +367,7 @@ def dashboard(request: Request, session: Session = Depends(get_session)) -> HTML
         "tonight": tonight,
         "occupancy_pct": round(100 * tonight / capacity) if capacity else 0,
         "chart": occupancy_chart(counts, day, capacity),
+        "chart_nights": nights,
         "hints": hints,
         "next_arrival": open_arrivals[0] if open_arrivals else None,
         "flags": {r.id: arrival_flags(r) for r in arrivals},

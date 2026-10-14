@@ -53,7 +53,7 @@
     <div class="plan-floor"><span>{{ floor.floor }}. Etage <span class="muted">· {{ floor.rooms|length }} Zimmer</span></span></div>
     {% for item in floor.rooms %}
     {%- set room = item.room -%}
-    <div class="plan-row">
+    <div class="plan-row" data-room-row="{{ room.number }}">
       <div class="plan-label">
         <strong class="num">{{ room.number }}</strong>
         <span class="plan-cat">{{ room.category }} · {{ room.max_occupancy }} P.</span>

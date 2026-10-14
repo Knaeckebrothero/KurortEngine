@@ -272,3 +272,60 @@ def test_checkout_rejects_wrong_state(client, seeded):
 def test_checkout_unknown_reservation_is_404(client, seeded):
     assert client.get("/check-out/999999").status_code == 404
     assert client.post("/check-out/999999").status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Chart range (`tage`) and the hooks the assistant drives
+# ---------------------------------------------------------------------------
+
+
+def _chart_nights(html: str) -> int:
+    match = re.search(r'data-occupancy-days="(\d+)"', html)
+    assert match, "chart card carries no data-occupancy-days"
+    return int(match.group(1))
+
+
+def test_dashboard_chart_range_follows_tage(client, seeded):
+    html = client.get("/?tage=30").text
+    assert _chart_nights(html) == 30
+    assert "nächste 30 Nächte" in html
+    assert html.count('<g class="fd-bar') == 30
+
+
+def test_dashboard_chart_range_is_clamped(client, seeded):
+    assert _chart_nights(client.get("/?tage=500").text) == 60
+    assert _chart_nights(client.get("/?tage=3").text) == 7
+    assert _chart_nights(client.get("/?tage=viele").text) == 14
+    assert _chart_nights(client.get("/").text) == 14
+
+
+def test_dense_chart_labels_only_today_and_mondays(client, seeded):
+    html = client.get("/?tage=30").text
+    day_labels = re.findall(r'class="fd-axis fd-axis-day"[^>]*>([^<]+)<', html)
+    assert day_labels[0] == "Heute"
+    assert set(day_labels[1:]) == {"Mo"}
+    assert 'class="fd-bar-value"' not in html  # per-bar counts would collide
+
+
+def test_dashboard_chart_range_cookie_and_param_precedence(client, seeded):
+    client.cookies.set("kurort_tage", "21")
+    try:
+        assert _chart_nights(client.get("/").text) == 21
+        assert _chart_nights(client.get("/?tage=10").text) == 10
+    finally:
+        client.cookies.clear()
+
+
+def test_pages_expose_assistant_hooks(client, seeded):
+    dashboard = client.get("/").text
+    for widget in ("metrics", "arrivals", "hints", "occupancy"):
+        assert f'data-widget="{widget}"' in dashboard
+    assert 'id="ai-input"' in dashboard and "data-ai-drawer" in dashboard
+    assert 'data-user=""' in dashboard  # auth is off in the test suite
+
+    arrival = _reservations(
+        seeded, Reservation.arrival == BUSINESS_DATE, Reservation.status == RESERVED
+    )[0]
+    assert f'data-reservation-id="{arrival.id}"' in client.get("/anreisen").text
+    plan = client.get("/zimmerplan").text
+    assert 'data-room-row="101"' in plan and 'data-room-row="311"' in plan

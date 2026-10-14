@@ -1,0 +1,252 @@
+/* Assistent: command bar, suggestion popover, result drawer and the marks it
+   leaves on pages (filled fields, spotlight, confirm pulse). */
+
+:root {
+  --ai-gradient: linear-gradient(135deg, #45B2C5 0%, #0B7088 52%, #348D64 100%);
+  --ai-ring: #45B2C5;
+  --ai-fill-bg: #EEF9FB;
+  --ai-tag-bg: #D1EFF3;
+  --ai-tag-fg: #064B5D;
+  --ai-rec: #C13F49;
+  --ai-drawer-w: 400px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ai-ring: #80D1DF;
+    --ai-fill-bg: #17323B;
+    --ai-tag-bg: #213944;
+    --ai-tag-fg: #A8DDE5;
+    --ai-rec: #EE8B90;
+  }
+}
+
+/* `hidden` must win over the display rules below (closed drawer, mic, hints). */
+[data-assistant] [hidden], .ai-drawer[hidden], .ai-drawer [hidden] { display: none !important; }
+
+/* ---------- Command bar ---------- */
+/* Flexible, not viewport-based: the docked drawer narrows the main column. */
+.ai-bar { position: relative; margin-left: auto; flex: 0 1 600px; min-width: 220px; }
+.ai-form {
+  display: flex; align-items: center; gap: var(--space-2);
+  min-height: 48px; padding: 0 6px 0 8px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px;
+  transition: box-shadow var(--motion-fast), border-color var(--motion-fast);
+}
+.ai-form:hover { border-color: var(--primary); }
+.ai-form:focus-within {
+  border-color: transparent;
+  background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--ai-gradient) border-box;
+  box-shadow: 0 0 0 4px rgb(69 178 197 / 18%), var(--elevation-2);
+}
+.ai-spark {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px;
+  border-radius: 9px; background: var(--ai-gradient); color: #fff;
+}
+.ai-spark svg { width: 18px; height: 18px; }
+.ai-input {
+  flex: 1; min-width: 0; height: 46px; border: 0; background: transparent; color: var(--text-primary);
+  font: 400 16px/22px var(--font-sans); padding: 0 4px;
+}
+.ai-input::placeholder { color: var(--text-secondary); }
+.ai-input:focus { outline: none; }
+.ai-kbd {
+  flex: none; font: 600 11px/16px var(--font-sans); color: var(--text-secondary);
+  border: 1px solid var(--border-subtle); border-bottom-width: 2px; border-radius: var(--radius-sm);
+  padding: 1px 6px; white-space: nowrap;
+}
+.ai-form:focus-within .ai-kbd { display: none; }
+.ai-mic {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid transparent; background: transparent; color: var(--text-secondary); cursor: pointer;
+  transition: background var(--motion-fast), color var(--motion-fast);
+}
+.ai-mic:hover { background: var(--surface-hover); color: var(--primary); }
+.ai-mic svg { width: 20px; height: 20px; }
+.ai-mic.is-listening { background: var(--ai-rec); color: #fff; animation: ai-rec-pulse 1.4s ease-out infinite; }
+
+/* ---------- Popover ---------- */
+.ai-pop {
+  position: absolute; z-index: 45; top: calc(100% + 8px); left: 0; right: 0;
+  background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 14px;
+  box-shadow: var(--elevation-3); padding: 6px; max-height: min(70vh, 560px); overflow-y: auto;
+}
+.ai-list { list-style: none; margin: 0; padding: 0; }
+.ai-group {
+  font-size: 12px; line-height: 16px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 650;
+  color: var(--text-secondary); padding: 10px 12px 4px;
+}
+.ai-opt {
+  display: flex; align-items: center; gap: var(--space-3); padding: 10px 12px; border-radius: 10px;
+  cursor: pointer; color: var(--text-primary);
+}
+.ai-opt[aria-selected="true"] { background: var(--selection-bg); box-shadow: inset 3px 0 0 var(--selection-indicator); }
+.ai-opt-icon {
+  flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+  background: var(--surface-subtle); color: var(--text-secondary);
+}
+.ai-opt-icon svg { width: 18px; height: 18px; }
+.ai-opt-run .ai-opt-icon, .ai-opt-example .ai-opt-icon { background: var(--ai-gradient); color: #fff; }
+.ai-opt-example .ai-opt-icon { background: var(--ai-tag-bg); color: var(--ai-tag-fg); }
+.ai-opt-text { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.ai-opt-label { font-weight: 650; font-size: 15px; line-height: 21px; overflow-wrap: anywhere; }
+.ai-opt-sub { font-size: 13px; line-height: 18px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.ai-opt-key { flex: none; font: 600 12px/16px var(--font-sans); color: var(--text-secondary); }
+.ai-opt .badge { flex: none; }
+.ai-empty { padding: 12px; color: var(--text-secondary); font-size: 14px; }
+.ai-listening, .ai-mic-error {
+  display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin: 0;
+  padding: 10px 12px; font-weight: 650; font-size: 14px;
+}
+.ai-listening .muted { font-weight: 400; }
+.ai-mic-error { color: var(--status-danger-fg); }
+.ai-rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ai-rec); animation: ai-blink 1s ease-in-out infinite; }
+
+/* ---------- Drawer ---------- */
+.ai-drawer {
+  position: fixed; z-index: 60; top: 0; right: 0; bottom: 0; width: min(var(--ai-drawer-w), 100vw);
+  display: flex; flex-direction: column; background: var(--surface-raised);
+  border-left: 1px solid var(--border-subtle); box-shadow: var(--elevation-3);
+  transform: translateX(100%); transition: transform var(--motion-slow, 240ms ease-out);
+}
+.ai-drawer.is-open { transform: none; }
+.ai-drawer-head {
+  display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, var(--ai-fill-bg), transparent);
+}
+.ai-avatar {
+  flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--ai-gradient); color: #fff; box-shadow: 0 4px 14px rgb(11 112 136 / 30%);
+}
+.ai-avatar svg { width: 22px; height: 22px; }
+.ai-drawer-heading { flex: 1; min-width: 0; }
+.ai-drawer-heading h2 { font-size: 18px; line-height: 24px; font-weight: 750; }
+.ai-drawer-heading h2:focus { outline: none; }
+.ai-drawer-sub { display: block; font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.ai-close { min-width: 40px; padding: 0 var(--space-2); }
+.ai-drawer-body { flex: 1; overflow-y: auto; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+.ai-quote {
+  margin: 0; padding: var(--space-3) var(--space-4); border-radius: 12px 12px 12px 4px;
+  background: var(--surface-subtle); font-size: 15px; line-height: 22px; overflow-wrap: anywhere;
+  position: relative;
+}
+.ai-quote::before { content: "Sie"; display: block; font-size: 12px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; }
+.ai-run { display: flex; flex-direction: column; gap: var(--space-4); }
+.ai-steps:empty { display: none; }
+.ai-title { margin: 0; font-size: 17px; line-height: 24px; font-weight: 700; }
+.ai-title .ai-intent { display: block; font-size: 12px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); margin-bottom: 2px; }
+.ai-thinking { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.ai-thinking i { width: 6px; height: 6px; border-radius: 50%; background: var(--ai-ring); animation: ai-dot 1s ease-in-out infinite; }
+.ai-thinking i:nth-child(2) { animation-delay: .15s; }
+.ai-thinking i:nth-child(3) { animation-delay: .3s; }
+
+.ai-steps { list-style: none; margin: 0; padding: 0; position: relative; }
+.ai-step { position: relative; display: flex; gap: var(--space-3); padding: 0 0 var(--space-4); }
+.ai-step:not(:last-child)::before {
+  content: ""; position: absolute; left: 13px; top: 28px; bottom: 2px; width: 2px;
+  background: var(--border-subtle); border-radius: 2px;
+}
+.ai-step.is-done:not(:last-child)::before { background: var(--color-kurpark-400); }
+.ai-step-icon {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--border-subtle); background: var(--surface); color: transparent;
+  transition: background var(--motion-standard), border-color var(--motion-standard);
+}
+.ai-step-icon svg { width: 16px; height: 16px; }
+.ai-step-label { padding-top: 3px; font-size: 15px; line-height: 22px; color: var(--text-secondary); }
+.ai-step-detail { display: block; font-size: 13px; line-height: 18px; color: var(--text-secondary); margin-top: 2px; overflow-wrap: anywhere; }
+.ai-step.is-running .ai-step-icon { border-color: var(--ai-ring); border-top-color: transparent; animation: ai-spin .8s linear infinite; }
+.ai-step.is-running .ai-step-label { color: var(--text-primary); font-weight: 650; }
+.ai-step.is-done .ai-step-icon { background: var(--color-kurpark-500); border-color: var(--color-kurpark-500); color: #fff; animation: ai-pop .25s ease-out; }
+.ai-step.is-done .ai-step-label { color: var(--text-primary); }
+.ai-step.is-attention .ai-step-icon { background: var(--status-warning-bg); border-color: var(--color-amber-300); color: var(--status-warning-fg); }
+.ai-step.is-attention .ai-step-label { color: var(--text-primary); font-weight: 650; }
+.ai-step.is-warn .ai-step-icon { background: var(--status-danger-bg); border-color: var(--status-danger-fg); color: var(--status-danger-fg); }
+
+.ai-message {
+  padding: var(--space-4); border-radius: 12px; background: var(--ai-fill-bg);
+  border: 1px solid var(--ai-tag-bg); font-size: 15px; line-height: 22px;
+}
+.ai-message p { margin: 0 0 var(--space-2); }
+.ai-message p:last-child { margin-bottom: 0; }
+.ai-message ul { margin: var(--space-2) 0 0; padding-left: 1.2em; }
+.ai-message.is-error { background: var(--status-danger-bg); border-color: transparent; color: var(--status-danger-fg); }
+.ai-suggest-label { margin: 0 0 var(--space-2); font-size: 13px; font-weight: 650; color: var(--text-secondary); }
+.ai-suggest ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ai-suggest button {
+  width: 100%; text-align: left; font: 500 14px/20px var(--font-sans); color: var(--text-primary); cursor: pointer;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-subtle); background: var(--surface);
+}
+.ai-suggest button:hover { border-color: var(--primary); background: var(--surface-hover); }
+.ai-drawer-foot {
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+  padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--border-subtle);
+}
+.ai-note { margin: 0; font-size: 12px; line-height: 16px; color: var(--text-secondary); flex: 1; min-width: 160px; }
+
+/* Wide screens (1600px+): the drawer docks beside the page instead of covering it;
+   below that the page would get too narrow for the queue tables. */
+@media (min-width: 1600px) {
+  body.ai-docked .main { margin-right: var(--ai-drawer-w); }
+}
+/* Forms reflow fine in less width, and the assistant must not cover the
+   fields it just filled: dock from 1280px while a plan fills a form. */
+@media (min-width: 1280px) {
+  body.ai-docked.ai-docked-form .main { margin-right: var(--ai-drawer-w); }
+  .main { transition: margin-right var(--motion-slow, 240ms ease-out); }
+}
+
+/* ---------- Marks the assistant leaves on pages ---------- */
+.ai-filled {
+  background: var(--ai-fill-bg) !important;
+  border-color: var(--ai-ring) !important;
+  box-shadow: 0 0 0 2px rgb(69 178 197 / 30%);
+  transition: background 600ms ease-out, box-shadow 600ms ease-out;
+}
+.ai-filled-tag {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: var(--space-2); vertical-align: 1px;
+  font: 600 11px/18px var(--font-sans); color: var(--ai-tag-fg); background: var(--ai-tag-bg);
+  border-radius: var(--radius-badge); padding: 0 8px; white-space: nowrap;
+}
+.ai-filled-tag svg { width: 11px; height: 11px; }
+.ai-spot { position: relative; z-index: 2; outline: 3px solid var(--ai-ring); outline-offset: 2px; border-radius: 8px; animation: ai-spot 1.2s ease-out 3; }
+tr.ai-spot > td { background: var(--ai-fill-bg); }
+/* Room-plan rows sit in a scroll container that clips outlines: tint the row instead. */
+.plan-row.ai-spot {
+  outline: none; border-radius: 0; animation: none; background: var(--ai-fill-bg);
+  box-shadow: inset 0 3px 0 var(--ai-ring), inset 0 -3px 0 var(--ai-ring);
+}
+.plan-row.ai-spot .plan-label { background: var(--ai-fill-bg); box-shadow: inset 5px 0 0 var(--ai-ring); }
+.ai-confirm-pulse { animation: ai-confirm 1.3s ease-out infinite; }
+.ai-view-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+  margin-top: var(--space-2); padding: 4px 6px 4px 10px; border-radius: var(--radius-badge);
+  background: var(--ai-tag-bg); color: var(--ai-tag-fg); font-size: 13px; font-weight: 650;
+}
+.ai-view-chip svg { width: 14px; height: 14px; }
+.ai-view-chip button {
+  border: 0; background: var(--surface); color: var(--ai-tag-fg); font: 650 12px/18px var(--font-sans);
+  border-radius: var(--radius-badge); padding: 2px 10px; cursor: pointer;
+}
+.ai-view-chip button:hover { text-decoration: underline; }
+.fd-split.ai-one-col { grid-template-columns: minmax(0, 1fr); }
+[data-widget].ai-hidden, [data-widget-group].ai-hidden { display: none !important; }
+
+/* ---------- Motion ---------- */
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+@keyframes ai-pop { 0% { transform: scale(.6); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes ai-dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+@keyframes ai-blink { 50% { opacity: .3; } }
+@keyframes ai-rec-pulse { 0% { box-shadow: 0 0 0 0 rgb(193 63 73 / 55%); } 100% { box-shadow: 0 0 0 12px rgb(193 63 73 / 0%); } }
+@keyframes ai-spot { 0% { box-shadow: 0 0 0 0 rgb(69 178 197 / 55%); } 100% { box-shadow: 0 0 0 14px rgb(69 178 197 / 0%); } }
+@keyframes ai-confirm { 0% { box-shadow: 0 0 0 0 rgb(11 112 136 / 55%); } 100% { box-shadow: 0 0 0 12px rgb(11 112 136 / 0%); } }
+
+@media (max-width: 860px) {
+  .ai-bar { flex: 1 1 100%; width: 100%; margin-left: 0; order: 3; }
+  .ai-kbd { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-drawer, .main { transition: none !important; }
+  .ai-step.is-running .ai-step-icon { animation: none; border-top-color: var(--ai-ring); }
+  .ai-mic.is-listening, .ai-spot, .ai-confirm-pulse, .ai-rec-dot, .ai-thinking i { animation: none !important; }
+}

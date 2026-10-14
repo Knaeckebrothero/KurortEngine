@@ -1,0 +1,66 @@
+{# The "Assistent" command bar (top bar) and its result drawer.
+   Behaviour lives in static/assistant.js; without JavaScript the bar is a
+   plain guest search that submits to /reservierungen. #}
+
+{% macro spark_icon(cls='') -%}
+<svg class="{{ cls }}" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <path d="M12 2.5l1.9 5.1a3 3 0 0 0 1.8 1.8l5.1 1.9-5.1 1.9a3 3 0 0 0-1.8 1.8L12 20.1l-1.9-5.1a3 3 0 0 0-1.8-1.8L3.2 11.3l5.1-1.9a3 3 0 0 0 1.8-1.8z" fill="currentColor"/>
+  <path d="M19 2.5l.6 1.6a1 1 0 0 0 .6.6l1.6.6-1.6.6a1 1 0 0 0-.6.6l-.6 1.6-.6-1.6a1 1 0 0 0-.6-.6l-1.6-.6 1.6-.6a1 1 0 0 0 .6-.6z" fill="currentColor" opacity=".7"/>
+</svg>
+{%- endmacro %}
+
+{% macro bar() -%}
+<div class="ai-bar" data-assistant>
+  <form class="ai-form" action="/reservierungen" method="get" role="search">
+    <span class="ai-spark" aria-hidden="true">{{ spark_icon() }}</span>
+    <label class="sr-only" for="ai-input">Assistent – Was möchten Sie tun? Oder Gast suchen</label>
+    <input id="ai-input" class="ai-input" name="q" type="text" autocomplete="off" spellcheck="false"
+           role="combobox" aria-expanded="false" aria-controls="ai-list" aria-autocomplete="list"
+           placeholder="Was möchten Sie tun? – z. B. Walk-in für Herrn Becker, 2 Nächte"
+           value="{{ request.query_params.get('q', '') }}">
+    <kbd class="ai-kbd" aria-hidden="true" data-ai-kbd>Strg K</kbd>
+    <button type="button" class="ai-mic" data-ai-mic hidden aria-pressed="false" aria-label="Spracheingabe starten">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
+    </button>
+  </form>
+  <div class="ai-pop" data-ai-pop hidden>
+    <p class="ai-listening" data-ai-listening hidden><span class="ai-rec-dot" aria-hidden="true"></span>Ich höre zu … <span class="muted">Sprechen Sie Ihren Auftrag, z. B. „Wer reist heute noch ab?“</span></p>
+    <p class="ai-mic-error" data-ai-mic-error role="status" hidden></p>
+    <ul class="ai-list" id="ai-list" role="listbox" aria-label="Assistent und Suchergebnisse"></ul>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro drawer() -%}
+<aside class="ai-drawer" id="ai-drawer" role="dialog" aria-modal="false" aria-labelledby="ai-drawer-title" hidden data-ai-drawer>
+  <header class="ai-drawer-head">
+    <span class="ai-avatar" aria-hidden="true">{{ spark_icon() }}</span>
+    <div class="ai-drawer-heading">
+      <h2 id="ai-drawer-title" tabindex="-1">Assistent</h2>
+      <span class="ai-drawer-sub">öffnet, sucht und füllt vor – speichern tun Sie</span>
+    </div>
+    <button type="button" class="btn ghost sm ai-close" data-ai-close aria-label="Assistent schließen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <div class="ai-drawer-body">
+    <blockquote class="ai-quote" data-ai-quote></blockquote>
+    <div class="ai-run" data-ai-run aria-live="polite">
+      <p class="ai-title" data-ai-title></p>
+      <ol class="ai-steps" data-ai-steps></ol>
+      <div class="ai-message" data-ai-message hidden></div>
+      <div class="ai-suggest" data-ai-suggest hidden>
+        <p class="ai-suggest-label">Probieren Sie zum Beispiel:</p>
+        <ul data-ai-suggest-list></ul>
+      </div>
+    </div>
+  </div>
+  <footer class="ai-drawer-foot">
+    <button type="button" class="btn sm" data-ai-again>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Neue Anweisung
+    </button>
+    <p class="ai-note" data-ai-note hidden>Vorschau · feste Demo-Regeln, noch ohne KI-Modell</p>
+  </footer>
+</aside>
+{%- endmacro %}
