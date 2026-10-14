@@ -54,3 +54,19 @@ def test_dashboard_renders_shell(client, seeded):
     assert response.status_code == 200
     assert "Hotel Rheinland" in response.text
     assert "Mittwoch, 14. Oktober 2026" in response.text
+
+
+def test_business_date_is_the_hotels_local_date(monkeypatch):
+    """At 23:30 UTC it is already the next day in Bad Orb."""
+    from datetime import UTC, datetime
+
+    import kurort_app.config as config
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 10, 14, 23, 30, tzinfo=UTC).astimezone(tz)
+
+    monkeypatch.setattr(config, "datetime", FrozenDatetime)
+    monkeypatch.setattr(config.get_settings(), "today", None)
+    assert config.today().isoformat() == "2026-10-15"

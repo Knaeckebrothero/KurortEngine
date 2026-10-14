@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from functools import lru_cache
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -53,6 +54,13 @@ def get_settings() -> Settings:
     return Settings()
 
 
+HOTEL_TZ = ZoneInfo("Europe/Berlin")
+
+
 def today() -> date:
-    """The business date the front desk works on."""
-    return get_settings().today or date.today()
+    """The business date the front desk works on: the hotel's local date, not the server's.
+
+    Containers run on UTC, so date.today() would still be yesterday between
+    midnight and 02:00 in Bad Orb.
+    """
+    return get_settings().today or datetime.now(HOTEL_TZ).date()
