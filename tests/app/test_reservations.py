@@ -229,6 +229,21 @@ def test_detail_shows_blockers(client, seeded):
     assert "Geburtsdatum fehlt" in html
 
 
+def test_detail_history_includes_check_in_trail(client, seeded):
+    """Meldeschein events are recorded per stay guest; the stay's history must show them."""
+    target = _first(seeded, Reservation.arrival == D, Reservation.status == RESERVED)
+    if any(not rg.guest.birth_date for rg in target.guests):
+        target = seeded.scalars(
+            select(Reservation)
+            .where(Reservation.arrival == D, Reservation.status == RESERVED)
+            .order_by(Reservation.id.desc())
+        ).first()
+    client.post(f"/check-in/{target.id}/meldeschein/alle", follow_redirects=False)
+    html = client.get(f"/reservierungen/{target.id}").text
+    assert "Meldeschein erzeugt für" in html
+    assert "Noch keine Einträge" not in html
+
+
 def test_detail_for_in_house_offers_check_out_and_pdf(client, seeded):
     target = seeded.scalars(
         select(Reservation)

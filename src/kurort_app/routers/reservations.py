@@ -640,9 +640,21 @@ def reservation_detail(
     reservation = _load_reservation(session, reservation_id)
     if reservation is None:
         return _not_found(request)
+    # The stay's history includes the check-in trail, which is recorded per
+    # reservation guest (Meldeschein, Kurkarte) and per guest (data changes).
+    stay_guest_ids = [str(rg.id) for rg in reservation.guests]
+    guest_ids = [str(rg.guest_id) for rg in reservation.guests]
     events = session.scalars(
         select(AuditEvent)
-        .where(AuditEvent.entity == "reservation", AuditEvent.entity_id == str(reservation.id))
+        .where(
+            or_(
+                (AuditEvent.entity == "reservation")
+                & (AuditEvent.entity_id == str(reservation.id)),
+                (AuditEvent.entity == "reservation_guest")
+                & AuditEvent.entity_id.in_(stay_guest_ids),
+                (AuditEvent.entity == "guest") & AuditEvent.entity_id.in_(guest_ids),
+            )
+        )
         .order_by(AuditEvent.at.desc(), AuditEvent.id.desc())
     ).all()
     guest_rows = _guest_rows(reservation)
