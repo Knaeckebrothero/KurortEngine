@@ -1,0 +1,54 @@
+# KurortEngine — local stack: Postgres 17 + the staff web application.
+#
+#   podman compose up -d --build          (or: docker compose up -d --build)
+#   open http://localhost:${PORT:-8080}
+#   podman compose down                   (add -v to drop the database volume)
+#
+# The app container waits for Postgres, applies migrations, seeds demo data
+# when the database is empty (KURORT_SEED=if-empty|reset|off) and serves.
+# Credentials here are for local use only.
+
+name: kurort
+
+services:
+  db:
+    image: docker.io/library/postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kurort
+      POSTGRES_PASSWORD: kurort
+      POSTGRES_DB: kurort
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kurort -d kurort"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: localhost/kurort-engine:dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      KURORT_DATABASE_URL: postgresql+psycopg://kurort:kurort@db:5432/kurort
+      KURORT_SEED: ${KURORT_SEED:-if-empty}
+      # To pin the business date for a reproducible demo, add e.g.
+      #   KURORT_TODAY: "2026-10-14"
+    command: ["kurort-entrypoint"]
+    ports:
+      - "${PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=2).status == 200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  db-data:

@@ -1,0 +1,9 @@
+# Build context = pyproject.toml, README.md, src/ and deploy/docker/ only.
+*
+!pyproject.toml
+!README.md
+!src/
+!deploy/docker/
+src/**/__pycache__
+src/**/*.pyc
+src/kurort_engine/demos/out/

@@ -1,0 +1,8 @@
+apiVersion: v2
+name: kurort-engine
+description: KurortEngine staff web application (FastAPI) with an optional bundled Postgres
+type: application
+version: 0.1.0
+appVersion: "0.2.0"
+home: https://github.com/Knaeckebrothero/KurortEngine
+keywords: [hotel, kurtaxe, meldeschein, front-desk]

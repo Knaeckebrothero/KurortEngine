@@ -1,0 +1,16 @@
+KurortEngine {{ .Chart.AppVersion }} is deploying as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+{{- if .Values.ingress.enabled }}
+
+Open: http{{ if .Values.ingress.tls }}s{{ end }}://{{ .Values.ingress.host }}/
+  (local k3d via deploy/k3d/up.sh: http://{{ .Values.ingress.host }}:8090/)
+{{- else }}
+
+Port-forward: kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "kurort.fullname" . }} 8080:{{ .Values.service.port }}
+{{- end }}
+
+Database: {{ if .Values.postgresql.enabled }}bundled Postgres ({{ include "kurort.postgresql.fullname" . }}){{ else }}external (secret {{ include "kurort.databaseSecretName" . }}){{ end }}
+Demo seed on pod start: {{ .Values.demo.seed }}
+
+Reseed the demo data now:
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "kurort.fullname" . }} -c web -- kurort-app seed --reset

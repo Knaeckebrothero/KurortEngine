@@ -1,0 +1,101 @@
+# KurortEngine Helm values. See docs/ops/kubernetes.md for the full reference.
+
+image:
+  repository: localhost/kurort-engine
+  tag: dev
+  # k3d imports images straight into containerd, so never try to pull them.
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Migrations run in an init container of every pod. Keep one replica, or move
+# `kurort-app migrate` into a Job before scaling out.
+replicaCount: 1
+
+app:
+  hotelName: "Hotel Rheinland"
+  hotelCity: "Bad Orb"
+  # Pin the business date (YYYY-MM-DD) for a reproducible demo; empty = real date.
+  today: ""
+  # Extra environment variables for the app container ({NAME: value}).
+  extraEnv: {}
+
+demo:
+  # Demo data loaded by an init container on every pod start:
+  #   if-empty  seed only an empty database (default)
+  #   reset     wipe front-desk data and reseed on every start (demo mornings)
+  #   off       never seed (production)
+  seed: if-empty
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  host: kurort.localhost
+  annotations: {}
+  # tls:
+  #   - secretName: kurort-tls
+  #     hosts: [kurort.example.de]
+  tls: []
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 160Mi
+  limits:
+    memory: 512Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Bundled single-instance Postgres for local and demo use. For production,
+# disable it and point externalDatabase at a managed or CNPG database.
+postgresql:
+  enabled: true
+  image:
+    repository: docker.io/library/postgres
+    tag: 17-alpine
+    pullPolicy: IfNotPresent
+  auth:
+    username: kurort
+    database: kurort
+    # Empty = generate once on install and keep it across upgrades.
+    password: ""
+  persistence:
+    size: 2Gi
+    # Empty = the cluster's default StorageClass (local-path on k3d).
+    storageClass: ""
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
+# Used when postgresql.enabled=false. Either reference an existing Secret
+# (a CNPG cluster's `<cluster>-app` Secret has the URL under key `uri`) or
+# give a URL and let the chart create the Secret.
+externalDatabase:
+  existingSecret: ""
+  existingSecretKey: uri
+  url: ""

@@ -1,0 +1,18 @@
+# Overrides for the local k3d cluster (deploy/k3d/up.sh). Images are imported
+# into containerd, never pulled.
+fullnameOverride: kurort
+
+image:
+  repository: localhost/kurort-engine
+  pullPolicy: Never
+
+ingress:
+  className: traefik
+  host: kurort.localhost
+
+demo:
+  seed: if-empty
+
+postgresql:
+  persistence:
+    size: 1Gi

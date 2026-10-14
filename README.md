@@ -182,6 +182,19 @@ Measured 2026-08-13 on a clean editable install. Full detail in
    applied to `test_repo_layout.py`: accept `"0 failed" in tail or "failed" not
    in tail`.
 
+## Deploy
+
+The staff web application (`kurort_app`: FastAPI, Postgres, server-rendered
+screens) ships as a container image and a Helm chart:
+
+```bash
+deploy/k3d/up.sh                 # local k3d cluster → http://kurort.localhost:8090/
+podman compose up -d --build     # or Docker Compose → http://localhost:8080/
+```
+
+See [docs/ops/kubernetes.md](docs/ops/kubernetes.md) and
+[docs/ops/local-development.md](docs/ops/local-development.md).
+
 ## Provenance
 
 This code was extracted on 2026-08-13 from a shared development repository that

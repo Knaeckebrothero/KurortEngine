@@ -1,0 +1,103 @@
+{{- $seed := .Values.demo.seed | default "off" }}
+{{- if not (has $seed (list "if-empty" "reset" "off")) }}
+{{- fail (printf "demo.seed must be if-empty, reset or off (got %q)" $seed) }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kurort.fullname" . }}
+  labels:
+    {{- include "kurort.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kurort.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kurort.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-db
+          image: {{ include "kurort.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["kurort-app", "wait-db", "--timeout", "180"]
+          env:
+            {{- include "kurort.env" . | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+        - name: migrate
+          image: {{ include "kurort.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["kurort-app", "migrate"]
+          env:
+            {{- include "kurort.env" . | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+        {{- if ne $seed "off" }}
+        - name: seed
+          image: {{ include "kurort.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["kurort-app", "seed", {{ ternary "--reset" "--if-empty" (eq $seed "reset") | quote }}]
+          env:
+            {{- include "kurort.env" . | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+        {{- end }}
+      containers:
+        - name: web
+          image: {{ include "kurort.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["kurort-app", "serve", "--port", "8080"]
+          env:
+            {{- include "kurort.env" . | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 15
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
