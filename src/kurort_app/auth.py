@@ -22,7 +22,7 @@ from typing import Any, Protocol
 from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from kurort_app.config import Settings
@@ -231,11 +231,20 @@ def _path_of(url: str | None, host: str | None) -> str | None:
     return (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
 
 
+def _wants_json(request: Request) -> bool:
+    """fetch() calls from the page: a redirect to the IdP would be useless to them."""
+    return request.url.path.startswith("/assistent/") or "application/json" in request.headers.get(
+        "accept", ""
+    )
+
+
 def _login_url(request: Request) -> str:
     """Where to send someone who is not logged in, remembering where they were going."""
     host = request.headers.get("host")
     if request.headers.get("hx-request") == "true":
         target = _path_of(request.headers.get("hx-current-url"), host)
+    elif _wants_json(request):  # back to the page that made the call
+        target = _path_of(request.headers.get("referer"), host)
     elif request.method in ("GET", "HEAD"):
         target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
     else:  # an expired session mid-form: return to the page the form was on
@@ -274,10 +283,15 @@ class AuthGate:
                 login = _login_url(request)
                 if request.headers.get("hx-request") == "true":
                     response = Response(status_code=401, headers={"HX-Redirect": login})
+                elif _wants_json(request):
+                    response = JSONResponse({"error": "login_required", "login": login}, 401)
                 else:
                     response = RedirectResponse(login, status_code=303)
             elif not user.has_access:
-                response = _render(request, "auth/forbidden.html", {"user": user}, 403)
+                if _wants_json(request):
+                    response = JSONResponse({"error": "forbidden"}, 403)
+                else:
+                    response = _render(request, "auth/forbidden.html", {"user": user}, 403)
             if response is not None:
                 await response(scope, receive, send)
                 return
