@@ -1,0 +1,72 @@
+# Demo Keycloak for deploy/k3d/up.sh. Dev-only: it stands in for the customer's
+# company Keycloak. The application chart only ever sees an issuer URL, a
+# client id and a client secret — see docs/ops/kubernetes.md#authentication.
+
+image: quay.io/keycloak/keycloak:26.2
+imagePullPolicy: IfNotPresent
+
+# Public base URL the browser uses. Fixes the token issuer regardless of the
+# Host a request arrives on (the app talks to the in-cluster Service).
+hostname: http://auth.kurort.localhost:8090
+
+ingress:
+  enabled: true
+  className: traefik
+  host: auth.kurort.localhost
+
+realm:
+  name: hotel-rheinland
+  displayName: "Hotel Rheinland · Bad Orb"
+
+# The confidential OIDC client used by the KurortEngine app.
+client:
+  clientId: kurort-app
+  # Where the app is reachable in the browser (redirect + logout URIs).
+  appUrl: http://kurort.localhost:8090
+  # Empty = generate once and keep it in Secret <fullname>-kurort-app-client
+  # (key client-secret); the app chart reads the same Secret.
+  secret: ""
+
+# Fictional demo accounts, imported on first start. All share demoPassword.
+demoPassword: "Rheinland2026!"
+users:
+  - username: m.schmidt
+    firstName: Maria
+    lastName: Schmidt
+    roles: [rezeption]
+  - username: t.weber
+    firstName: Thomas
+    lastName: Weber
+    roles: [rezeption, leitung]
+  - username: k.gast
+    firstName: Karl
+    lastName: Gast
+    roles: []          # no app role → the app answers 403
+emailDomain: hotel-rheinland.example
+
+# Keycloak's own master-realm admin (admin console). Empty password =
+# generate once and keep it in Secret <fullname> (key admin-password).
+admin:
+  username: admin
+  password: ""
+
+# Keycloak stores its data in its own database inside the app release's
+# bundled Postgres. An init container creates role + database idempotently,
+# using the Postgres superuser from the app chart's Secret.
+database:
+  host: kurort-postgresql
+  port: 5432
+  name: keycloak
+  username: keycloak
+  # Secret (from the app chart) holding the Postgres superuser credentials.
+  adminSecret: kurort-postgresql
+  adminUsernameKey: username
+  adminPasswordKey: password
+  initImage: docker.io/library/postgres:17-alpine
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    memory: 1Gi

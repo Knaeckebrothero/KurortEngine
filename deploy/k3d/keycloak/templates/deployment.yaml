@@ -1,0 +1,177 @@
+{{- $fullname := include "kc.fullname" . }}
+{{- $db := .Values.database }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "kc.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  # One instance only: two pods importing the realm into an empty database
+  # at the same time is not a path worth supporting for a demo.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "kc.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kc.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/realm: {{ include (print $.Template.BasePath "/realm-configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Create role + database "keycloak" in the app's Postgres. Idempotent;
+        # also re-applies the role password so the Secret stays authoritative.
+        - name: create-db
+          image: {{ $db.initImage }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 70
+            runAsGroup: 70
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: PGHOST
+              value: {{ $db.host | quote }}
+            - name: PGPORT
+              value: {{ $db.port | quote }}
+            - name: PGUSER
+              valueFrom: {secretKeyRef: {name: {{ $db.adminSecret }}, key: {{ $db.adminUsernameKey }}}}
+            - name: PGPASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $db.adminSecret }}, key: {{ $db.adminPasswordKey }}}}
+            - name: PGDATABASE
+              value: postgres
+            - name: KC_DB_NAME
+              value: {{ $db.name | quote }}
+            - name: KC_DB_USER
+              value: {{ $db.username | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $fullname }}, key: db-password}}
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              i=0
+              until pg_isready -q; do
+                i=$((i + 1)); [ "$i" -le 150 ] || { echo "postgres $PGHOST not ready after 300s"; exit 1; }
+                echo "waiting for postgres at $PGHOST:$PGPORT"; sleep 2
+              done
+              psql -v ON_ERROR_STOP=1 -v role="$KC_DB_USER" -v db="$KC_DB_NAME" -v pw="$KC_DB_PASSWORD" <<'SQL'
+              SELECT format('CREATE ROLE %I LOGIN', :'role')
+               WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'role') \gexec
+              ALTER ROLE :"role" WITH LOGIN PASSWORD :'pw';
+              SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'role')
+               WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db') \gexec
+              SQL
+              echo "database $KC_DB_NAME ready for role $KC_DB_USER"
+      containers:
+        - name: keycloak
+          image: {{ .Values.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          # Production mode, as in SRW: `start` needs a real hostname, HTTP
+          # explicitly enabled behind the ingress and a real database — all set
+          # below. The image re-augments on first start for the Postgres +
+          # health options (≈30 s extra); the startup probe allows 5 minutes.
+          args:
+            - start
+            - --import-realm
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: {{ printf "jdbc:postgresql://%s:%v/%s" $db.host $db.port $db.name | quote }}
+            - name: KC_DB_USERNAME
+              value: {{ $db.username | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $fullname }}, key: db-password}}
+            # The browser-facing URL fixes the issuer. Backchannel endpoints
+            # (token, jwks, userinfo) follow the request host, so the app can
+            # use the in-cluster Service while tokens still carry the public iss.
+            - name: KC_HOSTNAME
+              value: {{ .Values.hostname | quote }}
+            - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+              value: "true"
+            - name: KC_PROXY_HEADERS
+              value: xforwarded
+            - name: KC_HTTP_ENABLED
+              value: "true"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              valueFrom: {secretKeyRef: {name: {{ $fullname }}, key: admin-username}}
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $fullname }}, key: admin-password}}
+            # Resolved into ${...} placeholders of the realm import.
+            - name: KURORT_APP_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: {{ $fullname }}-kurort-app-client, key: client-secret}}
+            # Helper variables avoid the KC_ prefix: Keycloak reads every KC_*
+            # variable as one of its own options.
+            - name: KURORT_DEMO_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $fullname }}, key: demo-password}}
+            - name: KURORT_REALM
+              value: {{ .Values.realm.name | quote }}
+            - name: KURORT_CLIENT_ID
+              value: {{ .Values.client.clientId | quote }}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9000
+          startupProbe:
+            httpGet: {path: /health/started, port: management}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /health/ready, port: management}
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet: {path: /health/live, port: management}
+            periodSeconds: 20
+            timeoutSeconds: 5
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    # The realm import only runs into an empty database. Keep the
+                    # client secret in step with the Secret on every start, so a
+                    # re-generated Secret never strands the app. Never fails the pod.
+                    KC=/opt/keycloak/bin/kcadm.sh
+                    CFG=/tmp/kcadm.config   # --config goes after the subcommand
+                    for _ in $(seq 1 120); do (echo > /dev/tcp/127.0.0.1/9000) 2>/dev/null && break; sleep 3; done
+                    for _ in $(seq 1 40); do
+                      $KC config credentials --config "$CFG" --server http://127.0.0.1:8080 --realm master \
+                        --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" >/dev/null 2>&1 && break
+                      sleep 3
+                    done
+                    ID=$($KC get clients --config "$CFG" -r "$KURORT_REALM" -q "clientId=$KURORT_CLIENT_ID" --fields id --format csv --noquotes 2>/dev/null | tail -1)
+                    if [ -n "$ID" ]; then
+                      $KC update "clients/$ID" --config "$CFG" -r "$KURORT_REALM" -s "secret=$KURORT_APP_CLIENT_SECRET" >/dev/null 2>&1 \
+                        && echo "kurort-app client secret synced" > /tmp/client-secret-sync
+                    fi
+                    exit 0
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm
+          configMap:
+            name: {{ $fullname }}-realm

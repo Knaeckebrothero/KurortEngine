@@ -16,3 +16,17 @@ demo:
 postgresql:
   persistence:
     size: 1Gi
+
+# Login against the demo Keycloak from deploy/k3d/keycloak (installed by up.sh
+# first). The browser uses the public issuer; the pod reaches Keycloak through
+# its Service — Keycloak's dynamic backchannel keeps the public `iss` in tokens.
+auth:
+  enabled: true
+  publicUrl: http://kurort.localhost:8090
+  oidc:
+    issuer: http://auth.kurort.localhost:8090/realms/hotel-rheinland
+    internalUrl: http://keycloak.kurort.svc.cluster.local:8080/realms/hotel-rheinland
+    clientId: kurort-app
+    # Dev-only: generated once by the Keycloak release, shared with this one.
+    existingSecret: keycloak-kurort-app-client
+    existingSecretKey: client-secret

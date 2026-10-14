@@ -2,6 +2,7 @@
 {{- if not (has $seed (list "if-empty" "reset" "off")) }}
 {{- fail (printf "demo.seed must be if-empty, reset or off (got %q)" $seed) }}
 {{- end }}
+{{- include "kurort.auth.validate" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

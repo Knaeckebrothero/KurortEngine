@@ -3,7 +3,8 @@
 The staff web application ships as one container image and one Helm chart,
 `deploy/helm/kurort-engine`. The chart runs the app (FastAPI) and, by default,
 a bundled single-instance Postgres 17. Database migrations and demo seeding run
-as init containers of the app pod.
+as init containers of the app pod. Staff log in through OpenID Connect; the
+local k3d setup adds a demo Keycloak (see [Authentication](#authentication)).
 
 ## Local cluster on k3d
 
@@ -12,18 +13,22 @@ k3d, `k3d` 5.x, `kubectl`, `helm` 3, `curl`.
 
 ```bash
 deploy/k3d/up.sh        # create cluster "kurort", build, import, install
-                        # → http://kurort.localhost:8090/
-deploy/k3d/reload.sh    # after code changes: rebuild + roll the pod (~30 s)
+                        # Keycloak + app → http://kurort.localhost:8090/
+deploy/k3d/reload.sh    # after code changes: rebuild + roll the app pod (~30 s)
 deploy/k3d/down.sh      # delete cluster "kurort" (and the demo database)
+SKIP_BUILD=1 TAG=<tag> deploy/k3d/up.sh   # re-apply both charts, no image build
 ```
 
 `up.sh` is idempotent. It creates the k3d cluster `kurort` with the cluster
 load balancer's port 80 on host port 8090 (`HTTP_PORT=...` changes it for a new
 cluster), builds `localhost/kurort-engine:dev-<timestamp>` with podman, moves it
 into the cluster with `podman save` + `k3d image import` (no registry), and runs
-`helm upgrade --install kurort` into namespace `kurort` using
-`deploy/k3d/values-k3d.yaml`. Every build gets a fresh tag, so the Deployment
-always rolls. Extra arguments go to Helm:
+`helm upgrade --install` for two releases into namespace `kurort`: first the
+demo Keycloak (`keycloak`, chart `deploy/k3d/keycloak`), then the app
+(`kurort`, `deploy/k3d/values-k3d.yaml`), and finally waits until Keycloak
+serves its realm. Every build gets a fresh tag, so the app Deployment always
+rolls. `reload.sh` only touches the app; re-run `up.sh` after changing the
+Keycloak chart. Extra arguments go to the app's `helm upgrade`:
 
 ```bash
 deploy/k3d/up.sh --set demo.seed=reset --set app.today=2026-10-21
@@ -57,6 +62,7 @@ kubectl --context k3d-kurort -n kurort exec -it kurort-postgresql-0 -- psql -U k
 | StatefulSet | `kurort-postgresql` | bundled Postgres 17 with a PVC (only when `postgresql.enabled`) |
 | Services | `kurort-postgresql`, `kurort-postgresql-hl` | ClusterIP and headless |
 | Secret | `kurort-postgresql` | `username`, `password`, `database`, `database-url` |
+| Secret | `kurort-auth` | `session-secret` (generated once, kept), `client-secret` when given as a value (only with `auth.enabled`) |
 
 Probes: startup and liveness on `/healthz` (process up), readiness on `/readyz`
 (database answers). Containers run as non-root with a read-only root file
@@ -84,6 +90,16 @@ and data. Delete both by hand to start clean.
 | `postgresql.persistence.size` / `.storageClass` | `2Gi` / default class | bundled database volume |
 | `externalDatabase.existingSecret` / `.existingSecretKey` | empty / `uri` | Secret holding the database URL when `postgresql.enabled=false` |
 | `externalDatabase.url` | empty | alternatively a URL; the chart creates the Secret |
+| `auth.enabled` | `true` | OIDC login (`KURORT_AUTH=oidc`); `false` = no login (`off`), local use only |
+| `auth.publicUrl` | `http(s)://<ingress.host>` | browser-facing app URL; redirect URI is `<publicUrl>/auth/callback` |
+| `auth.oidc.issuer` | — (required) | public issuer as it appears in tokens |
+| `auth.oidc.internalUrl` | = issuer | base the pod uses for discovery, token, JWKS and userinfo calls |
+| `auth.oidc.clientId` | `kurort-app` | confidential client |
+| `auth.oidc.clientSecret` / `.existingSecret` / `.existingSecretKey` | — / — / `client-secret` | client secret as a value, or a Secret holding it (one is required) |
+| `auth.session.existingSecret` / `.existingSecretKey` | — / `session-secret` | cookie-signing key; empty = generated once into `<fullname>-auth` |
+
+With `auth.enabled=true` the render fails fast when the issuer, the client
+secret or a public URL is missing.
 
 The app accepts `postgresql://`, `postgres://` and `postgresql+psycopg://` URLs.
 
@@ -108,13 +124,100 @@ The app accepts `postgresql://`, `postgres://` and `postgresql+psycopg://` URLs.
 - **Backups.** The bundled StatefulSet has none. Production data belongs in a
   database with scheduled backups (CNPG `ScheduledBackup` to object storage),
   plus a tested restore.
-- **Authentication.** The app has no login yet. Do not expose it beyond a
-  trusted network without an authenticating proxy in front.
+- **Authentication.** Point `auth.oidc.*` at the company Keycloak (see
+  [below](#using-an-external-or-company-keycloak)); never deploy with
+  `auth.enabled=false` outside a laptop.
 - **Demo mornings.** Seed data is laid out around the date it was generated.
   Before a demo, reseed so today's arrivals and departures are current:
   `kubectl -n kurort exec deploy/kurort -c web -- kurort-app seed --reset`,
   or deploy with `--set demo.seed=reset` so every pod start reseeds. To show
   the same day every time, pin it with `--set app.today=YYYY-MM-DD`.
+
+## Authentication
+
+The app logs staff in with OpenID Connect: authorization code flow with PKCE
+(S256) against a confidential client, then a signed session cookie. Access
+needs the realm role `rezeption` or `leitung` in a flat `roles` claim
+(`realm_access.roles` is the fallback); a signed-in user with neither gets 403.
+The app reads these variables (the chart sets them from `auth.*`):
+`KURORT_AUTH`, `KURORT_PUBLIC_URL`, `KURORT_OIDC_ISSUER`,
+`KURORT_OIDC_INTERNAL_URL`, `KURORT_OIDC_CLIENT_ID`,
+`KURORT_OIDC_CLIENT_SECRET`, `KURORT_SESSION_SECRET`.
+
+### Demo Keycloak on k3d
+
+`deploy/k3d/keycloak` is a small chart for the local cluster only — it stands
+in for the customer's company Keycloak and is not part of the app chart.
+
+| | |
+|---|---|
+| Realm | `hotel-rheinland` ("Hotel Rheinland · Bad Orb"), login pages in German (English selectable) |
+| Login / issuer | http://auth.kurort.localhost:8090/realms/hotel-rheinland |
+| Admin console | http://auth.kurort.localhost:8090/admin/ — user `admin` |
+| Admin password | `kubectl --context k3d-kurort -n kurort get secret keycloak -o jsonpath='{.data.admin-password}' \| base64 -d` |
+| Client | `kurort-app`, confidential, standard flow only, PKCE S256 required |
+| Client secret | generated once into Secret `keycloak-kurort-app-client` (key `client-secret`); the app release reads the same Secret (`auth.oidc.existingSecret` in `values-k3d.yaml`) |
+| Database | own database + role `keycloak` in the app's bundled Postgres, created by an init container |
+| Memory | about 0.5 GiB (limit 1 GiB) |
+
+Demo users (fictional), all with the password `Rheinland2026!`
+(`demoPassword` in the chart values):
+
+| User | Name | Roles |
+|---|---|---|
+| `m.schmidt` | Maria Schmidt | `rezeption` |
+| `t.weber` | Thomas Weber | `rezeption`, `leitung` |
+| `k.gast` | Karl Gast | none — shows the app's 403 |
+
+The realm is imported from a ConfigMap on the **first** start only; later
+starts keep whatever is in Keycloak's database (`IGNORE_EXISTING`). A post-start
+hook re-applies the client secret from the Secret on every start. To re-import
+after changing users or client settings, drop the realm (admin console) or the
+`keycloak` database and restart the pod.
+
+Keycloak runs in production mode (`start`, as in SRW) with
+`KC_HOSTNAME=http://auth.kurort.localhost:8090` and
+`KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`. The hostname pins the issuer and the
+browser-facing endpoints; the backchannel endpoints follow the request host.
+That is why `auth.oidc.internalUrl` can be the in-cluster Service
+(`http://keycloak.kurort.svc.cluster.local:8080/realms/hotel-rheinland`): its
+discovery document lists token, JWKS and userinfo on the Service while tokens
+still carry the public `iss`. Inside a pod, `auth.kurort.localhost` does not
+resolve at all, so the public URL is not usable there.
+
+Keycloak marks its login cookies `Secure; SameSite=None` even over plain HTTP.
+Browsers accept that on `http://*.localhost` (a secure context), but on any
+other plain-HTTP hostname the login fails with "Cookie konnte nicht gefunden
+werden" — serve Keycloak over HTTPS anywhere but a laptop.
+
+### Using an external or company Keycloak
+
+Create a client in the company realm:
+
+- Client type OpenID Connect, client authentication **on** (confidential),
+  standard flow only (no direct access grants, no implicit flow).
+- Advanced → Proof Key for Code Exchange method: **S256**.
+- Valid redirect URI `https://<app-host>/auth/callback`, valid post-logout
+  redirect URI `https://<app-host>/*`, web origin `https://<app-host>`.
+- A protocol mapper "User Realm Role" with token claim name `roles`,
+  multivalued, added to the ID token, access token and userinfo.
+- Realm roles `rezeption` and `leitung`, assigned to staff (or via groups).
+
+Then deploy with:
+
+```bash
+kubectl -n kurort create secret generic kurort-oidc --from-literal=client-secret='<secret>'
+helm upgrade --install kurort deploy/helm/kurort-engine -n kurort \
+  --set ingress.host=rezeption.example.de \
+  --set auth.publicUrl=https://rezeption.example.de \
+  --set auth.oidc.issuer=https://login.example.de/realms/<realm> \
+  --set auth.oidc.existingSecret=kurort-oidc
+```
+
+Set `auth.oidc.internalUrl` only when the pod cannot reach the public issuer
+URL (split DNS, a Keycloak in the same cluster); the IdP must then serve
+backchannel endpoints for that host, as Keycloak does with
+`hostname-backchannel-dynamic`.
 
 ## Docker Compose
 

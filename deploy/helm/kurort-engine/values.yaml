@@ -29,6 +29,34 @@ demo:
   #   off       never seed (production)
   seed: if-empty
 
+# Staff login via OpenID Connect — Keycloak or any OIDC provider. The app
+# only needs an issuer, a confidential client and a `roles` claim carrying
+# `rezeption` and/or `leitung` (docs/ops/kubernetes.md#authentication).
+# enabled=false runs the app without login (KURORT_AUTH=off): local use only.
+auth:
+  enabled: true
+  # Browser-facing base URL of the app; the client's redirect URI is
+  # <publicUrl>/auth/callback. Empty = http(s)://<ingress.host>.
+  publicUrl: ""
+  oidc:
+    # Public issuer as it appears in tokens, e.g.
+    # https://login.example.de/realms/hotel-rheinland
+    issuer: ""
+    # Base the app uses server-side for discovery, token and JWKS calls, when
+    # the pod cannot reach the public issuer URL. Empty = issuer.
+    internalUrl: ""
+    clientId: kurort-app
+    # Either a literal secret (stored in Secret <fullname>-auth) ...
+    clientSecret: ""
+    # ... or an existing Secret holding it.
+    existingSecret: ""
+    existingSecretKey: client-secret
+  # Key that signs the session cookie. Empty existingSecret = generate once
+  # into Secret <fullname>-auth and keep it across upgrades.
+  session:
+    existingSecret: ""
+    existingSecretKey: session-secret
+
 service:
   type: ClusterIP
   port: 80

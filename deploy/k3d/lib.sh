@@ -14,6 +14,11 @@ HOST="${HOST:-kurort.localhost}"
 IMAGE_REPO="${IMAGE_REPO:-localhost/kurort-engine}"
 CHART_DIR="$REPO_ROOT/deploy/helm/kurort-engine"
 VALUES_FILE="$SCRIPT_DIR/values-k3d.yaml"
+# Demo Keycloak (stands in for the customer's company Keycloak).
+KC_RELEASE="${KC_RELEASE:-keycloak}"
+KC_CHART_DIR="$SCRIPT_DIR/keycloak"
+KC_HOST="${KC_HOST:-auth.kurort.localhost}"
+KC_REALM="${KC_REALM:-hotel-rheinland}"
 
 log()  { printf '\033[1;34m[kurort]\033[0m %s\n' "$*"; }
 ok()   { printf '\033[1;32m[ok]\033[0m %s\n' "$*"; }
@@ -80,4 +85,32 @@ wait_http() {
     sleep 2
   done
   die "no answer from $url after 120s"
+}
+
+# Install/upgrade the demo Keycloak. No --wait: on a fresh cluster its database
+# lives in the app release's Postgres, which deploy_release creates next. The
+# release does create the shared client Secret immediately, which the app needs.
+deploy_keycloak() {
+  log "helm upgrade --install $KC_RELEASE (demo Keycloak)"
+  helm upgrade --install "$KC_RELEASE" "$KC_CHART_DIR" \
+    --kube-context "$KUBE_CONTEXT" --namespace "$NAMESPACE" --create-namespace \
+    --set hostname="http://$KC_HOST:$HTTP_PORT" --set ingress.host="$KC_HOST" \
+    --set client.appUrl="http://$HOST:$HTTP_PORT" \
+    || die "helm upgrade of $KC_RELEASE failed"
+  ok "keycloak release applied"
+}
+
+wait_keycloak() {
+  local url="http://$KC_HOST:$HTTP_PORT/realms/$KC_REALM/.well-known/openid-configuration" i
+  log "waiting for Keycloak (first start imports the realm; allow a few minutes)"
+  kubectl --context "$KUBE_CONTEXT" -n "$NAMESPACE" rollout status "deploy/$KC_RELEASE" --timeout=8m \
+    || die "Keycloak did not become ready — kubectl --context $KUBE_CONTEXT -n $NAMESPACE logs deploy/$KC_RELEASE"
+  for i in $(seq 1 60); do
+    if curl -fsS --max-time 3 "$url" >/dev/null 2>&1; then
+      ok "realm $KC_REALM answers at $url"
+      return 0
+    fi
+    sleep 2
+  done
+  die "no discovery document at $url after 120s"
 }

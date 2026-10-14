@@ -1,0 +1,8 @@
+apiVersion: v2
+name: keycloak
+description: >-
+  Demo Keycloak for the local KurortEngine k3d cluster. It stands in for the
+  customer's company Keycloak and is not part of the application chart.
+type: application
+version: 0.1.0
+appVersion: "26.2"

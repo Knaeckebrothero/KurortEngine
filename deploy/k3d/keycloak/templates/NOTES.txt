@@ -1,0 +1,13 @@
+Demo Keycloak (stands in for the customer's company Keycloak).
+
+  Realm:        {{ include "kc.realmUrl" . }}
+  Discovery:    {{ include "kc.realmUrl" . }}/.well-known/openid-configuration
+  Admin console {{ trimSuffix "/" .Values.hostname }}/admin/  (user {{ .Values.admin.username }})
+    password:   kubectl -n {{ .Release.Namespace }} get secret {{ include "kc.fullname" . }} -o jsonpath='{.data.admin-password}' | base64 -d
+
+Demo users (password: {{ .Values.demoPassword }}):
+{{- range .Values.users }}
+  {{ .username | printf "%-12s" }} {{ .firstName }} {{ .lastName }} — {{ if .roles }}{{ join ", " .roles }}{{ else }}no app role (403){{ end }}
+{{- end }}
+
+Client "{{ .Values.client.clientId }}" secret lives in Secret {{ include "kc.fullname" . }}-kurort-app-client (key client-secret).

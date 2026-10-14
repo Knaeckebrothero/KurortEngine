@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fast UI iteration: rebuild the image under a fresh tag, import it, and roll
-# the Deployment. Requires the cluster from deploy/k3d/up.sh.
+# the app Deployment. Requires the cluster from deploy/k3d/up.sh. Keycloak is
+# left alone; re-run up.sh after changing deploy/k3d/keycloak.
 #
 #   deploy/k3d/reload.sh [extra helm args]
 set -euo pipefail

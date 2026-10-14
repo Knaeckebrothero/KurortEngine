@@ -32,6 +32,7 @@ reachable server they are skipped, not failed.
 
 ```bash
 export KURORT_DATABASE_URL=postgresql+psycopg://kurort:kurort@127.0.0.1:55432/kurort
+export KURORT_AUTH=off                       # no login locally (default is oidc)
 .venv/bin/kurort-app migrate
 .venv/bin/kurort-app seed --reset            # demo data around today
 .venv/bin/kurort-app serve --port 8000 --reload
@@ -39,7 +40,9 @@ export KURORT_DATABASE_URL=postgresql+psycopg://kurort:kurort@127.0.0.1:55432/ku
 
 Open http://127.0.0.1:8000/ (API docs at `/api/docs`). `KURORT_TODAY=2026-10-14`
 pins the business date; `kurort-app seed --reset` lays the demo data out around
-it.
+it. To work on the login itself, run against the k3d Keycloak instead — see
+[kubernetes.md](kubernetes.md#authentication) for the `KURORT_OIDC_*` variables
+(redirect URIs are registered for `http://kurort.localhost:8090` only).
 
 ## Docker Compose
 
@@ -52,6 +55,7 @@ podman compose down                  # add -v to drop the database volume
 
 The app container waits for Postgres, applies migrations, seeds demo data when
 the database is empty (`KURORT_SEED=if-empty|reset|off`) and serves on 8080.
+Compose runs without login (`KURORT_AUTH=off`); Keycloak lives in the k3d setup.
 
 ## Kubernetes
 

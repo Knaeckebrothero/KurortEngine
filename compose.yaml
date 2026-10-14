@@ -38,6 +38,9 @@ services:
     environment:
       KURORT_DATABASE_URL: postgresql+psycopg://kurort:kurort@db:5432/kurort
       KURORT_SEED: ${KURORT_SEED:-if-empty}
+      # No login in the quick local stack. Keycloak (OIDC) lives in the k3d
+      # setup: deploy/k3d/up.sh, docs/ops/kubernetes.md#authentication.
+      KURORT_AUTH: "off"
       # To pin the business date for a reproducible demo, add e.g.
       #   KURORT_TODAY: "2026-10-14"
     command: ["kurort-entrypoint"]

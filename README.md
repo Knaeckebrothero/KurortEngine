@@ -192,6 +192,10 @@ deploy/k3d/up.sh                 # local k3d cluster → http://kurort.localhost
 podman compose up -d --build     # or Docker Compose → http://localhost:8080/
 ```
 
+On k3d, staff log in through a demo Keycloak (users `m.schmidt`, `t.weber`,
+password `Rheinland2026!`); Compose runs without login. In production the chart
+points at the company Keycloak or any OpenID Connect provider.
+
 See [docs/ops/kubernetes.md](docs/ops/kubernetes.md) and
 [docs/ops/local-development.md](docs/ops/local-development.md).
 

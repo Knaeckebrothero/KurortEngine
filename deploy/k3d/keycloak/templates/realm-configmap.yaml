@@ -1,0 +1,77 @@
+{{- $realm := .Values.realm.name }}
+{{- $appUrl := trimSuffix "/" .Values.client.appUrl }}
+{{- $users := list }}
+{{- range .Values.users }}
+{{- $roles := concat (list (printf "default-roles-%s" $realm)) (.roles | default list) }}
+{{- $users = append $users (dict
+      "username" .username
+      "enabled" true
+      "emailVerified" true
+      "firstName" .firstName
+      "lastName" .lastName
+      "email" (printf "%s@%s" .username $.Values.emailDomain)
+      "credentials" (list (dict "type" "password" "value" "${KURORT_DEMO_PASSWORD}" "temporary" false))
+      "realmRoles" $roles) }}
+{{- end }}
+{{- $client := dict
+      "clientId" .Values.client.clientId
+      "name" "KurortEngine Rezeption"
+      "description" "Staff web application (confidential, authorization code + PKCE S256)"
+      "enabled" true
+      "publicClient" false
+      "clientAuthenticatorType" "client-secret"
+      "secret" "${KURORT_APP_CLIENT_SECRET}"
+      "standardFlowEnabled" true
+      "implicitFlowEnabled" false
+      "directAccessGrantsEnabled" false
+      "serviceAccountsEnabled" false
+      "frontchannelLogout" true
+      "protocol" "openid-connect"
+      "rootUrl" $appUrl
+      "baseUrl" "/"
+      "redirectUris" (list (printf "%s/auth/callback" $appUrl))
+      "webOrigins" (list $appUrl)
+      "attributes" (dict
+        "pkce.code.challenge.method" "S256"
+        "post.logout.redirect.uris" (printf "%s/*" $appUrl))
+      "protocolMappers" (list (dict
+        "name" "realm roles as roles"
+        "protocol" "openid-connect"
+        "protocolMapper" "oidc-usermodel-realm-role-mapper"
+        "config" (dict
+          "multivalued" "true"
+          "claim.name" "roles"
+          "jsonType.label" "String"
+          "id.token.claim" "true"
+          "access.token.claim" "true"
+          "userinfo.token.claim" "true"
+          "introspection.token.claim" "true"))) }}
+{{- $realmRep := dict
+      "realm" $realm
+      "displayName" .Values.realm.displayName
+      "enabled" true
+      "sslRequired" "external"
+      "registrationAllowed" false
+      "resetPasswordAllowed" true
+      "rememberMe" true
+      "loginWithEmailAllowed" true
+      "bruteForceProtected" true
+      "internationalizationEnabled" true
+      "supportedLocales" (list "de" "en")
+      "defaultLocale" "de"
+      "roles" (dict "realm" (list
+        (dict "name" "rezeption" "description" "Rezeption")
+        (dict "name" "leitung" "description" "Leitung")))
+      "clients" (list $client)
+      "users" $users }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kc.fullname" . }}-realm
+  labels:
+    {{- include "kc.labels" . | nindent 4 }}
+data:
+  # Imported on first start only (--import-realm skips an existing realm).
+  # ${...} placeholders are resolved from the container environment.
+  {{ $realm }}-realm.json: |
+    {{- $realmRep | toPrettyJson | nindent 4 }}

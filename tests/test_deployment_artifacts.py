@@ -6,6 +6,7 @@ with ``helm template`` and are skipped when the binary is absent.
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -16,14 +17,15 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CHART = ROOT / "deploy" / "helm" / "kurort-engine"
 K3D_VALUES = ROOT / "deploy" / "k3d" / "values-k3d.yaml"
+KEYCLOAK_CHART = ROOT / "deploy" / "k3d" / "keycloak"
 
 helm = shutil.which("helm")
 needs_helm = pytest.mark.skipif(helm is None, reason="helm not installed")
 
 
-def _render(*args: str) -> list[dict]:
+def _render(*args: str, chart: Path = CHART, release: str = "kurort") -> list[dict]:
     result = subprocess.run(
-        [helm, "template", "kurort", str(CHART), *args],
+        [helm, "template", release, str(chart), *args],
         check=True,
         capture_output=True,
         text=True,
@@ -34,6 +36,17 @@ def _render(*args: str) -> list[dict]:
 
 def _by_kind(docs: list[dict], kind: str) -> list[dict]:
     return [d for d in docs if d["kind"] == kind]
+
+
+def _web_env(docs: list[dict]) -> dict[str, dict]:
+    pod = _by_kind(docs, "Deployment")[0]["spec"]["template"]["spec"]
+    return {e["name"]: e for e in pod["containers"][0]["env"]}
+
+
+def _helm_error(*args: str) -> str:
+    with pytest.raises(subprocess.CalledProcessError) as excinfo:
+        _render(*args)
+    return excinfo.value.stderr
 
 
 def test_dockerfile_runs_the_app_as_non_root():
@@ -63,6 +76,7 @@ def test_compose_waits_for_a_healthy_database():
     assert app["depends_on"]["db"]["condition"] == "service_healthy"
     assert app["command"] == ["kurort-entrypoint"]
     assert "KURORT_DATABASE_URL" in app["environment"]
+    assert app["environment"]["KURORT_AUTH"] == "off", "Compose is the login-free local stack"
 
 
 def test_entrypoint_migrates_before_serving():
@@ -105,6 +119,8 @@ def test_chart_uses_an_external_secret_without_bundled_postgres():
         "externalDatabase.existingSecret=pg-app",
         "--set",
         "demo.seed=off",
+        "--set",
+        "auth.enabled=false",
     )
     assert not _by_kind(docs, "StatefulSet")
     pod = _by_kind(docs, "Deployment")[0]["spec"]["template"]["spec"]
@@ -115,6 +131,120 @@ def test_chart_uses_an_external_secret_without_bundled_postgres():
 
 @needs_helm
 def test_chart_refuses_a_missing_database_and_a_bad_seed_mode():
-    for args in (("--set", "postgresql.enabled=false"), ("--set", "demo.seed=bogus")):
-        with pytest.raises(subprocess.CalledProcessError):
-            _render(*args)
+    no_auth = ("--set", "auth.enabled=false")
+    assert "externalDatabase" in _helm_error("--set", "postgresql.enabled=false", *no_auth)
+    assert "demo.seed" in _helm_error("--set", "demo.seed=bogus", *no_auth)
+
+
+@needs_helm
+def test_k3d_values_wire_the_app_to_the_demo_keycloak():
+    docs = _render("-f", str(K3D_VALUES))
+    env = _web_env(docs)
+    assert env["KURORT_AUTH"]["value"] == "oidc"
+    assert env["KURORT_PUBLIC_URL"]["value"] == "http://kurort.localhost:8090"
+    assert (
+        env["KURORT_OIDC_ISSUER"]["value"]
+        == "http://auth.kurort.localhost:8090/realms/hotel-rheinland"
+    )
+    assert env["KURORT_OIDC_INTERNAL_URL"]["value"].startswith(
+        "http://keycloak.kurort.svc.cluster.local:8080/"
+    )
+    assert env["KURORT_OIDC_CLIENT_ID"]["value"] == "kurort-app"
+    assert env["KURORT_OIDC_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "keycloak-kurort-app-client",
+        "key": "client-secret",
+    }
+    assert env["KURORT_SESSION_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "kurort-auth",
+        "key": "session-secret",
+    }
+    auth_secret = next(
+        d for d in _by_kind(docs, "Secret") if d["metadata"]["name"] == "kurort-auth"
+    )
+    assert len(auth_secret["stringData"]["session-secret"]) >= 32
+    assert "client-secret" not in auth_secret["stringData"]
+
+
+@needs_helm
+def test_chart_without_auth_runs_login_free():
+    docs = _render("-f", str(K3D_VALUES), "--set", "auth.enabled=false")
+    env = _web_env(docs)
+    assert env["KURORT_AUTH"]["value"] == "off"
+    assert not [name for name in env if name.startswith(("KURORT_OIDC_", "KURORT_SESSION"))]
+    assert "kurort-auth" not in [d["metadata"]["name"] for d in _by_kind(docs, "Secret")]
+
+
+@needs_helm
+def test_chart_stores_a_literal_client_secret():
+    docs = _render(
+        "--set",
+        "auth.oidc.issuer=https://login.example.de/realms/x",
+        "--set",
+        "auth.oidc.clientSecret=s3cr3t",
+    )
+    env = _web_env(docs)
+    assert env["KURORT_OIDC_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "kurort-kurort-engine-auth",
+        "key": "client-secret",
+    }
+    assert env["KURORT_OIDC_INTERNAL_URL"]["value"] == "https://login.example.de/realms/x"
+    assert env["KURORT_PUBLIC_URL"]["value"] == "http://kurort.localhost"
+    secret = next(d for d in _by_kind(docs, "Secret") if d["metadata"]["name"].endswith("-auth"))
+    assert secret["stringData"]["client-secret"] == "s3cr3t"
+
+
+@needs_helm
+def test_chart_fails_fast_on_incomplete_auth():
+    issuer = ("--set", "auth.oidc.issuer=https://login.example.de/realms/x")
+    secret = ("--set", "auth.oidc.existingSecret=oidc")
+    assert "auth.oidc.issuer" in _helm_error(*secret)
+    assert "clientSecret" in _helm_error(*issuer)
+    assert "auth.publicUrl" in _helm_error(*issuer, *secret, "--set", "ingress.enabled=false")
+
+
+@needs_helm
+def test_demo_keycloak_realm_matches_the_app_contract():
+    docs = _render(chart=KEYCLOAK_CHART, release="keycloak")
+    names = {(d["kind"], d["metadata"]["name"]) for d in docs}
+    k3d_values = yaml.safe_load(K3D_VALUES.read_text())
+    assert ("Secret", k3d_values["auth"]["oidc"]["existingSecret"]) in names
+
+    configmap = _by_kind(docs, "ConfigMap")[0]
+    realm = json.loads(next(iter(configmap["data"].values())))
+    assert realm["realm"] == "hotel-rheinland"
+    assert realm["defaultLocale"] == "de" and realm["registrationAllowed"] is False
+    assert {r["name"] for r in realm["roles"]["realm"]} == {"rezeption", "leitung"}
+
+    client = realm["clients"][0]
+    assert client["clientId"] == k3d_values["auth"]["oidc"]["clientId"]
+    assert client["publicClient"] is False and client["directAccessGrantsEnabled"] is False
+    assert client["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert client["redirectUris"] == [k3d_values["auth"]["publicUrl"] + "/auth/callback"]
+    mapper = client["protocolMappers"][0]
+    assert mapper["protocolMapper"] == "oidc-usermodel-realm-role-mapper"
+    assert mapper["config"]["claim.name"] == "roles"
+
+    users = {u["username"]: set(u["realmRoles"]) for u in realm["users"]}
+    assert {"rezeption"} <= users["m.schmidt"]
+    assert {"rezeption", "leitung"} <= users["t.weber"]
+    assert not {"rezeption", "leitung"} & users["k.gast"]
+
+    keycloak = _by_kind(docs, "Deployment")[0]["spec"]["template"]["spec"]["containers"][0]
+    env = {e["name"]: e for e in keycloak["env"]}
+    assert env["KC_HOSTNAME"]["value"] == "http://auth.kurort.localhost:8090"
+    assert env["KC_HOSTNAME_BACKCHANNEL_DYNAMIC"]["value"] == "true"
+    # Keycloak reads every KC_* variable as one of its own options.
+    official = {
+        "KC_DB",
+        "KC_DB_URL",
+        "KC_DB_USERNAME",
+        "KC_DB_PASSWORD",
+        "KC_HOSTNAME",
+        "KC_HOSTNAME_BACKCHANNEL_DYNAMIC",
+        "KC_PROXY_HEADERS",
+        "KC_HTTP_ENABLED",
+        "KC_HEALTH_ENABLED",
+        "KC_BOOTSTRAP_ADMIN_USERNAME",
+        "KC_BOOTSTRAP_ADMIN_PASSWORD",
+    }
+    assert {name for name in env if name.startswith("KC_")} <= official
