@@ -54,8 +54,17 @@ def _seed(if_empty: bool, reset: bool) -> int:
 def _serve(host: str, port: int, reload: bool) -> int:
     import uvicorn
 
+    from kurort_app.auth import AuthConfigError, validate_settings
+    from kurort_app.config import get_settings
+
+    try:
+        validate_settings(get_settings())
+    except AuthConfigError as exc:
+        print(f"kurort-app: {exc}", file=sys.stderr, flush=True)
+        return 2
     uvicorn.run(
-        "kurort_app.main:app",
+        "kurort_app.main:create_app",
+        factory=True,
         host=host,
         port=port,
         reload=reload,

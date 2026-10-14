@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Anmeldung{% endblock %} · {{ hotel_name }}</title>
+  <link rel="icon" href="/static/favicon.svg?v={{ static_version }}" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css?v={{ static_version }}">
+</head>
+<body class="auth-page">
+<main class="auth-card card" role="main">
+  <div class="auth-brand">
+    <span class="brand-mark" aria-hidden="true">HR</span>
+    <span><span class="brand-name">{{ hotel_name }}</span><span class="brand-sub">{{ hotel_city }} · Rezeption</span></span>
+  </div>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

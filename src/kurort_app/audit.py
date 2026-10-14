@@ -6,7 +6,11 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from kurort_app.auth import current_actor
 from kurort_app.models import AuditEvent
+
+# Actor for events without a logged-in user (auth off, CLI seed).
+DEFAULT_ACTOR = "rezeption"
 
 
 def record(
@@ -17,10 +21,11 @@ def record(
     entity_id: object,
     summary: str,
     payload: dict[str, Any] | None = None,
-    actor: str = "rezeption",
+    actor: str | None = None,
 ) -> AuditEvent:
+    """Record an event; the actor defaults to the logged-in staff member."""
     event = AuditEvent(
-        actor=actor,
+        actor=actor or current_actor.get() or DEFAULT_ACTOR,
         action=action,
         entity=entity,
         entity_id=str(entity_id),

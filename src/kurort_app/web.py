@@ -126,6 +126,8 @@ def _context(request: Request) -> dict[str, Any]:
         "business_date": today(),
         "nav_path": request.url.path,
         "static_version": STATIC_VERSION,
+        "current_user": getattr(request.state, "user", None),
+        "auth_enabled": getattr(request.state, "auth_enabled", False),
         # Post/redirect/get notices: redirect to ...?notice=<text>&notice_kind=success|warning|danger
         "flash": (
             {

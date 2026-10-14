@@ -1,0 +1,9 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Anmeldung fehlgeschlagen{% endblock %}
+{% block content %}
+<h1>Anmeldung fehlgeschlagen</h1>
+<p class="muted">{{ message }}</p>
+<div class="auth-actions">
+  <a class="btn primary" href="/auth/login">Erneut anmelden</a>
+</div>
+{% endblock %}

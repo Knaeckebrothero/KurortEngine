@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,6 +23,20 @@ class Settings(BaseSettings):
     # Tourist-tax statute profile loaded via kurort_engine.rates.load_profile.
     kurtaxe_bundesland: str = "hessen"
     kurtaxe_kurort: str = "bad_orb"
+
+    # Staff login. "oidc" (default) requires the OIDC/session settings below and
+    # refuses to start without them; "off" serves every page without a login.
+    auth: Literal["oidc", "off"] = "oidc"
+    # Public issuer the browser is sent to and that tokens name in `iss`.
+    oidc_issuer: str | None = None
+    # Base URL the server uses for discovery/token/JWKS/userinfo (default: issuer).
+    oidc_internal_url: str | None = None
+    oidc_client_id: str = "kurort-app"
+    oidc_client_secret: str | None = None
+    # Signs the session cookie; at least 32 characters.
+    session_secret: str | None = None
+    # External base URL of this app (redirect URIs); default: derived from the request.
+    public_url: str | None = None
 
     @field_validator("database_url")
     @classmethod

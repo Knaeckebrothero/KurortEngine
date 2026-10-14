@@ -18,6 +18,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+# The suite exercises the screens without a login; tests/app/test_auth.py
+# builds its own app with KURORT_AUTH=oidc against a fake provider.
+os.environ["KURORT_AUTH"] = "off"
+
 TEST_DB_URL = os.environ.get(
     "KURORT_TEST_DATABASE_URL", "postgresql+psycopg://kurort:kurort@127.0.0.1:55432/kurort_test"
 )

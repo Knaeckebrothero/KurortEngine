@@ -1,0 +1,13 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Kein Zugriff{% endblock %}
+{% block content %}
+<h1>Kein Zugriff – Rolle fehlt</h1>
+<p class="muted">
+  Sie sind als <strong>{{ user.display_name }}</strong> angemeldet, Ihrem Konto ist aber
+  keine Rolle für die Rezeption zugewiesen. Bitte wenden Sie sich an die Hausleitung,
+  damit Ihnen die Rolle „Rezeption“ oder „Leitung“ zugeordnet wird.
+</p>
+<form class="auth-actions" method="post" action="/auth/logout">
+  <button class="btn" type="submit">Abmelden</button>
+</form>
+{% endblock %}

@@ -1,24 +1,48 @@
 """FastAPI application factory.
 
-Run locally:  KURORT_DATABASE_URL=... uvicorn kurort_app.main:app --reload
+Run locally:  KURORT_DATABASE_URL=... uvicorn --factory kurort_app.main:create_app --reload
+(``kurort-app serve`` does this). Building the app validates the login
+settings, so a misconfigured instance stops at startup, not at first login.
 """
 
 from __future__ import annotations
+
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from starlette.middleware.sessions import SessionMiddleware
 
-from kurort_app import __version__
+from kurort_app import __version__, auth
+from kurort_app.config import Settings, get_settings
 from kurort_app.db import get_engine
 from kurort_app.routers import checkin, front_desk, reservations
 from kurort_app.web import STATIC_DIR
 
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    auth.validate_settings(settings)
+    enabled = auth.auth_enabled(settings)
+
     app = FastAPI(title="KurortEngine", version=__version__, docs_url="/api/docs", redoc_url=None)
+    app.state.settings = settings
+    app.state.oidc = auth.AuthlibProvider(settings) if enabled else None
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    # Added innermost first: the session must be decoded before the gate reads it.
+    app.add_middleware(auth.AuthGate, enabled=enabled)
+    if enabled:
+        app.add_middleware(
+            SessionMiddleware,
+            secret_key=settings.session_secret,
+            session_cookie=auth.SESSION_COOKIE,
+            max_age=auth.SESSION_MAX_AGE,
+            same_site="lax",
+            https_only=(settings.public_url or "").startswith("https://"),
+        )
 
     @app.get("/healthz", response_class=PlainTextResponse, include_in_schema=False)
     def healthz() -> str:
@@ -35,10 +59,15 @@ def create_app() -> FastAPI:
             return PlainTextResponse("database unavailable\n", status_code=503)
         return PlainTextResponse("ok\n")
 
+    app.include_router(auth.router)
     app.include_router(front_desk.router)
     app.include_router(reservations.router)
     app.include_router(checkin.router)
     return app
 
 
-app = create_app()
+def __getattr__(name: str) -> Any:
+    """``kurort_app.main:app`` still works, built on first access (not at import)."""
+    if name == "app":
+        return create_app()
+    raise AttributeError(name)
