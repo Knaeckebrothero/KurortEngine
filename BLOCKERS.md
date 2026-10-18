@@ -26,8 +26,14 @@ Erster Unterschied an Byte 179 (`\r` statt `\n`).
 3. Mit `git diff --quiet main -- src/kurort_engine tests/test_demo.py
    tests/fixtures/expected_synthetic_bad_orb.csv` bestätigt, dass diese Dateien
    durch F6 unverändert sind (Exit 0).
-4. Zusätzlich den vollständigen Lauf mit `--maxfail=0` gestartet, damit weitere
-   Fehler nicht durch das projektweite `-x` verdeckt werden. Ergebnis im PR.
+4. Zusätzlich den vollständigen Lauf auf stabilem Arbeitsbaum mit `--maxfail=0`
+   ausgeführt: **2 failed, 410 passed, 8 skipped, 2 deselected, 1 warning**
+   (Exit 1). Die zweite Meldung ist
+   `tests/test_repo_layout.py::test_ac6_full_pytest_suite_exits_zero`: dessen
+   eigener verschachtelter Suite-Lauf scheitert ebenfalls am identischen
+   CSV-Vergleich. Die acht Skips stammen aus bestehenden optionalen Tests;
+   F6-/App-Tests wurden nicht übersprungen. Das ist ein Diagnose-Lauf, kein
+   Ersatz für den oben unverändert wiedergegebenen Pflicht-Gate.
 
 ## Was stattdessen erledigt wurde
 
