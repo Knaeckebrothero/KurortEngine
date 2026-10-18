@@ -240,7 +240,11 @@ def test_checkout_happy_path_records_audit(client, seeded):
     stored = seeded.get(Reservation, r.id)
     assert stored.status == CHECKED_OUT
     assert stored.checked_out_at is not None
-    event = seeded.scalar(select(AuditEvent).where(AuditEvent.entity_id == str(r.id)))
+    event = seeded.scalars(
+        select(AuditEvent).where(
+            AuditEvent.entity == "reservation", AuditEvent.entity_id == str(r.id)
+        )
+    ).one()
     assert event.action == "check_out"
     assert r.code in event.summary
 

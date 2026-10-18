@@ -39,11 +39,15 @@ def test_demo_reset_installs_and_runs_hook(db, app_definitions):
     from kurort_app.seed import seed_demo_data
 
     for _ in range(2):
+        db.expunge_all()
         assert seed_demo_data(db, reset=True, anchor=date(2026, 10, 14)) > 0
-        assert db.scalars(select(AppInstallation)).one().slug == "geraetecheck"
-        rows = db.scalars(select(AppRecord)).all()
+        installations = db.scalars(select(AppInstallation)).all()
+        assert {row.slug for row in installations} == set(AppRegistry().valid)
+        assert all(row.enabled for row in installations)
+        rows = db.scalars(select(AppRecord).where(AppRecord.app_slug == "geraetecheck")).all()
         assert len(rows) == 2
-        assert rows[1].out_of_range
+        assert {row.collection for row in rows} == {"geraete", "messungen"}
+        assert next(row for row in rows if row.collection == "messungen").out_of_range
 
 
 def test_http_plugin_view_uses_shared_context(db, app_definitions, client):

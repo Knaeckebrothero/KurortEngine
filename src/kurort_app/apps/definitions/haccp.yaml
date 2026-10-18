@@ -1,0 +1,209 @@
+slug: haccp
+version: 1
+title: HACCP
+description: Temperaturen, Wareneingang und Reinigung in der Küche dokumentieren.
+icon: thermometer
+roles:
+  view: [kueche, rezeption]
+  edit: [kueche, rezeption]
+demo: haccp_demo:seed_demo
+collections:
+  - key: geraete
+    title: Kühl- und Warmhaltegeräte
+    item: Gerät
+    master: true
+    title_field: name
+    list_fields: [name, typ, standort, aktiv]
+    order_by: name
+    roles: {edit: [kueche]}
+    fields:
+      - {key: name, label: Name, type: text, required: true}
+      - key: typ
+        label: Typ
+        type: select
+        options:
+          - {key: kuehlschrank, label: Kühlschrank}
+          - {key: tiefkuehler, label: Tiefkühler}
+          - {key: kuehlzelle, label: Kühlzelle}
+          - {key: warmhaltung, label: Warmhaltung}
+      - {key: standort, label: Standort, type: text}
+      - key: soll_min
+        label: Untergrenze
+        type: decimal
+        decimals: 1
+        unit: °C
+        help: Kühlschrank 0 bis 7 °C, Tiefkühler −25 bis −18 °C, Warmhaltung ab 63 °C (Max leer lassen)
+      - key: soll_max
+        label: Obergrenze
+        type: decimal
+        decimals: 1
+        unit: °C
+        help: Kühlschrank 0 bis 7 °C, Tiefkühler −25 bis −18 °C, Warmhaltung ab 63 °C (Max leer lassen)
+      - {key: aktiv, label: Aktiv, type: boolean, default: true}
+  - key: messungen
+    title: Temperaturen
+    item: Messung
+    title_field: geraet
+    date_field: gemessen_am
+    order_by: -gemessen_am
+    list_fields: [gemessen_am, geraet, temperatur, mitarbeiter]
+    fields:
+      - {key: geraet, label: Gerät, type: reference, collection: geraete, required: true}
+      - {key: gemessen_am, label: Gemessen am, type: datetime, required: true, default: now}
+      - key: temperatur
+        label: Temperatur
+        type: decimal
+        decimals: 1
+        unit: °C
+        required: true
+        min: -40
+        max: 100
+        range:
+          min: {from: geraet.soll_min}
+          max: {from: geraet.soll_max}
+          severity: warn
+        require_when_out_of_range: [massnahme]
+      - key: massnahme
+        label: Korrekturmaßnahme
+        type: textarea
+        help: Pflicht bei Abweichung, z. B. Tür geschlossen und nach 30 Minuten nachgemessen, Ware verworfen
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff}
+  - key: wareneingang
+    title: Wareneingang
+    item: Lieferung
+    title_field: produkt
+    date_field: geliefert_am
+    order_by: -geliefert_am
+    list_fields: [geliefert_am, lieferant, produkt, ergebnis]
+    fields:
+      - {key: geliefert_am, label: Geliefert am, type: date, required: true, default: today}
+      - {key: lieferant, label: Lieferant, type: text, required: true}
+      - {key: produkt, label: Produkt, type: text, required: true}
+      - {key: menge, label: Menge, type: text, required: true, help: 'z. B. 10 kg, 3 Kartons'}
+      - key: temperatur
+        label: Temperatur
+        type: decimal
+        decimals: 1
+        unit: °C
+        help: Kühlware höchstens 7 °C, Tiefkühlware höchstens −18 °C
+      - {key: mhd, label: MHD / Verbrauchsdatum, type: date}
+      - {key: charge, label: Charge / Los, type: text}
+      - {key: zustand_ok, label: Verpackung und Ware einwandfrei, type: boolean, default: true}
+      - key: ergebnis
+        label: Ergebnis
+        type: select
+        required: true
+        default: angenommen
+        options:
+          - {key: angenommen, label: Angenommen}
+          - {key: abgelehnt, label: Abgelehnt}
+      - {key: bemerkung, label: Bemerkung, type: textarea, help: 'Bei Ablehnung: Grund'}
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff}
+  - key: offene_produkte
+    title: Offene Lebensmittel
+    item: Produkt
+    title_field: produkt
+    date_field: geoeffnet_am
+    order_by: verbrauchen_bis
+    list_fields: [produkt, geoeffnet_am, verbrauchen_bis, erledigt]
+    fields:
+      - {key: produkt, label: Produkt, type: text, required: true}
+      - {key: menge, label: Menge, type: text}
+      - {key: geoeffnet_am, label: Geöffnet am, type: date, required: true, default: today}
+      - key: verbrauchen_bis
+        label: Verbrauchen bis
+        type: date
+        required: true
+        default: today+3
+        help: In der Regel 3 Tage nach dem Öffnen; früher, wenn das Etikett es verlangt
+      - {key: erledigt, label: Verbraucht oder entsorgt, type: boolean}
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff}
+  - key: stationen
+    title: Reinigungsplan
+    item: Station
+    master: true
+    title_field: name
+    list_fields: [name, haeufigkeit_tage, hinweis, aktiv]
+    order_by: name
+    roles: {edit: [kueche]}
+    fields:
+      - {key: name, label: Name, type: text, required: true}
+      - {key: haeufigkeit_tage, label: Alle … Tage, type: integer, required: true, min: 1, max: 90, default: 1}
+      - {key: hinweis, label: Was gehört dazu, type: textarea}
+      - {key: aktiv, label: Aktiv, type: boolean, default: true}
+  - key: reinigungen
+    title: Reinigungen
+    item: Reinigung
+    title_field: station
+    date_field: erledigt_am
+    order_by: -erledigt_am
+    list_fields: [erledigt_am, station, aufgaben, mitarbeiter]
+    fields:
+      - {key: station, label: Station, type: reference, collection: stationen, required: true}
+      - {key: erledigt_am, label: Erledigt am, type: datetime, required: true, default: now}
+      - key: aufgaben
+        label: Aufgaben
+        type: multiselect
+        required: true
+        options:
+          - {key: oberflaechen, label: Oberflächen abgewischt}
+          - {key: geraet, label: Gerät gereinigt}
+          - {key: entkalkt, label: Entkalkt}
+          - {key: filter, label: Filter geprüft/gewechselt}
+          - {key: desinfiziert, label: Desinfiziert}
+          - {key: tiefenreinigung, label: Tiefenreinigung}
+      - {key: mittel, label: Reinigungsmittel, type: text}
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff}
+      - {key: bemerkung, label: Bemerkung, type: textarea}
+schedules:
+  - key: temperatur
+    title: Temperatur messen
+    target: geraete
+    record: messungen
+    via: geraet
+    at_field: gemessen_am
+    every_days: 1
+    when: aktiv
+  - key: reinigung
+    title: Reinigen
+    target: stationen
+    record: reinigungen
+    via: station
+    at_field: erledigt_am
+    every_days_field: haeufigkeit_tage
+    when: aktiv
+alerts:
+  - key: verbrauch
+    title: Offene Lebensmittel
+    collection: offene_produkte
+    field: verbrauchen_bis
+    offset_days: 0
+    warn_days: 1
+    unless: erledigt
+reports:
+  - key: temperatur
+    title: Temperaturprotokoll
+    sections:
+      - collection: messungen
+        columns: [gemessen_am, geraet, temperatur, mitarbeiter, massnahme]
+  - key: reinigung
+    title: Reinigungsnachweis
+    sections:
+      - collection: reinigungen
+        columns: [erledigt_am, station, aufgaben, mittel, mitarbeiter]
+  - key: wareneingang
+    title: Wareneingang
+    sections:
+      - collection: wareneingang
+        columns: [geliefert_am, lieferant, produkt, menge, temperatur, mhd, charge, ergebnis]
+  - key: gesamt
+    title: HACCP-Monatsbericht
+    sections:
+      - collection: messungen
+        columns: [gemessen_am, geraet, temperatur, mitarbeiter, massnahme]
+      - collection: reinigungen
+        columns: [erledigt_am, station, aufgaben, mittel, mitarbeiter]
+      - collection: wareneingang
+        columns: [geliefert_am, lieferant, produkt, menge, temperatur, mhd, charge, ergebnis]
+      - collection: offene_produkte
+        columns: [produkt, geoeffnet_am, verbrauchen_bis, erledigt]

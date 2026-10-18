@@ -170,7 +170,11 @@ def test_audit_records_the_logged_in_user_async_endpoint(oidc_client, seeded):
     )
     login(oidc_client)
     oidc_client.post(f"/reservierungen/{future.id}/stornieren", data={"grund": "Test"})
-    event = seeded.scalar(select(AuditEvent).where(AuditEvent.entity_id == str(future.id)))
+    event = seeded.scalars(
+        select(AuditEvent).where(
+            AuditEvent.entity == "reservation", AuditEvent.entity_id == str(future.id)
+        )
+    ).one()
     assert event.actor == "m.schmidt"
     detail = oidc_client.get(f"/reservierungen/{future.id}").text
     assert "m.schmidt" in detail
@@ -184,7 +188,11 @@ def test_audit_records_the_logged_in_user_sync_endpoint(oidc_client, seeded):
     )
     login(oidc_client)
     oidc_client.post(f"/check-out/{departing.id}", follow_redirects=False)
-    event = seeded.scalar(select(AuditEvent).where(AuditEvent.entity_id == str(departing.id)))
+    event = seeded.scalars(
+        select(AuditEvent).where(
+            AuditEvent.entity == "reservation", AuditEvent.entity_id == str(departing.id)
+        )
+    ).one()
     assert event.actor == "m.schmidt"
 
 
@@ -193,7 +201,11 @@ def test_audit_actor_defaults_without_login(client, seeded):
         select(Reservation).where(Reservation.status == RESERVED).order_by(Reservation.id.desc())
     )
     client.post(f"/reservierungen/{future.id}/stornieren")
-    event = seeded.scalar(select(AuditEvent).where(AuditEvent.entity_id == str(future.id)))
+    event = seeded.scalars(
+        select(AuditEvent).where(
+            AuditEvent.entity == "reservation", AuditEvent.entity_id == str(future.id)
+        )
+    ).one()
     assert event.actor == "rezeption"
 
 
