@@ -27,6 +27,7 @@
   <section class="card" aria-labelledby="bill-title">
     <header class="card-header"><h2 id="bill-title">Abrechnung (Vorschau)</h2></header>
     <div class="card-body">
+      <p class="muted">Zahlungsübersicht – keine Rechnung.</p>
       <table class="table fd-bill">
         <tbody>
           <tr>
@@ -40,9 +41,11 @@
               {% else %}<span class="badge warning">Kurtaxe noch nicht berechnet</span>{% endif %}
             </td>
           </tr>
+          {% for p in r.payments %}<tr><th scope="row">{% if p.cancelled_at %}<s>{{ p.method.label }} · storniert</s>{% else %}{{ p.method.label }}{% endif %}<span class="sub">{{ p.paid_on | date }}{% if not p.cancelled_at and not p.received_on %} · Rechnung offen{% endif %}</span></th><td class="num">{% if p.cancelled_at %}<s>{{ p.amount | money }}</s>{% else %}−{{ p.amount | money }}{% endif %}</td></tr>{% endfor %}
         </tbody>
         <tfoot>
-          <tr><th scope="row">Gesamt</th><td class="num">{{ balance.total | money }}</td></tr>
+          <tr><th scope="row">Gesamt</th><td class="num">{{ balance.due | money }}</td></tr>
+          <tr><th scope="row">Offen</th><td class="num">{{ balance.open | money }}</td></tr>
         </tfoot>
       </table>
       {% if balance.kurtaxe is none %}
@@ -64,6 +67,7 @@
       </ul>
     </section>
     {% if can_check_out %}
+    <section class="card card-body"><h2>Zahlung erfassen</h2>{% include "payments/_form.html" %}</section>
     <form class="card card-body fd-confirm" method="post" action="/check-out/{{ r.id }}">
       <p>Zimmerschlüssel zurücknehmen, Abrechnung mit dem Gast klären.</p>
       <button class="btn primary block" type="submit">Check-out abschließen</button>

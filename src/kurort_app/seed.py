@@ -367,6 +367,7 @@ def seed_demo_data(
 
     assess_seeded_stays(session, created)
     _seed_seminar(session, anchor, created)
+    _seed_payments(session, anchor, created)
     session.commit()
     return len(created)
 
@@ -471,3 +472,50 @@ def _seed_seminar(session: Session, anchor: date, reservations: list[Reservation
                 cancel_reason="Kurs abgesagt" if idx == 2 else None,
             )
         )
+
+
+def _seed_payments(session: Session, anchor: date, reservations: list[Reservation]) -> None:
+    from kurort_app.models import Payment, PaymentMethod
+    from kurort_app.services.payments import balance
+
+    rng = random.Random(SEED + 4)
+    methods = {m.code: m for m in session.scalars(select(PaymentMethod))}
+    departing = next(
+        (r for r in reservations if r.status == CHECKED_IN and r.departure == anchor), None
+    )
+    partial = next(
+        (r for r in reservations if r.status == CHECKED_IN and r.departure > anchor), None
+    )
+    deferred = next((r for r in reservations if r.status == CHECKED_OUT), None)
+    for r in reservations:
+        if r.status in (CANCELLED, NO_SHOW) or r is departing:
+            continue
+        due = balance(r).due
+        method = None
+        amount = due
+        if r is partial:
+            method = methods["bar"]
+            amount = (due / 2).quantize(Decimal("0.01"))
+        elif r is deferred:
+            method = methods["rechnung"]
+        elif r.channel == "booking.com" and r.arrival <= anchor:
+            method = methods["booking"]
+        elif r.status == CHECKED_OUT:
+            method = methods[rng.choice(("bar", "ec", "kreditkarte", "ueberweisung"))]
+        if method is None or amount <= 0:
+            continue
+        paid_on = min(r.departure if r.status == CHECKED_OUT else r.arrival, anchor)
+        session.add(
+            Payment(
+                reservation=r,
+                method=method,
+                amount=amount,
+                paid_on=paid_on,
+                received_on=None if method.deferred else paid_on,
+                payer="Firma Müller GmbH" if method.deferred else None,
+                note="Demozahlung",
+                recorded_by="rezeption",
+                recorded_at=datetime.combine(paid_on, time(10), tzinfo=HOTEL_TZ),
+            )
+        )
+    session.flush()

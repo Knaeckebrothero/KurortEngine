@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -20,10 +19,12 @@ from kurort_app.models import (
     CHECKED_OUT,
     NO_SHOW,
     RESERVED,
+    Payment,
     Reservation,
     ReservationGuest,
     Room,
 )
+from kurort_app.services import payments
 from kurort_app.services import today as desk
 from kurort_app.web import STATUS_LABELS, WEEKDAYS, fmt_date, redirect_with_notice, templates
 
@@ -48,6 +49,7 @@ def _with_relations(stmt):
         selectinload(Reservation.guests).selectinload(ReservationGuest.guest),
         selectinload(Reservation.room),
         selectinload(Reservation.kurtaxe),
+        selectinload(Reservation.payments).selectinload(Payment.method),
     )
 
 
@@ -305,7 +307,7 @@ def departures_page(
         "open_count": sum(1 for r in rows if r.status == CHECKED_IN),
         "done_count": sum(1 for r in rows if r.status == CHECKED_OUT),
         "flags": {r.id: desk.flags_for(session, "abreise", r) for r in rows},
-        "balance": {r.id: _balance(r) for r in rows},
+        "balance": {r.id: payments.balance(r) for r in rows},
     }
     return templates.TemplateResponse(request, "front_desk/departures.html", context)
 
@@ -339,12 +341,6 @@ def in_house_page(
     return templates.TemplateResponse(request, "front_desk/in_house.html", context)
 
 
-def _balance(reservation: Reservation) -> dict:
-    kurtaxe = reservation.kurtaxe.amount if reservation.kurtaxe else None
-    room = reservation.rate_total or Decimal("0.00")
-    return {"room": room, "kurtaxe": kurtaxe, "total": room + (kurtaxe or Decimal("0.00"))}
-
-
 def _get_reservation(session: Session, reservation_id: int) -> Reservation:
     reservation = session.scalar(
         _with_relations(select(Reservation).where(Reservation.id == reservation_id))
@@ -361,12 +357,15 @@ def checkout_page(
     reservation = _get_reservation(session, reservation_id)
     context = {
         "r": reservation,
-        "balance": _balance(reservation),
+        "balance": payments.balance(reservation),
         "warnings": desk.checkout_warnings(session, reservation),
         "can_check_out": reservation.status == CHECKED_IN,
         "early": reservation.departure > today(),
         "day": today(),
     }
+    context.update(
+        payments.form_context(session, reservation, next_path=f"/check-out/{reservation.id}")
+    )
     return templates.TemplateResponse(request, "front_desk/checkout.html", context)
 
 
@@ -385,7 +384,7 @@ def checkout(reservation_id: int, session: Session = Depends(get_session)) -> Re
     reservation.status = CHECKED_OUT
     reservation.checked_out_at = datetime.now(UTC)
     room = reservation.room.number if reservation.room else None
-    balance = _balance(reservation)
+    balance = payments.balance(reservation)
     audit.record(
         session,
         action="check_out",
@@ -397,8 +396,9 @@ def checkout(reservation_id: int, session: Session = Depends(get_session)) -> Re
             "room": room,
             "departure": reservation.departure.isoformat(),
             "early": reservation.departure > today(),
-            "room_total": str(balance["room"]),
-            "kurtaxe": str(balance["kurtaxe"]) if balance["kurtaxe"] is not None else None,
+            "open": str(balance.open),
+            "room_total": str(balance.room),
+            "kurtaxe": str(balance.kurtaxe) if balance.kurtaxe is not None else None,
         },
     )
     session.commit()

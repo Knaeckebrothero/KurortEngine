@@ -1,0 +1,76 @@
+/* Payment tracking: reservation card, shared entry form and staff lists. */
+
+.payment-card { min-width: 0; scroll-margin-top: var(--space-12); }
+.payment-card .card-body, .payment-form, .payment-disclosure-body { min-width: 0; }
+.payment-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.payment-summary .badge { white-space: normal; border-radius: var(--radius-control); overflow-wrap: anywhere; }
+.payment-open { display: flex; flex-direction: column; gap: var(--space-1); }
+.payment-open strong { font-size: 24px; line-height: 30px; }
+.payment-disclaimer, .payment-note { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.payment-note { white-space: pre-wrap; }
+.payment-facts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.payment-facts dd { text-align: right; }
+
+/* Native disclosures need no script and retain their keyboard interaction. */
+.payment-disclosure { border-top: 1px solid var(--border-subtle); min-width: 0; }
+.payment-disclosure > summary { min-height: 44px; padding: var(--space-3) 0; cursor: pointer; font-weight: 650; overflow-wrap: anywhere; }
+.payment-disclosure-body { padding: var(--space-2) 0 var(--space-3); }
+.payment-entry > summary { color: var(--primary); }
+.payment-cancel > summary { color: var(--status-danger-fg); font-size: 14px; }
+.payment-cancel { margin-top: var(--space-2); }
+.payment-history { list-style: none; margin: 0; padding: 0; }
+.payment-history-item { padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle); overflow-wrap: anywhere; }
+.payment-history-item:last-child { padding-bottom: 0; }
+.payment-history-heading { font-weight: 600; }
+.payment-cancelled .payment-history-heading { color: var(--text-secondary); }
+.payment-cancel-reason { margin: var(--space-2) 0 0; }
+
+/* The form also appears without the payment card, on check-out. */
+.payment-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: var(--space-4); }
+.payment-form-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.payment-form .checkbox, .payment-methods .checkbox, .payment-method-add .checkbox { align-items: center; cursor: pointer; }
+.payment-form .checkbox input, .payment-methods .checkbox input, .payment-method-add .checkbox input { flex: none; }
+.payment-form .checkbox span, .payment-methods .checkbox span, .payment-method-add .checkbox span { min-width: 0; overflow-wrap: anywhere; }
+.payment-form .textarea[aria-invalid="true"] { border-color: var(--status-danger-fg); }
+.payment-form .notice { overflow-wrap: anywhere; }
+
+/* Both payment views and the methods list stack like the front-desk queue. */
+.payment-tabs { margin-bottom: var(--space-4); }
+.payment-tabs .chip { min-height: 44px; }
+.payment-queue { table-layout: fixed; }
+.payment-queue th, .payment-queue td { overflow-wrap: anywhere; }
+.payment-queue td.actions { white-space: normal; text-align: left; }
+.payment-queue .btn { min-height: 44px; white-space: normal; text-align: center; }
+.payment-queue .guest-name a { display: inline-flex; align-items: center; min-height: 44px; }
+.payment-money { font-weight: 650; }
+.payment-transfers th:last-child { width: 30%; }
+.payment-receipt { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.payment-receipt .field { text-align: left; }
+.payment-receipt .input { min-width: 0; }
+.payment-method-errors { margin-bottom: var(--space-4); overflow-wrap: anywhere; }
+.payment-method-errors ul { margin: var(--space-2) 0 0; padding-left: var(--space-5); }
+.payment-methods th:first-child { width: 20%; }
+.payment-methods th:last-child { width: 20%; }
+.payment-method-edit { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.payment-method-edit > .btn { justify-self: start; }
+.payment-method-order { display: flex; flex-direction: column; gap: var(--space-2); }
+.payment-method-order form, .payment-method-order .btn { width: 100%; }
+
+@media (max-width: 860px) {
+  .fd-bill td.num { white-space: nowrap; overflow-wrap: normal; width: 1%; }
+  .payment-summary { flex-direction: column; align-items: flex-start; }
+  .payment-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .payment-form-actions, .payment-form-actions .btn { width: 100%; }
+  .payment-form .input, .payment-form .select, .payment-form .textarea { min-width: 0; }
+  .payment-tabs .chip { flex: 1; justify-content: center; }
+  .payment-queue thead { display: none; }
+  .payment-queue, .payment-queue tbody, .payment-queue tr, .payment-queue td { display: block; width: 100%; min-width: 0; }
+  .payment-queue tr { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+  .payment-queue tr:last-child { border-bottom: 0; }
+  .payment-queue td { border: 0; padding: var(--space-2) 0; text-align: left; white-space: normal; }
+  .payment-queue td[data-label]::before { content: attr(data-label); display: block; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+  .payment-queue td.actions { padding-top: var(--space-3); }
+  .payment-queue .btn, .payment-method-edit > .btn { width: 100%; }
+  .payment-method-order { flex-direction: row; flex-wrap: wrap; }
+  .payment-method-order form { flex: 1; min-width: 0; }
+}

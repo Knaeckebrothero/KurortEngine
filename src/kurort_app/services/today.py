@@ -19,6 +19,7 @@ from kurort_app.models import (
     MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
+    Payment,
     Reservation,
     ReservationGuest,
 )
@@ -145,6 +146,7 @@ def _rows(session: Session, day: date, kind: str) -> list[TodayRow]:
         selectinload(Reservation.guests).selectinload(ReservationGuest.guest),
         selectinload(Reservation.room),
         selectinload(Reservation.kurtaxe),
+        selectinload(Reservation.payments).selectinload(Payment.method),
     )
     if kind == "anreise":
         stmt = stmt.where(Reservation.arrival == day, Reservation.status != CANCELLED).order_by(
@@ -188,3 +190,6 @@ def checkout_warnings(session: Session, reservation: Reservation) -> list[Flag]:
 
 def dashboard_notices(session: Session, day: date) -> list[Flag]:
     return [flag for provider in DASHBOARD_NOTICES for flag in provider(session, day)]
+
+
+from kurort_app.services import payments  # noqa: E402, F401

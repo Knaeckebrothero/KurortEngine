@@ -26,10 +26,12 @@ from kurort_app.models import (
     RESERVED,
     AuditEvent,
     Guest,
+    Payment,
     Reservation,
     ReservationGuest,
     Room,
 )
+from kurort_app.services import payments
 from kurort_app.services.availability import NON_BLOCKING, free_rooms, occupied_room_ids
 from kurort_app.services.seminar import plan_rows as seminar_plan_rows
 from kurort_app.web import CHANNEL_LABELS, fmt_date, redirect_with_notice, templates
@@ -135,6 +137,7 @@ def _load_reservation(session: Session, reservation_id: int) -> Reservation | No
             selectinload(Reservation.guests).selectinload(ReservationGuest.guest),
             selectinload(Reservation.room),
             selectinload(Reservation.kurtaxe),
+            selectinload(Reservation.payments).selectinload(Payment.method),
         )
         .where(Reservation.id == reservation_id)
     )
@@ -669,6 +672,7 @@ def reservation_detail(
         "today": today(),
         "plan_from": (reservation.arrival - timedelta(days=1)).isoformat(),
     }
+    context.update(payments.form_context(session, reservation))
     return templates.TemplateResponse(request, "reservations/detail.html", context)
 
 

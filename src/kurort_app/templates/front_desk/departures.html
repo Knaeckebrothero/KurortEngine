@@ -9,10 +9,11 @@
     <h1>Abreisen</h1>
     <p>{{ day | date('long') }} · {{ open_count }} {{ 'Check-out' if open_count == 1 else 'Check-outs' }} ausstehend · {{ done_count }} erledigt</p>
   </div>
-  <div class="page-actions">{{ fd.day_nav('/abreisen', day, prev_day, next_day, is_today) }}</div>
+  <div class="page-actions"><a class="btn" href="/zahlungen/offen">Offene Beträge</a>{{ fd.day_nav('/abreisen', day, prev_day, next_day, is_today) }}</div>
 </div>
 
 <section class="card" aria-label="Abreiseliste">
+  <p class="card-body muted">Zahlungsübersicht – keine Rechnung.</p>
   {% if rows %}
   <div class="table-wrap">
     <table class="table fd-queue">
@@ -33,7 +34,7 @@
           <td>{{ fd.room(r) }}</td>
           <td>{{ ui.guest_cell(r) }}</td>
           <td class="num">{{ r.arrival | date('day') }} – {{ r.departure | date('day') }}<span class="sub">{{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span></td>
-          <td class="num fd-money">{{ b.total | money }}<span class="sub">{% if b.kurtaxe is not none %}inkl. {{ b.kurtaxe | money }} Kurtaxe{% else %}Kurtaxe offen{% endif %}</span></td>
+          <td class="num fd-money">{{ b.open | money }}<span class="sub">{% if b.kurtaxe is not none %}inkl. {{ b.kurtaxe | money }} Kurtaxe{% else %}Kurtaxe offen{% endif %}</span></td>
           <td>{{ fd.flags(flags[r.id]) }}</td>
           <td class="actions">
             {% if r.status == 'checked_in' %}
