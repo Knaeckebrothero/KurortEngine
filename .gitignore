@@ -14,6 +14,8 @@
 *.local.yaml
 *.secret.yaml
 secrets.yaml
+# A Helm template that generates its values at install time; it holds no secrets.
+!deploy/k3d/keycloak/templates/secrets.yaml
 
 # Local environment
 .env
