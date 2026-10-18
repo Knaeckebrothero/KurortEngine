@@ -62,7 +62,8 @@
       "roles" (dict "realm" (list
         (dict "name" "rezeption" "description" "Rezeption")
         (dict "name" "leitung" "description" "Leitung")
-        (dict "name" "housekeeping" "description" "Housekeeping")))
+        (dict "name" "housekeeping" "description" "Housekeeping")
+        (dict "name" "kueche" "description" "Küche")))
       "clients" (list $client)
       "users" $users }}
 apiVersion: v1

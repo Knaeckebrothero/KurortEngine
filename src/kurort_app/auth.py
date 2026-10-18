@@ -33,9 +33,14 @@ SESSION_COOKIE = "kurort_session"
 SESSION_MAX_AGE = 12 * 60 * 60
 MIN_SESSION_SECRET = 32
 SCOPE = "openid profile email"
-ROLE_LABELS = {"leitung": "Leitung", "rezeption": "Rezeption", "housekeeping": "Housekeeping"}
+ROLE_LABELS = {
+    "leitung": "Leitung",
+    "rezeption": "Rezeption",
+    "housekeeping": "Housekeeping",
+    "kueche": "Küche",
+}
 FRONT_DESK_ROLES = ("rezeption", "leitung")
-ROLE_HOME = {"housekeeping": "/zimmerstatus"}
+ROLE_HOME = {"housekeeping": "/zimmerstatus", "kueche": "/apps/haccp"}
 PUBLIC_PATHS = frozenset({"/healthz", "/readyz"})
 PUBLIC_PREFIXES = ("/static/", "/auth/")
 
