@@ -10,7 +10,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -25,6 +26,8 @@ from kurort_app.routers import (
     assistant,
     checkin,
     front_desk,
+    home,
+    housekeeping,
     late_arrival,
     mail,
     payments,
@@ -75,16 +78,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return PlainTextResponse("database unavailable\n", status_code=503)
         return PlainTextResponse("ok\n")
 
+    @app.exception_handler(HTTPException)
+    async def staff_error(request: Request, exc: HTTPException):
+        if exc.status_code == 403 and not auth._wants_json(request):
+            return auth._render(
+                request, "auth/forbidden.html", {"user": getattr(request.state, "user", None)}, 403
+            )
+        return await http_exception_handler(request, exc)
+
     app.include_router(auth.router)
-    app.include_router(front_desk.router)
-    app.include_router(reservations.router)
-    app.include_router(checkin.router)
-    app.include_router(assistant.router)
-    app.include_router(seminar.router)
+    app.include_router(home.router)
+    front_desk_dependencies = [Depends(auth.require_role(*auth.FRONT_DESK_ROLES))]
+    app.include_router(front_desk.router, dependencies=front_desk_dependencies)
+    app.include_router(reservations.router, dependencies=front_desk_dependencies)
+    app.include_router(checkin.router, dependencies=front_desk_dependencies)
+    app.include_router(assistant.router, dependencies=front_desk_dependencies)
+    app.include_router(seminar.router, dependencies=front_desk_dependencies)
+    app.include_router(payments.router, dependencies=front_desk_dependencies)
+    app.include_router(mail.router, dependencies=front_desk_dependencies)
+    app.include_router(late_arrival.router, dependencies=front_desk_dependencies)
+    # Apps check each app's own roles (a kitchen app is not a front-desk screen).
     app.include_router(apps.router)
-    app.include_router(payments.router)
-    app.include_router(mail.router)
-    app.include_router(late_arrival.router)
+    app.include_router(housekeeping.router)
     return app
 
 

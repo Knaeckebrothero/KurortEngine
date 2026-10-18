@@ -56,12 +56,13 @@
     <div class="plan-row" data-room-row="{{ room.number }}">
       <div class="plan-label">
         <strong class="num">{{ room.number }}</strong>
+        <span class="badge {{ room.housekeeping_status | room_status_kind }}"{% if room.housekeeping_note %} title="{{ room.housekeeping_note }}"{% endif %}>{{ room.housekeeping_status | room_status_label }}</span>
         <span class="plan-cat">{{ room.category }} · {{ room.max_occupancy }} P.</span>
       </div>
       {% for d in days %}
         {%- set offset = loop.index0 -%}
         {%- set cls = 'plan-cell' ~ (' is-today' if d.is_today else '') ~ (' is-weekend' if d.is_weekend else '') ~ (' is-past' if d.is_past else '') -%}
-        {% if offset in item.free %}
+        {% if offset in item.free and room.housekeeping_status != 'out_of_order' %}
         <a class="{{ cls }} is-free" style="grid-column: {{ d.column }} / span 2" tabindex="-1"
            href="/reservierungen/neu?zimmer={{ room.number }}&amp;anreise={{ d.iso }}"
            aria-label="Zimmer {{ room.number }} am {{ d.date | date('day') }} frei – Reservierung anlegen"></a>

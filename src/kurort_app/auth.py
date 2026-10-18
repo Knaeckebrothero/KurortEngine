@@ -33,7 +33,9 @@ SESSION_COOKIE = "kurort_session"
 SESSION_MAX_AGE = 12 * 60 * 60
 MIN_SESSION_SECRET = 32
 SCOPE = "openid profile email"
-ROLE_LABELS = {"leitung": "Leitung", "rezeption": "Rezeption"}  # highest first
+ROLE_LABELS = {"leitung": "Leitung", "rezeption": "Rezeption", "housekeeping": "Housekeeping"}
+FRONT_DESK_ROLES = ("rezeption", "leitung")
+ROLE_HOME = {"housekeeping": "/zimmerstatus"}
 PUBLIC_PATHS = frozenset({"/healthz", "/readyz"})
 PUBLIC_PREFIXES = ("/static/", "/auth/")
 
@@ -103,6 +105,12 @@ class User:
             email=str(claims.get("email") or ""),
             roles=extract_roles(claims),
         )
+
+
+def home_path(user: User | None) -> str:
+    if user is None or set(user.roles) & set(FRONT_DESK_ROLES):
+        return "/"
+    return next((path for role, path in ROLE_HOME.items() if role in user.roles), "/")
 
 
 def extract_roles(claims: dict[str, Any]) -> tuple[str, ...]:

@@ -372,6 +372,7 @@ def seed_demo_data(
     from kurort_app.apps.demo import seed_apps  # noqa: PLC0415
 
     seed_apps(session, anchor)
+    _seed_housekeeping(session, rooms, created, anchor)
     session.commit()
     return len(created)
 
@@ -592,3 +593,20 @@ def _seed_payments(session: Session, anchor: date, reservations: list[Reservatio
             )
         )
     session.flush()
+
+
+def _seed_housekeeping(
+    session: Session, rooms: list[Room], reservations: list[Reservation], anchor: date
+) -> None:
+    from kurort_app.models import ROOM_DIRTY, ROOM_INSPECTED, ROOM_OUT_OF_ORDER
+    from kurort_app.services.housekeeping import set_status
+
+    rng = random.Random(SEED + 2)
+    arriving = next(
+        (r.room for r in reservations if r.arrival == anchor and r.status == RESERVED), rooms[0]
+    )
+    others = rng.sample([room for room in rooms if room != arriving], 4)
+    for room in [arriving, *others[:2]]:
+        set_status(session, room, ROOM_DIRTY, reason="manual")
+    set_status(session, others[2], ROOM_OUT_OF_ORDER, reason="manual", note="Heizung defekt")
+    set_status(session, others[3], ROOM_INSPECTED, reason="manual")

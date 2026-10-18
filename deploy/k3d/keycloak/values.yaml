@@ -38,6 +38,10 @@ users:
     firstName: Thomas
     lastName: Weber
     roles: [rezeption, leitung]
+  - username: s.klein
+    firstName: Sandra
+    lastName: Klein
+    roles: [housekeeping]
   - username: k.gast
     firstName: Karl
     lastName: Gast

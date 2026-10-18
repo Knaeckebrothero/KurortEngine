@@ -249,6 +249,7 @@ def test_checkout_happy_path_records_audit(client, seeded):
 
 
 def test_checkout_rejects_wrong_state(client, seeded):
+    before = list(seeded.scalars(select(AuditEvent.id).order_by(AuditEvent.id)))
     r = _reservations(seeded, Reservation.arrival > BUSINESS_DATE, Reservation.status == RESERVED)[
         0
     ]
@@ -257,7 +258,7 @@ def test_checkout_rejects_wrong_state(client, seeded):
     assert "notice_kind=danger" in response.headers["location"]
     seeded.expire_all()
     assert seeded.get(Reservation, r.id).status == RESERVED
-    assert seeded.scalar(select(func.count()).select_from(AuditEvent)) == 0
+    assert list(seeded.scalars(select(AuditEvent.id).order_by(AuditEvent.id))) == before
 
 
 def test_checkout_unknown_reservation_is_404(client, seeded):

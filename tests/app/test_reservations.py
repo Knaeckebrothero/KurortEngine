@@ -16,6 +16,7 @@ from kurort_app.models import (
     CHECKED_OUT,
     NO_SHOW,
     RESERVED,
+    ROOM_OUT_OF_ORDER,
     AuditEvent,
     Guest,
     Reservation,
@@ -482,7 +483,9 @@ def test_edit_rejects_conflicting_room(client, seeded):
             .where(Reservation.status == RESERVED, Reservation.arrival > D + timedelta(days=5))
             .order_by(Reservation.id)
         )
-        if r.room_id != target.room_id and r.room.max_occupancy >= len(target.guests)
+        if r.room_id != target.room_id
+        and r.room.max_occupancy >= len(target.guests)
+        and r.room.housekeeping_status != ROOM_OUT_OF_ORDER
     )
     form = {
         "anreise": other.arrival.isoformat(),
@@ -599,3 +602,44 @@ def test_room_plan_navigation(client, seeded):
     assert 'href="/zimmerplan?von=2026-10-25"' in html
     assert 'href="/zimmerplan?von=2026-11-08"' in html
     assert client.get("/zimmerplan", params={"von": "kaputt"}).status_code == 200
+
+
+def test_out_of_order_availability_and_reservation_validation(client, db):
+    room = Room(
+        number="901", category="Doppelzimmer", floor=9, max_occupancy=2, nightly_rate=Decimal("100")
+    )
+    db.add(room)
+    db.commit()
+    client.post(f"/zimmerstatus/{room.id}/out_of_order", data={"notiz": "Heizung"})
+    db.refresh(room)
+    assert room not in free_rooms(db, D + timedelta(days=60), D + timedelta(days=67))
+    for path in (
+        "/reservierungen/verfuegbare-zimmer",
+        "/reservierungen/neu?walkin=1",
+        "/reservierungen/neu?zimmer=901",
+    ):
+        assert '<option value="901"' not in client.get(path).text
+    response = client.post("/reservierungen/neu", data=_new_form(zimmer="901"))
+    assert response.status_code == 422 and "Zimmer 901 ist außer Betrieb." in response.text
+    original = _book(db, room, D + timedelta(days=60), D + timedelta(days=67))
+    edit = client.post(
+        f"/reservierungen/{original.id}/bearbeiten",
+        data=_new_form(zimmer="901"),
+        follow_redirects=False,
+    )
+    assert edit.status_code == 303, "unchanged assignment must be preserved"
+    other = Room(
+        number="902", category="Doppelzimmer", floor=9, max_occupancy=2, nightly_rate=Decimal("100")
+    )
+    db.add(other)
+    db.commit()
+    other_stay = _book(db, other, D + timedelta(days=70), D + timedelta(days=71))
+    edit = client.post(
+        f"/reservierungen/{other_stay.id}/bearbeiten",
+        data=_new_form(
+            zimmer="901",
+            anreise=(D + timedelta(days=70)).isoformat(),
+            abreise=(D + timedelta(days=71)).isoformat(),
+        ),
+    )
+    assert edit.status_code == 422 and "Zimmer 901 ist außer Betrieb." in edit.text

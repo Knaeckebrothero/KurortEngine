@@ -59,6 +59,18 @@ STATUS_LABELS = {
     "no_show": "No-Show",
 }
 PAYMENT_STATE_LABELS = {"bezahlt": "Bezahlt", "offen": "Offen", "guthaben": "Guthaben"}
+HOUSEKEEPING_LABELS = {
+    "dirty": "schmutzig",
+    "clean": "sauber",
+    "inspected": "geprüft",
+    "out_of_order": "außer Betrieb",
+}
+HOUSEKEEPING_KINDS = {
+    "dirty": "warning",
+    "clean": "success",
+    "inspected": "info",
+    "out_of_order": "danger",
+}
 CHANNEL_LABELS = {
     "direct": "Direkt",
     "phone": "Telefon",
@@ -196,8 +208,13 @@ def nav_groups(request: Request) -> list[tuple[str, list[NavItem]]]:
 
 
 def _context(request: Request) -> dict[str, Any]:
+    from kurort_app.auth import FRONT_DESK_ROLES, home_path
+
     settings = get_settings()
+    user = getattr(request.state, "user", None)
     return {
+        "front_desk_access": user is None or bool(set(user.roles) & set(FRONT_DESK_ROLES)),
+        "home_path": home_path(user),
         "hotel_name": settings.hotel_name,
         "hotel_city": settings.hotel_city,
         "business_date": today(),
@@ -224,6 +241,8 @@ templates.env.filters.update(
     time=fmt_time,
     money=fmt_money,
     status_label=lambda s: STATUS_LABELS.get(s, s),
+    room_status_label=lambda s: HOUSEKEEPING_LABELS.get(s, s),
+    room_status_kind=lambda s: HOUSEKEEPING_KINDS.get(s, "plain"),
     channel_label=lambda s: CHANNEL_LABELS.get(s, s),
     exemption_label=lambda s: EXEMPTION_LABELS.get(s, s) if s else "–",
     meldeschein_label=lambda s: MELDESCHEIN_LABELS.get(s, s),

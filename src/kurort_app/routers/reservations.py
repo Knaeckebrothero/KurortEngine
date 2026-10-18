@@ -24,6 +24,7 @@ from kurort_app.models import (
     MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
+    ROOM_OUT_OF_ORDER,
     AuditEvent,
     EmailMessageRow,
     Guest,
@@ -313,6 +314,11 @@ def _validate_stay(
         errors["zimmer"] = "Bitte ein Zimmer wählen."
     elif stay.room is None:
         errors["zimmer"] = f"Zimmer {number} gibt es nicht."
+    elif stay.room.housekeeping_status == ROOM_OUT_OF_ORDER and (
+        exclude_reservation_id is None
+        or session.get(Reservation, exclude_reservation_id).room_id != stay.room.id
+    ):
+        errors["zimmer"] = f"Zimmer {number} ist außer Betrieb."
     elif party_size > stay.room.max_occupancy:
         persons = "Person" if stay.room.max_occupancy == 1 else "Personen"
         errors["zimmer"] = (
@@ -427,12 +433,16 @@ def _room_field_context(
             session, arrival, departure, exclude_reservation_id=exclude_reservation_id
         )
     else:
-        free = list(all_rooms)
+        free = [room for room in all_rooms if room.housekeeping_status != ROOM_OUT_OF_ORDER]
     free_numbers = {room.number for room in free}
     options = list(free)
     selected_room = next((room for room in all_rooms if room.number == selected), None)
     selected_taken = bool(selected_room and span_ok and selected not in free_numbers)
-    if selected_taken:
+    existing = session.get(Reservation, exclude_reservation_id) if exclude_reservation_id else None
+    if selected_taken and (
+        selected_room.housekeeping_status != ROOM_OUT_OF_ORDER
+        or (existing and existing.room_id == selected_room.id)
+    ):
         options.append(selected_room)
 
     groups: dict[str, list[Room]] = {category: [] for category in ROOM_CATEGORY_ORDER}
