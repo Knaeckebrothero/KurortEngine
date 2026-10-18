@@ -12,6 +12,7 @@ class AppContext:
         self.session = session
         self.definition = definition
         self.user = user
+        self._created = []
 
     def allowed(self, permission, roles=None):
         if self.user is None or "leitung" in self.user.roles:
@@ -36,15 +37,30 @@ class AppContext:
         self._require(collection, "view")
         return store.records(self.session, self.definition, collection, where)
 
-    def create(self, collection, data):
-        self._require(collection, "edit")
-        return store.create(
+    def create(self, collection, data, *, parent=None):
+        if parent is None:
+            self._require(collection, "edit")
+        else:
+            self._require(collection, "view")
+            linked = any(
+                f.type == "reference"
+                and f.collection == parent.collection
+                and data.get(f.key) == parent.id
+                for f in self.definition.collection(collection).fields
+            )
+            if parent not in self._created or not linked or parent.deleted_at:
+                raise HTTPException(403, "Keine Berechtigung")
+            self._require(parent.collection, "edit")
+        row = store.create(
             self.session,
             self.definition,
             collection,
             data,
             actor=self.user.username if self.user else None,
         )
+        if parent is None:
+            self._created.append(row)
+        return row
 
     def update(self, record, data):
         self._require(record.collection, "edit")
@@ -65,7 +81,7 @@ class AppContext:
         )
 
     def render(self, template, **context):
-        if "/" in template or "\\" in template or template.startswith("."):
+        if "\\" in template or any(part in {"", ".", ".."} for part in template.split("/")):
             raise ValueError("Plugin-Template muss unter apps/plugins liegen")
         return templates.TemplateResponse(
             self.request,

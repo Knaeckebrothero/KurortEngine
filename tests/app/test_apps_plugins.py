@@ -59,3 +59,43 @@ def test_http_plugin_view_uses_shared_context(db, app_definitions, client):
     assert page.status_code == 200 and "Auswertung" in page.text
     assert client.post("/apps/geraetecheck/ansicht/auswertung").status_code == 200
     assert db.scalars(select(AuditEvent).where(AuditEvent.action == "app_record.created")).one()
+
+
+def test_plugin_can_create_restricted_child_only_of_its_new_editable_parent(db, app_definitions):
+    from kurort_app.apps.context import AppContext
+    from kurort_app.apps.schema import Roles
+
+    app = AppRegistry().valid["geraetecheck"]
+    app.collection("geraete").roles = Roles(edit=["rezeption"])
+    app.collection("messungen").roles = Roles(edit=[])
+    user = User(sub="1", username="m.schmidt", roles=("rezeption",))
+    ctx = AppContext(None, db, app, user)
+    parent = ctx.create("geraete", {"name": "Plugin-Gerät"})
+    data = {"geraet": parent.id, "gemessen_am": "2026-10-14T08:00", "temperatur": "4"}
+    with pytest.raises(HTTPException):
+        ctx.create("messungen", data)
+    child = ctx.create("messungen", data, parent=parent)
+    assert child.created_by == "m.schmidt" and not ctx.can_edit("messungen")
+    with pytest.raises(HTTPException):
+        AppContext(None, db, app, user).create("messungen", data, parent=parent)
+    with pytest.raises(HTTPException):
+        ctx.create("messungen", {**data, "geraet": parent.id + 1}, parent=parent)
+    db.rollback()
+    assert ctx.records("messungen") == []
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "../base.html",
+        "/base.html",
+        "inventur/../base.html",
+        "inventur\\\\base.html",
+        "inventur//base.html",
+    ],
+)
+def test_plugin_templates_reject_unsafe_paths(db, app_definitions, path):
+    from kurort_app.apps.context import AppContext
+
+    with pytest.raises(ValueError):
+        AppContext(None, db, AppRegistry().valid["geraetecheck"], None).render(path)
