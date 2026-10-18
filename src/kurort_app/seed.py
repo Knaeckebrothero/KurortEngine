@@ -366,6 +366,7 @@ def seed_demo_data(
     from kurort_app.services.engine import assess_seeded_stays  # noqa: PLC0415
 
     assess_seeded_stays(session, created)
+    _seed_seminar(session, anchor, created)
     session.commit()
     return len(created)
 
@@ -428,3 +429,49 @@ def _plant_exceptions(rng: random.Random, reservations: list[Reservation], ancho
             rg.meldeschein_status = MELDESCHEIN_OPEN
             rg.meldeschein_form_id = rg.meldeschein_generated_at = rg.meldeschein_signed_at = None
             rg.kurkarte_code = rg.kurkarte_issued_at = None
+
+
+def _seed_seminar(session: Session, anchor: date, reservations: list[Reservation]) -> None:
+    from kurort_app.models import FunctionSpace, SpaceBooking
+    from kurort_app.services.seminar import calculate_price
+
+    space = session.scalar(select(FunctionSpace).order_by(FunctionSpace.position, FunctionSpace.id))
+    linked_day = anchor + timedelta(days=3)
+    linked = next(
+        r
+        for r in sorted(reservations, key=lambda r: r.id)
+        if r.status != CANCELLED and r.arrival <= linked_day < r.departure
+    )
+    specs = [
+        (1, 1, "ganztags", "bestaetigt", "Spessart Physio GmbH", 14),
+        (3, 3, "nachmittag", "bestaetigt", None, 8),
+        (2, 2, "vormittag", "storniert", "Physiokurs", 10),
+        (6, 7, "vormittag", "angefragt", "Volkshochschule Bad Orb", 12),
+        (-5, -5, "ganztags", "bestaetigt", "Seminar am Kurpark", 16),
+    ]
+    for idx, (start, end, slot, status, company, attendees) in enumerate(specs):
+        first, last = anchor + timedelta(days=start), anchor + timedelta(days=end)
+        session.add(
+            SpaceBooking(
+                space=space,
+                start_date=first,
+                end_date=last,
+                slot=slot,
+                status=status,
+                organizer_name=linked.primary_guest.full_name if idx == 1 else "Anna Berg",
+                company=company,
+                email="seminar@example.de",
+                phone=None,
+                attendees=attendees,
+                catering_coffee=idx == 0,
+                catering_lunch=idx == 0,
+                catering_drinks=idx == 3,
+                price=calculate_price(space, first, last, slot),
+                price_manual=False,
+                reservation=linked if idx == 1 else None,
+                cancelled_at=datetime.combine(anchor, time(9), tzinfo=HOTEL_TZ)
+                if idx == 2
+                else None,
+                cancel_reason="Kurs abgesagt" if idx == 2 else None,
+            )
+        )

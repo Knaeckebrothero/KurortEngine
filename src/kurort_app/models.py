@@ -18,6 +18,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     Numeric,
@@ -221,3 +222,63 @@ class AuditEvent(Base):
     entity_id: Mapped[str] = mapped_column(String(40), index=True)
     summary: Mapped[str] = mapped_column(Text)
     payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+
+
+SPACE_SLOTS = ("vormittag", "nachmittag", "ganztags")
+SPACE_BOOKING_STATUSES = ("angefragt", "bestaetigt", "storniert")
+
+
+class FunctionSpace(Base):
+    __tablename__ = "function_spaces"
+    __table_args__ = (CheckConstraint("capacity > 0", name="function_space_capacity"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    capacity: Mapped[int] = mapped_column(Integer)
+    price_half_day: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    price_full_day: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class SpaceBooking(Base):
+    __tablename__ = "space_bookings"
+    __table_args__ = (
+        CheckConstraint("end_date >= start_date", name="space_booking_dates"),
+        CheckConstraint(f"slot IN {_in(SPACE_SLOTS)}", name="space_booking_slot"),
+        CheckConstraint(f"status IN {_in(SPACE_BOOKING_STATUSES)}", name="space_booking_status"),
+        CheckConstraint("attendees > 0", name="space_booking_attendees"),
+        Index("ix_space_bookings_space_start", "space_id", "start_date"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    space_id: Mapped[int] = mapped_column(ForeignKey("function_spaces.id"), index=True)
+    start_date: Mapped[date] = mapped_column(Date)
+    end_date: Mapped[date] = mapped_column(Date)
+    slot: Mapped[str] = mapped_column(String(12))
+    status: Mapped[str] = mapped_column(String(12), default="angefragt")
+    organizer_name: Mapped[str] = mapped_column(String(160))
+    company: Mapped[str | None] = mapped_column(String(160))
+    email: Mapped[str | None] = mapped_column(String(160))
+    phone: Mapped[str | None] = mapped_column(String(40))
+    attendees: Mapped[int] = mapped_column(Integer)
+    catering_coffee: Mapped[bool] = mapped_column(Boolean, default=False)
+    catering_lunch: Mapped[bool] = mapped_column(Boolean, default=False)
+    catering_drinks: Mapped[bool] = mapped_column(Boolean, default=False)
+    catering_note: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    price_manual: Mapped[bool] = mapped_column(Boolean, default=False)
+    reservation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("reservations.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_reason: Mapped[str | None] = mapped_column(Text)
+
+    space: Mapped[FunctionSpace] = relationship()
+    reservation: Mapped[Reservation | None] = relationship()
+
+    @property
+    def display_name(self) -> str:
+        return self.company or self.organizer_name
