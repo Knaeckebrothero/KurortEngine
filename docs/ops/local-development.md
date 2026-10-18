@@ -21,7 +21,13 @@ podman run -d --name kurort-test-pg -p 127.0.0.1:55432:5432 \
 The app tests (`tests/app/`) create and drop their own database on that server
 (`KURORT_TEST_DATABASE_URL`, default
 `postgresql+psycopg://kurort:kurort@127.0.0.1:55432/kurort_test`). Without a
-reachable server they are skipped, not failed.
+reachable server they are skipped, not failed; set `KURORT_TEST_REQUIRE_DB=1`
+to make that a failure.
+
+No podman? Install the `test-pg` extra (`uv pip install --python .venv/bin/python
+-e ".[web,dev,test-pg]"`, Python 3.10–3.12). With `KURORT_TEST_DATABASE_URL`
+unset and nothing on port 55432, the tests then start a throwaway embedded
+Postgres (`pgserver`) and delete it when they finish.
 
 ```bash
 .venv/bin/python -m pytest tests/app -q          # web app
