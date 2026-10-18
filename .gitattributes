@@ -1,0 +1,2 @@
+# Golden-master output of the demo CSV writer: keep its CRLF bytes exactly.
+tests/fixtures/expected_synthetic_bad_orb.csv -text
