@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Seminarraum-Preise{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Seminarraum-Preise</h1><p>Räume, Kapazität und Nettopreise. Gespeicherte Buchungspreise bleiben unverändert.</p></div></div>
+{% if placeholder %}<div class="notice warning flash"><p><strong>Platzhalterpreise – bitte prüfen</strong><br>190,00 € Halbtag und 340,00 € Ganztag sind noch nicht vom Hotel bestätigt.</p></div>{% endif %}
+{% if errors %}<div class="notice danger res-error-summary" role="alert"><ul>{% for message in errors.values() %}<li>{{ message }}</li>{% endfor %}</ul></div>{% endif %}
+{% macro room_form(space=none) -%}
+{% set id = space.id if space else 0 %}
+{% set failed = editing == id %}
+<form class="card seminar-space" method="post" action="/verwaltung/seminarraum/{{ space.id if space else 'neu' }}" novalidate>
+<div class="card-header"><h2>{{ space.name if space else 'Raum hinzufügen' }}</h2></div><div class="card-body stack"><div class="seminar-form-grid">
+{% for key, label, value, type in [('name', 'Name', space.name if space else '', 'text'), ('kapazitaet', 'Kapazität (Personen)', space.capacity if space else '', 'number'), ('halbtag', 'Halbtag netto (€)', space.price_half_day if space else '', 'text'), ('ganztag', 'Ganztag netto (€)', space.price_full_day if space else '', 'text')] %}
+<div class="field"><label for="s{{ id }}-{{ key }}">{{ label }}</label><input class="input" id="s{{ id }}-{{ key }}" name="{{ key }}" type="{{ type }}" value="{{ form.get(key, '') if failed else value }}"{% if failed and errors.get(key) %} aria-invalid="true" aria-describedby="s{{ id }}-{{ key }}-error"{% endif %}>{% if failed and errors.get(key) %}<span class="error" id="s{{ id }}-{{ key }}-error">{{ errors[key] }}</span>{% endif %}</div>
+{% endfor %}</div>
+<label class="checkbox"><input type="checkbox" name="aktiv"{% if (failed and form.get('aktiv') == 'on') or (not failed and (not space or space.active)) %} checked{% endif %}>aktiv – nimmt neue Buchungen an</label>
+<div><button class="btn {{ 'primary' if not space else '' }}" type="submit">{{ 'Speichern' if space else 'Raum hinzufügen' }}</button></div></div></form>
+{%- endmacro %}
+<div class="stack seminar-settings">{% for space in spaces %}{{ room_form(space) }}{% endfor %}{{ room_form() }}</div>
+{% endblock %}

@@ -15,7 +15,7 @@ import importlib
 from sqlalchemy.orm import Session
 
 DEFAULTS: list[str] = [
-    # "kurort_app.services.payments:ensure_payment_methods",
+    "kurort_app.services.seminar:ensure_function_spaces",
 ]
 
 

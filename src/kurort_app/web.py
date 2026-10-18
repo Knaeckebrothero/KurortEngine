@@ -227,3 +227,15 @@ templates.env.filters.update(
     exemption_label=lambda s: EXEMPTION_LABELS.get(s, s) if s else "–",
     meldeschein_label=lambda s: MELDESCHEIN_LABELS.get(s, s),
 )
+
+
+SLOT_LABELS = {"vormittag": "Vormittag", "nachmittag": "Nachmittag", "ganztags": "Ganztags"}
+SPACE_STATUS_LABELS = {
+    "angefragt": "Angefragt",
+    "bestaetigt": "Bestätigt",
+    "storniert": "Storniert",
+}
+templates.env.filters.update(
+    slot_label=lambda s: SLOT_LABELS.get(s, s),
+    space_status_label=lambda s: SPACE_STATUS_LABELS.get(s, s),
+)

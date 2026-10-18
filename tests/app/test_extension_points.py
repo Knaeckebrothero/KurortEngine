@@ -28,7 +28,11 @@ def test_sidebar_lists_the_static_links_in_group_order(client):
     assert 'href="/" aria-current="page"' in rail
 
 
-def test_sidebar_hides_empty_groups(client):
+def test_sidebar_hides_empty_groups(client, monkeypatch):
+    monkeypatch.setattr(
+        web, "NAV", [item for item in web.NAV if item.group not in ("Verwaltung", "Apps")]
+    )
+    monkeypatch.setattr(web, "NAV_PROVIDERS", [])
     rail = _rail(client.get("/").text)
     assert "Verwaltung" not in rail and "Apps" not in rail
 
@@ -68,7 +72,9 @@ def defaults_module(db, monkeypatch):
 
     module.ensure_marker = ensure_marker
     monkeypatch.setitem(sys.modules, "kurort_test_defaults", module)
-    monkeypatch.setattr(defaults, "DEFAULTS", ["kurort_test_defaults:ensure_marker"])
+    monkeypatch.setattr(
+        defaults, "DEFAULTS", [*defaults.DEFAULTS, "kurort_test_defaults:ensure_marker"]
+    )
     yield
     db.rollback()  # release the test's lock on the table before dropping it
     db.execute(text("DROP TABLE IF EXISTS defaults_marker"))
