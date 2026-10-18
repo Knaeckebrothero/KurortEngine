@@ -211,3 +211,9 @@ nb-configuration.xml
 .DS_Store
 Thumbs.db
 HELP.md
+
+# Embedded dev Postgres (scripts/dev_postgres.py)
+.pgdata/
+
+# Agent screenshots (docs/roadmap/README.md, rule 6)
+.screenshots/

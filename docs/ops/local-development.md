@@ -44,6 +44,10 @@ export KURORT_AUTH=off                       # no login locally (default is oidc
 .venv/bin/kurort-app serve --port 8000 --reload
 ```
 
+Without podman, `.venv/bin/python scripts/dev_postgres.py` (needs the `test-pg`
+extra) starts an embedded Postgres with its data in `.pgdata/` and prints the
+`KURORT_DATABASE_URL` to export; it stops the server when you stop the script.
+
 Open http://127.0.0.1:8000/ (API docs at `/api/docs`). `KURORT_TODAY=2026-10-14`
 pins the business date; `kurort-app seed --reset` lays the demo data out around
 it. To work on the login itself, run against the k3d Keycloak instead — see

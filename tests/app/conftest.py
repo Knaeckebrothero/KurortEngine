@@ -130,3 +130,32 @@ def client(db: Session):
 
     with TestClient(create_app()) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def idp():
+    """A fake Keycloak; set ``idp.claims["roles"]`` before ``login()``."""
+    from tests.app.auth_helpers import FakeIdP
+
+    return FakeIdP()
+
+
+@pytest.fixture
+def oidc_client(db, idp):
+    """The app with login on (KURORT_AUTH=oidc) against ``idp``."""
+    from fastapi import Depends
+    from fastapi.testclient import TestClient
+
+    from kurort_app.auth import require_role
+    from kurort_app.main import create_app
+    from tests.app.auth_helpers import oidc_settings
+
+    app = create_app(oidc_settings())
+    app.state.oidc = idp
+
+    @app.get("/_test/leitung")
+    def leitung_only(user=Depends(require_role("leitung"))):
+        return {"user": user.username}
+
+    with TestClient(app) as test_client:
+        yield test_client

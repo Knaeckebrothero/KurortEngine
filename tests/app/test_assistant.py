@@ -15,8 +15,8 @@ from kurort_app.models import CHECKED_IN, RESERVED, Guest, Reservation, Room
 from kurort_app.services.assistant import parsing as p
 from kurort_app.services.assistant.planner import NOT_YET
 from kurort_app.services.availability import blocking_reservations, free_rooms
+from tests.app.auth_helpers import FakeIdP, login, oidc_settings
 from tests.app.conftest import BUSINESS_DATE
-from tests.app.test_auth import FakeIdP, login, oidc_settings
 
 D = BUSINESS_DATE  # Wednesday 14.10.2026
 FRIDAY = date(2026, 10, 16)

@@ -17,11 +17,11 @@
 <body data-user="{{ current_user.username if current_user else '' }}">
 {% import "_assistant.html" as assistant with context %}
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
-{% macro nav_link(href, label, icon, match=None) -%}
-  {%- set active = (nav_path == href) if href == '/' else nav_path.startswith(match or href) -%}
-  <a class="rail-link" href="{{ href }}"{% if active %} aria-current="page"{% endif %}>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ icon | safe }}</svg>
-    <span>{{ label }}</span>
+{% macro nav_link(item) -%}
+  {%- set active = (nav_path == item.href) if item.href == '/' else nav_path.startswith(item.match or item.href) -%}
+  <a class="rail-link" href="{{ item.href }}"{% if active %} aria-current="page"{% endif %}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ item.icon | safe }}</svg>
+    <span>{{ item.label }}</span>
   </a>
 {%- endmacro %}
 <div class="shell">
@@ -31,14 +31,10 @@
       <span><span class="brand-name">{{ hotel_name }}</span><span class="brand-sub">{{ hotel_city }} · Rezeption</span></span>
     </a>
     <nav class="rail-nav">
-      <span class="rail-label">Heute</span>
-      {{ nav_link('/', 'Übersicht', '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>') }}
-      {{ nav_link('/anreisen', 'Anreisen', '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>') }}
-      {{ nav_link('/abreisen', 'Abreisen', '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>') }}
-      {{ nav_link('/im-haus', 'Im Haus', '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>') }}
-      <span class="rail-label">Planung</span>
-      {{ nav_link('/reservierungen', 'Reservierungen', '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>') }}
-      {{ nav_link('/zimmerplan', 'Zimmerplan', '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M7 13h4M13 17h4"/>') }}
+      {% for group, links in nav_groups %}
+      <span class="rail-label">{{ group }}</span>
+      {% for item in links %}{{ nav_link(item) }}{% endfor %}
+      {% endfor %}
     </nav>
     <div class="rail-cta">
       <a class="btn primary block" href="/reservierungen/neu">

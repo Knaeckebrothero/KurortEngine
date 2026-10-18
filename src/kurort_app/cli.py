@@ -31,9 +31,13 @@ def _wait_db(timeout: float) -> int:
 
 
 def _migrate() -> int:
+    from kurort_app.db import get_sessionmaker
+    from kurort_app.defaults import ensure_defaults
     from kurort_app.migrate import upgrade
 
     upgrade()
+    with get_sessionmaker()() as session:
+        ensure_defaults(session)
     print("kurort-app: migrations applied", flush=True)
     return 0
 

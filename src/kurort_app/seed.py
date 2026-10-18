@@ -18,6 +18,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from kurort_app.config import today as business_today
+from kurort_app.defaults import ensure_defaults
 from kurort_app.models import (
     CANCELLED,
     CHECKED_IN,
@@ -27,9 +28,7 @@ from kurort_app.models import (
     MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
-    AuditEvent,
     Guest,
-    KurtaxeAssessment,
     Reservation,
     ReservationGuest,
     Room,
@@ -279,12 +278,17 @@ def _party(rng: random.Random, anchor: date, capacity: int) -> list[Guest]:
 
 
 def reset_demo_data(session: Session) -> None:
-    """Empty every front-desk table and restart the ids, so a reseed is reproducible."""
-    tables = ", ".join(
-        m.__tablename__
-        for m in (AuditEvent, KurtaxeAssessment, ReservationGuest, Reservation, Guest, Room)
-    )
-    session.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+    """Empty every table and restart the ids, so a reseed is reproducible.
+
+    Settings rows go too; ``seed_demo_data`` puts the defaults back.
+    """
+    tables = session.scalars(
+        text(
+            "SELECT quote_ident(tablename) FROM pg_tables "
+            "WHERE schemaname = 'public' AND tablename <> 'alembic_version'"
+        )
+    ).all()
+    session.execute(text(f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE"))
     session.commit()
 
 
@@ -296,6 +300,7 @@ def seed_demo_data(
         reset_demo_data(session)
     elif if_empty and session.scalar(select(func.count()).select_from(Reservation)):
         return 0
+    ensure_defaults(session)
 
     rng = random.Random(SEED)
     anchor = anchor or business_today()

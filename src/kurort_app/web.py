@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
@@ -118,6 +120,80 @@ def redirect_with_notice(url: str, text: str, kind: str = "success") -> Redirect
     )
 
 
+@dataclass(frozen=True)
+class NavItem:
+    """One sidebar link. ``icon`` is the inner markup of a 24×24 stroke SVG."""
+
+    href: str
+    label: str
+    icon: str
+    group: str  # one of NAV_GROUPS
+    roles: tuple[str, ...] = ("rezeption", "leitung")  # who sees the link (login on)
+    match: str | None = None  # path prefix that marks the link active; default href
+
+
+NAV_GROUPS = ("Heute", "Planung", "Apps", "Verwaltung")
+
+# Static sidebar, in display order within each group. A feature adds its link
+# with one NAV.append(...) in its own module; links that depend on the
+# database (installed apps) come from a function appended to NAV_PROVIDERS.
+NAV: list[NavItem] = [
+    NavItem(
+        "/",
+        "Übersicht",
+        '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+        "Heute",
+    ),
+    NavItem(
+        "/anreisen",
+        "Anreisen",
+        '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/>'
+        '<path d="M15 12H3"/>',
+        "Heute",
+    ),
+    NavItem(
+        "/abreisen",
+        "Abreisen",
+        '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/>'
+        '<path d="M21 12H9"/>',
+        "Heute",
+    ),
+    NavItem(
+        "/im-haus",
+        "Im Haus",
+        '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/>'
+        '<path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
+        "Heute",
+    ),
+    NavItem(
+        "/reservierungen",
+        "Reservierungen",
+        '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+        "Planung",
+    ),
+    NavItem(
+        "/zimmerplan",
+        "Zimmerplan",
+        '<rect x="3" y="4" width="18" height="17" rx="2"/>'
+        '<path d="M3 9h18M8 2v4M16 2v4M7 13h4M13 17h4"/>',
+        "Planung",
+    ),
+]
+NAV_PROVIDERS: list[Callable[[Request], list[NavItem]]] = []
+
+
+def nav_groups(request: Request) -> list[tuple[str, list[NavItem]]]:
+    """The sidebar the current user may see, as (group, links) in NAV_GROUPS order."""
+    user = getattr(request.state, "user", None)
+    items = list(NAV)
+    for provider in NAV_PROVIDERS:
+        items.extend(provider(request))
+    if user is not None:
+        items = [i for i in items if set(i.roles) & set(user.roles)]
+    groups = [(g, [i for i in items if i.group == g]) for g in NAV_GROUPS]
+    return [(g, links) for g, links in groups if links]
+
+
 def _context(request: Request) -> dict[str, Any]:
     settings = get_settings()
     return {
@@ -125,6 +201,7 @@ def _context(request: Request) -> dict[str, Any]:
         "hotel_city": settings.hotel_city,
         "business_date": today(),
         "nav_path": request.url.path,
+        "nav_groups": nav_groups(request),
         "static_version": STATIC_VERSION,
         "current_user": getattr(request.state, "user", None),
         "auth_enabled": getattr(request.state, "auth_enabled", False),
