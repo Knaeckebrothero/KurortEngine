@@ -294,7 +294,11 @@ def test_create_reservation(client, seeded):
     assert [g.guest.first_name for g in created.guests] == ["Marianne", "Klaus"]
     assert created.guests[1].guest.last_name == "von der Lindenberg-Steinberg"
     assert created.guests[0].is_primary
-    event = seeded.scalar(select(AuditEvent).where(AuditEvent.entity_id == str(new_id)))
+    event = seeded.scalars(
+        select(AuditEvent).where(
+            AuditEvent.entity == "reservation", AuditEvent.entity_id == str(new_id)
+        )
+    ).one()
     assert event.action == "reservation.created"
 
     page = client.get(location)
