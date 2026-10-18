@@ -31,6 +31,7 @@ from kurort_app.models import (
     Room,
 )
 from kurort_app.services.availability import NON_BLOCKING, free_rooms, occupied_room_ids
+from kurort_app.services.seminar import plan_rows as seminar_plan_rows
 from kurort_app.web import CHANNEL_LABELS, fmt_date, redirect_with_notice, templates
 from kurort_engine.kurpaket_templates import TEMPLATES as KURPAKETE
 
@@ -942,6 +943,7 @@ def room_plan(
         "end": end - timedelta(days=1),
         "days": days,
         "floors": floors,
+        "seminar_rows": seminar_plan_rows(session, start, end),
         "room_count": len(rooms),
         "today": day,
         "today_info": today_info,

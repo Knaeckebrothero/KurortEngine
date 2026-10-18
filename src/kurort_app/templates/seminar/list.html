@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Seminarraum{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Seminarraum</h1><p>Buchungen ohne Zimmeraufenthalt</p></div><div class="page-actions"><a class="btn primary" href="/seminarraum/neu">Neue Buchung</a></div></div>
+<section class="card seminar-week" aria-labelledby="week-title">
+  <div class="card-header seminar-week-heading"><h2 id="week-title">{{ start | date('day') }} – {{ end | date('day') }}</h2><nav class="row" aria-label="Woche wählen"><a class="btn sm" href="/seminarraum?von={{ prev }}">Woche zurück</a><a class="btn sm" href="/seminarraum">Diese Woche</a><a class="btn sm" href="/seminarraum?von={{ next }}">Woche vor</a></nav></div>
+  {% for row in week_rows %}
+  <div class="seminar-room"><h3>{{ row.space.name }}</h3><div class="seminar-days">
+    {% for day in row.days %}<section class="seminar-day"><h4>{{ day.date | date('day') }}</h4><div class="seminar-halves">
+    {% for slot, b in day.halves.items() %}
+      <div class="seminar-half{% if b %} seminar-status-{{ b.status }}{% endif %}"><span class="seminar-half-label">{{ slot | slot_label }}</span>
+      {% if b %}<a href="/seminarraum/{{ b.id }}" data-booking="{{ b.id }}">{{ b.display_name }}</a><span class="sub">{{ b.status | space_status_label }}</span>
+      {% elif day.date >= today %}<a href="/seminarraum/neu?raum={{ row.space.id }}&amp;von={{ day.date.isoformat() }}&amp;zeit={{ slot }}">frei</a>
+      {% else %}<span class="muted">frei</span>{% endif %}</div>
+    {% endfor %}</div></section>{% endfor %}
+  </div></div>
+  {% else %}<p class="card-body muted">Keine aktiven Räume. Leitung kann einen Raum in der Verwaltung aktivieren.</p>{% endfor %}
+</section>
+<div class="seminar-list-heading"><h2>{{ 'Alle Buchungen' if include_past else 'Kommende Buchungen' }}</h2><a href="/seminarraum{% if not include_past %}?vergangene=1{% endif %}">{{ 'Nur kommende anzeigen' if include_past else 'Vergangene anzeigen' }}</a></div>
+{% for week, bookings in weeks.items() %}<section class="seminar-booking-week" aria-label="{{ week }}"><h3>{{ week }}</h3><div class="card">{% for b in bookings %}{% include "seminar/_entry.html" %}{% endfor %}</div></section>
+{% else %}<div class="card empty"><strong>Keine kommenden Buchungen</strong>Über „Neue Buchung“ einen Termin anlegen.</div>{% endfor %}
+<details class="card seminar-cancelled" id="cancelled-bookings"><summary>Storniert ({{ cancelled|length }})</summary>{% for b in cancelled %}{% include "seminar/_entry.html" %}{% endfor %}</details>
+{% endblock %}

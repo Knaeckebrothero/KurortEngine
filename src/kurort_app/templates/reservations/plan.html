@@ -80,6 +80,21 @@
     {% endfor %}
     {% endfor %}
 
+    {% if seminar_rows %}
+    <div class="plan-floor"><span>Seminarräume</span></div>
+    {% for item in seminar_rows %}
+    <div class="plan-row seminar-plan-row">
+      <div class="plan-label"><strong>{{ item.space.name }}</strong><span class="plan-cat">{{ item.space.capacity }} Personen</span></div>
+      {% for d in days %}<div class="plan-cell" style="grid-column: {{ d.column }} / span 2"></div>{% endfor %}
+      {% for bar in item.bars %}
+      <a class="plan-bar seminar-status-{{ bar.booking.status }}" style="grid-column: {{ bar.start }} / {{ bar.end }}" href="/seminarraum/{{ bar.booking.id }}" title="{{ bar.label }} · {{ bar.booking.slot | slot_label }} · {{ bar.booking.status | space_status_label }}">
+        <span class="plan-bar-name">{{ bar.label }} · {{ bar.booking.status | space_status_label }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
     <div class="plan-row plan-foot plan-foot-first">
       <div class="plan-label"><strong>Belegung</strong><span class="plan-cat">belegte Zimmer</span></div>
       {% for d in days %}
