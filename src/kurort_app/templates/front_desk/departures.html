@@ -34,16 +34,7 @@
           <td>{{ ui.guest_cell(r) }}</td>
           <td class="num">{{ r.arrival | date('day') }} – {{ r.departure | date('day') }}<span class="sub">{{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span></td>
           <td class="num fd-money">{{ b.total | money }}<span class="sub">{% if b.kurtaxe is not none %}inkl. {{ b.kurtaxe | money }} Kurtaxe{% else %}Kurtaxe offen{% endif %}</span></td>
-          <td>
-            {% if r.status == 'checked_out' %}
-              <span class="badge">Abgereist{% if r.checked_out_at %} · {{ r.checked_out_at | time }}{% endif %}</span>
-            {% else %}
-              <span class="badges">
-                <span class="badge info">Check-out ausstehend</span>
-                {% if meldeschein[r.id].kind != 'success' %}<span class="badge {{ meldeschein[r.id].kind }}">{{ meldeschein[r.id].text }}</span>{% endif %}
-              </span>
-            {% endif %}
-          </td>
+          <td>{{ fd.flags(flags[r.id]) }}</td>
           <td class="actions">
             {% if r.status == 'checked_in' %}
             <a class="btn sm primary" href="/check-out/{{ r.id }}">Check-out</a>

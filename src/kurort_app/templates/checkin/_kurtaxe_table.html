@@ -1,5 +1,5 @@
 <div class="table-wrap">
-  <table class="table ci-tax">
+  <table class="table ci-tax mobile-facts">
     <thead>
       <tr>
         <th scope="col">Gast</th>
@@ -13,14 +13,14 @@
     <tbody>
       {% for line in result.lines %}
       <tr{% if line.blocker %} class="has-blocker"{% endif %}>
-        <td>
+        <td data-label="Gast">
           <span class="guest-name">{{ line.name }}</span>
           {% if line.age is not none %}<span class="sub">{{ line.age }} Jahre bei Anreise</span>{% endif %}
         </td>
-        <td>{{ line.band_label }}</td>
-        <td class="num">{{ line.rate_per_day | money if line.rate_per_day is not none else '–' }}</td>
-        <td class="num">{{ line.days }}</td>
-        <td>
+        <td data-label="Tarifgruppe">{{ line.band_label }}</td>
+        <td class="num" data-label="Satz / Tag">{{ line.rate_per_day | money if line.rate_per_day is not none else '–' }}</td>
+        <td class="num" data-label="Tage">{{ line.days }}</td>
+        <td data-label="Befreiung">
           {% if line.exempt %}
             <span class="badge success">Befreit · {{ exemption_short[line.exemption] }}</span>
           {% elif line.exemption %}
@@ -29,7 +29,7 @@
             <span class="muted">–</span>
           {% endif %}
         </td>
-        <td class="num ci-amount">
+        <td class="num ci-amount" data-label="Betrag">
           {% if line.amount is none %}–{% elif line.exempt %}<s class="muted">{{ (line.rate_per_day * line.days) | money }}</s> {{ line.amount | money }}{% else %}{{ line.amount | money }}{% endif %}
         </td>
       </tr>

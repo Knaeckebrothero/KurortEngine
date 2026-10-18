@@ -1,9 +1,3 @@
-{% extends "checkin/_layout.html" %}
-{% block step %}
-{% if error %}
-<div class="notice danger" role="alert"><p><strong>Kurtaxe nicht bestätigt.</strong> {{ error }}</p></div>
-{% endif %}
-
 <form method="post" action="/check-in/{{ r.id }}/kurtaxe" class="stack">
   <section class="card">
     <div class="card-header">
@@ -60,13 +54,5 @@
     </div>
   </section>
 
-  <div class="ci-footer">
-    {% if prev_url %}<a class="btn ghost" href="{{ prev_url }}">Zurück</a>{% endif %}
-    <span class="spacer"></span>
-    <button class="btn primary" type="submit">
-      Kurtaxe bestätigen &amp; weiter
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </button>
-  </div>
+  <div class="ci-footer"><button class="btn" type="submit">Befreiungen speichern</button></div>
 </form>
-{% endblock %}

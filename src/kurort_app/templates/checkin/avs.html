@@ -1,0 +1,14 @@
+{% extends "checkin/_layout.html" %}
+{% block step %}
+<section class="card">
+  <div class="card-header"><h2>So geht's</h2></div>
+  <div class="card-body">
+    <ol><li>Bad-Orb-Papier ins Druckfach legen</li><li>In AVS anmelden</li><li>Daten je Gast eingeben und drucken</li></ol>
+    {% if avs_url %}<a class="btn" href="{{ avs_url }}" target="_blank" rel="noopener noreferrer">AVS öffnen</a>{% endif %}
+  </div>
+</section>
+{% if r.guests | length >= 2 %}<form method="post" action="/check-in/{{ r.id }}/avs/alle"><button class="btn" type="submit">Alle als gedruckt markieren</button></form>{% endif %}
+{% for card in cards %}{% include "checkin/_avs_guest.html" %}{% endfor %}
+<div class="ci-footer"><a class="btn ghost" href="{{ prev_url }}">Zurück</a><span class="spacer"></span><a class="btn primary" href="{{ next_url }}">Weiter zum Abschluss</a></div>
+<script src="/static/checkin.js?v={{ static_version }}" defer></script>
+{% endblock %}

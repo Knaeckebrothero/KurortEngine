@@ -1,0 +1,22 @@
+{% set rg = card.rg %}
+<section class="card ci-avs-guest" id="avs-guest-{{ rg.id }}">
+  <div class="card-header"><h2>{{ rg.guest.full_name }}</h2></div>
+  <div class="card-body stack">
+    {% if card.incomplete %}
+      <p class="badge warning">Daten unvollständig</p><a href="/check-in/{{ r.id }}/gaeste">Gästedaten ergänzen</a>
+    {% else %}
+      <dl class="ci-copy-values">
+      {% for label, value in card['values'] %}
+        <div><dt>{{ label }}</dt><dd><span>{{ value }}</span><button class="btn ghost sm" type="button" data-copy="{{ value }}" aria-label="{{ label }} kopieren">Kopieren</button></dd></div>
+      {% endfor %}
+      </dl>
+      <button class="btn" type="button" data-copy="{{ card.copy_all }}" aria-label="Alle Angaben kopieren">Alle Angaben kopieren</button>
+      {% if rg.meldeschein_status == 'offen' %}
+      <form method="post" action="/check-in/{{ r.id }}/avs/{{ rg.id }}/gedruckt" hx-post="/check-in/{{ r.id }}/avs/{{ rg.id }}/gedruckt" hx-target="#avs-guest-{{ rg.id }}" hx-swap="outerHTML"><button class="btn primary" type="submit">In AVS gedruckt</button></form>
+      {% else %}
+      <span class="badge success">Gedruckt {{ rg.meldeschein_printed_at | time }} · {{ card.printed_by }}</span>
+      <form method="post" action="/check-in/{{ r.id }}/avs/{{ rg.id }}/offen" hx-post="/check-in/{{ r.id }}/avs/{{ rg.id }}/offen" hx-target="#avs-guest-{{ rg.id }}" hx-swap="outerHTML"><button class="btn ghost sm" type="submit">Rückgängig</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>

@@ -1,70 +1,35 @@
 {% extends "checkin/_layout.html" %}
 {% block step %}
-{% set signed = r.guests | selectattr('meldeschein_status', 'equalto', 'unterschrieben') | list | length %}
-{% set issued = r.guests | selectattr('kurkarte_code') | list | length %}
-{% set total = r.guests | length %}
+{% set printed = r.guests | rejectattr('meldeschein_status', 'equalto', 'offen') | list | length %}
 <section class="card">
-  <div class="card-header">
-    <div>
-      <h2>Alles bereit?</h2>
-      <span class="sub">Prüfen, dann Zimmer übergeben. Erst jetzt wird die Reservierung auf „Im Haus“ gesetzt.</span>
-    </div>
-  </div>
+  <div class="card-header"><h2>Alles bereit?</h2><span class="sub">Prüfen, dann Zimmer übergeben.</span></div>
   <div class="card-body">
-    <ul class="ci-checklist" role="list">
-      <li class="{{ 'is-ok' if not state.gaeste else 'is-open' }}">
-        <span class="ci-check" aria-hidden="true"></span>
-        <div><strong>Gästedaten</strong><span class="sub">{{ total }} {{ 'Person' if total == 1 else 'Personen' }}{% if state.gaeste %} · {{ state.gaeste | length }} Angaben fehlen{% else %} · vollständig{% endif %}</span></div>
-        <a href="/check-in/{{ r.id }}/gaeste">Ansehen</a>
-      </li>
-      <li class="{{ 'is-ok' if not state.meldeschein else 'is-open' }}">
-        <span class="ci-check" aria-hidden="true"></span>
-        <div><strong>Meldeschein</strong><span class="sub">{{ signed }} von {{ total }} unterschrieben · PDF erzeugt, nicht übermittelt</span></div>
-        <a href="/check-in/{{ r.id }}/meldeschein">Ansehen</a>
-      </li>
-      <li class="{{ 'is-ok' if not state.kurtaxe else 'is-open' }}">
-        <span class="ci-check" aria-hidden="true"></span>
-        <div><strong>Kurtaxe</strong><span class="sub">{% if r.kurtaxe %}{{ r.kurtaxe.amount | money }} für {{ r.kurtaxe.nights }} Nächte · berechnet nach {{ r.kurtaxe.satzung_label }}{% else %}noch nicht bestätigt{% endif %}</span></div>
-        <a href="/check-in/{{ r.id }}/kurtaxe">Ansehen</a>
-      </li>
-      <li class="{{ 'is-ok' if not state.kurkarte else 'is-open' }}">
-        <span class="ci-check" aria-hidden="true"></span>
-        <div><strong>Kurkarte</strong><span class="sub">{{ issued }} von {{ total }} ausgestellt</span></div>
-        <a href="/check-in/{{ r.id }}/kurkarte">Ansehen</a>
-      </li>
-      <li class="{{ 'is-ok' if r.room else 'is-open' }}">
-        <span class="ci-check" aria-hidden="true"></span>
-        <div><strong>Zimmer</strong><span class="sub">{% if r.room %}{{ r.room.number }} · {{ r.room.category }}{% if r.room.features %} · {{ r.room.features }}{% endif %}{% else %}kein Zimmer zugewiesen{% endif %}</span></div>
-      </li>
+    <ul class="ci-checklist">
+      <li class="{{ 'is-open' if state.gaeste else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Gästedaten</strong><span class="sub">{{ r.guests | length }} Personen · {{ 'Angaben fehlen' if state.gaeste else 'vollständig' }}</span></div><a href="/check-in/{{ r.id }}/gaeste">Ansehen</a></li>
+      <li class="{{ 'is-open' if state.avs else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>AVS gedruckt</strong><span class="sub">{{ printed }} von {{ r.guests | length }}</span></div><a href="/check-in/{{ r.id }}/avs">Ansehen</a></li>
+      <li class="{{ 'is-ok' if r.room else 'is-open' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Zimmer</strong><span class="sub">{{ r.room.number if r.room else 'Kein Zimmer zugewiesen' }}</span></div></li>
+      <li class="{{ 'is-open' if result.blockers else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Kurtaxe {{ r.kurtaxe.amount | money if r.kurtaxe else '–' }} · {% if result.exempt_count %}{{ result.exempt_count }} Person{{ 'en' if result.exempt_count != 1 else '' }} befreit ({{ result.lines | selectattr('exempt') | map(attribute='exemption_label') | unique | join(', ') }}){% else %}normaler Satz{% endif %}</strong></div></li>
     </ul>
-
+    <details id="kurtaxe"{% if result.blockers %} open{% endif %}>
+      <summary>Kurtaxe bearbeiten</summary>
+      {% include "checkin/_exemptions.html" %}
+    </details>
     <div class="ci-bill">
-      <div><span>Logis {{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span><span class="num">{{ r.rate_total | money }}</span></div>
-      <div><span>Kurtaxe (wird an die Stadt abgeführt)</span><span class="num">{{ r.kurtaxe.amount | money if r.kurtaxe else '–' }}</span></div>
-      <div class="ci-bill-total"><span>Voraussichtlich bei Abreise</span><span class="num">{{ (r.rate_total + (r.kurtaxe.amount if r.kurtaxe else 0)) | money }}</span></div>
+      <div><span>Logis {{ r.nights }} Nächte</span><span class="num">{{ r.rate_total | money }}</span></div>
+      <div><span>Kurtaxe</span><span class="num">{{ r.kurtaxe.amount | money if r.kurtaxe else '–' }}</span></div>
+      <div class="ci-bill-total"><span>Gesamt</span><span class="num">{{ (r.rate_total + (r.kurtaxe.amount if r.kurtaxe else 0)) | money }}</span></div>
     </div>
   </div>
 </section>
-
 {% if open_items %}
-<div class="notice danger" role="status">
-  <div>
-    <p><strong>Noch {{ open_items | length }} {{ 'Punkt' if open_items | length == 1 else 'Punkte' }} offen.</strong></p>
-    <ul>{% for b in open_items[:6] %}<li>{{ b.message }}</li>{% endfor %}</ul>
-  </div>
-</div>
+<div class="notice danger" role="status"><div><strong>Noch {{ open_items | length }} Punkte offen.</strong><ul>
+  {% for b in open_items %}<li>{{ b.message }}
+    {% if b.action_label and b.action_url %}<form method="post" action="{{ b.action_url }}"><input type="hidden" name="zurueck" value="{{ request.url.path }}"><button class="btn" type="submit">{{ b.action_label }}</button></form>{% endif %}
+  </li>{% endfor %}
+</ul></div></div>
 {% endif %}
-
-<form method="post" action="/check-in/{{ r.id }}/abschluss" class="ci-footer">
-  {% if prev_url %}<a class="btn ghost" href="{{ prev_url }}">Zurück</a>{% endif %}
-  <span class="spacer"></span>
-  {% if open_items %}
-    <button class="btn primary" type="submit" disabled>Check-in abschließen</button>
-  {% else %}
-    <button class="btn primary ci-complete" type="submit">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-      Check-in abschließen{% if r.room %} · Zimmer {{ r.room.number }}{% endif %}
-    </button>
-  {% endif %}
+<form method="post" action="/check-in/{{ r.id }}/abschluss" class="stack">
+  {% for rg in r.guests %}<label class="ci-signature"><input type="checkbox" name="unterschrieben" value="{{ rg.id }}" checked> {{ rg.guest.full_name }} · Unterschrift erhalten</label>{% endfor %}
+  <div class="ci-footer"><a class="btn ghost" href="{{ prev_url }}">Zurück</a><span class="spacer"></span><button class="btn primary ci-complete" type="submit"{% if open_items %} disabled{% endif %}>Check-in abschließen{% if r.room %} · Zimmer {{ r.room.number }}{% endif %}</button></div>
 </form>
 {% endblock %}

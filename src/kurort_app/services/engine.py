@@ -3,8 +3,7 @@
 Every regulatory number and check comes from the engine: the tourist tax
 (``calculator.calculate_kurtaxe_for_reservation`` under the Bad Orb
 Satzung), the Meldeschein Pflichtangaben (``meldeschein.MeldescheinForm``),
-exemption recognition (``exemptions.is_exempt``) and the Kurkarte
-(``kurpaket_guest_card.issue_guest_card`` + ``kurkarte_wallet``).
+exemption recognition (``exemptions.is_exempt``). AVS produces the papers.
 
 The functions work on ORM objects: they ``flush`` but never commit, so
 the router decides the transaction boundary.
@@ -21,30 +20,22 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from kurort_app import audit
 from kurort_app.config import get_settings
 from kurort_app.config import today as business_today
 from kurort_app.models import (
     CHECKED_IN,
     CHECKED_OUT,
-    MELDESCHEIN_GENERATED,
     MELDESCHEIN_OPEN,
-    MELDESCHEIN_SIGNED,
     KurtaxeAssessment,
     Reservation,
     ReservationGuest,
 )
-from kurort_app.services.checkin_pdf import render_meldeschein_pdf
 from kurort_engine import calculator
 from kurort_engine.calculator import Guest as EngineGuest
 from kurort_engine.calculator import Reservation as EngineReservation
 from kurort_engine.calculator import calculate_kurtaxe_for_reservation
 from kurort_engine.exemptions import Exemption, is_exempt
-from kurort_engine.kurkarte_wallet import render_apple_pass
-from kurort_engine.kurpaket_guest_card import issue_guest_card
-from kurort_engine.kurpaket_templates import TEMPLATES as PACKAGE_TEMPLATES
 from kurort_engine.meldeschein import MeldescheinForm, MeldescheinValidationError
-from kurort_engine.meldeschein import _form_id as engine_form_id
 from kurort_engine.rates import Satzung, load_profile
 
 # The engine resets and appends to a module-level audit list inside every
@@ -53,9 +44,7 @@ _ENGINE_LOCK = threading.Lock()
 
 STEPS: tuple[tuple[str, str], ...] = (
     ("gaeste", "Gäste & Daten"),
-    ("meldeschein", "Meldeschein"),
-    ("kurtaxe", "Kurtaxe"),
-    ("kurkarte", "Kurkarte"),
+    ("avs", "AVS"),
     ("abschluss", "Abschluss"),
 )
 STEP_KEYS = tuple(key for key, _ in STEPS)
@@ -125,6 +114,8 @@ class Blocker:
     message: str
     reservation_guest_id: int | None = None
     field: str | None = None
+    action_label: str | None = None
+    action_url: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -212,82 +203,12 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def _render(rg: ReservationGuest, form: MeldescheinForm, form_id: str) -> bytes:
-    res = rg.reservation
-    settings = get_settings()
-    return render_meldeschein_pdf(
-        form,
-        form_id=form_id,
-        hotel_name=settings.hotel_name,
-        hotel_city=settings.hotel_city,
-        reservation_code=res.code,
-        room=(f"{res.room.number} · {res.room.category}" if res.room else "–"),
-        co_travellers=[
-            other.guest.full_name for other in res.guests if other.id != rg.id and other.guest
-        ],
-        generated_at=_now(),
-    )
-
-
-def generate_meldeschein(session: Session, rg: ReservationGuest) -> bytes:
-    """Validate via the engine, render the PDF, store it as 'erzeugt'."""
-    form = meldeschein_form(rg)
-    form_id = rg.meldeschein_form_id or engine_form_id()
-    pdf = _render(rg, form, form_id)
-    rg.meldeschein_form_id = form_id
-    rg.meldeschein_pdf = pdf
-    rg.meldeschein_status = MELDESCHEIN_GENERATED
-    rg.meldeschein_generated_at = _now()
-    rg.meldeschein_signed_at = None
-    audit.record(
-        session,
-        action="meldeschein.generated",
-        entity="reservation_guest",
-        entity_id=rg.id,
-        summary=f"Meldeschein erzeugt für {rg.guest.full_name} ({rg.reservation.code})",
-        payload={"form_id": form_id, "reservation": rg.reservation.code},
-    )
-    session.flush()
-    return pdf
-
-
-def meldeschein_pdf(session: Session, rg: ReservationGuest) -> bytes | None:
-    """Stored PDF, or re-rendered from the current data when only the form id survived."""
-    if rg.meldeschein_pdf:
-        return rg.meldeschein_pdf
-    if not rg.meldeschein_form_id:
-        return None
-    pdf = _render(rg, meldeschein_form(rg), rg.meldeschein_form_id)
-    rg.meldeschein_pdf = pdf
-    session.flush()
-    return pdf
-
-
-def sign_meldeschein(session: Session, rg: ReservationGuest) -> None:
-    if rg.meldeschein_status != MELDESCHEIN_GENERATED:
-        raise CheckinError(
-            "Unterschrift kann erst bestätigt werden, wenn der Meldeschein als PDF erzeugt ist."
-        )
-    rg.meldeschein_status = MELDESCHEIN_SIGNED
-    rg.meldeschein_signed_at = _now()
-    audit.record(
-        session,
-        action="meldeschein.signed",
-        entity="reservation_guest",
-        entity_id=rg.id,
-        summary=f"Unterschrift Meldeschein bestätigt: {rg.guest.full_name}",
-        payload={"form_id": rg.meldeschein_form_id, "reservation": rg.reservation.code},
-    )
-    session.flush()
-
-
 def invalidate_meldeschein(rg: ReservationGuest) -> bool:
-    """Guest data changed after the PDF existed → the form no longer matches."""
-    if rg.meldeschein_status == MELDESCHEIN_OPEN and not rg.meldeschein_pdf:
+    """Changed data requires printing a fresh AVS sheet."""
+    if rg.meldeschein_status == MELDESCHEIN_OPEN:
         return False
     rg.meldeschein_status = MELDESCHEIN_OPEN
-    rg.meldeschein_pdf = None
-    rg.meldeschein_generated_at = None
+    rg.meldeschein_printed_at = None
     rg.meldeschein_signed_at = None
     return True
 
@@ -527,118 +448,26 @@ def drop_assessment(session: Session, reservation: Reservation) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Kurkarte (step 4)
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class KurkarteView:
-    code: str
-    guest_name: str
-    template_code: str
-    template_name: str
-    valid_from: date
-    valid_until: date
-    qr_payload: str
-    heilbad_badge: str
-    wallet: dict
-
-
-def _booking(rg: ReservationGuest, code: str, today: date) -> dict:
-    res = rg.reservation
-    return {
-        "booking_id": code,
-        "guest_name": rg.guest.full_name,
-        "template_code": res.package_code or "",
-        "arrival": res.arrival,
-        "departure": res.departure,
-        "nights": res.nights,
-        "today": today,
-    }
-
-
-def kurkarte_code(rg: ReservationGuest) -> str:
-    return f"KK-{rg.reservation.code}-{rg.position + 1}"
-
-
-def kurkarte_view(rg: ReservationGuest, today: date | None = None) -> KurkarteView | None:
-    if not rg.kurkarte_code:
-        return None
-    card = issue_guest_card(_booking(rg, rg.kurkarte_code, today or rg.reservation.arrival))
-    template = PACKAGE_TEMPLATES.get(card.template_code) if card.template_code else None
-    return KurkarteView(
-        code=rg.kurkarte_code,
-        guest_name=card.guest_name,
-        template_code=card.template_code,
-        template_name=template.name if template else "Kurkarte",
-        valid_from=card.valid_from,
-        valid_until=card.valid_until,
-        qr_payload=rg.kurkarte_qr_payload or card.qr_payload,
-        heilbad_badge=card.heilbad_badge,
-        wallet=render_apple_pass(card),
-    )
-
-
-def issue_kurkarte(
-    session: Session, rg: ReservationGuest, today: date | None = None
-) -> KurkarteView:
-    code = rg.kurkarte_code or kurkarte_code(rg)
-    card = issue_guest_card(_booking(rg, code, today or rg.reservation.arrival))
-    render_apple_pass(card)  # the engine's BFSG/WCAG checks on the wallet pass
-    rg.kurkarte_code = code
-    rg.kurkarte_qr_payload = card.qr_payload
-    rg.kurkarte_issued_at = _now()
-    audit.record(
-        session,
-        action="kurkarte.issued",
-        entity="reservation_guest",
-        entity_id=rg.id,
-        summary=f"Kurkarte {code} ausgestellt für {rg.guest.full_name}",
-        payload={"code": code, "valid_until": card.valid_until.isoformat()},
-    )
-    session.flush()
-    view = kurkarte_view(rg, today)
-    assert view is not None
-    return view
-
-
-# ---------------------------------------------------------------------------
-# Readiness across the five steps
+# Readiness (pure, without assessing or writing)
 # ---------------------------------------------------------------------------
 
 
 def readiness(reservation: Reservation) -> dict[str, list[Blocker]]:
-    """Open items per check-in step. Empty lists everywhere = ready to complete."""
     steps: dict[str, list[Blocker]] = {key: [] for key in STEP_KEYS}
     if not reservation.guests:
         steps["gaeste"].append(Blocker("gaeste", "Keine Gäste auf der Reservierung."))
     for rg in reservation.guests:
         name = rg.guest.full_name.strip() or "Gast"
-        for attr, message in guest_data_errors(rg).items():
-            steps["gaeste"].append(Blocker("gaeste", f"{name}: {message}", rg.id, attr))
+        try:
+            meldeschein_form(rg)
+        except MeldescheinIncompleteError as exc:
+            for attr, message in exc.errors.items():
+                steps["gaeste"].append(Blocker("gaeste", f"{name}: {message}", rg.id, attr))
         if rg.meldeschein_status == MELDESCHEIN_OPEN:
-            steps["meldeschein"].append(
-                Blocker("meldeschein", f"{name}: Meldeschein noch nicht erzeugt.", rg.id)
-            )
-        elif rg.meldeschein_status == MELDESCHEIN_GENERATED:
-            steps["meldeschein"].append(
-                Blocker("meldeschein", f"{name}: PDF erzeugt · Unterschrift fehlt.", rg.id)
-            )
-        if not rg.kurkarte_code:
-            steps["kurkarte"].append(
-                Blocker("kurkarte", f"{name}: Kurkarte noch nicht ausgestellt.", rg.id)
-            )
+            steps["avs"].append(Blocker("avs", f"{name}: in AVS noch nicht gedruckt.", rg.id))
     if reservation.room is None:
         steps["abschluss"].append(Blocker("abschluss", "Kein Zimmer zugewiesen."))
-    if not steps["gaeste"]:
-        preview = kurtaxe_preview(reservation)
-        steps["kurtaxe"].extend(preview.blockers)
-        if not preview.blockers and reservation.kurtaxe is None:
-            steps["kurtaxe"].append(
-                Blocker("kurtaxe", "Kurtaxe noch nicht berechnet und bestätigt.")
-            )
-    else:
-        steps["kurtaxe"].append(Blocker("kurtaxe", "Erst die Gästedaten vervollständigen."))
+    steps["abschluss"].extend(kurtaxe_preview(reservation).blockers)
     return steps
 
 

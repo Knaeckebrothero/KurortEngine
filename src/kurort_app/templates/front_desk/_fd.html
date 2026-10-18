@@ -2,7 +2,7 @@
    {% import "front_desk/_fd.html" as fd %} #}
 
 {% macro flags(items) -%}
-  <span class="badges">{% for f in items %}<span class="badge {{ f.kind }}">{{ f.text }}</span>{% endfor %}</span>
+  <span class="badges">{% for f in items %}{% if f.href %}<a class="badge {{ f.kind }}" href="{{ f.href }}">{{ f.text }}</a>{% else %}<span class="badge {{ f.kind }}">{{ f.text }}</span>{% endif %}{% endfor %}</span>
 {%- endmacro %}
 
 {% macro party(reservation) -%}

@@ -22,6 +22,7 @@
 <div class="notice warning flash" role="status"><p><strong>Vorzeitige Abreise.</strong> Geplant war der {{ r.departure | date('long') }}. Restnächte bitte mit dem Gast klären.</p></div>
 {% endif %}
 
+{% for warning in warnings %}<div class="notice warning"><p>{% if warning.href %}<a href="{{ warning.href }}">{{ warning.text }}</a>{% else %}{{ warning.text }}{% endif %}</p></div>{% endfor %}
 <div class="fd-checkout">
   <section class="card" aria-labelledby="bill-title">
     <header class="card-header"><h2 id="bill-title">Abrechnung (Vorschau)</h2></header>
@@ -45,26 +46,26 @@
         </tfoot>
       </table>
       {% if balance.kurtaxe is none %}
-      <p class="notice warning fd-inline-notice">Kurtaxe noch nicht berechnet. Sie wird im Check-in-Schritt „Kurtaxe“ ermittelt; ohne Berechnung fehlt sie in der Abrechnung.</p>
+      <p class="notice warning fd-inline-notice">Kurtaxe noch nicht berechnet. Sie wird beim Check-in automatisch ermittelt; ohne Berechnung fehlt sie in der Abrechnung.</p>
       {% endif %}
     </div>
   </section>
 
   <aside class="stack">
     <section class="card" aria-labelledby="party-title">
-      <header class="card-header"><h2 id="party-title">Gäste</h2><span class="badge {{ meldeschein.kind }}">{{ meldeschein.text }}</span></header>
+      <header class="card-header"><h2 id="party-title">Gäste</h2></header>
       <ul class="fd-party" role="list">
         {% for rg in r.guests %}
         <li>
           <span class="guest-name">{{ rg.guest.full_name }}</span>
-          <span class="sub">{{ 'Hauptgast' if rg.is_primary else 'Mitreisend' }}{% if rg.exemption_category %} · {{ rg.exemption_category | exemption_label }}{% endif %}{% if rg.kurkarte_code %} · Kurkarte <span class="mono">{{ rg.kurkarte_code }}</span>{% endif %}</span>
+          <span class="sub">{{ 'Hauptgast' if rg.is_primary else 'Mitreisend' }}{% if rg.exemption_category %} · {{ rg.exemption_category | exemption_label }}{% endif %}</span>
         </li>
         {% endfor %}
       </ul>
     </section>
     {% if can_check_out %}
     <form class="card card-body fd-confirm" method="post" action="/check-out/{{ r.id }}">
-      <p>Zimmerschlüssel und Kurkarte zurücknehmen, Rechnung aushändigen.</p>
+      <p>Zimmerschlüssel zurücknehmen, Abrechnung mit dem Gast klären.</p>
       <button class="btn primary block" type="submit">Check-out abschließen</button>
       <a class="btn ghost block" href="/abreisen">Abbrechen</a>
     </form>

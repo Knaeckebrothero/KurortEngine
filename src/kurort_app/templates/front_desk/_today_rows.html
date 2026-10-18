@@ -1,0 +1,15 @@
+<div class="table-wrap">
+<table class="table fd-queue fd-today-table">
+  <thead><tr><th scope="col">Zeit</th><th scope="col">Gast</th><th scope="col">Zimmer</th><th scope="col">Art</th><th scope="col">Hinweise</th><th scope="col">Aktion</th></tr></thead>
+  <tbody>{% for row in rows %}{% set r = row.reservation %}
+    <tr data-reservation-id="{{ r.id }}" data-kind="{{ row.kind }}"{% if next_arrival and row.kind == 'anreise' and r.id == next_arrival.id %} class="fd-next"{% endif %}>
+      <td class="num">{% if row.kind == 'anreise' and r.eta %}{{ r.eta | time }}{% endif %}</td>
+      <td>{{ ui.guest_cell(r, link=False) }}</td>
+      <td>{{ fd.room(r) }}</td>
+      <td><span class="badge {{ 'info' if row.kind == 'anreise' else 'plain' }}">{{ 'Anreise' if row.kind == 'anreise' else 'Abreise' }}</span></td>
+      <td>{{ fd.flags(row.flags) }}</td>
+      <td class="actions">{% if row.kind == 'anreise' and r.status == 'reserved' %}<a class="btn sm{% if next_arrival and r.id == next_arrival.id %} primary{% endif %}" href="/check-in/{{ r.id }}">Check-in</a>{% elif row.kind == 'abreise' and r.status == 'checked_in' %}<a class="btn sm" href="/check-out/{{ r.id }}">Check-out</a>{% else %}<a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>{% endif %}</td>
+    </tr>
+  {% endfor %}</tbody>
+</table>
+</div>

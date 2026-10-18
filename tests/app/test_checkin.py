@@ -1,4 +1,4 @@
-"""The five-step check-in flow over HTTP."""
+"""The three-step check-in flow over HTTP."""
 
 from __future__ import annotations
 
@@ -8,9 +8,10 @@ from urllib.parse import parse_qs, urlparse
 
 from sqlalchemy import select
 
+from kurort_app.config import get_settings
 from kurort_app.models import CHECKED_IN, RESERVED, AuditEvent, Reservation, ReservationGuest
 from tests.app.conftest import BUSINESS_DATE
-from tests.app.test_engine_adapter import _age, make_stay
+from tests.app.test_engine_adapter import make_stay
 
 
 def _notice(response) -> str:
@@ -45,57 +46,30 @@ def _guest_form(rg: ReservationGuest, **overrides) -> dict[str, str]:
 
 
 def test_happy_path_checks_the_guest_in(client, db):
-    res = make_stay(
-        db,
-        [
-            {"first": "Claudia", "last": "Wolf", "birth": _age(55)},
-            {"first": "Klaus", "last": "Wolf", "birth": _age(58)},
-        ],
-    )
+    res = make_stay(db, [{"first": "Claudia", "last": "Wolf"}, {"first": "Klaus", "last": "Wolf"}])
     rid = res.id
-    rgs = [rg.id for rg in res.guests]
-
-    r = client.get(f"/check-in/{rid}", follow_redirects=False)
-    assert _path(r) == f"/check-in/{rid}/meldeschein"
-
-    page = client.get(f"/check-in/{rid}/meldeschein")
-    assert page.status_code == 200 and "Weiter zur Kurtaxe" in page.text
-
-    r = client.post(f"/check-in/{rid}/meldeschein/alle", follow_redirects=False)
-    assert r.status_code == 303
-    for rg_id in rgs:
-        assert (
-            client.post(
-                f"/check-in/{rid}/meldeschein/{rg_id}/unterschreiben", follow_redirects=False
-            ).status_code
-            == 303
-        )
-
-    r = client.post(f"/check-in/{rid}/kurtaxe", data={}, follow_redirects=False)
-    assert _path(r) == f"/check-in/{rid}/kurkarte"
-    assert "35,00 €" in _notice(r)
-
-    r = client.post(f"/check-in/{rid}/kurkarte", follow_redirects=False)
-    assert _path(r) == f"/check-in/{rid}/kurkarte"
-    page = client.get(f"/check-in/{rid}/kurkarte")
-    assert page.text.count("<svg xmlns") == 2  # one QR per guest
-
+    ids = [rg.id for rg in res.guests]
+    assert _path(client.get(f"/check-in/{rid}", follow_redirects=False)) == f"/check-in/{rid}/avs"
+    assert client.post(f"/check-in/{rid}/avs/alle", follow_redirects=False).status_code == 303
     summary = client.get(f"/check-in/{rid}/abschluss")
     assert "Check-in abschließen · Zimmer 204" in summary.text
-
-    r = client.post(f"/check-in/{rid}/abschluss", follow_redirects=False)
-    assert _path(r) == "/anreisen"
-    assert _notice(r) == "Claudia Wolf ist eingecheckt · Zimmer 204"
-
+    assert summary.text.count('name="unterschrieben"') == 2
+    response = client.post(
+        f"/check-in/{rid}/abschluss", data={"unterschrieben": str(ids[0])}, follow_redirects=False
+    )
+    assert _path(response) == "/"
+    assert _notice(response) == "Claudia Wolf ist eingecheckt · Zimmer 204"
     res = _reload(db, res)
-    assert res.status == CHECKED_IN and res.checked_in_at is not None
+    assert res.status == CHECKED_IN and res.checked_in_at
     assert res.kurtaxe.amount == Decimal("35.00")
-    actions = db.scalars(select(AuditEvent.action).order_by(AuditEvent.id)).all()
-    assert actions.count("meldeschein.generated") == 2
-    assert actions.count("meldeschein.signed") == 2
-    assert actions.count("kurkarte.issued") == 2
+    assert [rg.meldeschein_status for rg in res.guests] == ["unterschrieben", "gedruckt"]
+    events = db.scalars(select(AuditEvent).order_by(AuditEvent.id)).all()
+    actions = [event.action for event in events]
+    assert actions.count("meldeschein.printed") == 2
+    assert actions.count("meldeschein.signed") == 1
+    assert "meldeschein.generated" not in actions and "kurkarte.issued" not in actions
     assert actions[-1] == "reservation.checked_in"
-    assert "kurtaxe.assessed" in actions
+    assert all(e.payload["auto"] is True for e in events if e.action == "kurtaxe.assessed")
 
 
 def test_missing_birth_date_starts_on_guest_step_and_save_fixes_it(client, db):
@@ -116,63 +90,91 @@ def test_missing_birth_date_starts_on_guest_step_and_save_fixes_it(client, db):
         data=_guest_form(rg, birth_date="1958-05-17"),
         follow_redirects=False,
     )
-    assert ok.status_code == 303 and _path(ok) == f"/check-in/{res.id}/meldeschein"
+    assert ok.status_code == 303 and _path(ok) == f"/check-in/{res.id}/avs"
     assert _reload(db, res).guests[0].guest.birth_date.isoformat() == "1958-05-17"
 
 
-def test_changing_data_after_generation_resets_the_meldeschein(client, db):
-    res = make_stay(db, [{}])
+def test_changing_data_after_printing_resets_the_meldeschein(client, db):
+    res = make_stay(db, [{"first": "Ada"}])
     rg = res.guests[0]
-    client.post(f"/check-in/{res.id}/meldeschein/{rg.id}/erzeugen")
-    client.post(f"/check-in/{res.id}/meldeschein/{rg.id}/unterschreiben")
-    r = client.post(
+    client.post(f"/check-in/{res.id}/avs/{rg.id}/gedruckt")
+    client.post(f"/meldeschein/{rg.id}/unterschrieben")
+    response = client.post(
         f"/check-in/{res.id}/gaeste",
-        data=_guest_form(rg, street="Am Kurpark 9"),
+        data=_guest_form(rg, birth_date="1955-01-01"),
         follow_redirects=False,
     )
-    assert "Meldeschein neu erzeugen" in _notice(r)
-    assert _reload(db, res).guests[0].meldeschein_status == "offen"
+    assert "Daten geändert – in AVS neu drucken: Ada Weber." in _notice(response)
+    rg = _reload(db, res).guests[0]
+    assert rg.meldeschein_status == "offen"
+    assert rg.meldeschein_printed_at is None and rg.meldeschein_signed_at is None
 
 
-def test_htmx_generation_returns_only_the_panel(client, db):
+def test_htmx_printing_returns_only_the_guest_card_and_can_be_undone(client, db):
     res = make_stay(db, [{}])
     rg = res.guests[0]
-    r = client.post(
-        f"/check-in/{res.id}/meldeschein/{rg.id}/erzeugen", headers={"HX-Request": "true"}
+    response = client.post(
+        f"/check-in/{res.id}/avs/{rg.id}/gedruckt", headers={"HX-Request": "true"}
     )
-    assert r.status_code == 200
-    assert 'id="meldeschein-panel"' in r.text and "<html" not in r.text
-    assert "Unterschrift bestätigen" in r.text
+    assert response.status_code == 200 and "<html" not in response.text
+    assert f'id="avs-guest-{rg.id}"' in response.text
+    assert "Gedruckt" in response.text and "rezeption" in response.text
+    rg = _reload(db, res).guests[0]
+    assert rg.meldeschein_status == "gedruckt" and rg.meldeschein_printed_at
+    assert (
+        db.scalar(select(AuditEvent).where(AuditEvent.action == "meldeschein.printed")).entity
+        == "reservation_guest"
+    )
+    response = client.post(f"/check-in/{res.id}/avs/{rg.id}/offen", follow_redirects=False)
+    assert response.status_code == 303
+    assert _reload(db, res).guests[0].meldeschein_status == "offen"
+    assert db.scalar(select(AuditEvent).where(AuditEvent.action == "meldeschein.print_undone"))
 
 
-def test_pdf_endpoint(client, db):
-    res = make_stay(db, [{"last": "Müller"}])
+def test_old_steps_redirect_and_local_papers_are_removed(client, db):
+    res = make_stay(db, [{}])
     rg = res.guests[0]
+    for old, new in (
+        ("meldeschein", "avs"),
+        ("kurtaxe", "abschluss#kurtaxe"),
+        ("kurkarte", "abschluss"),
+    ):
+        response = client.get(f"/check-in/{res.id}/{old}", follow_redirects=False)
+        assert (
+            response.status_code == 303
+            and response.headers["location"] == f"/check-in/{res.id}/{new}"
+        )
     assert client.get(f"/meldeschein/{rg.id}.pdf").status_code == 404
-    client.post(f"/check-in/{res.id}/meldeschein/{rg.id}/erzeugen")
-    r = client.get(f"/meldeschein/{rg.id}.pdf")
-    assert r.status_code == 200
-    assert r.headers["content-type"] == "application/pdf"
-    assert r.content.startswith(b"%PDF-")
-    assert 'filename="Meldeschein-R-TEST-0001-M-ller.pdf"' in r.headers["content-disposition"]
+    for removed in (
+        f"meldeschein/{rg.id}/erzeugen",
+        "meldeschein/alle",
+        f"meldeschein/{rg.id}/unterschreiben",
+        "kurkarte",
+    ):
+        assert client.post(f"/check-in/{res.id}/{removed}").status_code in (404, 405)
+    for path in (
+        f"/reservierungen/{res.id}",
+        f"/check-out/{res.id}",
+        *(f"/check-in/{res.id}/{step}" for step in ("gaeste", "avs", "abschluss")),
+    ):
+        page = client.get(path)
+        assert page.status_code == 200
+        assert ".pdf" not in page.text and "Kurkarte" not in page.text
 
 
 def test_kurtaxe_exemption_needs_evidence(client, db):
-    res = make_stay(db, [{"birth": _age(50)}])
+    res = make_stay(db, [{"exemption": "geschaeftsreisender"}])
     rg = res.guests[0]
+    client.post(f"/check-in/{res.id}/avs/alle")
     preview = client.post(
-        f"/check-in/{res.id}/kurtaxe/vorschau",
-        data={f"ex{rg.id}_category": "geschaeftsreisender", f"ex{rg.id}_evidence": ""},
+        f"/check-in/{res.id}/kurtaxe/vorschau", data={f"ex{rg.id}_category": "geschaeftsreisender"}
     )
     assert "Nachweis fehlt" in preview.text and "<html" not in preview.text
-
-    blocked = client.post(
-        f"/check-in/{res.id}/kurtaxe",
-        data={f"ex{rg.id}_category": "geschaeftsreisender", f"ex{rg.id}_evidence": ""},
-    )
-    assert blocked.status_code == 200 and "Kurtaxe nicht bestätigt" in blocked.text
-    assert _reload(db, res).kurtaxe is None
-
+    page = client.get(f"/check-in/{res.id}/abschluss").text
+    assert 'id="kurtaxe" open' in page and "Befreiungsnachweis fehlt" in page
+    blocked = client.post(f"/check-in/{res.id}/abschluss", follow_redirects=False)
+    assert "noch nicht möglich" in _notice(blocked)
+    assert _reload(db, res).status == RESERVED
     ok = client.post(
         f"/check-in/{res.id}/kurtaxe",
         data={
@@ -181,25 +183,78 @@ def test_kurtaxe_exemption_needs_evidence(client, db):
         },
         follow_redirects=False,
     )
-    assert ok.status_code == 303 and "0,00 €" in _notice(ok)
-    res = _reload(db, res)
-    assert res.kurtaxe.amount == Decimal("0.00")
-    assert res.guests[0].exemption_evidence == "Bescheinigung Weber GmbH"
+    assert ok.status_code == 303 and ok.headers["location"].split("?")[0].endswith(
+        "/abschluss#kurtaxe"
+    )
+    assert _reload(db, res).kurtaxe.amount == Decimal("0.00")
+    client.post(f"/check-in/{res.id}/abschluss", data={"unterschrieben": str(rg.id)})
+    assert _reload(db, res).status == CHECKED_IN
 
 
-def test_kurkarte_waits_for_the_kurtaxe(client, db):
+def test_normal_kurtaxe_is_automatic_after_guest_save(client, db):
     res = make_stay(db, [{}])
-    r = client.post(f"/check-in/{res.id}/kurkarte", follow_redirects=False)
-    assert _path(r) == f"/check-in/{res.id}/kurtaxe"
-    assert _reload(db, res).guests[0].kurkarte_code is None
+    response = client.post(
+        f"/check-in/{res.id}/gaeste", data=_guest_form(res.guests[0]), follow_redirects=False
+    )
+    assert _path(response) == f"/check-in/{res.id}/avs"
+    assert _reload(db, res).kurtaxe.amount == Decimal("17.50")
+    page = client.get(f"/check-in/{res.id}/abschluss").text
+    assert "17,50 € · normaler Satz" in page and "Kurtaxe bearbeiten" in page
 
 
 def test_completion_is_refused_while_items_are_open(client, db):
     res = make_stay(db, [{}])
-    r = client.post(f"/check-in/{res.id}/abschluss", follow_redirects=False)
-    assert _path(r) == f"/check-in/{res.id}/meldeschein"
-    assert "noch nicht möglich" in _notice(r)
+    response = client.post(f"/check-in/{res.id}/abschluss", follow_redirects=False)
+    assert _path(response) == f"/check-in/{res.id}/avs"
+    assert "noch nicht möglich" in _notice(response)
     assert _reload(db, res).status == RESERVED
+
+
+def test_avs_values_order_and_incomplete_guest(client, db):
+    from html import escape
+
+    res = make_stay(db, [{"first": "Ada"}, {"first": "No", "birth": None}])
+    page = client.get(f"/check-in/{res.id}/avs").text
+    labels = [
+        "Familienname",
+        "Vorname",
+        "Geburtsdatum",
+        "Staatsangehörigkeit",
+        "Straße und Hausnummer",
+        "PLZ",
+        "Ort",
+        "Land",
+        "Anreise",
+        "Abreise",
+        "Kurtaxe-Gruppe",
+    ]
+    positions = [page.index(f'aria-label="{escape(label)} kopieren"') for label in labels]
+    assert positions == sorted(positions)
+    assert 'data-copy="Deutschland"' in page and "Alle Angaben kopieren" in page
+    assert "Daten unvollständig" in page
+    assert f"/avs/{res.guests[1].id}/gedruckt" not in page
+    client.post(f"/check-in/{res.id}/avs/alle")
+    assert [rg.meldeschein_status for rg in _reload(db, res).guests] == ["gedruckt", "offen"]
+
+
+def test_signature_later_and_safe_return(client, db):
+    res = make_stay(db, [{}])
+    rg = res.guests[0]
+    response = client.post(f"/meldeschein/{rg.id}/unterschrieben", follow_redirects=False)
+    assert "Erst in AVS drucken." in _notice(response)
+    client.post(f"/check-in/{res.id}/avs/alle")
+    res = _reload(db, res)
+    res.status = CHECKED_IN
+    db.commit()
+    assert "Unterschrift fehlt" in client.get("/im-haus").text
+    response = client.post(
+        f"/meldeschein/{rg.id}/unterschrieben",
+        data={"zurueck": "https://evil.invalid"},
+        follow_redirects=False,
+    )
+    assert _path(response) == "/"
+    assert _reload(db, res).guests[0].meldeschein_status == "unterschrieben"
+    assert db.scalar(select(AuditEvent).where(AuditEvent.action == "meldeschein.signed"))
 
 
 def test_only_reserved_arrivals_from_today_can_check_in(client, db):
@@ -215,7 +270,7 @@ def test_only_reserved_arrivals_from_today_can_check_in(client, db):
     assert _path(r) == f"/reservierungen/{future.id}" and "frühestens am Anreisetag" in _notice(r)
 
     late = make_stay(db, [{}], code="R-TEST-0004", arrival=BUSINESS_DATE - timedelta(days=1))
-    page = client.get(f"/check-in/{late.id}/meldeschein")
+    page = client.get(f"/check-in/{late.id}/avs")
     assert page.status_code == 200 and "Verspätete Anreise" in page.text
 
 
@@ -258,8 +313,47 @@ def test_seeded_arrivals_surface_their_blockers(client, seeded):
         for r in arrivals
         if any(rg.exemption_category and not rg.exemption_evidence for rg in r.guests)
     )
-    page = client.get(f"/check-in/{missing_proof.id}/kurtaxe")
+    page = client.get(f"/check-in/{missing_proof.id}/abschluss")
     assert "Befreiungsnachweis fehlt" in page.text
     # the seed assessed every stay that is or was in house
     in_house = seeded.scalars(select(Reservation).where(Reservation.status == CHECKED_IN)).all()
     assert in_house and all(r.kurtaxe is not None for r in in_house)
+
+
+def test_three_step_entry_and_stepper(client, db):
+    """AC-1: complete data goes directly to AVS, with exactly three steps."""
+    import re
+
+    from kurort_app.services import engine
+
+    assert engine.STEP_KEYS == ("gaeste", "avs", "abschluss")
+    res = make_stay(db, [{}])
+    response = client.get(f"/check-in/{res.id}", follow_redirects=False)
+    assert response.status_code == 303
+    assert _path(response) == f"/check-in/{res.id}/avs"
+    page = client.get(f"/check-in/{res.id}/gaeste").text
+    assert re.findall(r'<span class="ci-step-label">(.*?)</span>', page) == [
+        "Gäste &amp; Daten",
+        "AVS",
+        "Abschluss",
+    ]
+
+
+def test_avs_link_is_optional_and_foreign_id_is_in_order(client, db, monkeypatch):
+    res = make_stay(db, [{}])
+    guest = res.guests[0].guest
+    guest.nationality = "AT"
+    guest.id_document_number = "P123456"
+    db.commit()
+    page = client.get(f"/check-in/{res.id}/avs").text
+    assert "AVS öffnen" not in page
+    assert (
+        page.index("Land kopieren")
+        < page.index("Ausweisnummer kopieren")
+        < page.index("Anreise kopieren")
+    )
+    assert 'data-copy="P123456"' in page and 'data-copy="Österreich"' in page
+    monkeypatch.setattr(get_settings(), "avs_url", "https://avs.example.invalid/login")
+    page = client.get(f"/check-in/{res.id}/avs").text
+    assert 'href="https://avs.example.invalid/login"' in page and 'target="_blank"' in page
+    assert "AVS öffnen" in page

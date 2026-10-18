@@ -71,7 +71,7 @@ EXEMPTION_LABELS = {
 }
 MELDESCHEIN_LABELS = {
     "offen": "Meldeschein offen",
-    "erzeugt": "PDF erzeugt · nicht unterschrieben",
+    "gedruckt": "In AVS gedruckt · Unterschrift fehlt",
     "unterschrieben": "Meldeschein unterschrieben",
 }
 
