@@ -297,3 +297,100 @@ def test_out_of_order_flag_blocker_and_plan(client, db):
     assert "/reservierungen/neu?zimmer=" not in row
     client.post(f"/zimmerstatus/{stay.room_id}/inspected")
     assert "geprüft" in client.get("/zimmerplan").text
+
+
+def test_housekeeping_limited_staff_home_navigation_and_forbidden(oidc_client, idp, db):
+    from tests.app.auth_helpers import login
+
+    room = make_stay(db, [{}]).room
+    idp.claims.update(roles=["housekeeping"], preferred_username="s.klein", name="Sandra Klein")
+    login(oidc_client)
+    home = oidc_client.get("/", follow_redirects=False)
+    assert home.status_code == 303 and home.headers["location"] == "/zimmerstatus"
+    page = oidc_client.get("/zimmerstatus")
+    assert page.status_code == 200
+    menu = page.text.split('<nav class="rail-nav">')[1].split("</nav>")[0]
+    assert re.findall(r'href="([^"]+)"', menu) == ["/zimmerstatus"]
+    assert "assistant-bar" not in page.text and "Neue Reservierung" not in page.text
+    oidc_client.post(f"/zimmerstatus/{room.id}/dirty")
+    db.refresh(room)
+    assert room.housekeeping_changed_by == "s.klein" and events(db)[-1].actor == "s.klein"
+    for path in (
+        "/anreisen",
+        "/abreisen",
+        "/im-haus",
+        "/reservierungen",
+        "/zimmerplan",
+        "/seminarraum",
+        "/verwaltung/seminarraum",
+        "/check-in/1/abschluss",
+    ):
+        response = oidc_client.get(path)
+        assert response.status_code == 403, path
+        assert 'href="/zimmerstatus"' in response.text and "Zu Ihrem Bereich" in response.text
+    denied = oidc_client.post("/assistent/plan", json={"text": "Anreisen"})
+    assert denied.status_code == 403 and denied.headers["content-type"].startswith(
+        "application/json"
+    )
+    denied = oidc_client.get("/anreisen", headers={"Accept": "application/json"})
+    assert denied.status_code == 403 and denied.headers["content-type"].startswith(
+        "application/json"
+    )
+
+
+@pytest.mark.parametrize("roles", [["rezeption"], ["leitung"], ["housekeeping", "rezeption"]])
+def test_front_desk_roles_keep_full_access(oidc_client, idp, db, roles):
+    from tests.app.auth_helpers import login
+
+    idp.claims["roles"] = roles
+    login(oidc_client)
+    for path in (
+        "/",
+        "/zimmerstatus",
+        "/anreisen",
+        "/abreisen",
+        "/im-haus",
+        "/reservierungen",
+        "/zimmerplan",
+        "/seminarraum",
+    ):
+        page = oidc_client.get(path)
+        assert page.status_code == 200, path
+        assert "Neue Reservierung" in page.text and 'href="/zimmerstatus"' in page.text
+
+
+def test_no_role_still_has_no_access(oidc_client, idp):
+    from tests.app.auth_helpers import login
+
+    idp.claims["roles"] = []
+    login(oidc_client)
+    for path in ("/", "/zimmerstatus", "/anreisen"):
+        response = oidc_client.get(path)
+        assert response.status_code == 403 and "Kein Zugriff" in response.text
+
+
+def test_seed_reset_plants_cleaning_statuses_without_changing_f1_flags(client, db):
+    from kurort_app.seed import seed_demo_data
+
+    snapshots = []
+    for _ in range(2):
+        db.expunge_all()
+        seed_demo_data(db, reset=True, anchor=D)
+        rooms = db.scalars(select(Room).order_by(Room.number)).all()
+        assert sum(r.housekeeping_status == "dirty" for r in rooms) >= 3
+        assert any(r.housekeeping_status == "inspected" for r in rooms)
+        assert any(r.housekeeping_status == "out_of_order" and r.housekeeping_note for r in rooms)
+        assert any(
+            r.room.housekeeping_status == "dirty"
+            for r in db.scalars(
+                select(Reservation).where(
+                    Reservation.arrival == D, Reservation.status == "reserved"
+                )
+            )
+        )
+        snapshots.append([(r.number, r.housekeeping_status, r.housekeeping_note) for r in rooms])
+        html = client.get("/").text
+        assert (
+            "Gästedaten fehlen · Geburtsdatum" in html and "Kurtaxe klären · Nachweis fehlt" in html
+        )
+    assert snapshots[0] == snapshots[1]

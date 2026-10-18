@@ -61,7 +61,8 @@
       "defaultLocale" "de"
       "roles" (dict "realm" (list
         (dict "name" "rezeption" "description" "Rezeption")
-        (dict "name" "leitung" "description" "Leitung")))
+        (dict "name" "leitung" "description" "Leitung")
+        (dict "name" "housekeeping" "description" "Housekeeping")))
       "clients" (list $client)
       "users" $users }}
 apiVersion: v1

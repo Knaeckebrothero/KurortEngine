@@ -16,6 +16,7 @@ from kurort_app.models import (
     CHECKED_OUT,
     NO_SHOW,
     RESERVED,
+    ROOM_OUT_OF_ORDER,
     AuditEvent,
     Guest,
     Reservation,
@@ -482,7 +483,9 @@ def test_edit_rejects_conflicting_room(client, seeded):
             .where(Reservation.status == RESERVED, Reservation.arrival > D + timedelta(days=5))
             .order_by(Reservation.id)
         )
-        if r.room_id != target.room_id and r.room.max_occupancy >= len(target.guests)
+        if r.room_id != target.room_id
+        and r.room.max_occupancy >= len(target.guests)
+        and r.room.housekeeping_status != ROOM_OUT_OF_ORDER
     )
     form = {
         "anreise": other.arrival.isoformat(),

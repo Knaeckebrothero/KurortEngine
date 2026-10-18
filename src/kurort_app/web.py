@@ -207,8 +207,13 @@ def nav_groups(request: Request) -> list[tuple[str, list[NavItem]]]:
 
 
 def _context(request: Request) -> dict[str, Any]:
+    from kurort_app.auth import FRONT_DESK_ROLES, home_path
+
     settings = get_settings()
+    user = getattr(request.state, "user", None)
     return {
+        "front_desk_access": user is None or bool(set(user.roles) & set(FRONT_DESK_ROLES)),
+        "home_path": home_path(user),
         "hotel_name": settings.hotel_name,
         "hotel_city": settings.hotel_city,
         "business_date": today(),

@@ -39,12 +39,12 @@
       {% for item in links %}{{ nav_link(item) }}{% endfor %}
       {% endfor %}
     </nav>
-    <div class="rail-cta">
+    {% if front_desk_access %}<div class="rail-cta">
       <a class="btn primary block" href="/reservierungen/neu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         Neue Reservierung
       </a>
-    </div>
+    </div>{% endif %}
     </details>
     <div class="rail-foot">KurortEngine · Kurbeitragssatzung {{ hotel_city }}</div>
   </aside>
@@ -54,7 +54,7 @@
         {{ business_date | date('long') }}
         <small>Geschäftstag · {{ hotel_name }}</small>
       </div>
-      {{ assistant.bar() }}
+      {% if front_desk_access %}{{ assistant.bar() }}{% endif %}
       {% if current_user %}
       <div class="userbox">
         <span class="avatar" aria-hidden="true">{{ current_user.initials }}</span>
@@ -76,7 +76,7 @@
     </main>
   </div>
 </div>
-{{ assistant.drawer() }}
+{% if front_desk_access %}{{ assistant.drawer() }}{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

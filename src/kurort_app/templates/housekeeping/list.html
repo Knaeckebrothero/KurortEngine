@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
   <div><h1>Zimmerstatus</h1><p>Heute im Haus · {{ business_date | date('day') }}</p></div>
-  <form class="page-actions" method="post" action="/zimmerstatus/bleibe"><button class="btn" type="submit">Bleibezimmer auf schmutzig setzen <span class="num">({{ stayover_count }})</span></button></form>
+  <form class="page-actions hk-bulk" method="post" action="/zimmerstatus/bleibe"><button class="btn" type="submit">Bleibezimmer auf schmutzig setzen <span class="num">({{ stayover_count }})</span></button></form>
 </div>
 <div class="hk-filters">
   <nav class="hk-chips" aria-label="Etage"><strong>Etage</strong>
