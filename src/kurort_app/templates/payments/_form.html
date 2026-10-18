@@ -1,0 +1,71 @@
+{# Shared by reservation detail and check-out; payment_next is supplied by the caller. #}
+{% if r.status != 'cancelled' %}
+{% set pay_form = payment_form | default({}) %}
+{% set pay_errors = payment_errors | default({}) %}
+{% set pay_id = 'payment-' ~ r.id %}
+{% set pay_amount = balance.open if balance.open > 0 else 0 %}
+{% macro payment_invalid(field) -%}
+{% if pay_errors.get(field) %} aria-invalid="true" aria-describedby="{{ pay_id }}-{{ field }}-error"{% endif %}
+{%- endmacro %}
+{% macro payment_error(field) -%}
+{% if pay_errors.get(field) %}<span class="error" id="{{ pay_id }}-{{ field }}-error">{{ pay_errors[field] }}</span>{% endif %}
+{%- endmacro %}
+<form class="payment-form stack" method="post" action="/reservierungen/{{ r.id }}/zahlungen">
+  {% for field in ['status', 'reason'] %}
+  {% if pay_errors.get(field) %}<div class="notice danger" role="alert"><p>{{ pay_errors[field] }}</p></div>{% endif %}
+  {% endfor %}
+  <input type="hidden" name="next" value="{{ payment_next }}"{{ payment_invalid('next') }}>
+  {% if pay_errors.get('next') %}<div class="field">{{ payment_error('next') }}</div>{% endif %}
+  <div class="payment-form-grid">
+    <div class="field">
+      <label for="{{ pay_id }}-amount">Betrag (€)</label>
+      <input class="input num" id="{{ pay_id }}-amount" name="amount" type="text" inputmode="decimal" value="{{ pay_form.get('amount', ('%.2f' | format(pay_amount)) | replace('.', ',')) }}" required{{ payment_invalid('amount') }}>
+      {{ payment_error('amount') }}
+    </div>
+    <div class="field">
+      <label for="{{ pay_id }}-method_id">Zahlungsart</label>
+      <select class="select" id="{{ pay_id }}-method_id" name="method_id" required{{ payment_invalid('method_id') }}>
+        <option value="">Bitte wählen</option>
+        {% for method in payment_methods %}
+        <option value="{{ method.id }}"{% if pay_form.get('method_id', '') | string == method.id | string %} selected{% endif %}>{{ method.label }}</option>
+        {% endfor %}
+      </select>
+      {{ payment_error('method_id') }}
+    </div>
+    <div class="field">
+      <label for="{{ pay_id }}-paid_on">Zahlungsdatum</label>
+      <input class="input" id="{{ pay_id }}-paid_on" name="paid_on" type="date" value="{{ pay_form.get('paid_on', business_date) }}" max="{{ business_date }}" required{{ payment_invalid('paid_on') }}>
+      {{ payment_error('paid_on') }}
+    </div>
+  </div>
+  <details class="payment-disclosure"{% if pay_errors.get('payer') or pay_errors.get('note') or pay_form.get('payer') or pay_form.get('note') %} open{% endif %}>
+    <summary>Weitere Angaben</summary>
+    <div class="payment-disclosure-body stack">
+      <div class="field">
+        <label for="{{ pay_id }}-payer">Zahlende Person oder Firma <span class="muted">(optional)</span></label>
+        <input class="input" id="{{ pay_id }}-payer" name="payer" type="text" maxlength="120" value="{{ pay_form.get('payer', '') }}"{{ payment_invalid('payer') }}>
+        {{ payment_error('payer') }}
+      </div>
+      <div class="field">
+        <label for="{{ pay_id }}-note">Notiz <span class="muted">(optional)</span></label>
+        <textarea class="textarea" id="{{ pay_id }}-note" name="note" maxlength="200"{{ payment_invalid('note') }}>{{ pay_form.get('note', '') }}</textarea>
+        {{ payment_error('note') }}
+      </div>
+    </div>
+  </details>
+  {% if overpayment is defined and overpayment is not none %}
+  <div class="notice warning" role="alert" id="{{ pay_id }}-overpayment"><p><strong>Mehr als offen – Guthaben {{ overpayment | money }}</strong></p></div>
+  <div class="field">
+    <label class="checkbox" for="{{ pay_id }}-confirm_overpayment">
+      <input id="{{ pay_id }}-confirm_overpayment" name="confirm_overpayment" type="checkbox" value="1" required aria-describedby="{{ pay_id }}-overpayment{% if pay_errors.get('confirm_overpayment') %} {{ pay_id }}-confirm_overpayment-error{% endif %}"{% if pay_errors.get('confirm_overpayment') %} aria-invalid="true"{% endif %}{% if pay_form.get('confirm_overpayment') | string == '1' %} checked{% endif %}>
+      <span>Ich möchte den höheren Betrag als Guthaben erfassen.</span>
+    </label>
+    {{ payment_error('confirm_overpayment') }}
+  </div>
+  {% elif pay_errors.get('confirm_overpayment') %}
+  <div class="field">{{ payment_error('confirm_overpayment') }}</div>
+  {% endif %}
+  <p class="payment-disclaimer muted">Zahlungsübersicht – keine Rechnung.</p>
+  <div class="payment-form-actions"><button class="btn primary" type="submit">Zahlung erfassen</button></div>
+</form>
+{% endif %}

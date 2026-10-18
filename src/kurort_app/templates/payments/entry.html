@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Zahlung · {{ r.code }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Pfad"><a href="/reservierungen/{{ r.id }}">{{ r.code }}</a> / Zahlung</nav>
+<div class="page-header"><div><span class="eyebrow">{{ r.code }}</span><h1>Zahlung</h1><p>{{ r.primary_guest.full_name if r.primary_guest else r.code }}</p></div></div>
+{% include "payments/_card.html" %}
+<a class="btn" href="{{ payment_next }}">Zurück</a>
+{% endblock %}

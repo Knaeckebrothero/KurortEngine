@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{{ 'Rechnung offen' if view == 'rechnung' else 'Offene Beträge' }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ 'Rechnung offen' if view == 'rechnung' else 'Offene Beträge' }}</h1><p>Zahlungsübersicht – keine Rechnung.</p></div>
+  <div class="page-actions"><a class="btn" href="/abreisen">Zu den Abreisen</a></div>
+</div>
+<nav class="chips payment-tabs" aria-label="Zahlungsansicht">
+  <a class="chip" href="/zahlungen/offen"{% if view == 'offen' %} aria-current="true"{% endif %}>Offene Beträge</a>
+  <a class="chip" href="/zahlungen/offen?ansicht=rechnung"{% if view == 'rechnung' %} aria-current="true"{% endif %}>Rechnung offen</a>
+</nav>
+{% if view == 'rechnung' %}
+<section class="card" aria-label="Ausstehende Zahlungseingänge">
+  {% if transfers %}
+  <table class="table payment-queue payment-transfers">
+    <caption class="sr-only">Rechnung offen – Zahlungseingänge erfassen</caption>
+    <thead><tr><th scope="col">Zahlende Person oder Firma</th><th scope="col">Zahlungsart</th><th scope="col">Betrag</th><th scope="col">Seit</th><th scope="col">Eingang erfassen</th></tr></thead>
+    <tbody>
+      {% for p in transfers %}
+      {% set reservation = p.reservation %}
+      {% set guest = reservation.primary_guest %}
+      {% set receipt_error = receipt_errors.get(p.id) %}
+      <tr data-payment-id="{{ p.id }}">
+        <td data-label="Zahlende Person oder Firma"><span class="guest-name"><a href="/reservierungen/{{ reservation.id }}#zahlung">{{ p.payer or (guest.full_name if guest else reservation.code) }}</a></span><span class="sub mono">{{ reservation.code }}</span></td>
+        <td data-label="Zahlungsart">{{ p.method.label }}</td>
+        <td class="num payment-money" data-label="Betrag">{{ p.amount | money }}</td>
+        <td class="num" data-label="Seit">{{ p.paid_on | date }}</td>
+        <td class="actions">
+          <form class="payment-receipt" method="post" action="/zahlungen/{{ p.id }}/eingang">
+            <div class="field">
+              <label for="received-{{ p.id }}">Eingangsdatum</label>
+              <input class="input" id="received-{{ p.id }}" name="received_on" type="date" value="{{ receipt_values.get(p.id, business_date) }}" min="{{ p.paid_on }}" max="{{ business_date }}" required{% if receipt_error %} aria-invalid="true" aria-describedby="received-{{ p.id }}-error"{% endif %}>
+              {% if receipt_error %}<span class="error" id="received-{{ p.id }}-error" role="alert">{{ receipt_error }}</span>{% endif %}
+            </div>
+            <button class="btn primary" type="submit">Eingang erfassen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}{{ ui.empty('Keine offenen Rechnungszahlungen', 'Alle erfassten Zahlungseingänge sind geklärt.') }}{% endif %}
+</section>
+{% else %}
+<section class="card" aria-label="Offene Beträge">
+  {% if balances %}
+  <table class="table payment-queue">
+    <caption class="sr-only">Offene Beträge nach Abreise, älteste zuerst</caption>
+    <thead><tr><th scope="col">Abreise</th><th scope="col">Gast</th><th scope="col">Zimmer</th><th scope="col">Offen</th><th scope="col"><span class="sr-only">Aktion</span></th></tr></thead>
+    <tbody>
+      {% for reservation, b in balances %}
+      <tr data-reservation-id="{{ reservation.id }}">
+        <td class="num" data-label="Abreise">{{ reservation.departure | date }}</td>
+        <td data-label="Gast">{{ ui.guest_cell(reservation) }}</td>
+        <td data-label="Zimmer">{{ reservation.room.number if reservation.room else 'Noch nicht zugewiesen' }}</td>
+        <td class="num payment-money" data-label="Offen">{{ b.open | money }}</td>
+        <td class="actions"><a class="btn primary" href="/reservierungen/{{ reservation.id }}#zahlung">Zahlung erfassen</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}{{ ui.empty('Keine offenen Beträge', 'Alle Aufenthalte im Haus und abgereisten Gäste sind bezahlt.') }}{% endif %}
+</section>
+{% endif %}
+{% endblock %}

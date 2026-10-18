@@ -1,0 +1,74 @@
+{% set pay_errors = payment_errors | default({}) %}
+<section class="card payment-card" id="zahlung" aria-labelledby="payment-h">
+  <div class="card-header"><h2 id="payment-h">Zahlung</h2></div>
+  <div class="card-body stack">
+    <div class="payment-summary">
+      <span class="badge {{ 'success' if balance.state == 'bezahlt' and not balance.awaiting else 'warning' }}">{{ payment_label }}</span>
+      <div class="payment-open"><span class="muted">Offen</span><strong class="num">{{ balance.open | money }}</strong></div>
+    </div>
+    {% if balance.state == 'guthaben' and r.status in ['cancelled', 'no_show'] %}
+    <p class="notice warning">Guthaben – Erstattung klären</p>
+    {% endif %}
+    <p class="payment-disclaimer muted">Zahlungsübersicht – keine Rechnung.</p>
+    {% if r.status == 'cancelled' %}
+    {% for field in ['status', 'reason'] %}
+    {% if pay_errors.get(field) %}<div class="notice danger" role="alert"><p>{{ pay_errors[field] }}</p></div>{% endif %}
+    {% endfor %}
+    {% endif %}
+    <details class="payment-disclosure"{% if pay_errors %} open{% endif %}>
+      <summary>Aufschlüsselung & Zahlungsverlauf</summary>
+      <div class="payment-disclosure-body stack">
+        <dl class="facts payment-facts">
+          <dt>Logis</dt><dd class="num">{{ balance.room | money }}</dd>
+          <dt>Kurtaxe</dt><dd class="num">{% if balance.kurtaxe is not none %}{{ balance.kurtaxe | money }}{% else %}<span class="muted">Noch nicht berechnet</span>{% endif %}</dd>
+          <dt>Gesamt</dt><dd class="num">{{ balance.due | money }}</dd>
+          <dt>Bezahlt</dt><dd class="num">{{ balance.paid | money }}</dd>
+          <dt>Offen</dt><dd class="num"><strong>{{ balance.open | money }}</strong></dd>
+          {% if balance.awaiting > 0 %}<dt>Rechnung offen</dt><dd class="num">{{ balance.awaiting | money }}</dd>{% endif %}
+        </dl>
+        {% if r.payments %}
+        <ol class="payment-history" aria-label="Zahlungsverlauf">
+          {% for p in r.payments %}
+          {% set reason_key = 'reason_' ~ p.id %}
+          <li class="payment-history-item{% if p.cancelled_at %} payment-cancelled{% endif %}">
+            <div class="payment-history-heading">
+              {% if p.cancelled_at %}<s>{% endif %}
+              <span class="num">{{ p.paid_on | date }}</span> · {{ p.method.label }} · <strong class="num">{{ p.amount | money }}</strong>
+              {% if p.cancelled_at %}</s>{% endif %}
+            </div>
+            {% if p.payer %}<span class="sub">Zahlende Person oder Firma: {{ p.payer }}</span>{% endif %}
+            {% if p.note %}<p class="payment-note">{{ p.note }}</p>{% endif %}
+            <span class="sub">Erfasst von {{ p.recorded_by }} · {{ p.recorded_at | date }} {{ p.recorded_at | time }}</span>
+            {% if p.cancelled_at %}
+            <p class="payment-cancel-reason"><strong>Storniert:</strong> {{ p.cancel_reason }}<span class="sub">{{ p.cancelled_by }} · {{ p.cancelled_at | date }} {{ p.cancelled_at | time }}</span></p>
+            {% else %}
+            {% if p.received_on %}<span class="sub">Eingegangen am {{ p.received_on | date }}</span>
+            {% else %}<span class="sub">Rechnung offen · Eingang noch nicht erfasst</span>{% endif %}
+            <details class="payment-disclosure payment-cancel"{% if pay_errors.get(reason_key) %} open{% endif %}>
+              <summary>Zahlung stornieren …</summary>
+              <form class="payment-disclosure-body stack" method="post" action="/reservierungen/{{ r.id }}/zahlungen/{{ p.id }}/stornieren">
+                <input type="hidden" name="next" value="{{ payment_next }}">
+                <div class="field">
+                  <label for="payment-{{ p.id }}-reason">Grund der Stornierung</label>
+                  <input class="input" id="payment-{{ p.id }}-reason" name="reason" type="text" maxlength="200" required{% if pay_errors.get(reason_key) %} aria-invalid="true" aria-describedby="payment-{{ p.id }}-reason-error"{% endif %}>
+                  {% if pay_errors.get(reason_key) %}<span class="error" id="payment-{{ p.id }}-reason-error">{{ pay_errors[reason_key] }}</span>{% endif %}
+                </div>
+                <p class="muted payment-note">Nur zur Korrektur. Eine Stornierung ist keine Erstattung und kann nicht rückgängig gemacht werden.</p>
+                <button class="btn danger" type="submit">Zahlung stornieren</button>
+              </form>
+            </details>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ol>
+        {% else %}<p class="muted payment-note">Noch keine Zahlungen erfasst.</p>{% endif %}
+      </div>
+    </details>
+    {% if r.status != 'cancelled' %}
+    <details class="payment-disclosure payment-entry"{% if pay_errors or (overpayment is defined and overpayment is not none) %} open{% endif %}>
+      <summary>Zahlung erfassen</summary>
+      <div class="payment-disclosure-body">{% include "payments/_form.html" %}</div>
+    </details>
+    {% endif %}
+  </div>
+</section>

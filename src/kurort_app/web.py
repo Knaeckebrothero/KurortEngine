@@ -58,6 +58,7 @@ STATUS_LABELS = {
     "cancelled": "Storniert",
     "no_show": "No-Show",
 }
+PAYMENT_STATE_LABELS = {"bezahlt": "Bezahlt", "offen": "Offen", "guthaben": "Guthaben"}
 CHANNEL_LABELS = {
     "direct": "Direkt",
     "phone": "Telefon",
