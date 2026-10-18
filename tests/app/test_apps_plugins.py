@@ -39,6 +39,7 @@ def test_demo_reset_installs_and_runs_hook(db, app_definitions):
     from kurort_app.seed import seed_demo_data
 
     for _ in range(2):
+        db.expunge_all()
         assert seed_demo_data(db, reset=True, anchor=date(2026, 10, 14)) > 0
         assert db.get(AppInstallation, "geraetecheck").enabled
         rows = db.scalars(
