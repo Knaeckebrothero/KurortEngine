@@ -711,7 +711,7 @@
     setTageCookie(null);
   }
 
-  const WIDGET_LABEL = { metrics: "Kennzahlen", arrivals: "Anreisen", hints: "Hinweise", occupancy: "Belegung" };
+  const WIDGET_LABEL = { metrics: "Kennzahlen", today: "Heute", occupancy: "Belegung" };
 
   /** Apply the saved layout on the dashboard. Returns a URL when the chart needs a reload. */
   function applyDashboard({ force = false } = {}) {
@@ -725,6 +725,10 @@
 
     const config = loadDashboardConfig();
     if (!config) return null;
+    if (Array.isArray(config.widgets)) {
+      const present = new Set(widgets.map((el) => el.dataset.widget));
+      config.widgets = config.widgets.filter((id) => present.has(id));
+    }
     const urlDays = new URLSearchParams(window.location.search).get("tage");
     if (config.occupancy_days && Number(chart.dataset.occupancyDays) !== config.occupancy_days && (force || !urlDays)) {
       return `/?tage=${config.occupancy_days}`;

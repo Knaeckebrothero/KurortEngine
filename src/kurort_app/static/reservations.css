@@ -227,3 +227,15 @@
   .plan { --room-col: 96px; max-height: none; }
   .plan-cat { display: none; }
 }
+
+@media (max-width: 860px) {
+  .res-layout > * { min-width: 0; }
+  .guest-item .badge { white-space: normal; }
+  .res-table thead { display: none; }
+  .res-table, .res-table tbody, .res-table tr, .res-table td { display: block; width: 100%; }
+  .res-table tr { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+  .res-table td { padding: var(--space-1) 0; border: 0; }
+  .res-table .res-col-channel, .res-table .res-col-amount { display: none; }
+  .res-table td.actions .btn { min-height: 44px; width: 100%; }
+  .res-pager { flex-wrap: wrap; }
+}

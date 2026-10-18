@@ -22,7 +22,7 @@ Intent = Literal[
     "unknown",
 ]
 HighlightTarget = Literal["room-row", "reservation-row", "widget"]
-WIDGETS = ("metrics", "arrivals", "hints", "occupancy")
+WIDGETS = ("metrics", "today", "occupancy")
 ENGINE = "demo-rules"
 
 
