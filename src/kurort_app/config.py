@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     hotel_name: str = "Hotel Rheinland"
     hotel_city: str = "Bad Orb"
     avs_url: str | None = None
+    app_definition_dirs: str = ""
     # Pin "today" for demos and tests (ISO date). Unset = the real date.
     today: date | None = None
     # Tourist-tax statute profile loaded via kurort_engine.rates.load_profile.

@@ -1,0 +1,67 @@
+slug: geraetecheck
+version: 1
+title: Gerätecheck
+description: Geräte täglich prüfen.
+icon: thermometer
+roles: {view: [rezeption], edit: [rezeption]}
+collections:
+  - key: geraete
+    title: Geräte
+    item: Gerät
+    master: true
+    title_field: name
+    list_fields: [name, soll_min, soll_max, pruefung_bis]
+    order_by: name
+    roles: {edit: []}
+    fields:
+      - {key: name, label: Name, type: text, required: true, max_length: 80}
+      - {key: soll_min, label: Soll min, type: decimal, decimals: 1, unit: °C}
+      - {key: soll_max, label: Soll max, type: decimal, decimals: 1, unit: °C}
+      - {key: aktiv, label: Aktiv, type: boolean, default: true}
+      - {key: intervall, label: Intervall, type: integer, default: 1, min: 1}
+      - {key: pruefung_bis, label: Prüfung gültig bis, type: date, default: today+3}
+      - {key: ausgemustert, label: Ausgemustert, type: boolean}
+  - key: messungen
+    title: Messungen
+    item: Messung
+    title_field: geraet
+    date_field: gemessen_am
+    list_fields: [gemessen_am, geraet, temperatur, mitarbeiter]
+    order_by: -gemessen_am
+    fields:
+      - {key: geraet, label: Gerät, type: reference, collection: geraete, required: true}
+      - {key: gemessen_am, label: Zeitpunkt, type: datetime, required: true, default: now}
+      - key: temperatur
+        label: Temperatur
+        type: decimal
+        decimals: 1
+        unit: °C
+        required: true
+        min: -40
+        max: 100
+        range:
+          min: {from: geraet.soll_min}
+          max: {from: geraet.soll_max}
+          severity: warn
+        require_when_out_of_range: [massnahme]
+      - {key: massnahme, label: Maßnahme, type: textarea, help: Bei Abweichungen die Korrektur eintragen., placeholder: 'Was wurde getan?'}
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff, default: current_user}
+      - {key: tag, label: Tag, type: date, default: today}
+      - {key: zeit, label: Uhrzeit, type: time}
+      - {key: anzahl, label: Anzahl, type: integer}
+      - {key: kontrolliert, label: Kontrolliert, type: boolean}
+      - {key: zustand, label: Zustand, type: select, options: [{key: gut, label: Gut}, {key: defekt, label: Defekt}]}
+      - {key: merkmale, label: Merkmale, type: multiselect, options: [{key: innen, label: Innen}, {key: aussen, label: Außen}]}
+      - {key: zimmer, label: Zimmer, type: room}
+schedules:
+  - {key: taeglich, title: Gerät prüfen, target: geraete, record: messungen, via: geraet, at_field: gemessen_am, every_days: 1, when: aktiv}
+alerts:
+  - {key: abgelaufen, title: Prüfplakette, collection: geraete, field: pruefung_bis, offset_days: 0, warn_days: 30, unless: ausgemustert}
+reports:
+  - key: monat
+    title: Geräteprotokoll
+    sections:
+      - {collection: messungen, columns: [gemessen_am, geraet, temperatur, mitarbeiter, massnahme]}
+views:
+  - {key: auswertung, title: Auswertung, handler: 'geraetecheck:auswertung'}
+demo: geraetecheck:seed_demo

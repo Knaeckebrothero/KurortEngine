@@ -7,6 +7,7 @@ settings, so a misconfigured instance stops at startup, not at first login.
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import FastAPI
@@ -16,9 +17,10 @@ from sqlalchemy import text
 from starlette.middleware.sessions import SessionMiddleware
 
 from kurort_app import __version__, auth
+from kurort_app.apps.registry import AppRegistry
 from kurort_app.config import Settings, get_settings
 from kurort_app.db import get_engine
-from kurort_app.routers import assistant, checkin, front_desk, reservations, seminar
+from kurort_app.routers import apps, assistant, checkin, front_desk, reservations, seminar
 from kurort_app.web import STATIC_DIR
 
 
@@ -28,6 +30,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     enabled = auth.auth_enabled(settings)
 
     app = FastAPI(title="KurortEngine", version=__version__, docs_url="/api/docs", redoc_url=None)
+    app.state.apps = AppRegistry([p for p in settings.app_definition_dirs.split(os.pathsep) if p])
+    app.add_exception_handler(apps.AppUnavailable, apps.unavailable_handler)
     app.state.settings = settings
     app.state.oidc = auth.AuthlibProvider(settings) if enabled else None
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -65,6 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(checkin.router)
     app.include_router(assistant.router)
     app.include_router(seminar.router)
+    app.include_router(apps.router)
     return app
 
 

@@ -12,10 +12,13 @@ tests are skipped, or fail when KURORT_TEST_REQUIRE_DB=1.
 
 from __future__ import annotations
 
+import importlib.util
 import os
+import sys
 import tempfile
 from collections.abc import Iterator
 from datetime import date
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -25,6 +28,25 @@ from sqlalchemy.orm import Session
 # The suite exercises the screens without a login; tests/app/test_auth.py
 # builds its own app with KURORT_AUTH=oidc against a fake provider.
 os.environ["KURORT_AUTH"] = "off"
+
+_plugin_spec = importlib.util.spec_from_file_location(
+    "kurort_app.apps.plugins.geraetecheck",
+    Path(__file__).parent / "fixtures/apps/geraetecheck_plugin.py",
+)
+_plugin = importlib.util.module_from_spec(_plugin_spec)
+sys.modules[_plugin_spec.name] = _plugin
+_plugin_spec.loader.exec_module(_plugin)
+
+
+@pytest.fixture
+def app_definitions(monkeypatch):
+    from kurort_app.config import get_settings
+
+    monkeypatch.setenv("KURORT_APP_DEFINITION_DIRS", str(Path(__file__).parent / "fixtures/apps"))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
 
 DEFAULT_TEST_DB_URL = "postgresql+psycopg://kurort:kurort@127.0.0.1:55432/kurort_test"
 BUSINESS_DATE = date(2026, 10, 14)  # a Wednesday; seed data is laid out around it

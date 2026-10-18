@@ -6,6 +6,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from kurort_app import models  # noqa: F401  registers the tables on Base.metadata
+from kurort_app.apps import models as app_models  # noqa: F401
 from kurort_app.config import get_settings
 from kurort_app.db import Base
 

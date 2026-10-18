@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ app.title }}{% endblock %}
+{% macro collection_card(card) %}
+{% set collection = card.collection %}
+{% if ctx.can_view(collection.key) %}
+<article class="card app-panel app-collection-card">
+  <h3>{{ collection.title }}</h3>
+  <p class="app-meta num">{{ card.count }} {{ 'Eintrag' if card.count == 1 else 'Einträge' }}</p>
+  <div class="app-actions">
+    {% if ctx.can_edit(collection.key) %}<a class="btn primary" href="/apps/{{ app.slug }}/{{ collection.key }}/neu">{{ collection.item }} erfassen</a>{% endif %}
+    <a class="btn" href="/apps/{{ app.slug }}/{{ collection.key }}">Alle anzeigen<span class="sr-only">: {{ collection.title }}</span></a>
+  </div>
+</article>
+{% endif %}
+{% endmacro %}
+{% block content %}
+<div class="app-page stack">
+  <header class="page-header"><div><h1>{{ app.title }}</h1>{% if app.description %}<p>{{ app.description }}</p>{% endif %}</div></header>
+
+  {% if due %}
+  <section class="card" aria-labelledby="app-due-title">
+    <div class="card-header"><h2 id="app-due-title">Fällig</h2></div>
+    <ul class="app-task-list">
+      {% for item in due %}
+      <li class="app-task">
+        <div class="app-task-body">
+          <h3>{{ row_title(item.record) }}</h3>
+          <p>{{ item.title }}</p>
+          <div class="badges"><span class="badge {{ 'danger' if item.status == 'überfällig' else 'warning' }}">{{ item.status }}</span></div>
+          {% if item.note %}<p class="app-meta">{{ item.note }}</p>{% endif %}
+        </div>
+        {% if due_editable[item.href] %}
+        <a class="btn primary" href="{{ item.href }}">Jetzt erfassen<span class="sr-only">: {{ row_title(item.record) }} · {{ item.title }}</span></a>
+        {% else %}
+        <a class="btn" href="/apps/{{ app.slug }}/{{ item.record.collection }}/{{ item.record.id }}">Eintrag öffnen<span class="sr-only">: {{ row_title(item.record) }}</span></a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if alerts %}
+  <section class="card" aria-labelledby="app-alerts-title">
+    <div class="card-header"><h2 id="app-alerts-title">Warnungen</h2></div>
+    <ul class="app-task-list">
+      {% for item in alerts %}
+      <li class="app-task">
+        <div class="app-task-body">
+          <h3>{{ row_title(item.record) }}</h3>
+          <p>{{ item.title }}</p>
+          <div class="badges"><span class="badge {{ 'danger' if item.status == 'abgelaufen' else 'warning' }}">{{ item.status }}</span></div>
+          {% if item.note %}<p class="app-meta">{{ item.note }}</p>{% endif %}
+        </div>
+        <a class="btn" href="{{ item.href }}">Eintrag öffnen<span class="sr-only">: {{ row_title(item.record) }}</span></a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if not due and not alerts %}<div class="notice" role="status"><p>Alles erledigt.</p></div>{% endif %}
+
+  {% if deviations %}
+  <section class="card" aria-labelledby="app-deviations-title">
+    <div class="card-header"><h2 id="app-deviations-title">Abweichungen <span class="app-meta">· letzte 7 Tage</span></h2></div>
+    <ul class="app-task-list">
+      {% for row in deviations %}
+      <li class="app-task">
+        <div class="app-task-body">
+          <h3>{{ row_title(row) }}</h3>
+          <p class="app-meta">{{ app.collection(row.collection).title }} · {{ (row.updated_at or row.created_at)|date }} {{ (row.updated_at or row.created_at)|time }}</p>
+          <span class="badge warning">Abweichung</span>
+        </div>
+        <a class="btn" href="/apps/{{ app.slug }}/{{ row.collection }}/{{ row.id }}">Eintrag öffnen<span class="sr-only">: {{ row_title(row) }}</span></a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if cards %}
+  <section class="stack" aria-labelledby="app-collections-title">
+    <h2 id="app-collections-title">Einträge</h2>
+    <div class="app-collection-grid">{% for card in cards %}{{ collection_card(card) }}{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  {% if views or reports_allowed %}
+  <nav class="app-actions" aria-label="Auswertungen">
+    {% for view in views %}<a class="btn" href="/apps/{{ app.slug }}/ansicht/{{ view.key }}">{{ view.title }}</a>{% endfor %}
+    {% if reports_allowed %}<a class="btn" href="/apps/{{ app.slug }}/bericht">Berichte</a>{% endif %}
+  </nav>
+  {% endif %}
+
+  {% if masters %}
+  <details class="card app-disclosure">
+    <summary>Stammdaten</summary>
+    <div class="app-disclosure-body app-collection-grid">{% for card in masters %}{{ collection_card(card) }}{% endfor %}</div>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}

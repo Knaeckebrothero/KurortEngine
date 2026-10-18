@@ -367,6 +367,9 @@ def seed_demo_data(
 
     assess_seeded_stays(session, created)
     _seed_seminar(session, anchor, created)
+    from kurort_app.apps.demo import seed_apps  # noqa: PLC0415
+
+    seed_apps(session, anchor)
     session.commit()
     return len(created)
 

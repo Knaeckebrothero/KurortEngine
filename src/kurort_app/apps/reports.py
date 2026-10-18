@@ -1,0 +1,129 @@
+"""Period-filtered reports with exact German CSV and portable WinAnsi PDFs."""
+
+import csv
+import io
+import unicodedata
+from datetime import UTC, datetime
+from xml.sax.saxutils import escape
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+from kurort_app.apps import store
+from kurort_app.config import HOTEL_TZ, get_settings
+
+_FALLBACK = str.maketrans({"ł": "l", "Ł": "L", "đ": "d", "Đ": "D", "ø": "o", "Ø": "O"})
+
+
+def _pdf_text(value: str) -> str:
+    out = []
+    for ch in value.translate(_FALLBACK):
+        try:
+            ch.encode("cp1252")
+            out.append(ch)
+        except UnicodeEncodeError:
+            base = "".join(
+                c for c in unicodedata.normalize("NFKD", ch) if not unicodedata.combining(c)
+            )
+            out.append(base if base and base.isascii() else "?")
+    return "".join(out)
+
+
+def build_rows(session, app, section, start, end):
+    collection = app.collection(section.collection)
+    result = []
+    for row in store.query(session, app, collection, von=start, bis=end):
+        cells = [
+            store.display(session, app, collection.field(key), row.data.get(key), unit=False)
+            for key in section.columns
+        ]
+        cells = ["" if value == "–" else value for value in cells]
+        result.append([*cells, "ja" if row.out_of_range else "nein"])
+    return result
+
+
+def csv_export(session, app, collection, start, end, *, columns=None):
+    from kurort_app.apps.schema import ReportSection
+
+    collection = app.collection(collection) if isinstance(collection, str) else collection
+    columns = columns or [field.key for field in collection.fields]
+    section = ReportSection(collection=collection.key, columns=columns)
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, delimiter=";", lineterminator="\r\n")
+    writer.writerow([*[collection.field(key).label for key in columns], "Abweichung"])
+    writer.writerows(build_rows(session, app, section, start, end))
+    return stream.getvalue().encode("utf-8-sig")
+
+
+def pdf_export(session, app, report, start, end, username):
+    settings = get_settings()
+    size = landscape(A4) if any(len(s.columns) > 5 for s in report.sections) else A4
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=size,
+        rightMargin=32,
+        leftMargin=32,
+        topMargin=32,
+        bottomMargin=32,
+        title=report.title,
+        author=settings.hotel_name,
+    )
+    styles = getSampleStyleSheet()
+
+    def paragraph(text, style="BodyText"):
+        return Paragraph(escape(_pdf_text(str(text))), styles[style])
+
+    story = [
+        paragraph(settings.hotel_name, "Title"),
+        paragraph(report.title, "Heading1"),
+        paragraph(f"{start:%d.%m.%Y} bis {end:%d.%m.%Y}"),
+        paragraph(
+            f"Erstellt am {datetime.now(UTC).astimezone(HOTEL_TZ):%d.%m.%Y %H:%M} von {username}"
+        ),
+        Spacer(1, 16),
+    ]
+    for section in report.sections:
+        collection = app.collection(section.collection)
+        story.append(paragraph(collection.title, "Heading2"))
+        headings = [*[collection.field(key).label for key in section.columns], "Abweichung"]
+        rows = build_rows(session, app, section, start, end)
+        rendered = [[paragraph(cell) for cell in headings]]
+        for row in rows:
+            rendered.append(
+                [
+                    paragraph(
+                        cell if i != len(row) - 1 else ("Abweichung" if cell == "ja" else "–")
+                    )
+                    for i, cell in enumerate(row)
+                ]
+            )
+        table = Table(
+            rendered,
+            repeatRows=1,
+            colWidths=[doc.width / len(headings)] * len(headings),
+            hAlign="LEFT",
+        )
+        table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F0F3F4")),
+                    ("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#C8D1D5")),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
+        story.extend([table, Spacer(1, 16)])
+    story.extend(
+        [
+            Spacer(1, 24),
+            paragraph("Unterschrift Verantwortliche/r: ________________________"),
+            Spacer(1, 12),
+            paragraph("Datum: ________________________"),
+        ]
+    )
+    doc.build(story)
+    return buf.getvalue()

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ row_title(row) }} · {{ app.title }}{% endblock %}
+{% block content %}
+<div class="app-page stack">
+  <nav class="breadcrumb" aria-label="Pfad"><a href="/apps/{{ app.slug }}">{{ app.title }}</a><span aria-hidden="true"> › </span><a href="/apps/{{ app.slug }}/{{ collection.key }}">{{ collection.title }}</a><span aria-hidden="true"> › </span>{{ row_title(row) }}</nav>
+  <header class="page-header">
+    <div><p class="eyebrow">{{ collection.item }}</p><h1>{{ row_title(row) }}</h1>{% if row.out_of_range %}<div class="badges"><span class="badge warning">Abweichung</span></div>{% endif %}</div>
+    {% if ctx.can_edit(collection.key) %}<div class="page-actions"><a class="btn primary" href="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}/bearbeiten">Bearbeiten</a></div>{% endif %}
+  </header>
+
+  <section class="card app-panel stack" aria-labelledby="app-values-title">
+    <h2 id="app-values-title">Angaben</h2>
+    <dl class="app-facts">
+      {% for field in collection.fields %}<div><dt>{{ field.label }}</dt><dd>{{ show_value(row, field.key) }}</dd></div>{% endfor %}
+    </dl>
+  </section>
+
+  <section class="card app-panel stack" aria-labelledby="app-metadata-title">
+    <h2 id="app-metadata-title">Erfasst und geändert</h2>
+    <dl class="app-facts">
+      <div><dt>Erfasst von</dt><dd>{{ row.created_by }}</dd></div>
+      <div><dt>Erfasst am</dt><dd class="num">{{ row.created_at|date }} · {{ row.created_at|time }} Uhr</dd></div>
+      {% if row.updated_at %}
+      <div><dt>Zuletzt geändert von</dt><dd>{{ row.updated_by }}</dd></div>
+      <div><dt>Zuletzt geändert am</dt><dd class="num">{{ row.updated_at|date }} · {{ row.updated_at|time }} Uhr</dd></div>
+      {% endif %}
+    </dl>
+  </section>
+
+  {% if legacy %}
+  <details class="card app-disclosure">
+    <summary>Weitere Felder (ältere Version)</summary>
+    <div class="app-disclosure-body">
+      <p class="app-meta">Diese Angaben gehören zu einer früheren Definition und bleiben unverändert erhalten.</p>
+      <dl class="app-facts">{% for key, value in legacy.items() %}<div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+    </div>
+  </details>
+  {% endif %}
+
+  {% if related %}
+  <section class="stack" aria-labelledby="app-related-title">
+    <h2 id="app-related-title">Verknüpfte Einträge</h2>
+    {% for group in related %}
+    {% if ctx.can_view(group.collection.key) %}
+    <section class="card" aria-labelledby="app-related-{{ group.collection.key }}">
+      <div class="card-header"><h3 id="app-related-{{ group.collection.key }}">{{ group.collection.title }}</h3></div>
+      <ul class="app-task-list">
+        {% for linked in group.rows %}
+        <li class="app-task">
+          <div class="app-task-body"><h3>{{ row_title(linked) }}</h3><p class="app-meta num">{{ linked.created_at|date }} · {{ linked.created_at|time }} Uhr</p>{% if linked.out_of_range %}<span class="badge warning">Abweichung</span>{% endif %}</div>
+          <a class="btn" href="/apps/{{ app.slug }}/{{ group.collection.key }}/{{ linked.id }}">Öffnen<span class="sr-only">: {{ row_title(linked) }}</span></a>
+        </li>
+        {% else %}<li class="app-panel muted">Keine verknüpften Einträge vorhanden.</li>{% endfor %}
+      </ul>
+      <div class="app-panel app-actions"><a class="btn" href="{{ group.url }}">Alle anzeigen<span class="sr-only">: {{ group.collection.title }}</span></a></div>
+    </section>
+    {% endif %}
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <details class="card app-disclosure">
+    <summary>Änderungsverlauf{% if history %} · {{ history|length }}{% endif %}</summary>
+    <div class="app-disclosure-body">
+      <ol class="app-history stack">
+        {% for event in history %}
+        <li>
+          <p>{{ event.summary }}</p>
+          <p class="app-meta">{{ event.actor }} · {{ event.at|date }} · {{ event.at|time }} Uhr</p>
+          {% if event.payload %}<details class="app-disclosure"><summary>Änderungsdetails</summary><pre class="app-audit-payload">{{ event.payload|tojson(indent=2) }}</pre></details>{% endif %}
+        </li>
+        {% else %}<li class="muted">Noch keine Änderungen dokumentiert.</li>{% endfor %}
+      </ol>
+    </div>
+  </details>
+
+  {% if ctx.can_edit(collection.key) %}
+  <details class="card app-disclosure app-destructive">
+    <summary>Löschen …</summary>
+    <div class="app-disclosure-body stack">
+      <p>„{{ row_title(row) }}“ wirklich löschen? Der Eintrag wird aus Listen und Berichten entfernt. Die Änderung bleibt im Änderungsverlauf dokumentiert.</p>
+      <form method="post" action="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}/loeschen"><button class="btn danger" type="submit">Eintrag löschen</button></form>
+    </div>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.item }} {{ 'bearbeiten' if row else 'erfassen' }} · {{ app.title }}{% endblock %}
+{% macro attributes(field) -%}
+{% if field.required %} required{% endif %}
+{% if errors.get(field.key) %} aria-invalid="true"{% endif %}
+{% if field.help or errors.get(field.key) or field.type == 'multiselect' %} aria-describedby="{% if field.help %}app-{{ field.key }}-help {% endif %}{% if field.type == 'multiselect' %}app-{{ field.key }}-selection-help {% endif %}{% if errors.get(field.key) %}app-{{ field.key }}-error{% endif %}"{% endif %}
+{%- endmacro %}
+{% block content %}
+<div class="app-page stack">
+  <nav class="breadcrumb" aria-label="Pfad">
+    <a href="/apps/{{ app.slug }}">{{ app.title }}</a><span aria-hidden="true"> › </span>
+    <a href="/apps/{{ app.slug }}/{{ collection.key }}">{{ collection.title }}</a>
+    {% if row %}<span aria-hidden="true"> › </span><a href="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}">{{ row_title(row) }}</a>{% endif %}
+    <span aria-hidden="true"> › </span>{{ 'Bearbeiten' if row else 'Erfassen' }}
+  </nav>
+  <header class="page-header"><div><h1>{{ collection.item }} {{ 'bearbeiten' if row else 'erfassen' }}</h1><p>Mit „Pflichtfeld“ markierte Angaben sind erforderlich.</p></div></header>
+
+  {% if errors %}
+  <div class="notice danger app-error-summary" role="alert" tabindex="-1" id="app-error-summary">
+    <div>
+      <h2>Bitte prüfen Sie Ihre Angaben</h2>
+      <p>Ihre Eingaben bleiben erhalten. Korrigieren Sie die markierten Felder und speichern Sie erneut.</p>
+      <ul>
+        {% for key, message in errors.items() %}
+        {% set field = collection.fields|selectattr('key', 'equalto', key)|first %}
+        <li>{% if field is defined %}<a href="#app-{{ key }}">{{ field.label }}: {{ message }}</a>{% else %}{{ message }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <form class="app-form stack" method="post" action="{{ action }}" novalidate>
+    <div class="card app-panel stack">
+      {% for field in collection.fields %}
+      {% set value = data.get(field.key, '') %}
+      <div class="field">
+        <label for="app-{{ field.key }}">{{ field.label }}{% if field.unit %} ({{ field.unit }}){% endif %}{% if field.required %} <span class="app-required">· Pflichtfeld</span>{% endif %}</label>
+        {% if field.type == 'textarea' %}
+        <textarea class="textarea" id="app-{{ field.key }}" name="{{ field.key }}" rows="4" placeholder="{{ field.placeholder }}"{% if field.max_length %} maxlength="{{ field.max_length }}"{% endif %}{{ attributes(field) }}>{{ value if value is not none else '' }}</textarea>
+        {% elif field.type == 'boolean' %}
+        <div class="app-checkbox">
+          <input id="app-{{ field.key }}" name="{{ field.key }}" type="checkbox" value="true"{% if value is sameas true or value in ['true', 'True', '1', 'on', 'ja'] %} checked{% endif %}{{ attributes(field) }}>
+          <span aria-hidden="true">Ja</span>
+        </div>
+        {% elif field.type in ['select', 'multiselect', 'room', 'reference'] %}
+        {% set choices = options.get(field.key, []) %}
+        {% set known = choices|map(attribute=0)|map('string')|list %}
+        {% if field.type == 'multiselect' or (field.type == 'select' and choices|length <= 3) %}
+        {% set selected_values = (([value] if value is string else (value or [])) if field.type == 'multiselect' else [value])|map('string')|list %}
+        <div class="app-choices" id="app-{{ field.key }}" role="group" aria-label="{{ field.label }}">
+          {% for option_value, option_label in choices %}
+          <label class="app-choice"><input name="{{ field.key }}" type="{{ 'checkbox' if field.type == 'multiselect' else 'radio' }}" value="{{ option_value }}"{% if option_value|string in selected_values %} checked{% endif %}>{{ option_label }}</label>
+          {% endfor %}
+          {% for selected_value in selected_values if selected_value and selected_value not in known %}<label class="app-choice"><input name="{{ field.key }}" type="{{ 'checkbox' if field.type == 'multiselect' else 'radio' }}" value="{{ selected_value }}" checked>{{ selected_value }} (nicht verfügbar)</label>{% endfor %}
+        </div>
+        {% if field.type == 'multiselect' %}<span class="hint" id="app-{{ field.key }}-selection-help">Mehrfachauswahl möglich.</span>{% elif not field.required %}<label class="app-choice"><input name="{{ field.key }}" type="radio" value=""{% if not value %} checked{% endif %}>Keine Auswahl</label>{% endif %}
+        {% else %}
+        <select class="select" id="app-{{ field.key }}" name="{{ field.key }}"{{ attributes(field) }}>
+          <option value=""{% if value is none or value|string == '' %} selected{% endif %}>Bitte auswählen</option>
+          {% if value is not none and value|string != '' and value|string not in known %}<option value="{{ value }}" selected>{{ value }} (nicht verfügbar)</option>{% endif %}
+          {% for option_value, option_label in choices %}<option value="{{ option_value }}"{% if option_value|string == value|string %} selected{% endif %}>{{ option_label }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        {% else %}
+        <input class="input" id="app-{{ field.key }}" name="{{ field.key }}"
+               type="{{ 'datetime-local' if field.type == 'datetime' else field.type if field.type in ['date', 'time'] else 'text' }}"
+               value="{{ value if value is not none else '' }}"
+               {% if field.type == 'decimal' %}inputmode="decimal"{% elif field.type == 'integer' %}inputmode="numeric"{% endif %}
+               {% if field.type in ['text', 'staff', 'integer', 'decimal'] %}placeholder="{{ field.placeholder }}"{% endif %}
+               {% if field.max_length %}maxlength="{{ field.max_length }}"{% endif %}{{ attributes(field) }}>
+        {% endif %}
+        {% if field.help %}<span class="hint" id="app-{{ field.key }}-help">{{ field.help }}</span>{% endif %}
+        {% if errors.get(field.key) %}<span class="error" id="app-{{ field.key }}-error">{{ errors[field.key] }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="app-actions app-form-actions">
+      <a class="btn ghost" href="/apps/{{ app.slug }}/{{ collection.key }}{% if row %}/{{ row.id }}{% endif %}">Abbrechen</a>
+      <button class="btn primary" type="submit">Speichern</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}{% if errors %}<script>document.getElementById('app-error-summary')?.focus();</script>{% endif %}{% endblock %}

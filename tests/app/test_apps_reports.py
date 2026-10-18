@@ -1,0 +1,72 @@
+"""Period-filtered report rows, PDF envelope and exact CSV bytes."""
+
+from datetime import date
+
+from kurort_app.apps.registry import AppRegistry
+
+
+def test_pdf_rows_and_exact_german_csv(db, app_definitions):
+    from kurort_app.apps import reports, store
+
+    app = AppRegistry().valid["geraetecheck"]
+    device = store.create(db, app, "geraete", {"name": "Küche"})
+    data = {
+        "geraet": device.id,
+        "gemessen_am": "2026-10-14T07:30",
+        "temperatur": "3,5",
+        "mitarbeiter": "Maria",
+    }
+    reading = store.create(db, app, "messungen", data)
+    store.create(db, app, "messungen", {**data, "gemessen_am": "2026-09-14T07:30"})
+    start, end = date(2026, 10, 1), date(2026, 10, 14)
+    report = app.reports[0]
+    rows = reports.build_rows(db, app, report.sections[0], start, end)
+    assert len(rows) == 1 and "14.10.2026 07:30" in rows[0]
+    expected = "\ufeffZeitpunkt;Gerät;Temperatur;Mitarbeiter;Maßnahme;Abweichung\r\n14.10.2026 07:30;Küche;3,5;Maria;;nein\r\n".encode()
+    assert (
+        reports.csv_export(db, app, "messungen", start, end, columns=report.sections[0].columns)
+        == expected
+    )
+    pdf = reports.pdf_export(db, app, report, start, end, "m.schmidt")
+    assert pdf.startswith(b"%PDF-")
+    store.delete(db, app, reading)
+    assert reports.build_rows(db, app, report.sections[0], start, end) == []
+    assert (
+        reports.csv_export(
+            db, app, "messungen", start, end, columns=report.sections[0].columns
+        ).count(b"\r\n")
+        == 1
+    )
+
+
+def test_http_pdf_and_csv_envelopes_and_report_page(db, app_definitions, client):
+    from kurort_app.apps import store
+    from kurort_app.apps.installations import install
+
+    app = client.app.state.apps.valid["geraetecheck"]
+    install(db, app)
+    device = store.create(db, app, "geraete", {"name": "Küche"})
+    store.create(
+        db,
+        app,
+        "messungen",
+        {
+            "geraet": device.id,
+            "gemessen_am": "2026-10-14T07:30",
+            "temperatur": "3,5",
+            "mitarbeiter": "Maria",
+        },
+    )
+    db.commit()
+    assert "Vormonat" in client.get("/apps/geraetecheck/bericht").text
+    pdf = client.get("/apps/geraetecheck/bericht.pdf?bericht=monat&von=2026-10-01&bis=2026-10-14")
+    assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+    assert "geraetecheck-monat-2026-10-01-2026-10-14.pdf" in pdf.headers["content-disposition"]
+    assert pdf.content.startswith(b"%PDF-")
+    csv = client.get(
+        "/apps/geraetecheck/messungen/export.csv?bericht=monat&von=2026-10-01&bis=2026-10-14"
+    )
+    assert (
+        csv.content
+        == "\ufeffZeitpunkt;Gerät;Temperatur;Mitarbeiter;Maßnahme;Abweichung\r\n14.10.2026 07:30;Küche;3,5;Maria;;nein\r\n".encode()
+    )
