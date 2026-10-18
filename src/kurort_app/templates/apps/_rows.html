@@ -1,0 +1,25 @@
+{% if page == 1 %}<div class="app-panel app-actions"><a class="btn" href="/apps/{{ app.slug }}/{{ collection.key }}/export.csv?{{ {'von': filters.get('von', ''), 'bis': filters.get('bis', '')}|urlencode }}">CSV exportieren</a></div>{% endif %}
+{% for row in rows %}
+<div class="app-record-row">
+  <div class="app-record-main">
+    <a class="app-record-title" href="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}">{{ row_title(row) }}</a>
+  </div>
+  <dl class="app-row-values">
+    {% for key in collection.list_fields[:4] %}
+    <div><dt>{{ collection.field(key).label }}</dt><dd>{{ show_value(row, key) }}</dd></div>
+    {% endfor %}
+  </dl>
+  <div class="app-row-status badges">
+    {% if row.out_of_range %}<span class="badge warning">Abweichung</span>{% endif %}
+    {% for alert in alert_by_id.get(row.id, []) %}
+    <span class="badge {{ 'danger' if alert.status == 'abgelaufen' else 'warning' }}">{{ alert.title }} · {{ alert.status }}{% if alert.note %} · {{ alert.note }}{% endif %}</span>
+    {% endfor %}
+  </div>
+  <a class="btn app-row-action" href="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}">Öffnen<span class="sr-only">: {{ row_title(row) }}</span></a>
+</div>
+{% else %}
+<div class="empty"><strong>Keine Einträge gefunden.</strong>Prüfen Sie den Zeitraum oder setzen Sie die Filter zurück.</div>
+{% endfor %}
+{% if next_url %}
+<a class="btn app-more" href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="this" hx-swap="outerHTML">Weitere anzeigen</a>
+{% endif %}

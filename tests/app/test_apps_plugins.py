@@ -44,3 +44,14 @@ def test_demo_reset_installs_and_runs_hook(db, app_definitions):
         rows = db.scalars(select(AppRecord)).all()
         assert len(rows) == 2
         assert rows[1].out_of_range
+
+
+def test_http_plugin_view_uses_shared_context(db, app_definitions, client):
+    from kurort_app.apps.installations import install
+
+    install(db, client.app.state.apps.valid["geraetecheck"])
+    db.commit()
+    page = client.get("/apps/geraetecheck/ansicht/auswertung")
+    assert page.status_code == 200 and "Auswertung" in page.text
+    assert client.post("/apps/geraetecheck/ansicht/auswertung").status_code == 200
+    assert db.scalars(select(AuditEvent).where(AuditEvent.action == "app_record.created")).one()

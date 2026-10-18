@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Berichte · {{ app.title }}{% endblock %}
+{% block content %}
+<div class="app-page stack">
+  <nav class="breadcrumb" aria-label="Pfad"><a href="/apps/{{ app.slug }}">{{ app.title }}</a><span aria-hidden="true"> › </span>Berichte</nav>
+  <header class="page-header"><div><h1>Berichte</h1><p>Bericht und Zeitraum wählen, anschließend als PDF oder CSV herunterladen.</p></div></header>
+
+  {% if reports %}
+  <form class="card app-panel app-form stack" method="get" action="/apps/{{ app.slug }}/bericht">
+    <div class="field">
+      <label for="app-report">Bericht</label>
+      <select class="select" id="app-report" name="bericht" required>
+        {% for report in reports %}<option value="{{ report.key }}"{% if selected and report.key == selected.key %} selected{% endif %}>{{ report.title }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field"><label for="app-report-from">Von</label><input class="input" id="app-report-from" name="von" type="date" value="{{ start.isoformat() }}" required></div>
+    <div class="field"><label for="app-report-until">Bis</label><input class="input" id="app-report-until" name="bis" type="date" value="{{ end.isoformat() }}" required></div>
+    <div class="app-actions">
+      <button class="btn" type="submit">Auswahl übernehmen</button>
+      <a class="btn ghost" href="/apps/{{ app.slug }}/bericht?{{ {'bericht': selected.key if selected else reports[0].key, 'von': previous_start.isoformat(), 'bis': previous_end.isoformat()}|urlencode }}">Vormonat</a>
+    </div>
+  </form>
+
+  {% if selected %}
+  <section class="card app-panel stack" aria-labelledby="app-selected-report">
+    <div><h2 id="app-selected-report">{{ selected.title }}</h2><p class="app-meta num">{{ start|date }} bis {{ end|date }}</p></div>
+    <div class="app-actions">
+      <a class="btn primary" href="/apps/{{ app.slug }}/bericht.pdf?{{ {'bericht': selected.key, 'von': start.isoformat(), 'bis': end.isoformat()}|urlencode }}">PDF herunterladen</a>
+      {% for section in selected.sections %}
+      <a class="btn" href="/apps/{{ app.slug }}/{{ section.collection }}/export.csv?{{ {'bericht': selected.key, 'von': start.isoformat(), 'bis': end.isoformat()}|urlencode }}">CSV · {{ app.collection(section.collection).title }}</a>
+      {% endfor %}
+    </div>
+    <p class="app-meta">Die Downloads enthalten die Einträge des ausgewählten Zeitraums. Eine erzeugte Datei ist noch nicht übermittelt.</p>
+  </section>
+  {% else %}<div class="notice"><p>Bitte einen Bericht auswählen und die Auswahl übernehmen.</p></div>{% endif %}
+  {% else %}
+  <div class="card empty"><strong>Keine Berichte verfügbar.</strong>Für Ihre Berechtigung ist hier kein Bericht freigegeben.</div>
+  {% endif %}
+</div>
+{% endblock %}

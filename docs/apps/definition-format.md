@@ -118,8 +118,8 @@ reports:
 - Collection keys cannot be `neu`, `bericht`, `ansicht`, `installieren`,
   `aktivieren`, `deaktivieren`, `deinstallieren` or `export` (reserved routes).
 - Names and labels are non-empty strings. Technical keys stay stable; UI copy
-  should be short German text. Integers are integers, not quoted numbers or
-  booleans; numeric bounds are finite YAML numbers, not quoted strings.
+  should be short German text. The version is an integer, not a quoted number or
+  boolean; numeric bounds must be finite.
 - All collection and field references are checked within this app, never
   against another app. Ordinary field references are single keys; only range
   sources use a two-part path. There are no formulas, computed fields,
@@ -146,8 +146,7 @@ reports:
 
 `roles` has two keys: `view` and `edit`, each a list of role names from
 `kurort_app.auth.ROLE_LABELS`. Currently these are `rezeption` and `leitung`;
-future features may add roles to that authoritative mapping. Unknown roles and
-repeated names in one list are errors. `leitung` always has access even when not
+future features may add roles to that authoritative mapping. Unknown roles are errors. `leitung` always has access even when not
 listed, and auth-off permits everything.
 
 At app level both lists are required. On a collection or plugin view, omit
@@ -191,8 +190,8 @@ schedule's `at_field`; it is not an implicit field for `title_field`,
 | `min`, `max` | optional finite numbers | Blocking plausible input limits for `integer`/`decimal`. If both present, `min ≤ max`. |
 | `decimals` | optional integer ≥ 0 | Decimal display precision for numeric fields. |
 | `unit` | optional string | Numeric unit shown with values, e.g. `°C`. |
-| `options` | list of option mappings, `[]` | Required non-empty for `select`/`multiselect`; each option has unique `key` and non-empty `label`. Not allowed on other types. |
-| `collection` | optional collection key | Required for a `reference`; its target collection in the same app. Not allowed on other types. |
+| `options` | list of option mappings, `[]` | Required non-empty for `select`/`multiselect`; each option has unique `key` and non-empty `label`. |
+| `collection` | optional collection key | Required for a `reference`; its target collection in the same app. |
 | `range` | optional range mapping | Expected range for a numeric field; see below. |
 | `require_when_out_of_range` | list of field keys, `[]` | Fields in this collection that must be filled when this field deviates. Requires a `range`; all named fields must exist. |
 
@@ -241,7 +240,7 @@ A `range` is allowed only on `integer` or `decimal`. It has these keys:
 | `max` | optional number or `{from: reference.field}` | Inclusive expected upper bound. |
 | `severity` | `warn` (default) or `block` | Flag-and-save or refuse an out-of-range value. |
 
-At least one bound is required. Two literal bounds must be ordered. A bound's
+A bound's
 `from` must be exactly `<reference field>.<numeric field of its target>`: the
 first field belongs to this collection and is a `reference`; the second is an
 `integer` or `decimal` field of that reference's target. An empty target value
@@ -324,7 +323,7 @@ then optionally digits). Dots, paths, relative imports and fully qualified
 module names are not accepted. The resolver imports only
 `kurort_app.apps.plugins.<module>` and checks that `<function>` is callable.
 It never calls the function while validating a definition. Missing modules,
-import-time exceptions, missing attributes and non-callable attributes are
+missing attributes and non-callable attributes are
 validation errors.
 
 A view mapping has these keys:
@@ -379,8 +378,7 @@ remains unchanged.
 - `.valid` maps slug to `AppDefinition`; `.broken` maps file stem to a list of
   diagnostic strings. Broken files do not prevent other files loading. Duplicate
   file stems across paths are errors: none of the conflicting definitions is
-  usable, rather than one silently overriding another. Missing/unreadable scan
-  directories are reported under their directory name. Valid and broken keys
+  usable, rather than one silently overriding another. Valid and broken keys
   are disjoint.
 - Numeric fields expose `.min`, `.max` and `.range`; range bounds are numbers
   or `RangeSource` models. A `RangeSource` exposes `.from_` (YAML alias `from`;

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Diese App ist gerade nicht verfügbar{% endblock %}
+{% block content %}
+<div class="app-page stack app-status-page">
+  <header class="page-header"><div><h1>Diese App ist gerade nicht verfügbar</h1></div></header>
+  <div class="notice danger" role="status"><p>Die App-Definition konnte nicht geladen werden. Bitte wenden Sie sich an die Leitung. Es können gerade keine Einträge geöffnet oder gespeichert werden.</p></div>
+  {% if errors %}
+  <details class="card app-disclosure">
+    <summary>Fehlerdetails anzeigen</summary>
+    <div class="app-disclosure-body"><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+  </details>
+  {% endif %}
+  <div class="app-actions"><a class="btn" href="/">Zur Übersicht</a></div>
+</div>
+{% endblock %}

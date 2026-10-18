@@ -44,7 +44,7 @@ def typed(field, value):
             raise ValueError
         if kind == "multiselect":
             return list(value) if isinstance(value, (list, tuple)) else [str(value)]
-        return str(value).strip()
+        return str(value).strip() or None
     except (ValueError, TypeError, InvalidOperation, OverflowError) as exc:
         messages = {
             "integer": "Bitte eine ganze Zahl eingeben.",

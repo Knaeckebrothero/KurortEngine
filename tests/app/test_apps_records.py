@@ -168,3 +168,247 @@ def test_defaults_are_business_local_and_query_overrides(definition):
     )
     assert filled["mitarbeiter"] == "m.schmidt"
     assert filled["gemessen_am"] == "2026-10-14T11:30"
+
+
+@pytest.fixture
+def http_app(app_definitions, client, db):
+    from kurort_app.apps.installations import install
+
+    app = client.app.state.apps.valid["geraetecheck"]
+    install(db, app)
+    db.add(Room(number="101", category="Test", floor=1, max_occupancy=1, nightly_rate=0))
+    db.commit()
+    return client, app
+
+
+def test_http_all_types_edit_legacy_backrefs_defaults_and_delete(db, http_app):
+    import re
+
+    client, app = http_app
+    device_response = client.post(
+        "/apps/geraetecheck/geraete/neu",
+        data={
+            "name": "Küche",
+            "aktiv": "true",
+            "soll_min": "0",
+            "soll_max": "7",
+            "pruefung_bis": "2026-10-17",
+        },
+        follow_redirects=False,
+    )
+    assert device_response.status_code == 303
+    device = db.scalars(select(AppRecord).where(AppRecord.collection == "geraete")).one()
+    prefilled = client.get(f"/apps/geraetecheck/messungen/neu?geraet={device.id}").text
+    assert re.search(rf'<option value="{device.id}"[^>]*selected', prefilled)
+    assert re.search(r'name="gemessen_am"[^>]*value="2026-10-14T', prefilled)
+    assert re.search(r'name="mitarbeiter"[^>]*value="rezeption"', prefilled)
+    assert 'value="2026-10-17"' in client.get("/apps/geraetecheck/geraete/neu").text
+    data = {
+        "geraet": str(device.id),
+        "gemessen_am": "2026-10-14T07:30",
+        "temperatur": "8,5",
+        "massnahme": "Tür geschlossen",
+        "mitarbeiter": "Maria",
+        "tag": "2026-10-14",
+        "zeit": "07:30",
+        "anzahl": "2",
+        "kontrolliert": "true",
+        "zustand": "gut",
+        "merkmale": ["innen", "aussen"],
+        "zimmer": "101",
+    }
+    response = client.post("/apps/geraetecheck/messungen/neu", data=data, follow_redirects=False)
+    assert response.status_code == 303
+    assert "Abweichung" in response.headers["location"]
+    row = db.scalars(select(AppRecord).where(AppRecord.collection == "messungen")).one()
+    assert row.data == {
+        **data,
+        "geraet": device.id,
+        "temperatur": "8.5",
+        "gemessen_am": "2026-10-14T05:30:00+00:00",
+        "anzahl": 2,
+        "kontrolliert": True,
+    }
+    detail = client.get(f"/apps/geraetecheck/messungen/{row.id}")
+    assert detail.status_code == 200 and "8,5 °C" in detail.text and "Abweichung" in detail.text
+    backrefs = client.get(f"/apps/geraetecheck/geraete/{device.id}").text
+    assert "Verknüpfte Einträge" in backrefs and f"/messungen/{row.id}" in backrefs
+    row.data = {**row.data, "entfernt": "Bleibt"}
+    db.commit()
+    assert (
+        "Weitere Felder (ältere Version)"
+        in client.get(f"/apps/geraetecheck/messungen/{row.id}").text
+    )
+    app.version = 2
+    edited = client.post(
+        f"/apps/geraetecheck/messungen/{row.id}/bearbeiten",
+        data={**data, "temperatur": "6,0"},
+        follow_redirects=False,
+    )
+    assert edited.status_code == 303
+    db.refresh(row)
+    assert (
+        row.data["entfernt"] == "Bleibt"
+        and row.updated_by == "rezeption"
+        and row.definition_version == 2
+    )
+    event = db.scalars(
+        select(AuditEvent).where(
+            AuditEvent.action == "app_record.updated", AuditEvent.entity_id == str(row.id)
+        )
+    ).one()
+    assert event.payload["changes"]["temperatur"] == ["8.5", "6.0"]
+    assert (
+        client.post(
+            f"/apps/geraetecheck/messungen/{row.id}/loeschen", follow_redirects=False
+        ).status_code
+        == 303
+    )
+    assert client.get(f"/apps/geraetecheck/messungen/{row.id}").status_code == 404
+    assert f'/messungen/{row.id}"' not in client.get("/apps/geraetecheck/messungen").text
+    assert f'/messungen/{row.id}"' not in client.get(f"/apps/geraetecheck/geraete/{device.id}").text
+    assert (
+        b"T\xc3\xbcr geschlossen"
+        not in client.get(
+            "/apps/geraetecheck/messungen/export.csv?von=2026-10-01&bis=2026-10-31"
+        ).content
+    )
+    assert db.scalars(select(AuditEvent).where(AuditEvent.action == "app_record.deleted")).one()
+
+
+@pytest.mark.parametrize(
+    "collection,data,phrase",
+    [
+        ("geraete", {}, "Name ist Pflicht."),
+        ("geraete", {"name": "x" * 81}, "höchstens 80"),
+        ("messungen", {"temperatur": "101"}, "höchstens 100"),
+        ("messungen", {"zustand": "???"}, "gültige Auswahl"),
+        ("messungen", {"geraet": "9999"}, "Eintrag nicht vorhanden"),
+        ("messungen", {"zimmer": "9999"}, "Zimmer nicht vorhanden"),
+    ],
+)
+def test_http_invalid_retains_values_and_never_writes(db, http_app, collection, data, phrase):
+    client, _ = http_app
+    response = client.post(f"/apps/geraetecheck/{collection}/neu", data=data)
+    assert response.status_code == 422
+    assert phrase in response.text and "Bitte prüfen" in response.text
+    assert not db.scalars(select(AppRecord)).all()
+
+
+def test_http_warn_block_open_limits_and_htmx_filters(db, http_app):
+    from kurort_app.apps import store
+
+    client, app = http_app
+    device = store.create(
+        db, app, "geraete", {"name": "Küche", "soll_min": "0", "soll_max": "7", "aktiv": True}
+    )
+    db.commit()
+    data = {"geraet": str(device.id), "gemessen_am": "2026-10-14T07:30", "temperatur": "8,5"}
+    failed = client.post("/apps/geraetecheck/messungen/neu", data=data)
+    assert failed.status_code == 422 and "Bei einer Abweichung ist „Maßnahme" in failed.text
+    assert 'value="8,5"' in failed.text
+    app.collection("messungen").field("temperatur").range.severity = "block"
+    failed = client.post(
+        "/apps/geraetecheck/messungen/neu", data={**data, "massnahme": "Korrektur"}
+    )
+    assert failed.status_code == 422 and "0,0 bis 7,0 °C" in failed.text
+    app.collection("messungen").field("temperatur").range.severity = "warn"
+    assert (
+        client.post(
+            "/apps/geraetecheck/messungen/neu",
+            data={**data, "massnahme": "Korrektur"},
+            follow_redirects=False,
+        ).status_code
+        == 303
+    )
+    page = client.get(
+        "/apps/geraetecheck/messungen?q=KORREKTUR&von=2026-10-14&bis=2026-10-14&abweichungen=1",
+        headers={"HX-Request": "true"},
+    )
+    assert page.status_code == 200 and "Abweichung" in page.text and "<html" not in page.text
+    assert (
+        "Korrektur"
+        not in client.get(
+            "/apps/geraetecheck/messungen?bis=2026-10-13", headers={"HX-Request": "true"}
+        ).text
+    )
+    store.update(db, app, device, {"name": "Küche", "soll_min": "0"})
+    db.commit()
+    assert (
+        client.post(
+            "/apps/geraetecheck/messungen/neu", data=data, follow_redirects=False
+        ).status_code
+        == 303
+    )
+
+
+def test_http_pagination_typed_orders_and_status_panels(db, http_app):
+    import re
+
+    from kurort_app.apps import store
+
+    client, app = http_app
+    device = store.create(
+        db, app, "geraete", {"name": "Küche", "aktiv": True, "pruefung_bis": "2026-10-17"}
+    )
+    for i in range(53):
+        store.create(
+            db,
+            app,
+            "messungen",
+            {
+                "geraet": device.id,
+                "gemessen_am": f"2026-10-13T{(i // 60):02}:{i % 60:02}",
+                "temperatur": str(i),
+            },
+        )
+    db.commit()
+
+    def ids(url):
+        response = client.get(url, headers={"HX-Request": "true"})
+        assert response.status_code == 200 and "<html" not in response.text
+        return re.findall(
+            r'class="app-record-title" href="[^\"]+/(\d+)"', response.text
+        ), response.text
+
+    app.collection("messungen").order_by = "-temperatur"
+    first, text = ids("/apps/geraetecheck/messungen")
+    assert len(first) == 50 and first[0] == "54" and "Weitere anzeigen" in text
+    second, _ = ids("/apps/geraetecheck/messungen?page=2")
+    assert len(second) == 3 and not set(first) & set(second)
+    app.collection("messungen").order_by = "-gemessen_am"
+    assert ids("/apps/geraetecheck/messungen")[0][0] == "54"
+    home = client.get("/apps/geraetecheck").text
+    assert "Fällig" in home and "Jetzt erfassen" in home and f"geraet={device.id}" in home
+    assert "Warnungen" in home and "läuft ab" in home
+    assert "läuft ab" in client.get("/apps/geraetecheck/geraete").text
+    store.delete(db, app, device)
+    db.commit()
+    home = client.get("/apps/geraetecheck").text
+    assert "Jetzt erfassen" not in home and "Warnungen" not in home
+
+
+def test_http_record_actor_is_logged_in_username(db, app_definitions, oidc_client, idp):
+    from kurort_app.apps import store
+    from kurort_app.apps.installations import install
+    from tests.app.auth_helpers import login
+
+    app = oidc_client.app.state.apps.valid["geraetecheck"]
+    install(db, app)
+    row = store.create(db, app, "geraete", {"name": "Küche"})
+    db.commit()
+    login(oidc_client)
+    response = oidc_client.post(
+        "/apps/geraetecheck/messungen/neu",
+        data={"geraet": str(row.id), "temperatur": "3,5", "gemessen_am": "2026-10-14T07:30"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    reading = db.scalars(select(AppRecord).where(AppRecord.collection == "messungen")).one()
+    assert reading.created_by == "m.schmidt"
+    event = db.scalars(
+        select(AuditEvent).where(
+            AuditEvent.action == "app_record.created", AuditEvent.entity_id == str(reading.id)
+        )
+    ).one()
+    assert event.actor == "m.schmidt"

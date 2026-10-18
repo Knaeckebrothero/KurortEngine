@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Apps verwalten{% endblock %}
+{% block content %}
+<div class="app-page stack">
+  <header class="page-header">
+    <div><h1>Apps verwalten</h1><p>Kleine Hotel-Apps installieren und freigeben.</p></div>
+  </header>
+  <div class="app-catalog stack">
+    {% for entry in entries %}
+    <article class="card app-panel" aria-labelledby="app-{{ entry.slug }}">
+      <div class="app-section-heading">
+        <div>
+          <h2 id="app-{{ entry.slug }}">{{ entry.title }}</h2>
+          {% if entry.description %}<p class="muted">{{ entry.description }}</p>{% endif %}
+          {% if entry.version is not none %}<p class="app-meta">Version {{ entry.version }}</p>{% endif %}
+        </div>
+        <span class="badge {{ 'success' if entry.state == 'Aktiv' else 'danger' if entry.state == 'Fehlerhaft' else 'plain' }}">{{ entry.state }}</span>
+      </div>
+      {% if entry.state == 'Fehlerhaft' %}
+      <details class="app-disclosure">
+        <summary>Fehlerdetails anzeigen</summary>
+        <div class="app-disclosure-body">
+          <p>Die App kann erst nach einer Korrektur der Definition installiert werden.</p>
+          <ul>{% for error in entry.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        </div>
+      </details>
+      {% else %}
+      <div class="app-actions">
+        {% if entry.state == 'Nicht installiert' %}
+        <form method="post" action="/apps/{{ entry.slug }}/installieren"><button class="btn primary" type="submit">Installieren<span class="sr-only">: {{ entry.title }}</span></button></form>
+        {% elif entry.state == 'Aktiv' %}
+        <a class="btn primary" href="/apps/{{ entry.slug }}">App öffnen<span class="sr-only">: {{ entry.title }}</span></a>
+        <form method="post" action="/apps/{{ entry.slug }}/deaktivieren"><button class="btn" type="submit">Deaktivieren<span class="sr-only">: {{ entry.title }}</span></button></form>
+        {% elif entry.state == 'Deaktiviert' %}
+        <form method="post" action="/apps/{{ entry.slug }}/aktivieren"><button class="btn primary" type="submit">Aktivieren<span class="sr-only">: {{ entry.title }}</span></button></form>
+        {% endif %}
+      </div>
+      {% if entry.state in ['Aktiv', 'Deaktiviert'] %}
+      <details class="app-disclosure app-destructive">
+        <summary>Deinstallieren …<span class="sr-only"> {{ entry.title }}</span></summary>
+        <div class="app-disclosure-body stack">
+          <p>„{{ entry.title }}“ wirklich deinstallieren? Die vorhandenen Einträge bleiben erhalten und sind nach einer erneuten Installation wieder verfügbar.</p>
+          <form method="post" action="/apps/{{ entry.slug }}/deinstallieren"><button class="btn danger" type="submit">App deinstallieren</button></form>
+        </div>
+      </details>
+      {% endif %}
+      {% endif %}
+    </article>
+    {% else %}
+    <div class="card empty"><strong>Noch keine Apps vorhanden.</strong>Neue Apps werden mit ihrer Definition bereitgestellt.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

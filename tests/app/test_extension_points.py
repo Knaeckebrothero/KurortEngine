@@ -28,7 +28,9 @@ def test_sidebar_lists_the_static_links_in_group_order(client):
     assert 'href="/" aria-current="page"' in rail
 
 
-def test_sidebar_hides_empty_groups(client):
+def test_sidebar_hides_empty_groups(client, monkeypatch):
+    monkeypatch.setattr(web, "NAV", [i for i in web.NAV if i.group in {"Heute", "Planung"}])
+    monkeypatch.setattr(web, "NAV_PROVIDERS", [])
     rail = _rail(client.get("/").text)
     assert "Verwaltung" not in rail and "Apps" not in rail
 

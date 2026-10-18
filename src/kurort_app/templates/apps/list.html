@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.title }} · {{ app.title }}{% endblock %}
+{% block content %}
+<div class="app-page stack">
+  <nav class="breadcrumb" aria-label="Pfad"><a href="/apps/{{ app.slug }}">{{ app.title }}</a><span aria-hidden="true"> › </span>{{ collection.title }}</nav>
+  <header class="page-header">
+    <div><h1>{{ collection.title }}</h1></div>
+    {% if ctx.can_edit(collection.key) %}<div class="page-actions"><a class="btn primary" href="/apps/{{ app.slug }}/{{ collection.key }}/neu">{{ collection.item }} erfassen</a></div>{% endif %}
+  </header>
+
+  <form class="card app-panel app-filters" method="get" action="/apps/{{ app.slug }}/{{ collection.key }}"
+        hx-get="/apps/{{ app.slug }}/{{ collection.key }}" hx-target="#app-rows" hx-swap="innerHTML">
+    <div class="field app-search-field"><label for="app-search">Suchen</label><input class="input" id="app-search" name="q" type="search" value="{{ filters.get('q', '') }}"></div>
+    <div class="field"><label for="app-from">Von</label><input class="input" id="app-from" name="von" type="date" value="{{ filters.get('von', '') }}"></div>
+    <div class="field"><label for="app-until">Bis</label><input class="input" id="app-until" name="bis" type="date" value="{{ filters.get('bis', '') }}"></div>
+    {% if has_range %}<label class="checkbox app-filter-checkbox" for="app-only-deviations"><input id="app-only-deviations" type="checkbox" name="abweichungen" value="true"{% if filters.get('abweichungen') %} checked{% endif %}>Nur Abweichungen</label>{% endif %}
+    <div class="app-actions">
+      <button class="btn" type="submit">Filtern</button>
+      <a class="btn ghost" href="/apps/{{ app.slug }}/{{ collection.key }}">Zurücksetzen</a>
+    </div>
+  </form>
+
+  <section aria-label="{{ collection.title }}" class="card app-records">
+    <div id="app-rows" aria-live="polite" aria-atomic="false">{% include "apps/_rows.html" %}</div>
+  </section>
+
+</div>
+{% endblock %}
