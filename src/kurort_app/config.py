@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://kurort:kurort@localhost:5432/kurort"
     hotel_name: str = "Hotel Rheinland"
     hotel_city: str = "Bad Orb"
+    app_definition_dirs: str = ""
     # Pin "today" for demos and tests (ISO date). Unset = the real date.
     today: date | None = None
     # Tourist-tax statute profile loaded via kurort_engine.rates.load_profile.
