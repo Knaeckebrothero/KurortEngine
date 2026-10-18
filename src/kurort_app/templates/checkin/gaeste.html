@@ -11,7 +11,7 @@
 {% for row in rows %}{% for name, msg in row.errors.items() %}{% set _ = problems.append((row, name, msg)) %}{% endfor %}{% endfor %}
 
 {% if stale_forms %}
-<div class="notice warning" role="status"><p><strong>Meldeschein veraltet:</strong> {{ stale_forms | join(', ') }} – Daten geändert, Meldeschein im nächsten Schritt neu erzeugen.</p></div>
+<div class="notice warning" role="status"><p>Daten geändert – in AVS neu drucken: {{ stale_forms | join(', ') }}.</p></div>
 {% endif %}
 
 {% if problems %}
@@ -108,10 +108,10 @@
   {% endfor %}
 
   <div class="ci-footer">
-    <span class="muted">Geänderte Daten setzen einen erzeugten Meldeschein zurück.</span>
+    <span class="muted">Geänderte Daten müssen in AVS neu gedruckt werden.</span>
     <span class="spacer"></span>
     <button class="btn primary" type="submit">
-      Speichern &amp; weiter zum Meldeschein
+      Speichern &amp; weiter zu AVS
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </button>
   </div>

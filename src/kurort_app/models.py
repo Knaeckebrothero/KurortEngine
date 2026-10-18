@@ -19,7 +19,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    LargeBinary,
     Numeric,
     String,
     Text,
@@ -43,11 +42,11 @@ RESERVATION_STATUSES = (RESERVED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW)
 # Booking channels.
 CHANNELS = ("direct", "phone", "email", "booking.com", "walk-in")
 
-# Meldeschein (§29 BMG) per guest: not started → PDF generated → signed.
+# Meldeschein (§29 BMG) per guest: not started → printed in AVS → signed.
 MELDESCHEIN_OPEN = "offen"
-MELDESCHEIN_GENERATED = "erzeugt"
+MELDESCHEIN_PRINTED = "gedruckt"
 MELDESCHEIN_SIGNED = "unterschrieben"
-MELDESCHEIN_STATUSES = (MELDESCHEIN_OPEN, MELDESCHEIN_GENERATED, MELDESCHEIN_SIGNED)
+MELDESCHEIN_STATUSES = (MELDESCHEIN_OPEN, MELDESCHEIN_PRINTED, MELDESCHEIN_SIGNED)
 
 # Exemption categories the engine recognises (kurort_engine.exemptions).
 EXEMPTION_CATEGORIES = ("geschaeftsreisender", "schwerbehindert_100")
@@ -174,14 +173,8 @@ class ReservationGuest(Base):
     exemption_evidence: Mapped[str | None] = mapped_column(String(200))
 
     meldeschein_status: Mapped[str] = mapped_column(String(16), default=MELDESCHEIN_OPEN)
-    meldeschein_form_id: Mapped[str | None] = mapped_column(String(64))
-    meldeschein_pdf: Mapped[bytes | None] = mapped_column(LargeBinary, deferred=True)
-    meldeschein_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    meldeschein_printed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     meldeschein_signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-
-    kurkarte_code: Mapped[str | None] = mapped_column(String(64))
-    kurkarte_qr_payload: Mapped[str | None] = mapped_column(Text)
-    kurkarte_issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     reservation: Mapped[Reservation] = relationship(back_populates="guests")
     guest: Mapped[Guest] = relationship(back_populates="stays")

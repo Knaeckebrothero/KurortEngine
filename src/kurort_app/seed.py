@@ -23,8 +23,8 @@ from kurort_app.models import (
     CANCELLED,
     CHECKED_IN,
     CHECKED_OUT,
-    MELDESCHEIN_GENERATED,
     MELDESCHEIN_OPEN,
+    MELDESCHEIN_PRINTED,
     MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
@@ -388,10 +388,7 @@ def _apply_lifecycle(rng: random.Random, res: Reservation, anchor: date, now: da
     if res.status in (CHECKED_IN, CHECKED_OUT):
         for rg in res.guests:
             rg.meldeschein_status = MELDESCHEIN_SIGNED
-            rg.meldeschein_form_id = f"MS-{res.code}-{rg.position + 1}"
-            rg.meldeschein_generated_at = rg.meldeschein_signed_at = res.checked_in_at
-            rg.kurkarte_code = f"KK-{res.code}-{rg.position + 1}"
-            rg.kurkarte_issued_at = res.checked_in_at
+            rg.meldeschein_printed_at = rg.meldeschein_signed_at = res.checked_in_at
     # Departure-day stays are still "checked_in" until the desk checks them out.
     _ = now
 
@@ -419,12 +416,11 @@ def _plant_exceptions(rng: random.Random, reservations: list[Reservation], ancho
         lead.exemption_evidence = f"Schwerbehindertenausweis Nr. {rng.randint(100000, 999999)}"
     if in_house:
         unsigned = in_house[0].guests[0]
-        unsigned.meldeschein_status = MELDESCHEIN_GENERATED
+        unsigned.meldeschein_status = MELDESCHEIN_PRINTED
         unsigned.meldeschein_signed_at = None
     if past:
         past[0].status = NO_SHOW
         past[0].checked_in_at = None
         for rg in past[0].guests:
             rg.meldeschein_status = MELDESCHEIN_OPEN
-            rg.meldeschein_form_id = rg.meldeschein_generated_at = rg.meldeschein_signed_at = None
-            rg.kurkarte_code = rg.kurkarte_issued_at = None
+            rg.meldeschein_printed_at = rg.meldeschein_signed_at = None

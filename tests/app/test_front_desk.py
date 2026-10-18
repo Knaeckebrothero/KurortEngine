@@ -12,7 +12,6 @@ from kurort_app.models import (
     CANCELLED,
     CHECKED_IN,
     CHECKED_OUT,
-    MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
     AuditEvent,
@@ -38,11 +37,6 @@ def _reservations(session, *where):
     return list(session.scalars(stmt))
 
 
-def _hints_section(html: str) -> str:
-    start = html.index('id="hinweise"')
-    return html[start : html.index("</section>", start)]
-
-
 # ---------------------------------------------------------------------------
 # Overview
 # ---------------------------------------------------------------------------
@@ -63,12 +57,6 @@ def test_dashboard_metrics_match_database(client, seeded):
             Reservation.status.in_((CHECKED_IN, CHECKED_OUT)),
         )
     )
-    in_house_guests = seeded.scalar(
-        select(func.count())
-        .select_from(ReservationGuest)
-        .join(Reservation)
-        .where(Reservation.status == CHECKED_IN)
-    )
     tonight = seeded.scalar(
         select(func.count())
         .select_from(Reservation)
@@ -80,7 +68,7 @@ def test_dashboard_metrics_match_database(client, seeded):
     )
     assert _metric(html, "arrivals") == arrivals
     assert _metric(html, "departures") == departures
-    assert _metric(html, "in-house") == in_house_guests
+    assert html.count('data-metric="') == 3
     assert _metric(html, "occupancy") == round(100 * tonight / 33)
 
 
@@ -94,62 +82,64 @@ def test_dashboard_chart_has_fourteen_accessible_nights(client, seeded):
     assert "Mittwoch, 14. Oktober 2026" in table
 
 
-def test_dashboard_queue_links_open_arrivals_to_check_in(client, seeded):
+def test_dashboard_today_combines_filters_and_finished_rows(client, seeded):
     html = client.get("/").text
-    for r in _reservations(
-        seeded, Reservation.arrival == BUSINESS_DATE, Reservation.status == RESERVED
-    ):
-        assert f'href="/check-in/{r.id}"' in html
-        assert r.code in html
+    assert '<h2 id="today-title">Heute</h2>' in html
+    assert '<h2 id="hints-title">' not in html
+    arrivals = _reservations(
+        seeded, Reservation.arrival == BUSINESS_DATE, Reservation.status != CANCELLED
+    )
+    departures = _reservations(
+        seeded,
+        Reservation.departure == BUSINESS_DATE,
+        Reservation.status.in_((CHECKED_IN, CHECKED_OUT)),
+    )
+    for row in arrivals + departures:
+        assert f'data-reservation-id="{row.id}"' in html
+    assert f'Anreisen <span class="num">{len(arrivals)}</span>' in html
+    assert f'Abreisen <span class="num">{len(departures)}</span>' in html
+    for kind, rows in (("anreisen", arrivals), ("abreisen", departures)):
+        page = client.get(f"/?zeigen={kind}").text
+        found = re.findall(r'data-reservation-id="(\d+)"', page)
+        assert set(map(int, found)) == {r.id for r in rows}
+    for row in arrivals:
+        if row.status == RESERVED:
+            assert f'href="/check-in/{row.id}"' in html
+    completed = html.split('<details class="fd-finished">', 1)[1]
+    for row in departures:
+        if row.status == CHECKED_OUT:
+            assert f'data-reservation-id="{row.id}"' in completed
+    for match in re.findall(r"<tr[^>]*data-reservation-id=.*?</tr>", html, re.S):
+        assert len(re.findall(r'class="btn[^"]*"', match)) == 1
 
 
-def test_dashboard_hints_list_planted_exceptions(client, seeded):
-    hints = _hints_section(client.get("/").text)
-
+def test_dashboard_flags_link_planted_exceptions_to_fixes(client, seeded):
+    html = client.get("/").text
     arrivals = _reservations(
         seeded, Reservation.arrival == BUSINESS_DATE, Reservation.status == RESERVED
     )
-    missing_birth = [r for r in arrivals if any(rg.guest.birth_date is None for rg in r.guests)]
-    assert missing_birth, "seed should plant a missing birth date"
-    for r in missing_birth:
-        assert f'data-code="{r.code}"' in hints
-        assert f'href="/reservierungen/{r.id}"' in hints
-    assert "Geburtsdatum fehlt" in hints
-
-    no_proof = [
+    missing = next(r for r in arrivals if any(rg.guest.birth_date is None for rg in r.guests))
+    proof = next(
         r
         for r in arrivals
         if any(rg.exemption_category and not rg.exemption_evidence for rg in r.guests)
-    ]
-    assert no_proof, "seed should plant an exemption without proof"
-    assert "Kurtaxe klären · Nachweis fehlt" in hints
-    for r in no_proof:
-        assert f'data-code="{r.code}"' in hints
-
-    unsigned = [
-        r
-        for r in _reservations(seeded, Reservation.status == CHECKED_IN)
-        if any(rg.meldeschein_status != MELDESCHEIN_SIGNED for rg in r.guests)
-    ]
-    assert unsigned, "seed should plant an unsigned Meldeschein"
-    for r in unsigned:
-        assert f'data-code="{r.code}"' in hints
-    assert "PDF erzeugt · nicht unterschrieben" in hints
-
+    )
+    assert "Gästedaten fehlen · Geburtsdatum" in html
+    assert f'href="/check-in/{missing.id}/gaeste"' in html
+    assert "Kurtaxe klären · Nachweis fehlt" in html
+    assert f'href="/check-in/{proof.id}/abschluss#kurtaxe"' in html
     for r in _reservations(
         seeded,
         Reservation.status == NO_SHOW,
         Reservation.arrival == BUSINESS_DATE - timedelta(days=1),
     ):
-        assert f'data-code="{r.code}"' in hints
-        assert "No-Show von gestern" in hints
+        assert f'data-reservation-id="{r.id}"' not in html
 
 
 def test_dashboard_on_empty_database(client, db):
     response = client.get("/")
-    assert response.status_code == 200
-    assert "Heute keine Anreisen" in response.text
-    assert "Keine offenen Hinweise" in response.text
+    assert response.status_code == 200 and "Heute nichts offen" in response.text
+    assert "Keine offenen Hinweise" not in response.text
 
 
 # ---------------------------------------------------------------------------
@@ -318,7 +308,7 @@ def test_dashboard_chart_range_cookie_and_param_precedence(client, seeded):
 
 def test_pages_expose_assistant_hooks(client, seeded):
     dashboard = client.get("/").text
-    for widget in ("metrics", "arrivals", "hints", "occupancy"):
+    for widget in ("metrics", "today", "occupancy"):
         assert f'data-widget="{widget}"' in dashboard
     assert 'id="ai-input"' in dashboard and "data-ai-drawer" in dashboard
     assert 'data-user=""' in dashboard  # auth is off in the test suite

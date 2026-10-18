@@ -9,8 +9,6 @@ import pytest
 from sqlalchemy import select
 
 from kurort_app.models import (
-    MELDESCHEIN_GENERATED,
-    MELDESCHEIN_SIGNED,
     Guest,
     KurtaxeAssessment,
     Reservation,
@@ -18,7 +16,6 @@ from kurort_app.models import (
     Room,
 )
 from kurort_app.services import engine
-from kurort_app.services.checkin_qr import qr_matrix, qr_svg
 from tests.app.conftest import BUSINESS_DATE
 
 
@@ -211,87 +208,20 @@ def test_breakdown_sums_to_engine_total_and_assessment_upserts(db):
 # --- Meldeschein ---------------------------------------------------------------
 
 
-def test_meldeschein_renders_a_real_pdf(db):
-    res = make_stay(
-        db,
-        [
-            {
-                "first": "Łucja",
-                "last": "Wiśniewska",
-                "nationality": "PL",
-                "country": "PL",
-                "id_doc": "AB1234567",
-            }
-        ],
-    )
-    rg = res.guests[0]
-    pdf = engine.generate_meldeschein(db, rg)
-    assert pdf.startswith(b"%PDF-") and pdf.rstrip().endswith(b"%%EOF")
-    assert len(pdf) > 1500
-    assert rg.meldeschein_status == MELDESCHEIN_GENERATED
-    assert rg.meldeschein_form_id.startswith("msch-")
-
-
 def test_foreign_guest_needs_an_id_document(db):
     res = make_stay(db, [{"nationality": "NL", "country": "NL"}])
     with pytest.raises(engine.MeldescheinIncompleteError) as exc:
-        engine.generate_meldeschein(db, res.guests[0])
+        engine.meldeschein_form(res.guests[0])
     assert "id_document_number" in exc.value.errors
-
-
-def test_sign_requires_a_generated_form(db):
-    res = make_stay(db, [{}])
-    rg = res.guests[0]
-    with pytest.raises(engine.CheckinError):
-        engine.sign_meldeschein(db, rg)
-    engine.generate_meldeschein(db, rg)
-    engine.sign_meldeschein(db, rg)
-    assert rg.meldeschein_status == MELDESCHEIN_SIGNED and rg.meldeschein_signed_at
-
-
-def test_pdf_is_rerendered_when_only_the_form_id_survived(db):
-    res = make_stay(db, [{}])
-    rg = res.guests[0]
-    rg.meldeschein_form_id, rg.meldeschein_status = "MS-SEED-1", MELDESCHEIN_SIGNED
-    assert engine.meldeschein_pdf(db, rg).startswith(b"%PDF-")
-
-
-# --- Kurkarte, readiness, QR ----------------------------------------------------
-
-
-def test_kurkarte_carries_the_engine_qr_payload(db):
-    res = make_stay(db, [{"first": "Claudia", "last": "Wolf"}], package="B")
-    view = engine.issue_kurkarte(db, res.guests[0], BUSINESS_DATE)
-    assert view.code == "KK-R-TEST-0001-1"
-    assert view.qr_payload.startswith("GAESTEKARTE|KK-R-TEST-0001-1|Claudia Wolf|template=B")
-    assert view.template_name == "Classic-Kurpaket"
-    assert view.heilbad_badge == "Heilbad 2026"
-    assert view.wallet["lang"] == "de"
 
 
 def test_readiness_walks_through_the_steps(db):
     res = make_stay(db, [{}])
-    assert engine.first_open_step(res) == "meldeschein"
+    assert engine.first_open_step(res) == "avs"
     rg = res.guests[0]
-    engine.generate_meldeschein(db, rg)
-    assert engine.first_open_step(res) == "meldeschein"  # still needs the signature
-    engine.sign_meldeschein(db, rg)
-    assert engine.first_open_step(res) == "kurtaxe"
-    engine.assess_kurtaxe(db, res)
-    assert engine.first_open_step(res) == "kurkarte"
-    engine.issue_kurkarte(db, rg)
+    rg.meldeschein_status = "gedruckt"
     assert engine.first_open_step(res) == "abschluss"
     assert not any(engine.readiness(res).values())
-
-
-def test_qr_svg_is_a_full_symbol():
-    matrix = qr_matrix(b"KK-R-2610-1")  # 11 bytes fit version 1-M (max 14)
-    assert len(matrix) == 21  # version 1
-    finder_row = [True] * 7
-    assert (
-        matrix[0][:7] == finder_row
-        and matrix[0][-7:] == finder_row
-        and matrix[-1][:7] == finder_row
-    )
-    svg = qr_svg("GAESTEKARTE|KK-R-2610-0001-1|Marianne von der Lindenberg-Steinberg|template=E")
-    assert svg.startswith("<svg") and 'aria-label="QR-Code"' in svg
+    assert res.kurtaxe is None  # readiness never writes
+    res.room = None
+    assert engine.readiness(res)["abschluss"][0].message == "Kein Zimmer zugewiesen."

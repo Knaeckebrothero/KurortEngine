@@ -82,7 +82,7 @@
       </div>
     </section>
 
-    <section class="card" aria-labelledby="guests-h">
+    <section class="card" id="gaeste" aria-labelledby="guests-h">
       <div class="card-header"><h2 id="guests-h">Gäste <span class="muted num">({{ r.guests|length }})</span></h2></div>
       <ul class="guest-list">
         {% for row in guest_rows %}
@@ -96,7 +96,7 @@
             </div>
             <div class="badges guest-item-badges">
               {{ ui.meldeschein(rg.meldeschein_status) }}
-              {% if rg.meldeschein_status != 'offen' %}<a class="btn ghost sm" href="/meldeschein/{{ rg.id }}.pdf">PDF</a>{% endif %}
+              {% if rg.meldeschein_status == 'gedruckt' %}<form method="post" action="/meldeschein/{{ rg.id }}/unterschrieben"><input type="hidden" name="zurueck" value="/reservierungen/{{ r.id }}#gaeste"><button class="btn ghost sm" type="submit">Unterschrift erfassen</button></form>{% endif %}
             </div>
           </div>
           <dl class="facts guest-facts">
@@ -116,8 +116,6 @@
                 {% else %}<span class="badge warning">Nachweis fehlt</span>{% endif %}
               {% else %}Regulär{% endif %}
             </dd>
-            <dt>Kurkarte</dt>
-            <dd>{% if rg.kurkarte_code %}<span class="mono">{{ rg.kurkarte_code }}</span>{% if rg.kurkarte_issued_at %}<span class="sub">ausgegeben {{ rg.kurkarte_issued_at | date }}</span>{% endif %}{% else %}<span class="muted">Noch nicht ausgegeben</span>{% endif %}</dd>
           </dl>
         </li>
         {% endfor %}
@@ -130,16 +128,16 @@
       </div>
       {% if r.kurtaxe %}
       <div class="table-wrap">
-        <table class="table">
+        <table class="table mobile-facts">
           <thead><tr><th scope="col">Gast</th><th scope="col">Tarif</th><th scope="col" class="num">Tage</th><th scope="col" class="num">Satz</th><th scope="col" class="num">Betrag</th></tr></thead>
           <tbody>
           {% for line in r.kurtaxe.breakdown %}
             <tr>
-              <td><span class="guest-name">{{ line.name }}</span></td>
-              <td>{% if line.exempt %}<span class="badge success">Befreit</span> <span class="sub">{{ line.exemption | exemption_label }}</span>{% else %}{{ band_labels.get(line.band, line.band) }}{% endif %}</td>
-              <td class="num">{{ line.days }}</td>
-              <td class="num">{% if line.rate_per_day is defined and line.rate_per_day is not none and not line.exempt %}{{ line.rate_per_day | money }}{% else %}–{% endif %}</td>
-              <td class="num"><strong>{% if line.amount is defined and line.amount is not none %}{{ line.amount | money }}{% else %}–{% endif %}</strong></td>
+              <td data-label="Gast"><span class="guest-name">{{ line.name }}</span></td>
+              <td data-label="Tarif">{% if line.exempt %}<span class="badge success">Befreit</span> <span class="sub">{{ line.exemption | exemption_label }}</span>{% else %}{{ band_labels.get(line.band, line.band) }}{% endif %}</td>
+              <td class="num" data-label="Tage">{{ line.days }}</td>
+              <td class="num" data-label="Satz">{% if line.rate_per_day is defined and line.rate_per_day is not none and not line.exempt %}{{ line.rate_per_day | money }}{% else %}–{% endif %}</td>
+              <td class="num" data-label="Betrag"><strong>{% if line.amount is defined and line.amount is not none %}{{ line.amount | money }}{% else %}–{% endif %}</strong></td>
             </tr>
           {% endfor %}
           </tbody>

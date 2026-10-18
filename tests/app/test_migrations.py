@@ -63,3 +63,52 @@ def test_upgrade_downgrade_upgrade(scratch_url: str):
 
     command.upgrade(cfg, "head")
     assert _schema(scratch_url) == migrated
+
+
+def test_meldeschein_avs_data_round_trip(scratch_url: str):
+    """AC-10: migrate existing printed forms, not just an empty schema."""
+    from alembic import command
+    from sqlalchemy.exc import IntegrityError
+
+    cfg = alembic_config(scratch_url)
+    command.upgrade(cfg, "0001")
+    engine = create_engine(scratch_url)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO guests (id, first_name, last_name, nationality, country) VALUES (1, 'Ada', 'Weber', 'DE', 'DE')"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO reservations (id, code, arrival, departure, status, channel, rate_total) VALUES (1, 'MIG-1', '2026-10-14', '2026-10-15', 'reserved', 'direct', 89)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO reservation_guests (id, reservation_id, guest_id, is_primary, position, meldeschein_status, meldeschein_generated_at) VALUES (1, 1, 1, true, 0, 'erzeugt', '2026-10-14 10:00:00+00')"
+            )
+        )
+    command.upgrade(cfg, "head")
+    with engine.connect() as conn:
+        assert conn.scalar(text("SELECT meldeschein_status FROM reservation_guests")) == "gedruckt"
+        assert (
+            conn.scalar(text("SELECT meldeschein_printed_at FROM reservation_guests")) is not None
+        )
+    with pytest.raises(IntegrityError), engine.begin() as conn:
+        conn.execute(text("UPDATE reservation_guests SET meldeschein_status = 'erzeugt'"))
+    columns = _schema(scratch_url)["reservation_guests"]
+    assert not {
+        "meldeschein_pdf",
+        "meldeschein_form_id",
+        "kurkarte_code",
+        "kurkarte_qr_payload",
+        "kurkarte_issued_at",
+    }.intersection(columns)
+    command.downgrade(cfg, "0001")
+    with engine.connect() as conn:
+        assert conn.scalar(text("SELECT meldeschein_status FROM reservation_guests")) == "erzeugt"
+        assert (
+            conn.scalar(text("SELECT meldeschein_generated_at FROM reservation_guests")) is not None
+        )
+    engine.dispose()

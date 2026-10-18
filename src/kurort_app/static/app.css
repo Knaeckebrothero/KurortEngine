@@ -99,7 +99,7 @@ h1, h2, h3 { margin: 0; }
 .mono { font-family: var(--font-mono); font-size: 13px; }
 .num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--text-secondary); }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.sr-only { display: block; position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .skip-link { position: absolute; left: -999px; top: 8px; z-index: 100; background: var(--surface); padding: 8px 12px; border-radius: var(--radius-control); }
 .skip-link:focus { left: 8px; }
 
@@ -325,4 +325,29 @@ legend { font-size: 16px; font-weight: 700; margin-bottom: var(--space-3); paddi
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}
+
+.rail-menu > summary { display: none; cursor: pointer; min-height: 44px; align-items: center; font-weight: 650; }
+@media (min-width: 861px) {
+  .rail-menu { flex: 1; }
+  .rail-menu::details-content { content-visibility: visible; display: flex; flex-direction: column; height: 100%; }
+  .rail-menu:not([open]) > :not(summary) { display: flex; }
+}
+@media (max-width: 860px) {
+  .rail { display: block; }
+  .rail-menu { margin-top: var(--space-2); }
+  .rail-menu > summary { display: flex; }
+  .rail-menu .rail-nav { flex-direction: column; }
+  .rail-menu .rail-label { display: block; }
+  .rail-menu .rail-cta { margin-top: var(--space-3); }
+  .rail-link { min-height: 44px; }
+}
+
+@media (max-width: 860px) {
+  .mobile-facts, .mobile-facts tbody, .mobile-facts tfoot, .mobile-facts tr, .mobile-facts td, .mobile-facts tfoot th { display: block; width: 100%; min-width: 0; }
+  .mobile-facts thead { display: none; }
+  .mobile-facts tbody tr { border-bottom: 1px solid var(--border-subtle); padding: var(--space-3); }
+  .mobile-facts tbody td { border: 0; padding: var(--space-2) 0; text-align: left; white-space: normal; }
+  .mobile-facts td[data-label]::before { content: attr(data-label); display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .mobile-facts.ci-tax td.num { text-align: left; white-space: normal; }
 }

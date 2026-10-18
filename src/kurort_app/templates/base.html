@@ -30,6 +30,7 @@
       <span class="brand-mark" aria-hidden="true">HR</span>
       <span><span class="brand-name">{{ hotel_name }}</span><span class="brand-sub">{{ hotel_city }} · Rezeption</span></span>
     </a>
+    <details class="rail-menu"><summary>Menü</summary>
     <nav class="rail-nav">
       {% for group, links in nav_groups %}
       <span class="rail-label">{{ group }}</span>
@@ -42,6 +43,7 @@
         Neue Reservierung
       </a>
     </div>
+    </details>
     <div class="rail-foot">KurortEngine · Kurbeitragssatzung {{ hotel_city }}</div>
   </aside>
   <div class="main">

@@ -30,14 +30,12 @@ Rule = Callable[[Session, str, str, date], Plan | None]
 
 DASHBOARD_WIDGET_WORDS = {
     "metrics": r"\b(kennzahlen|zahlen|metriken|kpis?)\b",
-    "arrivals": r"\b(anreisen|ankuenfte|anreise)\b",
-    "hints": r"\b(hinweise?|warnungen|probleme)\b",
+    "today": r"\b(heute|tabelle|anreisen?|abreisen?|ankuenfte)\b",
     "occupancy": r"\b(belegung|auslastung|diagramm|chart)\b",
 }
 WIDGET_LABELS = {
     "metrics": "Kennzahlen",
-    "arrivals": "Anreisen",
-    "hints": "Hinweise",
+    "today": "Heute",
     "occupancy": "Belegung",
 }
 NOT_YET = "Das kann ich noch nicht."

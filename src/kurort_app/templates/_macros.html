@@ -7,7 +7,7 @@
 {%- endmacro %}
 
 {% macro meldeschein(status) -%}
-  {%- set kinds = {'offen': 'warning', 'erzeugt': 'info', 'unterschrieben': 'success'} -%}
+  {%- set kinds = {'offen': 'warning', 'gedruckt': 'info', 'unterschrieben': 'success'} -%}
   <span class="badge {{ kinds.get(status, '') }}">{{ status | meldeschein_label }}</span>
 {%- endmacro %}
 

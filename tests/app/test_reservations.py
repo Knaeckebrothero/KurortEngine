@@ -14,7 +14,6 @@ from kurort_app.models import (
     CANCELLED,
     CHECKED_IN,
     CHECKED_OUT,
-    MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
     AuditEvent,
@@ -238,25 +237,26 @@ def test_detail_history_includes_check_in_trail(client, seeded):
             .where(Reservation.arrival == D, Reservation.status == RESERVED)
             .order_by(Reservation.id.desc())
         ).first()
-    client.post(f"/check-in/{target.id}/meldeschein/alle", follow_redirects=False)
+    client.post(f"/check-in/{target.id}/avs/alle", follow_redirects=False)
     html = client.get(f"/reservierungen/{target.id}").text
-    assert "Meldeschein erzeugt für" in html
+    assert "In AVS gedruckt:" in html
     assert "Noch keine Einträge" not in html
 
 
-def test_detail_for_in_house_offers_check_out_and_pdf(client, seeded):
+def test_detail_for_in_house_offers_check_out_and_signature(client, seeded):
     target = seeded.scalars(
         select(Reservation)
         .join(ReservationGuest)
         .where(
             Reservation.status == CHECKED_IN,
-            ReservationGuest.meldeschein_status == MELDESCHEIN_SIGNED,
+            ReservationGuest.meldeschein_status == "gedruckt",
         )
         .order_by(Reservation.id)
     ).first()
     html = client.get(f"/reservierungen/{target.id}").text
     assert f'href="/check-out/{target.id}"' in html
-    assert f'href="/meldeschein/{target.guests[0].id}.pdf"' in html
+    assert "Unterschrift erfassen" in html
+    assert ".pdf" not in html and "Kurkarte" not in html
     assert "/bearbeiten" not in html
 
 

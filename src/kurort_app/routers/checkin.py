@@ -1,9 +1,4 @@
-"""Check-in flow: guests → Meldeschein → Kurtaxe → Kurkarte → completion.
-
-Each step is its own URL; the reservation only becomes ``checked_in`` when
-the last step is confirmed. Regulatory work (forms, tax, Kurkarte) is done
-by ``kurort_app.services.engine`` on top of ``kurort_engine``.
-"""
+"""Three-step check-in: guest data, AVS printing, room handover."""
 
 from __future__ import annotations
 
@@ -11,26 +6,32 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from starlette.datastructures import FormData
 
 from kurort_app import audit
-from kurort_app.config import today
+from kurort_app.auth import require_role, safe_next
+from kurort_app.config import get_settings, today
 from kurort_app.db import get_session
 from kurort_app.models import (
     CHECKED_IN,
     EXEMPTION_CATEGORIES,
+    MELDESCHEIN_OPEN,
+    MELDESCHEIN_PRINTED,
+    MELDESCHEIN_SIGNED,
     RESERVED,
+    AuditEvent,
     Guest,
     Reservation,
     ReservationGuest,
 )
 from kurort_app.services import engine
-from kurort_app.services.checkin_qr import qr_svg
 from kurort_app.web import STATUS_LABELS, fmt_date, fmt_money, redirect_with_notice, templates
+from kurort_engine.kurpaket_templates import TEMPLATES as PACKAGE_TEMPLATES
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_role("rezeption", "leitung"))])
 
 COUNTRIES: tuple[tuple[str, str], ...] = (
     ("DE", "Deutschland"),
@@ -151,7 +152,7 @@ def _render(
         "prev_url": _step_url(reservation, keys[idx - 1]) if idx > 0 else None,
         "next_url": _step_url(reservation, keys[idx + 1]) if idx + 1 < len(keys) else None,
         "late_arrival": reservation.arrival < today(),
-        "package": engine.PACKAGE_TEMPLATES.get((reservation.package_code or "").upper()),
+        "package": PACKAGE_TEMPLATES.get((reservation.package_code or "").upper()),
         "satzung_label": engine.satzung_label(),
     }
     context.update(extra)
@@ -315,6 +316,8 @@ async def guests_save(
             raw_values[rg.id] = raw
     if tax_inputs_changed:
         engine.drop_assessment(session, reservation)
+    if not all_errors:
+        _assess(session, reservation, auto=True)
     session.commit()
 
     if all_errors:
@@ -330,9 +333,9 @@ async def guests_save(
         )
     text = "Gästedaten gespeichert."
     if stale_forms:
-        text += f" Meldeschein neu erzeugen für: {', '.join(stale_forms)}."
+        text = f"Daten geändert – in AVS neu drucken: {', '.join(stale_forms)}."
     return redirect_with_notice(
-        _step_url(reservation, "meldeschein"), text, "warning" if stale_forms else "success"
+        _step_url(reservation, "avs"), text, "warning" if stale_forms else "success"
     )
 
 
@@ -403,161 +406,191 @@ def guests_remove(reservation_id: int, rg_id: int, session: Session = Depends(ge
 
 
 # ---------------------------------------------------------------------------
-# Step 2 — Meldeschein
+# AVS printing and signatures
 # ---------------------------------------------------------------------------
 
 
-def _meldeschein_response(
-    request: Request, reservation: Reservation, notice: dict[str, str] | None = None
-) -> Response:
-    if _is_htmx(request):
-        state = engine.readiness(reservation)
-        return templates.TemplateResponse(
-            request,
-            "checkin/_meldeschein_panel.html",
-            {
-                "r": reservation,
-                "blockers": state["meldeschein"],
-                "data_blockers": state["gaeste"],
-                "next_url": _step_url(reservation, "kurtaxe"),
-                "panel_notice": notice,
-            },
+def _avs_card(session: Session, rg: ReservationGuest) -> dict[str, Any]:
+    values = []
+    try:
+        engine.meldeschein_form(rg)
+    except engine.MeldescheinIncompleteError:
+        return {"rg": rg, "values": values, "incomplete": True}
+    g, res = rg.guest, rg.reservation
+    countries = dict(COUNTRIES)
+    values = [
+        ("Familienname", g.last_name),
+        ("Vorname", g.first_name),
+        ("Geburtsdatum", fmt_date(g.birth_date)),
+        ("Staatsangehörigkeit", countries.get(g.nationality, g.nationality)),
+        ("Straße und Hausnummer", g.street),
+        ("PLZ", g.postal_code),
+        ("Ort", g.city),
+        ("Land", countries.get(g.country, g.country)),
+    ]
+    if g.id_document_number or g.nationality != "DE":
+        values.append(("Ausweisnummer", g.id_document_number or ""))
+    line = next(
+        line for line in engine.kurtaxe_preview(res).lines if line.reservation_guest_id == rg.id
+    )
+    values.extend(
+        [
+            ("Anreise", fmt_date(res.arrival)),
+            ("Abreise", fmt_date(res.departure)),
+            ("Kurtaxe-Gruppe", line.exemption_label if line.exempt else line.band_label),
+        ]
+    )
+    event = session.scalar(
+        select(AuditEvent)
+        .where(
+            AuditEvent.entity == "reservation_guest",
+            AuditEvent.entity_id == str(rg.id),
+            AuditEvent.action == "meldeschein.printed",
         )
-    url = _step_url(reservation, "meldeschein")
-    if notice:
-        return redirect_with_notice(url, notice["text"], notice["kind"])
+        .order_by(AuditEvent.id.desc())
+    )
+    return {
+        "rg": rg,
+        "values": values,
+        "incomplete": False,
+        "copy_all": "\n".join(f"{label}: {value}" for label, value in values),
+        "printed_by": event.actor if event else "–",
+    }
+
+
+@router.get("/check-in/{reservation_id}/avs", response_class=HTMLResponse)
+def avs_step(request: Request, reservation_id: int, session: Session = Depends(get_session)):
+    reservation = _open(session, reservation_id)
+    if isinstance(reservation, RedirectResponse):
+        return reservation
+    return _render(
+        request,
+        "checkin/avs.html",
+        reservation,
+        "avs",
+        cards=[_avs_card(session, rg) for rg in reservation.guests],
+        avs_url=get_settings().avs_url,
+    )
+
+
+def _printed(session: Session, rg: ReservationGuest) -> None:
+    engine.meldeschein_form(rg)
+    if rg.meldeschein_status != MELDESCHEIN_OPEN:
+        return
+    rg.meldeschein_status = MELDESCHEIN_PRINTED
+    rg.meldeschein_printed_at = datetime.now(UTC)
+    rg.meldeschein_signed_at = None
+    audit.record(
+        session,
+        action="meldeschein.printed",
+        entity="reservation_guest",
+        entity_id=rg.id,
+        summary=f"In AVS gedruckt: {rg.guest.full_name}",
+        payload={"reservation": rg.reservation.code},
+    )
+
+
+def _signed(session: Session, rg: ReservationGuest) -> None:
+    if rg.meldeschein_status == MELDESCHEIN_SIGNED:
+        return
+    rg.meldeschein_status = MELDESCHEIN_SIGNED
+    rg.meldeschein_signed_at = datetime.now(UTC)
+    audit.record(
+        session,
+        action="meldeschein.signed",
+        entity="reservation_guest",
+        entity_id=rg.id,
+        summary=f"Unterschrift erhalten: {rg.guest.full_name}",
+        payload={"reservation": rg.reservation.code},
+    )
+
+
+@router.post("/check-in/{reservation_id}/avs/alle")
+def avs_all(reservation_id: int, session: Session = Depends(get_session)):
+    reservation = _open(session, reservation_id)
+    if isinstance(reservation, RedirectResponse):
+        return reservation
+    for rg in reservation.guests:
+        try:
+            _printed(session, rg)
+        except engine.MeldescheinIncompleteError:
+            continue
+    session.commit()
+    return RedirectResponse(_step_url(reservation, "avs"), status_code=303)
+
+
+@router.post("/check-in/{reservation_id}/avs/{rg_id}/gedruckt")
+def avs_printed(
+    request: Request, reservation_id: int, rg_id: int, session: Session = Depends(get_session)
+):
+    return _avs_update(request, reservation_id, rg_id, session, undo=False)
+
+
+@router.post("/check-in/{reservation_id}/avs/{rg_id}/offen")
+def avs_undo(
+    request: Request, reservation_id: int, rg_id: int, session: Session = Depends(get_session)
+):
+    return _avs_update(request, reservation_id, rg_id, session, undo=True)
+
+
+def _avs_update(request: Request, reservation_id: int, rg_id: int, session: Session, *, undo: bool):
+    reservation = _open(session, reservation_id)
+    if isinstance(reservation, RedirectResponse):
+        return reservation
+    rg = _find_guest(reservation, rg_id)
+    url = _step_url(reservation, "avs")
+    if rg is None:
+        return redirect_with_notice(url, "Gast nicht gefunden.", "danger")
+    if undo:
+        if engine.invalidate_meldeschein(rg):
+            audit.record(
+                session,
+                action="meldeschein.print_undone",
+                entity="reservation_guest",
+                entity_id=rg.id,
+                summary=f"AVS-Druck zurückgenommen: {rg.guest.full_name}",
+            )
+    else:
+        try:
+            _printed(session, rg)
+        except engine.MeldescheinIncompleteError:
+            return redirect_with_notice(
+                _step_url(reservation, "gaeste"), "Daten unvollständig.", "danger"
+            )
+    session.commit()
+    if _is_htmx(request):
+        return templates.TemplateResponse(
+            request, "checkin/_avs_guest.html", {"r": reservation, "card": _avs_card(session, rg)}
+        )
     return RedirectResponse(url, status_code=303)
 
 
-@router.get("/check-in/{reservation_id}/meldeschein", response_class=HTMLResponse)
-def meldeschein_step(
-    request: Request, reservation_id: int, session: Session = Depends(get_session)
-):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
-    state = engine.readiness(reservation)
-    return _render(
-        request,
-        "checkin/meldeschein.html",
-        reservation,
-        "meldeschein",
-        data_blockers=state["gaeste"],
-    )
-
-
-@router.post("/check-in/{reservation_id}/meldeschein/{rg_id}/erzeugen")
-def meldeschein_generate(
-    request: Request, reservation_id: int, rg_id: int, session: Session = Depends(get_session)
-):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
-    rg = _find_guest(reservation, rg_id)
-    if rg is None:
-        return _meldeschein_response(
-            request, reservation, {"text": "Gast nicht gefunden.", "kind": "danger"}
-        )
-    try:
-        engine.generate_meldeschein(session, rg)
-    except engine.CheckinError as exc:
-        session.rollback()
-        return _meldeschein_response(
-            request, reservation, {"text": f"{rg.guest.full_name}: {exc.message}", "kind": "danger"}
-        )
-    session.commit()
-    return _meldeschein_response(
-        request,
-        reservation,
-        {
-            "text": f"Meldeschein für {rg.guest.full_name} erzeugt – zur Unterschrift vorlegen.",
-            "kind": "info",
-        },
-    )
-
-
-@router.post("/check-in/{reservation_id}/meldeschein/alle")
-def meldeschein_generate_all(
-    request: Request, reservation_id: int, session: Session = Depends(get_session)
-):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
-    done, failed = [], []
-    for rg in reservation.guests:
-        if rg.meldeschein_status != "offen":
-            continue
-        try:
-            engine.generate_meldeschein(session, rg)
-            done.append(rg.guest.full_name)
-        except engine.CheckinError as exc:
-            failed.append(f"{rg.guest.full_name}: {exc.message}")
-    session.commit()
-    if failed:
-        notice = {"text": " ".join(failed), "kind": "danger"}
-    elif done:
-        notice = {
-            "text": f"{len(done)} Meldeschein(e) erzeugt – zur Unterschrift vorlegen.",
-            "kind": "info",
-        }
-    else:
-        notice = None
-    return _meldeschein_response(request, reservation, notice)
-
-
-@router.post("/check-in/{reservation_id}/meldeschein/{rg_id}/unterschreiben")
-def meldeschein_sign(
-    request: Request, reservation_id: int, rg_id: int, session: Session = Depends(get_session)
-):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
-    rg = _find_guest(reservation, rg_id)
-    if rg is None:
-        return _meldeschein_response(
-            request, reservation, {"text": "Gast nicht gefunden.", "kind": "danger"}
-        )
-    try:
-        engine.sign_meldeschein(session, rg)
-    except engine.CheckinError as exc:
-        session.rollback()
-        return _meldeschein_response(request, reservation, {"text": exc.message, "kind": "danger"})
-    session.commit()
-    return _meldeschein_response(
-        request,
-        reservation,
-        {"text": f"Unterschrift von {rg.guest.full_name} bestätigt.", "kind": "success"},
-    )
-
-
-@router.get("/meldeschein/{rg_id}.pdf")
-def meldeschein_download(rg_id: int, session: Session = Depends(get_session)) -> Response:
+@router.post("/meldeschein/{rg_id}/unterschrieben")
+async def signature_later(request: Request, rg_id: int, session: Session = Depends(get_session)):
     rg = session.get(ReservationGuest, rg_id)
     if rg is None:
-        return Response("Meldeschein nicht gefunden.\n", status_code=404, media_type="text/plain")
-    try:
-        pdf = engine.meldeschein_pdf(session, rg)
-    except engine.CheckinError as exc:
-        return Response(f"{exc.message}\n", status_code=409, media_type="text/plain")
-    if pdf is None:
-        return Response(
-            "Für diesen Gast wurde noch kein Meldeschein erzeugt.\n",
-            status_code=404,
-            media_type="text/plain",
-        )
-    session.commit()
-    safe = "".join(ch if ch.isascii() and ch.isalnum() else "-" for ch in rg.guest.last_name)
-    filename = f"Meldeschein-{rg.reservation.code}-{safe}.pdf"
-    return Response(
-        pdf,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+        return redirect_with_notice("/", "Gast nicht gefunden.", "danger")
+    form = await request.form()
+    target = (
+        safe_next(str(form["zurueck"]))
+        if "zurueck" in form
+        else f"/reservierungen/{rg.reservation_id}"
     )
+    if rg.meldeschein_status == MELDESCHEIN_OPEN:
+        return redirect_with_notice(target, "Erst in AVS drucken.", "danger")
+    _signed(session, rg)
+    session.commit()
+    return redirect_with_notice(target, f"Unterschrift von {rg.guest.full_name} erfasst.")
 
 
-# ---------------------------------------------------------------------------
-# Step 3 — Kurtaxe
-# ---------------------------------------------------------------------------
+@router.get("/check-in/{reservation_id}/meldeschein")
+def old_meldeschein(reservation_id: int):
+    return RedirectResponse(f"/check-in/{reservation_id}/avs", status_code=303)
+
+
+@router.get("/check-in/{reservation_id}/kurkarte")
+def old_kurkarte(reservation_id: int):
+    return RedirectResponse(f"/check-in/{reservation_id}/abschluss", status_code=303)
 
 
 def _exemption_overrides(
@@ -585,19 +618,9 @@ def _kurtaxe_context(result: engine.KurtaxeResult, reservation: Reservation) -> 
     }
 
 
-@router.get("/check-in/{reservation_id}/kurtaxe", response_class=HTMLResponse)
-def kurtaxe_step(request: Request, reservation_id: int, session: Session = Depends(get_session)):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
-    result = engine.kurtaxe_preview(reservation)
-    return _render(
-        request,
-        "checkin/kurtaxe.html",
-        reservation,
-        "kurtaxe",
-        **_kurtaxe_context(result, reservation),
-    )
+@router.get("/check-in/{reservation_id}/kurtaxe")
+def old_kurtaxe(reservation_id: int):
+    return RedirectResponse(f"/check-in/{reservation_id}/abschluss#kurtaxe", status_code=303)
 
 
 @router.post("/check-in/{reservation_id}/kurtaxe/vorschau", response_class=HTMLResponse)
@@ -629,100 +652,33 @@ async def kurtaxe_save(
             changed = True
     if changed:
         engine.drop_assessment(session, reservation)
-    try:
-        assessment = engine.assess_kurtaxe(session, reservation)
-    except engine.CheckinError as exc:
-        session.commit()  # keep the entered exemptions; they are not the problem
-        result = engine.kurtaxe_preview(reservation)
-        return _render(
-            request,
-            "checkin/kurtaxe.html",
-            reservation,
-            "kurtaxe",
-            error=exc.message,
-            **_kurtaxe_context(result, reservation),
-        )
-    exempt = [line["name"] for line in assessment.breakdown if line["exempt"]]
+    _assess(session, reservation, auto=False)
+    session.commit()
+    return RedirectResponse(_step_url(reservation, "abschluss") + "#kurtaxe", status_code=303)
+
+
+def _assess(session: Session, reservation: Reservation, *, auto: bool) -> None:
+    if engine.kurtaxe_preview(reservation).blockers:
+        return
+    assessment = engine.assess_kurtaxe(session, reservation)
     _audit_step(
         session,
         reservation,
         "kurtaxe.assessed",
-        f"Kurtaxe berechnet: {fmt_money(assessment.amount)} für {assessment.nights} Nächte",
+        f"Kurtaxe berechnet: {fmt_money(assessment.amount)}",
+        auto=auto,
         amount=str(assessment.amount),
-        exempt=exempt,
         satzung=assessment.satzung_label,
     )
-    session.commit()
-    return redirect_with_notice(
-        _step_url(reservation, "kurkarte"),
-        f"Kurtaxe bestätigt: {fmt_money(assessment.amount)}"
-        + (f" · befreit: {', '.join(exempt)}" if exempt else ""),
-    )
 
 
-# ---------------------------------------------------------------------------
-# Step 4 — Kurkarte
-# ---------------------------------------------------------------------------
+def _open_items(session: Session, reservation: Reservation) -> list[engine.Blocker]:
+    from kurort_app.services.today import checkin_blockers
 
-
-def _cards(reservation: Reservation) -> list[dict[str, Any]]:
-    cards = []
-    for rg in reservation.guests:
-        view = engine.kurkarte_view(rg, today())
-        cards.append(
-            {
-                "rg": rg,
-                "view": view,
-                "qr": qr_svg(view.qr_payload, label=f"QR-Code Kurkarte {view.code}")
-                if view
-                else None,
-            }
-        )
-    return cards
-
-
-@router.get("/check-in/{reservation_id}/kurkarte", response_class=HTMLResponse)
-def kurkarte_step(request: Request, reservation_id: int, session: Session = Depends(get_session)):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
     state = engine.readiness(reservation)
-    return _render(
-        request,
-        "checkin/kurkarte.html",
-        reservation,
-        "kurkarte",
-        cards=_cards(reservation),
-        tax_blockers=state["kurtaxe"],
+    return [b for key in engine.STEP_KEYS for b in state[key]] + checkin_blockers(
+        session, reservation
     )
-
-
-@router.post("/check-in/{reservation_id}/kurkarte")
-def kurkarte_issue(reservation_id: int, session: Session = Depends(get_session)):
-    reservation = _open(session, reservation_id)
-    if isinstance(reservation, RedirectResponse):
-        return reservation
-    url = _step_url(reservation, "kurkarte")
-    if engine.readiness(reservation)["kurtaxe"]:
-        return redirect_with_notice(
-            _step_url(reservation, "kurtaxe"),
-            "Kurkarte erst nach bestätigter Kurtaxe ausstellen.",
-            "warning",
-        )
-    issued = [
-        engine.issue_kurkarte(session, rg, today()).guest_name
-        for rg in reservation.guests
-        if not rg.kurkarte_code
-    ]
-    session.commit()
-    if not issued:
-        return RedirectResponse(url, status_code=303)
-    return redirect_with_notice(url, f"Kurkarte ausgestellt für {', '.join(issued)}.")
-
-
-# ---------------------------------------------------------------------------
-# Step 5 — completion
-# ---------------------------------------------------------------------------
 
 
 @router.get("/check-in/{reservation_id}/abschluss", response_class=HTMLResponse)
@@ -730,43 +686,51 @@ def summary_step(request: Request, reservation_id: int, session: Session = Depen
     reservation = _open(session, reservation_id)
     if isinstance(reservation, RedirectResponse):
         return reservation
-    state = engine.readiness(reservation)
-    open_items = [b for key in engine.STEP_KEYS for b in state[key]]
+    if reservation.kurtaxe is None:
+        _assess(session, reservation, auto=True)
+        session.commit()
+    result = engine.kurtaxe_preview(reservation)
     return _render(
         request,
         "checkin/abschluss.html",
         reservation,
         "abschluss",
-        open_items=open_items,
+        open_items=_open_items(session, reservation),
+        **_kurtaxe_context(result, reservation),
     )
 
 
 @router.post("/check-in/{reservation_id}/abschluss")
-def complete(reservation_id: int, session: Session = Depends(get_session)):
+async def complete(request: Request, reservation_id: int, session: Session = Depends(get_session)):
     reservation = _open(session, reservation_id)
     if isinstance(reservation, RedirectResponse):
         return reservation
-    state = engine.readiness(reservation)
-    open_items = [b for key in engine.STEP_KEYS for b in state[key]]
+    _assess(session, reservation, auto=True)
+    open_items = _open_items(session, reservation)
     if open_items:
+        session.commit()
         return redirect_with_notice(
             _step_url(reservation, engine.first_open_step(reservation)),
             f"Check-in noch nicht möglich: {open_items[0].message}",
             "danger",
         )
+    form = await request.form()
+    signed_ids = set(form.getlist("unterschrieben"))
+    for rg in reservation.guests:
+        if str(rg.id) in signed_ids:
+            _signed(session, rg)
     reservation.status = CHECKED_IN
     reservation.checked_in_at = datetime.now(UTC)
-    primary = reservation.primary_guest
-    room = reservation.room
+    primary, room = reservation.primary_guest, reservation.room
+    who = primary.full_name if primary else reservation.code
     _audit_step(
         session,
         reservation,
         "reservation.checked_in",
-        f"Check-in abgeschlossen: {primary.full_name if primary else reservation.code} · Zimmer {room.number}",
+        f"Check-in abgeschlossen: {who} · Zimmer {room.number}",
         room=room.number,
         guests=[rg.guest.full_name for rg in reservation.guests],
-        kurtaxe=str(reservation.kurtaxe.amount) if reservation.kurtaxe else None,
+        kurtaxe=str(reservation.kurtaxe.amount),
     )
     session.commit()
-    who = primary.full_name if primary else reservation.code
-    return redirect_with_notice("/anreisen", f"{who} ist eingecheckt · Zimmer {room.number}")
+    return redirect_with_notice("/", f"{who} ist eingecheckt · Zimmer {room.number}")

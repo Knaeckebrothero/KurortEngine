@@ -351,12 +351,13 @@ def test_move_arrival_ambiguous_and_unknown(client, seeded):
     [
         (
             "Zeig mir nur Anreisen und Belegung, 30 Tage",
-            {"widgets": ["arrivals", "occupancy"], "occupancy_days": 30},
+            {"widgets": ["today", "occupancy"], "occupancy_days": 30},
         ),
         (
-            "Blende die Hinweise aus",
-            {"widgets": ["metrics", "arrivals", "occupancy"], "occupancy_days": None},
+            "Blende Heute aus",
+            {"widgets": ["metrics", "occupancy"], "occupancy_days": None},
         ),
+        ("Blende die Kennzahlen aus", {"widgets": ["today", "occupancy"], "occupancy_days": None}),
         ("Belegung für 30 Tage", {"widgets": None, "occupancy_days": 30}),
         ("Belegung für 100 Tage", {"widgets": None, "occupancy_days": 60}),
         (
@@ -367,6 +368,7 @@ def test_move_arrival_ambiguous_and_unknown(client, seeded):
 )
 def test_dashboard_configuration(client, seeded, text, config):
     plan = ask(client, text)
+    assert "hints" not in str(plan)
     assert plan["intent"] == "dashboard"
     assert plan["steps"][0] == {"type": "dashboard", "label": "Ansicht speichern", "config": config}
     assert plan["steps"][1]["url"] == "/"

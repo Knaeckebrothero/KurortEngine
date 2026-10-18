@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
@@ -12,24 +11,23 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from kurort_app import audit
+from kurort_app.auth import require_role
 from kurort_app.config import today
 from kurort_app.db import get_session
 from kurort_app.models import (
     CANCELLED,
     CHECKED_IN,
     CHECKED_OUT,
-    MELDESCHEIN_GENERATED,
-    MELDESCHEIN_OPEN,
-    MELDESCHEIN_SIGNED,
     NO_SHOW,
     RESERVED,
     Reservation,
     ReservationGuest,
     Room,
 )
+from kurort_app.services import today as desk
 from kurort_app.web import STATUS_LABELS, WEEKDAYS, fmt_date, redirect_with_notice, templates
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_role("rezeption", "leitung"))])
 
 CHART_NIGHTS = 14
 CHART_NIGHTS_MIN, CHART_NIGHTS_MAX = 7, 60
@@ -103,144 +101,6 @@ def _occupancy_by_night(session: Session, start: date, nights: int) -> list[int]
             if arrival <= night < departure:
                 counts[offset] += 1
     return counts
-
-
-# ---------------------------------------------------------------------------
-# Readiness and exceptions
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class Flag:
-    text: str
-    kind: str  # success | warning | danger | info
-
-
-def _missing_fields(rg: ReservationGuest) -> list[str]:
-    g = rg.guest
-    missing = []
-    if g.birth_date is None:
-        missing.append("Geburtsdatum")
-    if not (g.street and g.postal_code and g.city):
-        missing.append("Adresse")
-    return missing
-
-
-def arrival_flags(reservation: Reservation) -> list[Flag]:
-    """What stands between this arrival and a smooth check-in."""
-    if reservation.status == CHECKED_IN:
-        return [Flag("Angekommen", "success")]
-    if reservation.status == NO_SHOW:
-        return [Flag("No-Show", "warning")]
-    flags: list[Flag] = []
-    missing = sorted({m for rg in reservation.guests for m in _missing_fields(rg)})
-    if missing:
-        flags.append(Flag(f"Meldeschein prüfen · {' & '.join(missing)} fehlt", "warning"))
-    if any(rg.exemption_category and not rg.exemption_evidence for rg in reservation.guests):
-        flags.append(Flag("Kurtaxe klären · Nachweis fehlt", "danger"))
-    if reservation.room is None:
-        flags.append(Flag("Kein Zimmer zugewiesen", "danger"))
-    if not flags:
-        flags.append(Flag("Anreisebereit", "success"))
-    return flags
-
-
-def meldeschein_flag(reservation: Reservation) -> Flag:
-    states = {rg.meldeschein_status for rg in reservation.guests}
-    if not states or states == {MELDESCHEIN_SIGNED}:
-        return Flag("Meldeschein unterschrieben", "success")
-    if MELDESCHEIN_OPEN in states:
-        return Flag("Meldeschein offen", "warning")
-    return Flag("PDF erzeugt · Unterschrift fehlt", "warning")
-
-
-@dataclass
-class Hint:
-    reservation: Reservation
-    title: str
-    detail: str
-    kind: str
-    action: str
-    href: str = field(default="")
-
-    def __post_init__(self) -> None:
-        self.href = self.href or f"/reservierungen/{self.reservation.id}"
-
-
-def _guest_name(rg: ReservationGuest) -> str:
-    return rg.guest.full_name
-
-
-def collect_hints(session: Session, day: date) -> list[Hint]:
-    """Kurort exception radar: narrow, guest-linked states that need the desk."""
-    hints: list[Hint] = []
-    arrivals = [r for r in _arrivals(session, day) if r.status == RESERVED]
-    in_house = _in_house(session)
-
-    for res in arrivals:
-        for rg in res.guests:
-            missing = _missing_fields(rg)
-            if missing:
-                hints.append(
-                    Hint(
-                        res,
-                        "Meldeschein prüfen",
-                        f"{_guest_name(rg)}: {' und '.join(missing)} fehlt · Anreise heute",
-                        "warning",
-                        "Daten ergänzen",
-                    )
-                )
-    for res in arrivals + in_house:
-        for rg in res.guests:
-            if rg.exemption_category and not rg.exemption_evidence:
-                hints.append(
-                    Hint(
-                        res,
-                        "Kurtaxe klären · Nachweis fehlt",
-                        f"{_guest_name(rg)}: Befreiung ohne Nachweis – "
-                        "Nachweis erfassen oder Befreiung entfernen",
-                        "danger",
-                        "Nachweis prüfen",
-                    )
-                )
-    for res in sorted(in_house, key=_room_sort_key):
-        for rg in res.guests:
-            if rg.meldeschein_status != MELDESCHEIN_SIGNED:
-                state = (
-                    "PDF erzeugt · nicht unterschrieben"
-                    if rg.meldeschein_status == MELDESCHEIN_GENERATED
-                    else "noch nicht erstellt"
-                )
-                room = f"Zimmer {res.room.number}" if res.room else "ohne Zimmer"
-                hints.append(
-                    Hint(
-                        res,
-                        "Meldeschein prüfen · Unterschrift fehlt",
-                        f"{_guest_name(rg)} ({room}): Meldeschein {state}",
-                        "warning",
-                        "Meldeschein öffnen",
-                    )
-                )
-    no_shows = session.scalars(
-        _with_relations(
-            select(Reservation).where(
-                Reservation.status == NO_SHOW, Reservation.arrival == day - timedelta(days=1)
-            )
-        )
-    )
-    for res in no_shows:
-        guest = res.primary_guest
-        hints.append(
-            Hint(
-                res,
-                "No-Show von gestern",
-                f"{guest.full_name if guest else res.code}: nicht angereist – "
-                "Stornogebühr und Zimmerfreigabe klären",
-                "info",
-                "Fall öffnen",
-            )
-        )
-    return hints
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +191,7 @@ def _parse_day(raw: str | None) -> date:
 
 @router.get("/", response_class=HTMLResponse)
 def dashboard(
-    request: Request, tage: str = "", session: Session = Depends(get_session)
+    request: Request, tage: str = "", zeigen: str = "alle", session: Session = Depends(get_session)
 ) -> HTMLResponse:
     day = today()
     # The assistant remembers a chart range in a cookie; an explicit ?tage= wins.
@@ -351,7 +211,24 @@ def dashboard(
     tonight = counts[0] if counts else 0
     early = [r for r in open_arrivals if r.eta is not None and r.eta.hour < 14]
 
-    hints = collect_hints(session, day)
+    rows = desk.today_rows(session, day)
+    row_counts = {
+        "alle": len(rows),
+        "anreisen": sum(row.kind == "anreise" for row in rows),
+        "abreisen": sum(row.kind == "abreise" for row in rows),
+    }
+    if zeigen not in row_counts:
+        zeigen = "alle"
+    visible = [
+        row
+        for row in rows
+        if zeigen == "alle"
+        or row.kind == {"anreisen": "anreise", "abreisen": "abreise"}.get(zeigen)
+    ]
+
+    def is_open(row):
+        return row.reservation.status == (RESERVED if row.kind == "anreise" else CHECKED_IN)
+
     context = {
         "arrivals": arrivals,
         "queue": open_arrivals + arrived,
@@ -368,9 +245,13 @@ def dashboard(
         "occupancy_pct": round(100 * tonight / capacity) if capacity else 0,
         "chart": occupancy_chart(counts, day, capacity),
         "chart_nights": nights,
-        "hints": hints,
+        "today_open": [row for row in visible if is_open(row)],
+        "today_done": [row for row in visible if not is_open(row)],
+        "today_counts": row_counts,
+        "zeigen": zeigen,
+        "notices": desk.dashboard_notices(session, day),
         "next_arrival": open_arrivals[0] if open_arrivals else None,
-        "flags": {r.id: arrival_flags(r) for r in arrivals},
+        "flags": {r.id: desk.flags_for(session, "anreise", r) for r in arrivals},
     }
     return templates.TemplateResponse(request, "front_desk/dashboard.html", context)
 
@@ -403,7 +284,7 @@ def arrivals_page(
         "rows": rows,
         "filter": filter,
         "counts": {"alle": len(all_rows), "offen": len(open_rows), "angekommen": len(arrived_rows)},
-        "flags": {r.id: arrival_flags(r) for r in all_rows},
+        "flags": {r.id: desk.flags_for(session, "anreise", r) for r in all_rows},
         "guest_total": sum(len(r.guests) for r in all_rows),
     }
     return templates.TemplateResponse(request, "front_desk/arrivals.html", context)
@@ -423,7 +304,7 @@ def departures_page(
         "rows": rows,
         "open_count": sum(1 for r in rows if r.status == CHECKED_IN),
         "done_count": sum(1 for r in rows if r.status == CHECKED_OUT),
-        "meldeschein": {r.id: meldeschein_flag(r) for r in rows},
+        "flags": {r.id: desk.flags_for(session, "abreise", r) for r in rows},
         "balance": {r.id: _balance(r) for r in rows},
     }
     return templates.TemplateResponse(request, "front_desk/departures.html", context)
@@ -452,7 +333,7 @@ def in_house_page(
         "guest_count": sum(len(r.guests) for r in rows),
         "departing_today": sum(1 for r in rows if r.departure <= day),
         "remaining": {r.id: (r.departure - day).days for r in rows},
-        "meldeschein": {r.id: meldeschein_flag(r) for r in rows},
+        "flags": {r.id: desk.flags_for(session, "abreise", r) for r in rows},
         "capacity": _room_count(session),
     }
     return templates.TemplateResponse(request, "front_desk/in_house.html", context)
@@ -481,7 +362,7 @@ def checkout_page(
     context = {
         "r": reservation,
         "balance": _balance(reservation),
-        "meldeschein": meldeschein_flag(reservation),
+        "warnings": desk.checkout_warnings(session, reservation),
         "can_check_out": reservation.status == CHECKED_IN,
         "early": reservation.departure > today(),
         "day": today(),
