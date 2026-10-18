@@ -18,7 +18,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from kurort_app import __version__, auth
 from kurort_app.config import Settings, get_settings
 from kurort_app.db import get_engine
-from kurort_app.routers import assistant, checkin, front_desk, reservations, seminar
+from kurort_app.routers import assistant, checkin, front_desk, housekeeping, reservations, seminar
 from kurort_app.web import STATIC_DIR
 
 
@@ -65,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(checkin.router)
     app.include_router(assistant.router)
     app.include_router(seminar.router)
+    app.include_router(housekeeping.router)
     return app
 
 

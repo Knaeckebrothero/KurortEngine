@@ -1,0 +1,23 @@
+.hk-filters { display: grid; gap: var(--space-3); margin-bottom: var(--space-6); }
+.hk-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.hk-chips strong { min-width: var(--space-12); }
+.hk-chips [aria-current] { font-weight: 700; text-decoration-thickness: 2px; }
+.hk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-4); }
+.hk-room { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.hk-room-head { display: flex; align-items: center; gap: var(--space-4); }
+.hk-number { font-size: 28px; line-height: var(--space-10); }
+.hk-room p { margin: 0; }
+.hk-situation { font-weight: 650; }
+.hk-changed { font-size: 14px; }
+.hk-note { overflow-wrap: anywhere; }
+.hk-room form { display: grid; gap: var(--space-2); }
+.hk-room > form { margin-top: auto; }
+.hk-room .btn, .hk-chips .btn, .hk-other summary { min-height: var(--space-12); }
+.hk-other summary { display: flex; align-items: center; cursor: pointer; color: var(--primary); text-decoration: underline; }
+.hk-other form + form { margin-top: var(--space-3); }
+.hk-room .input { min-width: 0; width: 100%; }
+@media (max-width: 600px) {
+  .hk-grid { grid-template-columns: minmax(0, 1fr); }
+  .hk-chips { gap: var(--space-2); }
+  .hk-chips strong { width: 100%; }
+}

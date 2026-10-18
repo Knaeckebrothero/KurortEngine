@@ -40,6 +40,13 @@ CANCELLED = "cancelled"
 NO_SHOW = "no_show"
 RESERVATION_STATUSES = (RESERVED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW)
 
+ROOM_DIRTY = "dirty"
+ROOM_CLEAN = "clean"
+ROOM_INSPECTED = "inspected"
+ROOM_OUT_OF_ORDER = "out_of_order"
+HOUSEKEEPING_STATUSES = (ROOM_DIRTY, ROOM_CLEAN, ROOM_INSPECTED, ROOM_OUT_OF_ORDER)
+ROOM_READY = (ROOM_CLEAN, ROOM_INSPECTED)
+
 # Booking channels.
 CHANNELS = ("direct", "phone", "email", "booking.com", "walk-in")
 
@@ -59,6 +66,11 @@ def _in(values: tuple[str, ...]) -> str:
 
 class Room(Base):
     __tablename__ = "rooms"
+    __table_args__ = (
+        CheckConstraint(
+            f"housekeeping_status IN {_in(HOUSEKEEPING_STATUSES)}", name="room_housekeeping_status"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     number: Mapped[str] = mapped_column(String(10), unique=True)
@@ -67,6 +79,11 @@ class Room(Base):
     max_occupancy: Mapped[int] = mapped_column(Integer)
     nightly_rate: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     features: Mapped[str | None] = mapped_column(String(200))
+
+    housekeeping_status: Mapped[str] = mapped_column(String(16), server_default=ROOM_CLEAN)
+    housekeeping_note: Mapped[str | None] = mapped_column(String(200))
+    housekeeping_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    housekeeping_changed_by: Mapped[str | None] = mapped_column(String(60))
 
     reservations: Mapped[list[Reservation]] = relationship(back_populates="room")
 

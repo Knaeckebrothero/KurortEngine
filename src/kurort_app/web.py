@@ -58,6 +58,18 @@ STATUS_LABELS = {
     "cancelled": "Storniert",
     "no_show": "No-Show",
 }
+HOUSEKEEPING_LABELS = {
+    "dirty": "schmutzig",
+    "clean": "sauber",
+    "inspected": "geprüft",
+    "out_of_order": "außer Betrieb",
+}
+HOUSEKEEPING_KINDS = {
+    "dirty": "warning",
+    "clean": "success",
+    "inspected": "info",
+    "out_of_order": "danger",
+}
 CHANNEL_LABELS = {
     "direct": "Direkt",
     "phone": "Telefon",
@@ -223,6 +235,8 @@ templates.env.filters.update(
     time=fmt_time,
     money=fmt_money,
     status_label=lambda s: STATUS_LABELS.get(s, s),
+    room_status_label=lambda s: HOUSEKEEPING_LABELS.get(s, s),
+    room_status_kind=lambda s: HOUSEKEEPING_KINDS.get(s, "plain"),
     channel_label=lambda s: CHANNEL_LABELS.get(s, s),
     exemption_label=lambda s: EXEMPTION_LABELS.get(s, s) if s else "–",
     meldeschein_label=lambda s: MELDESCHEIN_LABELS.get(s, s),
