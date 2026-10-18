@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Bestellvorschlag · {{ app.title }}{% endblock %}
+{% block head %}
+<style>
+.inv-filters { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: var(--space-4); align-items: end; }
+.inv-filters .field, .inv-row > *, .inv-entry { min-width: 0; }
+.inv-page input, .inv-page select { min-height: 44px; width: 100%; min-width: 0; font: inherit; }
+.inv-row { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(110px, 1fr) minmax(210px, 2fr) minmax(110px, 1fr) minmax(150px, 1.5fr); gap: var(--space-4); padding: var(--space-5); border-bottom: 1px solid var(--border-subtle); align-items: start; }
+.inv-row h2 { font-size: 16px; margin: 0; }
+.inv-row p { margin: var(--space-2) 0; }
+.inv-entry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); }
+.inv-row summary { padding: var(--space-2) 0; font-size: 14px; }
+.inv-sticky { background: var(--surface); padding: var(--space-5); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); }
+.inv-history { display: grid; gap: var(--space-3); list-style: none; padding: 0; }
+.inv-history li { padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+.inv-page { overflow-wrap: anywhere; }
+@media (max-width: 1100px) { .inv-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } .inv-entry { grid-column: 1 / -1; } }
+@media (max-width: 560px) {
+  .inv-filters { grid-template-columns: minmax(0, 1fr); }
+  .inv-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); background: var(--surface); }
+  .inv-list { border: 0; background: transparent; box-shadow: none; }
+  .inv-sticky { position: sticky; bottom: 0; z-index: 2; padding: var(--space-3); }
+  .inv-sticky .app-actions { gap: var(--space-2); }
+}
+</style>
+{% endblock %}
+{% macro error(key) %}{% if errors.get(key) %}<p class="error" id="error-{{ key }}">{{ errors[key] }}</p>{% endif %}{% endmacro %}
+{% block content %}
+<div class="app-page inv-page stack">
+  <nav class="breadcrumb" aria-label="Pfad"><a href="/apps/inventur">{{ app.title }}</a><span aria-hidden="true"> › </span>Bestellvorschlag</nav>
+  <header class="page-header"><div><p class="eyebrow">Inventur &amp; Bestellung</p><h1>Bestellvorschlag</h1><p>Bestände prüfen. Vorschlag anpassen. Bestellung festhalten.</p></div></header>
+  {% if errors %}<div class="notice danger app-panel" role="alert"><h2>Bitte die markierten Angaben prüfen.</h2><p>Es wurde nichts gespeichert.</p><ul>{% for key, message in errors.items() %}<li><a href="#{{ key }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
+  <form method="get" class="card app-panel inv-filters">
+    <div class="field"><label for="lieferant">Lieferant</label><select class="select" id="lieferant" name="lieferant" {% if errors.get('lieferant') %}aria-invalid="true" aria-describedby="error-lieferant"{% endif %}>
+      {% if not supplier %}<option value="{{ raw.get('lieferant', '') }}">Bitte auswählen</option>{% endif %}
+      {% for entry in suppliers %}<option value="{{ entry.id }}" {% if supplier and entry.id == supplier.id %}selected{% endif %}>{{ entry.data.name }}</option>{% endfor %}</select>{{ error('lieferant') }}</div>
+    <div class="field"><label for="lieferung_am">Lieferung am</label><input class="input" type="date" id="lieferung_am" name="lieferung_am" value="{{ raw.lieferung_am }}" {% if errors.get('lieferung_am') %}aria-invalid="true" aria-describedby="error-lieferung_am"{% endif %}>{{ error('lieferung_am') }}</div>
+    <div class="field"><label for="naechste_lieferung">Nächste Lieferung</label><input class="input" type="date" id="naechste_lieferung" name="naechste_lieferung" value="{{ raw.naechste_lieferung }}" {% if errors.get('naechste_lieferung') %}aria-invalid="true" aria-describedby="error-naechste_lieferung"{% endif %}>{{ error('naechste_lieferung') }}</div>
+    <button class="btn" type="submit">Anzeigen</button>
+  </form>
+  <p>Erwartete Frühstücke {{ delivery.strftime('%d.%m.') }}–{{ last_breakfast.strftime('%d.%m.') }}: <strong>{{ breakfasts }}</strong> (aus den Reservierungen)</p>
+  <form method="post" class="stack" id="inv-order">
+    <input type="hidden" name="lieferant" value="{{ supplier.id if supplier else raw.get('lieferant', '') }}">
+    <input type="hidden" name="lieferung_am" value="{{ raw.lieferung_am }}">
+    <input type="hidden" name="naechste_lieferung" value="{{ raw.naechste_lieferung }}">
+    <div class="card inv-list">
+    {% for row in rows %}{% set article = row.article %}{% set id = article.id %}
+      <article class="inv-row" data-article="{{ id }}" data-price="{{ article.data.get('preis', '') }}" aria-labelledby="article-{{ id }}">
+        <div><h2 id="article-{{ id }}">{{ article.data.name }}</h2><p class="app-meta">{{ display('einheit', article.data.einheit) }}</p>
+          <details><summary>Lagerort &amp; Regel</summary><p>{{ article.data.get('lagerort') or 'Kein Lagerort' }}</p><p>{% if article.data.get('pro_fruehstueck') is not none %}{{ decimal(article.data.pro_fruehstueck) }} pro Frühstück + {{ decimal(article.data.get('mindestbestand') or 0) }} Mindestbestand{% elif article.data.get('zielbestand') is not none %}Zielbestand {{ decimal(article.data.zielbestand) }}{% elif article.data.get('mindestbestand') is not none %}Mindestbestand {{ decimal(article.data.mindestbestand) }}{% else %}Kein Zielbestand{% endif %}</p><p>Packungsgröße {{ decimal(article.data.get('packungsgroesse') or 1) }}</p></details>
+        </div>
+        <div><p class="app-meta">Zuletzt gezählt</p>{% if row.latest %}<p>{{ decimal(row.latest.data.menge) }} {{ display('einheit', article.data.einheit) }}<br><span class="app-meta">{{ row.latest_at|date }} · {{ row.latest_at|time }}</span></p>{% else %}<p>Bestand unbekannt</p>{% endif %}</div>
+        <div class="inv-entry">
+          <div class="field"><label for="bestand_{{ id }}">Bestand jetzt<span class="sr-only">: {{ article.data.name }}</span></label><input class="input" id="bestand_{{ id }}" name="bestand_{{ id }}" inputmode="decimal" value="{{ row.count_raw }}" placeholder="{{ decimal(row.latest.data.menge) if row.latest else '0' }}" {% if errors.get('bestand_' ~ id) %}aria-invalid="true" aria-describedby="error-bestand_{{ id }}"{% endif %}>{{ error('bestand_' ~ id) }}</div>
+          <div class="field"><label for="bestellt_{{ id }}">Bestellen<span class="sr-only">: {{ article.data.name }}</span></label><input class="input" id="bestellt_{{ id }}" name="bestellt_{{ id }}" inputmode="decimal" value="{{ row.ordered_raw }}" {% if errors.get('bestellt_' ~ id) %}aria-invalid="true" aria-describedby="error-bestellt_{{ id }}"{% endif %}>{{ error('bestellt_' ~ id) }}</div>
+        </div>
+        <div><p class="app-meta">Vorschlag</p><strong class="num">{{ decimal(row.suggestion.amount) }} {{ display('einheit', article.data.einheit) if row.suggestion.amount is not none else '' }}</strong>{% for flag in row.suggestion.flags %}<p><span class="badge warning">{{ flag }}</span></p>{% endfor %}</div>
+        <div class="field"><label for="grund_{{ id }}">Grund <span class="app-meta">(optional)</span><span class="sr-only">: {{ article.data.name }}</span></label><select class="select" id="grund_{{ id }}" name="grund_{{ id }}" {% if errors.get('grund_' ~ id) %}aria-invalid="true" aria-describedby="error-grund_{{ id }}"{% endif %}><option value="">–</option>{% for reason in reasons %}<option value="{{ reason.key }}" {% if reason.key == row.reason %}selected{% endif %}>{{ reason.label }}</option>{% endfor %}</select>{{ error('grund_' ~ id) }}</div>
+      </article>
+    {% else %}<p class="app-panel">Keine aktiven Artikel für diesen Lieferanten. Artikel können Sie in den Stammdaten ergänzen.</p>{% endfor %}
+    </div>
+    <div class="inv-sticky stack">
+      <strong class="num" id="inv-total" aria-live="polite">Summe ca. {{ total|money }}</strong>
+      {% if missing_prices %}<p class="app-meta">{{ missing_prices|length }} Artikel ohne Preis: {{ missing_prices|join(', ') }}</p>{% endif %}
+      <p class="app-meta">Nettowerte · Berechnet mit aktuellen Artikelpreisen. Nicht an den Lieferanten gesendet.</p>
+      <div class="app-actions"><button class="btn" type="submit" name="aktion" value="berechnen">Vorschlag aktualisieren</button>{% if ctx.can_edit('bestellungen') and supplier and rows %}<button class="btn primary" type="submit" name="aktion" value="speichern">Bestellung speichern</button>{% endif %}</div>
+    </div>
+  </form>
+  <section class="card app-panel" aria-labelledby="history-title"><h2 id="history-title">Letzte Bestellungen{% if supplier %} · {{ supplier.data.name }}{% endif %}</h2><p class="app-meta">Werte mit aktuellen Artikelpreisen.</p><ul class="inv-history">
+    {% for entry in history %}<li><a href="/apps/inventur/bestellungen/{{ entry.order.id }}">{{ entry.date|date }}</a><p>Vorgeschlagen {{ entry.vorschlag|money }} · Bestellt {{ entry.bestellt|money }}</p><p class="app-meta">{{ entry.differences }} Positionen mit Abweichung</p></li>{% else %}<li>Noch keine Bestellungen vorhanden.</li>{% endfor %}
+  </ul></section>
+</div>
+<script>
+const order = document.getElementById('inv-order');
+const filters = document.querySelector('.inv-filters');
+order.addEventListener('input', () => {
+  let total = 0;
+  let valid = true;
+  for (const row of order.querySelectorAll('[data-price]')) {
+    const value = row.querySelector('[name^="bestellt_"]').value.trim().replace(',', '.');
+    if (value && (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(value) || !Number.isFinite(Number(value)))) valid = false;
+    if (row.dataset.price && value) total += Number(value) * Number(row.dataset.price);
+  }
+  document.getElementById('inv-total').textContent = valid
+    ? 'Summe ca. ' + new Intl.NumberFormat('de-DE', {style: 'currency', currency: 'EUR'}).format(total)
+    : 'Summe: Bitte Mengen prüfen';
+});
+order.addEventListener('submit', () => {
+  for (const name of ['lieferant', 'lieferung_am', 'naechste_lieferung']) {
+    order.elements[name].value = filters.elements[name].value;
+  }
+});
+</script>
+{% endblock %}
