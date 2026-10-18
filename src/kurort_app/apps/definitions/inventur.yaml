@@ -1,0 +1,136 @@
+slug: inventur
+version: 1
+title: Inventur & Bestellung
+description: Bestände zählen, Frühstück planen und Bestellungen festhalten.
+icon: cart
+roles: {view: [kueche, rezeption], edit: [kueche]}
+collections:
+  - key: lieferanten
+    title: Lieferanten
+    item: Lieferant
+    master: true
+    title_field: name
+    list_fields: [name, bestellweg, liefertage]
+    order_by: name
+    roles: {edit: [kueche]}
+    fields:
+      - {key: name, label: Name, type: text, required: true}
+      - key: bestellweg
+        label: Bestellweg
+        type: select
+        options:
+          - {key: telefon, label: Telefon}
+          - {key: email, label: E-Mail}
+          - {key: online, label: Online-Shop}
+          - {key: vertreter, label: Vertreter}
+      - {key: kontakt, label: Kontakt, type: text}
+      - {key: liefertage, label: Liefertage, type: text, help: z. B. Mo und Do}
+      - {key: notiz, label: Notiz, type: textarea}
+  - key: artikel
+    title: Artikel
+    item: Artikel
+    master: true
+    title_field: name
+    list_fields: [name, kategorie, lieferant, zielbestand]
+    order_by: name
+    roles: {edit: [kueche]}
+    fields:
+      - {key: name, label: Name, type: text, required: true}
+      - key: kategorie
+        label: Kategorie
+        type: select
+        required: true
+        options:
+          - {key: fruehstueck, label: Frühstück}
+          - {key: kueche, label: Küche}
+          - {key: getraenke, label: Getränke}
+      - key: einheit
+        label: Einheit
+        type: select
+        required: true
+        options:
+          - {key: stueck, label: Stück}
+          - {key: kg, label: kg}
+          - {key: l, label: l}
+          - {key: packung, label: Packung}
+          - {key: kiste, label: Kiste}
+          - {key: portion, label: Portion}
+      - {key: lieferant, label: Lieferant, type: reference, collection: lieferanten, required: true}
+      - {key: lagerort, label: Lagerort, type: text, help: 'z. B. Kühlraum, Trockenlager, Tiefkühler'}
+      - {key: mindestbestand, label: Mindestbestand, type: decimal, decimals: 2, min: 0}
+      - {key: zielbestand, label: Zielbestand, type: decimal, decimals: 2, min: 0}
+      - {key: packungsgroesse, label: Packungsgröße, type: decimal, decimals: 2, min: 0.01, default: 1, help: Bestellt wird in Vielfachen davon}
+      - {key: pro_fruehstueck, label: Verbrauch pro Frühstücksgast, type: decimal, decimals: 3, min: 0}
+      - {key: preis, label: Preis pro Einheit (netto), type: decimal, decimals: 2, min: 0, unit: €}
+      - {key: aktiv, label: Aktiv, type: boolean, default: true}
+  - key: bestaende
+    title: Bestände
+    item: Zählung
+    title_field: artikel
+    list_fields: [gezaehlt_am, artikel, menge, mitarbeiter]
+    date_field: gezaehlt_am
+    order_by: -gezaehlt_am
+    fields:
+      - {key: artikel, label: Artikel, type: reference, collection: artikel, required: true}
+      - {key: gezaehlt_am, label: Gezählt am, type: datetime, required: true, default: now}
+      - {key: menge, label: Menge, type: decimal, decimals: 2, required: true, min: 0}
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff}
+  - key: bestellungen
+    title: Bestellungen
+    item: Bestellung
+    title_field: lieferant
+    list_fields: [bestellt_am, lieferant, lieferung_am, status]
+    date_field: bestellt_am
+    order_by: -bestellt_am
+    fields:
+      - {key: lieferant, label: Lieferant, type: reference, collection: lieferanten, required: true}
+      - {key: bestellt_am, label: Bestellt am, type: date, required: true, default: today}
+      - {key: lieferung_am, label: Lieferung am, type: date, required: true}
+      - {key: naechste_lieferung, label: Nächste Lieferung, type: date}
+      - {key: fruehstuecke, label: Erwartete Frühstücke, type: integer}
+      - key: status
+        label: Status
+        type: select
+        required: true
+        default: bestellt
+        options:
+          - {key: bestellt, label: Bestellt}
+          - {key: geliefert, label: Geliefert}
+          - {key: storniert, label: Storniert}
+      - {key: notiz, label: Notiz, type: textarea}
+      - {key: mitarbeiter, label: Mitarbeiter, type: staff}
+  - key: positionen
+    title: Bestellpositionen
+    item: Position
+    title_field: artikel
+    list_fields: [bestellung, artikel, bestand, vorschlag, bestellt, grund]
+    roles: {edit: []}
+    fields:
+      - {key: bestellung, label: Bestellung, type: reference, collection: bestellungen, required: true}
+      - {key: artikel, label: Artikel, type: reference, collection: artikel, required: true}
+      - {key: bestand, label: Bestand, type: decimal, decimals: 2}
+      - {key: vorschlag, label: Vorschlag, type: decimal, decimals: 2}
+      - {key: bestellt, label: Bestellt, type: decimal, decimals: 2, required: true, min: 0}
+      - key: grund
+        label: Grund für Abweichung
+        type: select
+        options:
+          - {key: genug_da, label: Noch genug da}
+          - {key: angebot, label: Angebot/Aktion}
+          - {key: gruppe, label: Gruppe/Veranstaltung}
+          - {key: haltbarkeit, label: Qualität/Haltbarkeit}
+          - {key: sonstiges, label: Sonstiges}
+      - {key: notiz, label: Notiz, type: text}
+views:
+  - {key: bestellvorschlag, title: Bestellvorschlag, handler: 'inventur:bestellvorschlag'}
+reports:
+  - key: bestellungen
+    title: Bestellungen
+    sections:
+      - {collection: bestellungen, columns: [bestellt_am, lieferant, lieferung_am, status, fruehstuecke]}
+      - {collection: positionen, columns: [bestellung, artikel, bestand, vorschlag, bestellt, grund]}
+  - key: bestaende
+    title: Bestände
+    sections:
+      - {collection: bestaende, columns: [gezaehlt_am, artikel, menge, mitarbeiter]}
+demo: inventur:seed_demo
