@@ -25,6 +25,7 @@ from kurort_app.models import (
     NO_SHOW,
     RESERVED,
     AuditEvent,
+    EmailMessageRow,
     Guest,
     Reservation,
     ReservationGuest,
@@ -665,6 +666,12 @@ def reservation_detail(
         "warning_count": sum(len(row["warnings"]) for row in guest_rows),
         "package": KURPAKETE.get((reservation.package_code or "").upper()),
         "events": events,
+        "email_messages": session.scalars(
+            select(EmailMessageRow)
+            .where(EmailMessageRow.reservation_id == reservation.id)
+            .order_by(EmailMessageRow.created_at.desc(), EmailMessageRow.id.desc())
+            .limit(3)
+        ).all(),
         "band_labels": BAND_LABELS,
         "today": today(),
         "plan_from": (reservation.arrival - timedelta(days=1)).isoformat(),

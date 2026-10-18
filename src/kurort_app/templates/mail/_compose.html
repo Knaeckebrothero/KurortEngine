@@ -1,0 +1,11 @@
+<div id="compose" class="mail-work stack">
+{% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
+<form class="card card-body stack" method="post" action="/reservierungen/{{ r.id }}/e-mail">
+<div class="field"><label for="template_key">Vorlage</label><select class="input" id="template_key" name="template_key" hx-get="/reservierungen/{{ r.id }}/e-mail" hx-trigger="change" hx-target="#compose" hx-swap="outerHTML" hx-vals='js:{vorlage: this.value}'>{% for t in choices %}<option value="{{ t.key }}"{% if form.template_key == t.key %} selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></div>
+<div class="field"><label for="to_address">An</label><input class="input" id="to_address" name="to_address" type="email" required maxlength="160" value="{{ form.to_address or '' }}"></div>
+<div class="field"><label for="subject">Betreff</label><input class="input" id="subject" name="subject" required maxlength="200" value="{{ form.subject }}"></div>
+<div class="field"><label for="body">Nachricht</label><textarea class="input" id="body" name="body" rows="14" required>{{ form.body }}</textarea></div>
+<div class="mail-actions"><button class="btn" type="button" hx-post="/reservierungen/{{ r.id }}/e-mail/vorschau" hx-include="closest form" hx-target="#mail-preview">Vorschau</button><button class="btn primary" type="submit">Senden</button></div>
+</form>
+<section class="card card-body" id="mail-preview" aria-live="polite"><h2>Vorschau</h2><p class="muted">Vor dem Senden Vorschau prüfen. Platzhalter werden mit diesem Aufenthalt gefüllt.</p></section>
+</div>

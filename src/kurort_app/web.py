@@ -239,3 +239,22 @@ templates.env.filters.update(
     slot_label=lambda s: SLOT_LABELS.get(s, s),
     space_status_label=lambda s: SPACE_STATUS_LABELS.get(s, s),
 )
+
+
+EMAIL_STATUS_LABELS = {
+    "queued": "Versand ausstehend",
+    "sent": "gesendet",
+    "failed": "fehlgeschlagen",
+    "logged": "protokolliert – nicht versendet",
+}
+LATE_STATUS_LABELS = {
+    "vorbereitet": "Vorbereitet",
+    "angereist": "Meldeschein ausstehend",
+    "abgeschlossen": "Abgeschlossen",
+    "abgebrochen": "Abgebrochen",
+    "nicht_angereist": "Nicht angereist",
+}
+templates.env.filters.update(
+    email_status_label=lambda s: EMAIL_STATUS_LABELS.get(s, s),
+    late_status_label=lambda s: LATE_STATUS_LABELS.get(s, s),
+)

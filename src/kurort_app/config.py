@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from functools import lru_cache
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -25,6 +25,16 @@ class Settings(BaseSettings):
     # Tourist-tax statute profile loaded via kurort_engine.rates.load_profile.
     kurtaxe_bundesland: str = "hessen"
     kurtaxe_kurort: str = "bad_orb"
+
+    # Outbound guest mail. No SMTP connection is made for the default log transport.
+    mail_transport: Literal["log", "smtp"] = "log"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str | None = None
+    smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
+    late_arrival_from: time = time(18, 0)
 
     # Staff login. "oidc" (default) requires the OIDC/session settings below and
     # refuses to start without them; "off" serves every page without a login.

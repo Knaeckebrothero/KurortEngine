@@ -26,6 +26,7 @@ from sqlalchemy import (
     Time,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -275,3 +276,108 @@ class SpaceBooking(Base):
     @property
     def display_name(self) -> str:
         return self.company or self.organizer_name
+
+
+# Guest mail and late-arrival lifecycle (display labels live in web.py).
+EMAIL_TRANSPORTS = ("log", "smtp")
+EMAIL_STATUSES = ("queued", "sent", "failed", "logged")
+LATE_ARRIVAL_STATUSES = (
+    "vorbereitet",
+    "angereist",
+    "abgeschlossen",
+    "abgebrochen",
+    "nicht_angereist",
+)
+
+
+class EmailTemplate(Base):
+    __tablename__ = "email_templates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(40), unique=True)
+    name: Mapped[str] = mapped_column(String(80))
+    subject: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(Text)
+    system: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_by: Mapped[str] = mapped_column(String(60), default="rezeption")
+
+
+class EmailMessageRow(Base):
+    __tablename__ = "email_messages"
+    __table_args__ = (
+        CheckConstraint(f"transport IN {_in(EMAIL_TRANSPORTS)}", name="email_transport"),
+        CheckConstraint(f"status IN {_in(EMAIL_STATUSES)}", name="email_status"),
+        CheckConstraint("attempts >= 0", name="email_attempts"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reservation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("reservations.id", ondelete="SET NULL"), index=True
+    )
+    template_key: Mapped[str | None] = mapped_column(String(40))
+    to_address: Mapped[str] = mapped_column(String(160))
+    subject: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(Text)
+    transport: Mapped[str] = mapped_column(String(8), default="log")
+    status: Mapped[str] = mapped_column(String(10), default="queued", index=True)
+    error: Mapped[str | None] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_by: Mapped[str] = mapped_column(String(60), default="rezeption")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    reservation: Mapped[Reservation | None] = relationship()
+
+
+class SafeCompartment(Base):
+    __tablename__ = "safe_compartments"
+    __table_args__ = (
+        CheckConstraint(
+            "fixed_pin IS NULL OR fixed_pin ~ '^[0-9]{1,8}$'", name="safe_fixed_pin_digits"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    label: Mapped[str] = mapped_column(String(40), unique=True)
+    fixed_pin: Mapped[str | None] = mapped_column(String(8))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class LateArrival(Base):
+    __tablename__ = "late_arrivals"
+    __table_args__ = (
+        CheckConstraint(f"status IN {_in(LATE_ARRIVAL_STATUSES)}", name="late_arrival_status"),
+        CheckConstraint("pin IS NULL OR pin ~ '^[0-9]{1,8}$'", name="late_arrival_pin_digits"),
+        Index(
+            "uq_late_arrivals_open_compartment",
+            "compartment_id",
+            unique=True,
+            postgresql_where=text("status = 'vorbereitet'"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reservation_id: Mapped[int] = mapped_column(
+        ForeignKey("reservations.id", ondelete="CASCADE"), unique=True
+    )
+    compartment_id: Mapped[int] = mapped_column(ForeignKey("safe_compartments.id"))
+    pin: Mapped[str | None] = mapped_column(String(8))
+    key_in_safe: Mapped[bool] = mapped_column(Boolean, default=False)
+    meldeschein_in_safe: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(16), default="vorbereitet", index=True)
+    email_message_id: Mapped[int | None] = mapped_column(ForeignKey("email_messages.id"))
+    phone_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    prepared_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    prepared_by: Mapped[str] = mapped_column(String(60), default="rezeption")
+    arrived_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    meldeschein_returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    reservation: Mapped[Reservation] = relationship()
+    compartment: Mapped[SafeCompartment] = relationship()
+    email_message: Mapped[EmailMessageRow | None] = relationship()

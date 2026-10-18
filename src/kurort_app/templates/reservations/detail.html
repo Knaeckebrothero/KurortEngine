@@ -151,6 +151,14 @@
   </div>
 
   <aside class="stack">
+    <section class="card" aria-labelledby="mail-h">
+      <div class="card-header"><h2 id="mail-h">E-Mails</h2></div>
+      <div class="card-body stack">
+        {% if lead and lead.email %}<a class="btn" href="/reservierungen/{{ r.id }}/e-mail">E-Mail senden</a>{% else %}<p class="muted">Keine E-Mail-Adresse hinterlegt</p>{% endif %}
+        {% for message in email_messages %}<div><span class="sub">{{ message.created_at | date }} · {{ message.template_key or 'Eigene Nachricht' }}</span><span>{{ message.status | email_status_label }}</span></div>{% endfor %}
+        <details><summary>Weitere E-Mails</summary><a class="btn ghost" href="/e-mails?reservation_id={{ r.id }}">Alle E-Mails</a></details>
+      </div>
+    </section>
     <section class="card" aria-labelledby="notes-h">
       <div class="card-header"><h2 id="notes-h">Notizen</h2></div>
       <div class="card-body">{% if r.notes %}<p class="res-notes">{{ r.notes }}</p>{% else %}<p class="muted res-notes">Keine Notizen.</p>{% endif %}</div>

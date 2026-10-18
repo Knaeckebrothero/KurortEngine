@@ -16,6 +16,8 @@ from sqlalchemy.orm import Session
 
 DEFAULTS: list[str] = [
     "kurort_app.services.seminar:ensure_function_spaces",
+    "kurort_app.services.mail_templates:ensure_email_templates",
+    "kurort_app.services.late_arrival:ensure_safe_compartments",
 ]
 
 
