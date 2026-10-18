@@ -79,7 +79,14 @@ def test_ac2_rendering_and_invalid_placeholders_block_writes(client, seeded):
         ),
     )
     assert response.status_code == 422 and "Unbekannter Platzhalter" in response.text
-    assert seeded.scalar(text("SELECT count(*) FROM email_messages")) == 0
+    assert (
+        seeded.scalar(
+            text("SELECT count(*) FROM email_messages WHERE reservation_id=:rid").bindparams(
+                rid=r.id
+            )
+        )
+        == 0
+    )
     for subject, body in [
         ("Test\nBcc: böse@example.de", "Hallo"),
         ("Test", "{{ gast.__class__ }}"),
@@ -217,3 +224,36 @@ def test_ac6_reception_cannot_edit_settings(oidc_client, idp, db):
         assert oidc_client.get(path).status_code == 403
     assert oidc_client.post("/verwaltung/safe-faecher", data={"label": "Fach X"}).status_code == 403
     assert oidc_client.get("/e-mails").status_code == 200
+
+
+def test_manager_oidc_edit_and_safe_settings(oidc_client, idp, db):
+    from kurort_app.defaults import ensure_defaults
+
+    ensure_defaults(db)
+    from tests.app.auth_helpers import login
+
+    idp.claims["roles"] = ["leitung"]
+    login(oidc_client)
+    assert oidc_client.get("/verwaltung/e-mail").status_code == 200
+    form = dict(
+        key="nach_abreise",
+        name="Dankeschön",
+        subject="Danke",
+        body="Auf Wiedersehen {{ gast.name }}",
+        active="on",
+    )
+    assert (
+        oidc_client.post("/verwaltung/e-mail/vorlagen/nach_abreise", data=form).status_code == 200
+    )
+    assert (
+        oidc_client.post(
+            "/verwaltung/safe-faecher/1",
+            data=dict(label="Fach 1", fixed_pin="481792", position="1", active="on"),
+        ).status_code
+        == 200
+    )
+    assert "481792" not in oidc_client.get("/verwaltung/e-mail").text
+    assert db.scalar(text("SELECT fixed_pin FROM safe_compartments WHERE id=1")) == "481792"
+    form.update(key="eigene_vorlage", name="Eigene Vorlage")
+    assert oidc_client.post("/verwaltung/e-mail/vorlagen", data=form).status_code == 200
+    assert db.scalar(text("SELECT count(*) FROM email_templates WHERE key='eigene_vorlage'")) == 1

@@ -5,7 +5,7 @@
 .mail-work p, .mail-work dd, .mail-work h2 { overflow-wrap: anywhere; }
 .mail-work textarea { resize: vertical; width: 100%; }
 .mail-work summary { cursor: pointer; min-height: 44px; }
-.mail-pin { font-size: var(--text-2xl); font-weight: 700; letter-spacing: .15em; }
+.mail-pin { font-size: 1.5rem; font-weight: 700; letter-spacing: .15em; }
 @media (max-width: 600px) {
   .mail-actions, .mail-setting-row { flex-direction: column; align-items: stretch; }
   .mail-work .btn, .late-actions .btn { width: 100%; min-height: 44px; white-space: normal; }
