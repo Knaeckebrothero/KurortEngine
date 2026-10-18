@@ -55,6 +55,7 @@
         <span class="ci-room-meta"><strong>{{ r.room.category }}</strong><small>{{ r.room.features or '' }}</small></span>
       </div>
       {% endif %}
+      {% if r.room %}<span class="badge {{ r.room.housekeeping_status | room_status_kind }}">{{ r.room.housekeeping_status | room_status_label }}</span>{% endif %}
       <dl class="facts ci-facts">
         <dt>Reservierung</dt><dd class="mono">{{ r.code }}</dd>
         <dt>Anreise</dt><dd class="num">{{ r.arrival | date('day') }}{% if r.eta %} · ca. {{ r.eta | time }} Uhr{% endif %}</dd>

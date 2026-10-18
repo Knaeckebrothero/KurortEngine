@@ -13,7 +13,7 @@ from datetime import date
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from kurort_app.models import CANCELLED, NO_SHOW, Reservation, Room
+from kurort_app.models import CANCELLED, NO_SHOW, ROOM_OUT_OF_ORDER, Reservation, Room
 
 # Statuses that do not occupy a room.
 NON_BLOCKING = (CANCELLED, NO_SHOW)
@@ -63,7 +63,9 @@ def free_rooms(
     taken = occupied_room_ids(
         session, arrival, departure, exclude_reservation_id=exclude_reservation_id
     )
-    rooms = session.scalars(select(Room).order_by(Room.number)).all()
+    rooms = session.scalars(
+        select(Room).where(Room.housekeeping_status != ROOM_OUT_OF_ORDER).order_by(Room.number)
+    ).all()
     return [room for room in rooms if room.id not in taken]
 
 

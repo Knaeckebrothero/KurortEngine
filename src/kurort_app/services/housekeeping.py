@@ -105,3 +105,52 @@ def stayover_rooms(items: list[RoomSituation]) -> list[Room]:
         for item in items
         if item.label == "Bleibe" and item.room.housekeeping_status in ROOM_READY
     ]
+
+
+def mark_dirty_after_checkout(session: Session, reservation: Reservation) -> None:
+    if reservation.room is not None:
+        set_status(session, reservation.room, ROOM_DIRTY, reason="checkout")
+
+
+def room_not_ready_flags(session: Session, row) -> list:
+    from kurort_app.services.today import Flag
+
+    r = row.reservation
+    if row.kind != "anreise" or r.status != RESERVED or r.room is None:
+        return []
+    if r.room.housekeeping_status == ROOM_DIRTY:
+        return [Flag("Zimmer noch nicht sauber", "warning", f"/zimmerstatus?etage={r.room.floor}")]
+    if r.room.housekeeping_status == ROOM_OUT_OF_ORDER:
+        return [Flag("Zimmer außer Betrieb", "danger", f"/reservierungen/{r.id}/bearbeiten")]
+    return []
+
+
+def room_not_ready_blocker(session: Session, reservation: Reservation) -> list:
+    from kurort_app.services.engine import Blocker
+
+    room = reservation.room
+    if room is None:
+        return []
+    if room.housekeeping_status == ROOM_DIRTY:
+        return [
+            Blocker(
+                "abschluss",
+                f"Zimmer {room.number} ist noch nicht sauber.",
+                action_label="Als sauber markieren",
+                action_url=f"/zimmerstatus/{room.id}/clean",
+            )
+        ]
+    if room.housekeeping_status == ROOM_OUT_OF_ORDER:
+        return [
+            Blocker(
+                "abschluss",
+                f"Zimmer {room.number} ist außer Betrieb – bitte ein anderes Zimmer zuweisen.",
+            )
+        ]
+    return []
+
+
+from kurort_app.services.today import CHECKIN_BLOCKERS, FLAG_PROVIDERS  # noqa: E402
+
+FLAG_PROVIDERS.append(room_not_ready_flags)
+CHECKIN_BLOCKERS.append(room_not_ready_blocker)

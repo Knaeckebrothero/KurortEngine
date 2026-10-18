@@ -221,3 +221,79 @@ def test_bulk_only_ready_stayovers_and_urgency_groups(client, db):
         "dirty",
     ]
     assert len(events(db)) == 2
+
+
+def test_checkout_marks_room_dirty_with_audit(client, db):
+    stay = make_stay(db, [{}])
+    stay.status = "checked_in"
+    db.commit()
+    assert client.post(f"/check-out/{stay.id}", follow_redirects=False).status_code == 303
+    db.refresh(stay.room)
+    assert stay.room.housekeeping_status == "dirty"
+    assert events(db)[-1].payload["reason"] == "checkout"
+
+
+def test_arrival_flag_and_checkin_blocker_action(client, db):
+    stay = make_stay(db, [{}])
+    room = stay.room
+    client.post(f"/check-in/{stay.id}/avs/alle")
+    client.post(f"/zimmerstatus/{room.id}/dirty")
+    html = client.get("/").text
+    assert "Zimmer noch nicht sauber" in html
+    assert f'href="/zimmerstatus?etage={room.floor}"' in html
+    summary = client.get(f"/check-in/{stay.id}/abschluss").text
+    assert (
+        "Als sauber markieren" in summary
+        and f"Zimmer {room.number} ist noch nicht sauber." in summary
+    )
+    assert f'action="/zimmerstatus/{room.id}/clean"' in summary
+    client.post(f"/check-in/{stay.id}/abschluss")
+    db.refresh(stay)
+    assert stay.status == "reserved"
+    response = client.post(
+        f"/zimmerstatus/{room.id}/clean",
+        data={"zurueck": f"/check-in/{stay.id}/abschluss"},
+        follow_redirects=False,
+    )
+    assert response.headers["location"].startswith(f"/check-in/{stay.id}/abschluss?")
+    assert events(db)[-1].payload["reason"] == "checkin_blocker"
+    assert "Zimmer noch nicht sauber" not in client.get("/").text
+    client.post(f"/check-in/{stay.id}/abschluss")
+    db.refresh(stay)
+    assert stay.status == "checked_in"
+    db.refresh(room)
+    assert room.housekeeping_status == "clean", "check-in does not reset status"
+
+
+@pytest.mark.parametrize("status", ["clean", "inspected"])
+def test_ready_rooms_do_not_block_or_flag(client, db, status):
+    from kurort_app.services import today
+
+    stay = make_stay(db, [{}])
+    client.post(f"/zimmerstatus/{stay.room_id}/{status}")
+    db.expire_all()
+    assert not today.checkin_blockers(db, stay)
+    assert not any("Zimmer" in f.text for f in today.flags_for(db, "anreise", stay))
+
+
+def test_out_of_order_flag_blocker_and_plan(client, db):
+    stay = make_stay(db, [{}])
+    client.post(f"/zimmerstatus/{stay.room_id}/out_of_order", data={"notiz": "Heizung defekt"})
+    html = client.get("/").text
+    assert "Zimmer außer Betrieb" in html
+    assert f'href="/reservierungen/{stay.id}/bearbeiten"' in html
+    client.post(f"/check-in/{stay.id}/avs/alle")
+    summary = client.get(f"/check-in/{stay.id}/abschluss").text
+    assert "bitte ein anderes Zimmer zuweisen." in summary
+    assert "Als sauber markieren" not in summary
+    client.post(f"/check-in/{stay.id}/abschluss")
+    db.refresh(stay)
+    assert stay.status == "reserved"
+    plan = client.get("/zimmerplan").text
+    row = plan.split(f'data-room-row="{stay.room.number}"', 1)[1].split('<div class="plan-row', 1)[
+        0
+    ]
+    assert "außer Betrieb" in row and 'title="Heizung defekt"' in row
+    assert "/reservierungen/neu?zimmer=" not in row
+    client.post(f"/zimmerstatus/{stay.room_id}/inspected")
+    assert "geprüft" in client.get("/zimmerplan").text

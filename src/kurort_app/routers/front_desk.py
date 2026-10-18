@@ -24,6 +24,7 @@ from kurort_app.models import (
     ReservationGuest,
     Room,
 )
+from kurort_app.services import housekeeping
 from kurort_app.services import today as desk
 from kurort_app.web import STATUS_LABELS, WEEKDAYS, fmt_date, redirect_with_notice, templates
 
@@ -384,6 +385,7 @@ def checkout(reservation_id: int, session: Session = Depends(get_session)) -> Re
         )
     reservation.status = CHECKED_OUT
     reservation.checked_out_at = datetime.now(UTC)
+    housekeeping.mark_dirty_after_checkout(session, reservation)
     room = reservation.room.number if reservation.room else None
     balance = _balance(reservation)
     audit.record(

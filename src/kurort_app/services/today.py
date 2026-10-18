@@ -188,3 +188,6 @@ def checkout_warnings(session: Session, reservation: Reservation) -> list[Flag]:
 
 def dashboard_notices(session: Session, day: date) -> list[Flag]:
     return [flag for provider in DASHBOARD_NOTICES for flag in provider(session, day)]
+
+
+from kurort_app.services import housekeeping  # noqa: E402, F401
