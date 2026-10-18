@@ -42,6 +42,10 @@ users:
     firstName: Sandra
     lastName: Klein
     roles: [housekeeping]
+  - username: j.becker
+    firstName: Jana
+    lastName: Becker
+    roles: [kueche]
   - username: k.gast
     firstName: Karl
     lastName: Gast

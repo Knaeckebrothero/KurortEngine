@@ -355,6 +355,15 @@ Plugin templates live under `templates/apps/plugins/`. Writes use the same
 record validation/audit as forms, raise `RecordValidationError` on invalid
 values and flush without committing so the plugin can commit once.
 
+`render` accepts relative subdirectories (e.g. `inventory/order.html`), but
+rejects absolute paths, empty components, dot/traversal components and backslashes.
+Trusted plugins may call `create(collection, data, parent=new_record)` for a
+restricted child collection. The parent must have been created with ordinary
+edit permission by this same context, remain editable, and be referenced by a
+matching child reference field. Child view permission and all validation/audit
+checks still apply. This grants no generic form/update permission and cannot be
+used with an existing parent or to chain privileges through restricted children.
+
 The optional top-level `demo` hook uses the same resolver, but is called as
 `fn(session, anchor_date)` after base demo data and app installation. It writes
 through the store with explicit actor/time. `seed --reset` clears app records

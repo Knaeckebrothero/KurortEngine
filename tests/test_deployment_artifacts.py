@@ -213,7 +213,8 @@ def test_demo_keycloak_realm_matches_the_app_contract():
     realm = json.loads(next(iter(configmap["data"].values())))
     assert realm["realm"] == "hotel-rheinland"
     assert realm["defaultLocale"] == "de" and realm["registrationAllowed"] is False
-    assert {r["name"] for r in realm["roles"]["realm"]} == {"rezeption", "leitung", "housekeeping"}
+    declared_roles = {r["name"] for r in realm["roles"]["realm"]}
+    assert declared_roles == {"rezeption", "leitung", "housekeeping", "kueche"}
 
     client = realm["clients"][0]
     assert client["clientId"] == k3d_values["auth"]["oidc"]["clientId"]
@@ -227,10 +228,15 @@ def test_demo_keycloak_realm_matches_the_app_contract():
     users = {u["username"]: set(u["realmRoles"]) for u in realm["users"]}
     assert {"rezeption"} <= users["m.schmidt"]
     assert {"rezeption", "leitung"} <= users["t.weber"]
-    assert not {"rezeption", "leitung", "housekeeping"} & users["k.gast"]
+    assert not declared_roles & users["k.gast"]
     assert users["s.klein"] == {"default-roles-hotel-rheinland", "housekeeping"}
     sandra = next(u for u in realm["users"] if u["username"] == "s.klein")
     assert (sandra["firstName"], sandra["lastName"]) == ("Sandra", "Klein")
+    assert users["j.becker"] == {"default-roles-hotel-rheinland", "kueche"}
+    jana = next(u for u in realm["users"] if u["username"] == "j.becker")
+    assert (jana["firstName"], jana["lastName"]) == ("Jana", "Becker")
+    for roles in users.values():
+        assert roles - {"default-roles-hotel-rheinland"} <= declared_roles
 
     keycloak = _by_kind(docs, "Deployment")[0]["spec"]["template"]["spec"]["containers"][0]
     env = {e["name"]: e for e in keycloak["env"]}
