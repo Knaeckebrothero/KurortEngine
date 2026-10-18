@@ -9,7 +9,7 @@
     <h1>Anreisen</h1>
     <p>{{ day | date('long') }} · {{ counts.alle }} {{ 'Anreise' if counts.alle == 1 else 'Anreisen' }} mit {{ guest_total }} {{ 'Gast' if guest_total == 1 else 'Gästen' }} · {{ counts.offen }} offen</p>
   </div>
-  <div class="page-actions">{{ fd.day_nav('/anreisen', day, prev_day, next_day, is_today) }}</div>
+  <div class="page-actions"><a class="btn" href="/spaetanreisen">Spätanreisen</a>{{ fd.day_nav('/anreisen', day, prev_day, next_day, is_today) }}</div>
 </div>
 
 <div class="fd-toolbar">

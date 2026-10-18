@@ -20,13 +20,25 @@ from kurort_app import __version__, auth
 from kurort_app.apps.registry import AppRegistry
 from kurort_app.config import Settings, get_settings
 from kurort_app.db import get_engine
-from kurort_app.routers import apps, assistant, checkin, front_desk, payments, reservations, seminar
+from kurort_app.routers import (
+    apps,
+    assistant,
+    checkin,
+    front_desk,
+    late_arrival,
+    mail,
+    payments,
+    reservations,
+    seminar,
+)
+from kurort_app.services.mail import validate_settings as validate_mail_settings
 from kurort_app.web import STATIC_DIR
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     auth.validate_settings(settings)
+    validate_mail_settings(settings)
     enabled = auth.auth_enabled(settings)
 
     app = FastAPI(title="KurortEngine", version=__version__, docs_url="/api/docs", redoc_url=None)
@@ -71,6 +83,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(seminar.router)
     app.include_router(apps.router)
     app.include_router(payments.router)
+    app.include_router(mail.router)
+    app.include_router(late_arrival.router)
     return app
 
 

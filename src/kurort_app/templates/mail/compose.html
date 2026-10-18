@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}E-Mail senden{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="/reservierungen/{{ r.id }}">{{ r.code }}</a> › E-Mail senden</nav>
+<div class="page-header"><div><h1>E-Mail senden</h1><p>{{ r.primary_guest.full_name if r.primary_guest else r.code }}</p></div><a class="btn ghost" href="/e-mails?reservation_id={{ r.id }}">Postausgang</a></div>
+{% include "mail/_compose.html" %}
+{% endblock %}

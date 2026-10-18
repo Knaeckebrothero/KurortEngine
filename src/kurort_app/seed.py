@@ -367,6 +367,7 @@ def seed_demo_data(
 
     assess_seeded_stays(session, created)
     _seed_seminar(session, anchor, created)
+    _seed_late_arrivals(session, anchor, created)
     _seed_payments(session, anchor, created)
     from kurort_app.apps.demo import seed_apps  # noqa: PLC0415
 
@@ -475,6 +476,75 @@ def _seed_seminar(session: Session, anchor: date, reservations: list[Reservation
                 cancel_reason="Kurs abgesagt" if idx == 2 else None,
             )
         )
+
+
+def _seed_late_arrivals(session: Session, anchor: date, reservations: list[Reservation]) -> None:
+    from kurort_app.models import EmailMessageRow, EmailTemplate, LateArrival, SafeCompartment
+    from kurort_app.services import mail_templates
+    from kurort_app.services.engine import drop_assessment
+
+    rng = random.Random(SEED + 5)
+    current = sorted(
+        (r for r in reservations if r.arrival == anchor and r.status == RESERVED),
+        key=lambda r: r.id,
+    )[-2]
+    previous = sorted(
+        (
+            r
+            for r in reservations
+            if r.arrival == anchor - timedelta(days=1)
+            and r.status == CHECKED_IN
+            and all(g.meldeschein_status == MELDESCHEIN_SIGNED for g in r.guests)
+        ),
+        key=lambda r: r.id,
+    )[-1]
+    for r, code in ((current, "F5-HEUTE"), (previous, "F5-GESTERN")):
+        r.code, r.eta, r.status, r.checked_in_at = code, time(21, 30), RESERVED, None
+        r.primary_guest.email = "spaetanreise@example.de"
+        for rg in r.guests:
+            rg.meldeschein_status = MELDESCHEIN_PRINTED
+            rg.meldeschein_printed_at = datetime.combine(r.arrival, time(16), tzinfo=HOTEL_TZ)
+            rg.meldeschein_signed_at = None
+        drop_assessment(session, r)
+    compartment = session.scalar(select(SafeCompartment).where(SafeCompartment.label == "Fach 2"))
+    pin = "".join(str(rng.randrange(10)) for _ in range(4))
+    while len(set(pin)) == 1 or pin in "0123456789" or pin in "9876543210":
+        pin = "".join(str(rng.randrange(10)) for _ in range(4))
+    t = session.scalar(select(EmailTemplate).where(EmailTemplate.key == "spaetanreise"))
+    subject, body = mail_templates.render(
+        t.subject,
+        t.body,
+        mail_templates.context_for(previous, {"fach": compartment.label, "pin": pin}),
+    )
+    prepared_at = datetime.combine(previous.arrival, time(16), tzinfo=HOTEL_TZ)
+    message = EmailMessageRow(
+        reservation_id=previous.id,
+        template_key=t.key,
+        to_address=previous.primary_guest.email,
+        subject=subject,
+        body=body,
+        transport="log",
+        status="logged",
+        attempts=1,
+        created_at=prepared_at,
+        sent_at=prepared_at,
+        created_by="demo",
+    )
+    session.add(message)
+    session.flush()
+    session.add(
+        LateArrival(
+            reservation_id=previous.id,
+            compartment_id=compartment.id,
+            pin=pin,
+            key_in_safe=True,
+            meldeschein_in_safe=True,
+            status="vorbereitet",
+            email_message_id=message.id,
+            prepared_at=prepared_at,
+            prepared_by="demo",
+        )
+    )
 
 
 def _seed_payments(session: Session, anchor: date, reservations: list[Reservation]) -> None:

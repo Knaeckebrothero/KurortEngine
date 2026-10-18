@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ row.name if row else 'Neue Vorlage' }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="/verwaltung/e-mail">E-Mail &amp; Safe</a> › Vorlage</nav>
+<div class="page-header"><h1>{{ row.name if row else 'Neue Vorlage' }}</h1></div>
+<div class="mail-work stack">
+{% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
+<form class="card card-body stack" method="post" action="/verwaltung/e-mail/vorlagen{{ '/' ~ row.key if row else '' }}" hx-post="/verwaltung/e-mail/vorlagen/{{ row.key if row else 'neu' }}/vorschau" hx-trigger="input changed delay:500ms" hx-target="#mail-preview">
+<div class="field"><label for="key">Schlüssel</label><input class="input" id="key" name="key" value="{{ form.get('key', '') }}" required maxlength="40"{% if row %} readonly{% endif %}></div>
+<div class="field"><label for="name">Name</label><input class="input" id="name" name="name" value="{{ form.get('name', '') }}" required maxlength="80"{% if row and row.system %} readonly{% endif %}></div>
+<div class="field"><label for="subject">Betreff</label><input class="input" id="subject" name="subject" value="{{ form.get('subject', '') }}" required maxlength="200"></div>
+<div class="field"><label for="body">Nachricht</label><textarea class="input" id="body" name="body" rows="14" required>{{ form.get('body', '') }}</textarea></div>
+<label class="checkbox"><input type="checkbox" name="active"{% if form.get('active', true) %} checked{% endif %}>Aktiv{% if row and row.system %} (Systemvorlage bleibt aktiv){% endif %}</label>
+<div><button class="btn primary" type="submit" hx-disable>Vorlage speichern</button></div>
+</form>
+<details class="card card-body"><summary>Verfügbare Platzhalter</summary><ul>{% for name in placeholders %}<li><code>{{ '{{ ' ~ name ~ ' }}' }}</code></li>{% endfor %}</ul></details>
+<section class="card card-body" id="mail-preview" aria-live="polite"><h2>Live-Vorschau</h2><p class="muted">Beispielaufenthalt: Anna Weber, Zimmer 204. Änderungen erscheinen hier.</p></section>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Postausgang{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Postausgang</h1><p>E-Mails an Ihre Gäste – neueste zuerst.</p></div></div>
+<nav class="chips"><a class="chip" href="/e-mails{% if reservation_id %}?reservation_id={{ reservation_id }}{% endif %}">Alle</a><a class="chip" href="/e-mails?status=failed{% if reservation_id %}&amp;reservation_id={{ reservation_id }}{% endif %}">Fehlgeschlagen</a></nav>
+<div class="stack mail-work">{% for message in messages %}<article class="card card-body stack"><div><span class="sub">{{ message.created_at | date }} {{ message.created_at | time }} · {{ message.template_key or 'Eigene Nachricht' }}</span><h2>{{ 'Spätanreise' if message.template_key == 'spaetanreise' else message.subject }}</h2><p>{{ message.to_address }}</p><strong>{{ message.status | email_status_label }}</strong></div><a class="btn" href="/e-mails/{{ message.id }}">Ansehen{% if message.status == 'failed' %} / Erneut senden{% endif %}</a></article>{% else %}<p class="muted">Noch keine E-Mails in dieser Ansicht.</p>{% endfor %}</div>
+{% endblock %}
