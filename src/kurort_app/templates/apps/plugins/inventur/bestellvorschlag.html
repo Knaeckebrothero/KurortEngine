@@ -14,6 +14,7 @@
 .inv-history { display: grid; gap: var(--space-3); list-style: none; padding: 0; }
 .inv-history li { padding: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
 .inv-page { overflow-wrap: anywhere; }
+.inv-page .badge { overflow-wrap: normal; hyphens: auto; }
 @media (max-width: 1100px) { .inv-row { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } .inv-entry { grid-column: 1 / -1; } }
 @media (max-width: 560px) {
   .inv-filters { grid-template-columns: minmax(0, 1fr); }
