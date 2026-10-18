@@ -44,6 +44,7 @@ def _reservations(session, *where):
 
 def test_dashboard_metrics_match_database(client, seeded):
     html = client.get("/").text
+    assert 'class="grid grid-3 fd-metrics"' in html  # a row of three, not stacked
     arrivals = seeded.scalar(
         select(func.count())
         .select_from(Reservation)

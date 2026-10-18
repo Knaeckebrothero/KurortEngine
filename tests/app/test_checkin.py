@@ -208,6 +208,7 @@ def test_completion_is_refused_while_items_are_open(client, db):
     assert _path(response) == f"/check-in/{res.id}/avs"
     assert "noch nicht möglich" in _notice(response)
     assert _reload(db, res).status == RESERVED
+    assert "Noch 1 Punkt offen." in client.get(f"/check-in/{res.id}/abschluss").text
 
 
 def test_avs_values_order_and_incomplete_guest(client, db):

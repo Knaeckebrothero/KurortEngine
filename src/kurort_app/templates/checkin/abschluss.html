@@ -22,7 +22,7 @@
   </div>
 </section>
 {% if open_items %}
-<div class="notice danger" role="status"><div><strong>Noch {{ open_items | length }} Punkte offen.</strong><ul>
+<div class="notice danger" role="status"><div><strong>Noch {{ open_items | length }} {{ "Punkt" if open_items | length == 1 else "Punkte" }} offen.</strong><ul>
   {% for b in open_items %}<li>{{ b.message }}
     {% if b.action_label and b.action_url %}<form method="post" action="{{ b.action_url }}"><input type="hidden" name="zurueck" value="{{ request.url.path }}"><button class="btn" type="submit">{{ b.action_label }}</button></form>{% endif %}
   </li>{% endfor %}

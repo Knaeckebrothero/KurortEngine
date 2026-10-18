@@ -4,7 +4,7 @@
 {% block title %}Übersicht{% endblock %}
 {% block content %}
 <div class="page-header"><div><span class="eyebrow">{{ business_date | date('long') }}</span><h1>Übersicht</h1><p>{{ open_departure_count }} Abreisen offen · {{ open_arrival_count }} Anreisen offen</p></div></div>
-<section class="grid-3 fd-metrics" data-widget="metrics" aria-label="Kennzahlen">
+<section class="grid grid-3 fd-metrics" data-widget="metrics" aria-label="Kennzahlen">
   <a class="card metric fd-metric" href="/abreisen" data-metric="departures" data-value="{{ departure_count }}"><div class="metric-label">Abreisen</div><div class="metric-value">{{ open_departure_count }} <small>/ {{ departure_count }}</small></div><div class="metric-note">offen / gesamt</div></a>
   <a class="card metric fd-metric" href="/anreisen" data-metric="arrivals" data-value="{{ arrivals | length }}"><div class="metric-label">Anreisen</div><div class="metric-value">{{ open_arrival_count }} <small>/ {{ arrivals | length }}</small></div><div class="metric-note">offen / gesamt</div></a>
   <div class="card metric fd-metric" data-metric="occupancy" data-value="{{ occupancy_pct }}"><div class="metric-label">Belegung heute Nacht</div><div class="metric-value">{{ occupancy_pct }} %</div><div class="metric-note">{{ capacity - tonight }} Zimmer frei</div></div>
