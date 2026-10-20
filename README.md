@@ -69,11 +69,12 @@ ruff check src/
 **179 tests, ~10 s.** Current state: **177 passed, 2 failed** — both tracing to the
 single open defect in [Known issues](#known-issues).
 
-Two tests deliberately re-invoke pytest on the whole suite
-(`test_repo_layout.py::test_ac6`, `test_audit_isolation.py::test_ac2`). Both are
-guarded by environment sentinels so a child run returns early instead of
-recursing; nesting stays bounded at two levels and peaks around five processes.
-**If you add another suite-level subprocess test, give it the same guard.**
+One test deliberately re-invokes pytest on the whole suite
+(`test_audit_isolation.py::test_ac2`). It is guarded by an environment sentinel
+so a child run returns early instead of recursing. **If you add another
+suite-level subprocess test, give it the same guard.** The second one,
+`test_repo_layout.py::test_ac6`, was retired on 2026-10-20: it ran the same
+command as the outer run, doubled the suite's time, and hit its 600 s limit.
 
 Several tests shell out to `.venv/bin/...` at the repository root, so they only
 pass when the virtualenv is created in-tree as `.venv/` exactly as

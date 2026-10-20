@@ -96,6 +96,11 @@ unreachable: it asserted `"0 failed"` appears in the summary, but pytest prints
 `test_repo_layout.py` now accept either spelling. The identical assertion at
 `tests/test_audit_isolation.py:222` is still latent — see README Known issues 4.
 
+**Retired 2026-10-20.** AC-6 and its two guard tests were removed. With the web
+app's 600 tests the nested run took ~550 s against its 600 s limit and doubled
+the suite's time, while proving only what the outer `pytest tests/` run already
+proves.
+
 ### Remaining failures
 
 Both trace to one root cause:
