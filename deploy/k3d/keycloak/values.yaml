@@ -1,6 +1,8 @@
-# Demo Keycloak for deploy/k3d/up.sh. Dev-only: it stands in for the customer's
-# company Keycloak. The application chart only ever sees an issuer URL, a
-# client id and a client secret — see docs/ops/kubernetes.md#authentication.
+# Demo Keycloak for deploy/k3d/up.sh, or for a public demo behind a tunnel
+# (docs/ops/kubernetes.md#a-public-demo-behind-a-tunnel). Demo-only: it stands
+# in for the customer's company Keycloak. The application chart only ever sees
+# an issuer URL, a client id and a client secret — see
+# docs/ops/kubernetes.md#authentication.
 
 image: quay.io/keycloak/keycloak:26.2
 imagePullPolicy: IfNotPresent

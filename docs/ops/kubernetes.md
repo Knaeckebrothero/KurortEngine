@@ -147,8 +147,10 @@ The app accepts `postgresql://`, `postgres://` and `postgresql+psycopg://` URLs.
 
 The app logs staff in with OpenID Connect: authorization code flow with PKCE
 (S256) against a confidential client, then a signed session cookie. Access
-needs the realm role `rezeption` or `leitung` in a flat `roles` claim
-(`realm_access.roles` is the fallback); a signed-in user with neither gets 403.
+needs one of the realm roles `rezeption`, `leitung`, `housekeeping` or `kueche`
+in a flat `roles` claim (`realm_access.roles` is the fallback). Front-desk roles
+land on the dashboard, `housekeeping` on the room status, `kueche` on the HACCP
+app; a signed-in user with none of them gets 403.
 The app reads these variables (the chart sets them from `auth.*`):
 `KURORT_AUTH`, `KURORT_PUBLIC_URL`, `KURORT_OIDC_ISSUER`,
 `KURORT_OIDC_INTERNAL_URL`, `KURORT_OIDC_CLIENT_ID`,
@@ -156,8 +158,11 @@ The app reads these variables (the chart sets them from `auth.*`):
 
 ### Demo Keycloak on k3d
 
-`deploy/k3d/keycloak` is a small chart for the local cluster only — it stands
-in for the customer's company Keycloak and is not part of the app chart.
+`deploy/k3d/keycloak` is a small demo chart, not part of the app chart. It
+stands in for the customer's company Keycloak: `deploy/k3d/up.sh` installs it on
+the local cluster, and it can also carry a demo on a real cluster
+([below](#a-public-demo-behind-a-tunnel)). Real staff accounts belong in the
+company Keycloak. On k3d:
 
 | | |
 |---|---|
@@ -177,6 +182,8 @@ Demo users (fictional), all with the password `Rheinland2026!`
 |---|---|---|
 | `m.schmidt` | Maria Schmidt | `rezeption` |
 | `t.weber` | Thomas Weber | `rezeption`, `leitung` |
+| `s.klein` | Sandra Klein | `housekeeping` |
+| `j.becker` | Jana Becker | `kueche` |
 | `k.gast` | Karl Gast | none — shows the app's 403 |
 
 The realm is imported from a ConfigMap on the **first** start only; later
@@ -200,6 +207,53 @@ Browsers accept that on `http://*.localhost` (a secure context), but on any
 other plain-HTTP hostname the login fails with "Cookie konnte nicht gefunden
 werden" — serve Keycloak over HTTPS anywhere but a laptop.
 
+### A public demo behind a tunnel
+
+A demo on a real cluster that browsers outside the network can reach, for
+example through a Cloudflare Tunnel straight to the Services with no Ingress:
+
+1. Pick two HTTPS hostnames, say `app.example.de` and `login.example.de`.
+   HTTPS is required: Keycloak's login cookies are `Secure`, and so is the
+   app's session cookie when `auth.publicUrl` is `https://`.
+2. Install Keycloak first, with a new demo password: the default one is
+   published in this repository, and on a public URL anyone could use it.
+
+   ```bash
+   helm upgrade --install keycloak deploy/k3d/keycloak -n kurort --create-namespace \
+     --set hostname=https://login.example.de \
+     --set ingress.enabled=false \
+     --set client.appUrl=https://app.example.de \
+     --set demoPassword='<new demo password>' \
+     --set admin.password='<admin password>'
+   ```
+
+3. Then the app. The release names matter: the app reads the client Secret
+   `keycloak-kurort-app-client` and calls `keycloak.kurort.svc`, and the
+   Keycloak chart expects the app's Postgres as `kurort-postgresql`, which
+   `fullnameOverride=kurort` produces.
+
+   ```bash
+   helm upgrade --install kurort deploy/helm/kurort-engine -n kurort \
+     --set fullnameOverride=kurort \
+     --set image.repository=<registry>/kurort-engine --set image.tag=<commit> \
+     --set ingress.enabled=false \
+     --set auth.publicUrl=https://app.example.de \
+     --set auth.oidc.issuer=https://login.example.de/realms/hotel-rheinland \
+     --set auth.oidc.internalUrl=http://keycloak.kurort.svc.cluster.local:8080/realms/hotel-rheinland \
+     --set auth.oidc.existingSecret=keycloak-kurort-app-client
+   ```
+
+4. Route `app.example.de` to Service `kurort` (port 80) and `login.example.de`
+   to Service `keycloak` (port 8080), the latter **only** for paths under
+   `/realms/` and `/resources/`. That is all the login needs, and it keeps the
+   admin console off the internet.
+
+Both charts generate their passwords once and find them again with Helm
+`lookup`. That needs `helm upgrade --install` against the cluster; a renderer
+without cluster access (some GitOps setups) generates new ones on every
+reconcile and breaks the database logins, so supply those values yourself
+there. The bundled Postgres has no backups: fine for made-up demo data only.
+
 ### Using an external or company Keycloak
 
 Create a client in the company realm:
@@ -211,7 +265,8 @@ Create a client in the company realm:
   redirect URI `https://<app-host>/*`, web origin `https://<app-host>`.
 - A protocol mapper "User Realm Role" with token claim name `roles`,
   multivalued, added to the ID token, access token and userinfo.
-- Realm roles `rezeption` and `leitung`, assigned to staff (or via groups).
+- Realm roles `rezeption`, `leitung`, `housekeeping` and `kueche`, assigned to
+  staff (or via groups).
 
 Then deploy with:
 

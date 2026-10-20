@@ -41,7 +41,8 @@ assistant:
 
 # Staff login via OpenID Connect — Keycloak or any OIDC provider. The app
 # only needs an issuer, a confidential client and a `roles` claim carrying
-# `rezeption` and/or `leitung` (docs/ops/kubernetes.md#authentication).
+# `rezeption`, `leitung`, `housekeeping` or `kueche`
+# (docs/ops/kubernetes.md#authentication).
 # enabled=false runs the app without login (KURORT_AUTH=off): local use only.
 auth:
   enabled: true

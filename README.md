@@ -62,12 +62,20 @@ reproducible CSV to `src/kurort_engine/demos/out/synthetic_bad_orb_<yyyy_mm>.csv
 ## Test
 
 ```bash
-pytest tests/ -q
-ruff check src/
+KURORT_TEST_REQUIRE_DB=1 .venv/bin/python -m pytest -q \
+  --deselect tests/test_a11y_guest_pwa.py::test_ac2_wcag_aa_audit_infra_with_manual_fallback \
+  --deselect tests/test_audit_isolation.py::test_ac2_full_suite_exits_zero
+.venv/bin/ruff check src/kurort_app tests/app scripts
+.venv/bin/ruff format --check src/kurort_app tests/app scripts
 ```
 
-**179 tests, ~10 s.** Current state: **177 passed, 2 failed** — both tracing to the
-single open defect in [Known issues](#known-issues).
+The web app's tests need the Postgres test database from
+[local-development.md](docs/ops/local-development.md); without
+`KURORT_TEST_REQUIRE_DB=1` they are skipped when it is missing. The two
+deselected tests are the open defect in [Known issues](#known-issues). State on
+2026-10-20: **605 passed in about 7 minutes**, lint and format clean. Lint covers
+the web app; the older `src/kurort_engine` code still has the findings listed
+there.
 
 One test deliberately re-invokes pytest on the whole suite
 (`test_audit_isolation.py::test_ac2`). It is guarded by an environment sentinel
@@ -194,8 +202,10 @@ podman compose up -d --build     # or Docker Compose → http://localhost:8080/
 ```
 
 On k3d, staff log in through a demo Keycloak (users `m.schmidt`, `t.weber`,
-password `Rheinland2026!`); Compose runs without login. In production the chart
-points at the company Keycloak or any OpenID Connect provider.
+`s.klein`, `j.becker`, password `Rheinland2026!`); Compose runs without login. The
+same demo Keycloak can carry a public demo behind a tunnel, with a new password
+([kubernetes.md](docs/ops/kubernetes.md#a-public-demo-behind-a-tunnel)). In
+production the chart points at the company Keycloak or any OpenID Connect provider.
 
 See [docs/ops/kubernetes.md](docs/ops/kubernetes.md) and
 [docs/ops/local-development.md](docs/ops/local-development.md).
