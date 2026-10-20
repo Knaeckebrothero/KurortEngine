@@ -80,6 +80,11 @@
     dashboard: "Übersicht",
     search: "Suche",
   };
+  // Shown under a plan that did not come from Claude.
+  const ENGINE_NOTES = {
+    "demo-rules": "Vorschau · feste Demo-Regeln, noch ohne KI-Modell",
+    "rules-fallback": "KI gerade nicht erreichbar · Antwort aus festen Regeln",
+  };
   const FALLBACK_EXAMPLES = [
     "Walk-in: Herr Klaus Becker, zwei Nächte, Doppelzimmer",
     "Wer reist heute noch ab?",
@@ -392,7 +397,9 @@
     const eyebrow = INTENT_LABEL[plan.intent];
     ui.runTitle.innerHTML =
       (eyebrow ? `<span class="ai-intent">${escapeHtml(eyebrow)}</span>` : "") + escapeHtml(plan.title || "");
-    ui.note.hidden = plan.engine !== "demo-rules";
+    const note = ENGINE_NOTES[plan.engine];
+    ui.note.textContent = note || "";
+    ui.note.hidden = !note;
   }
 
   function renderSteps(steps, doneBefore) {

@@ -194,6 +194,34 @@ def test_chart_stores_a_literal_client_secret():
 
 
 @needs_helm
+def test_chart_runs_the_command_bar_on_rules_unless_claude_has_a_key():
+    rules = _web_env(_render("-f", str(K3D_VALUES)))
+    assert rules["KURORT_ASSISTANT_ENGINE"]["value"] == "rules"
+    assert "ANTHROPIC_API_KEY" not in rules
+
+    claude = _web_env(
+        _render(
+            "-f", str(K3D_VALUES),
+            "--set", "assistant.engine=claude",
+            "--set", "assistant.existingSecret=kurort-assistant",
+        )
+    )  # fmt: skip
+    assert claude["KURORT_ASSISTANT_ENGINE"]["value"] == "claude"
+    assert claude["KURORT_ASSISTANT_MODEL"]["value"] == "claude-opus-5-5"
+    assert claude["ANTHROPIC_API_KEY"]["valueFrom"]["secretKeyRef"] == {
+        "name": "kurort-assistant",
+        "key": "api-key",
+    }
+
+
+@needs_helm
+def test_chart_refuses_claude_without_a_key_and_unknown_engines():
+    k3d = ("-f", str(K3D_VALUES))
+    assert "assistant.existingSecret" in _helm_error(*k3d, "--set", "assistant.engine=claude")
+    assert "assistant.engine must be" in _helm_error(*k3d, "--set", "assistant.engine=gpt")
+
+
+@needs_helm
 def test_chart_fails_fast_on_incomplete_auth():
     issuer = ("--set", "auth.oidc.issuer=https://login.example.de/realms/x")
     secret = ("--set", "auth.oidc.existingSecret=oidc")

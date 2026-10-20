@@ -89,9 +89,26 @@ def _best_name_matches(folded: str, reservations: list[Reservation]) -> list[Res
 def _walk_in(session: Session, text: str, folded: str, day: date) -> Plan | None:
     if not p.has_any(folded, r"\bwalk[- ]?in\b", r"\bohne reservierung\b", r"\bspontan"):
         return None
-    nights = max(1, min(p.parse_nights(folded) or 1, 28))
+    return walk_in_plan(
+        session,
+        day,
+        nights=p.parse_nights(folded),
+        category=p.parse_category(folded),
+        name=p.extract_new_guest_name(text),
+    )
+
+
+def walk_in_plan(
+    session: Session,
+    day: date,
+    *,
+    nights: int | None = None,
+    category: str | None = None,
+    name: tuple[str | None, str | None] | None = None,
+) -> Plan:
+    """Walk-in form for a guest arriving today, prefilled with the first fitting free room."""
+    nights = max(1, min(nights or 1, 28))
     departure = day + timedelta(days=nights)
-    category = p.parse_category(folded)
     free = free_rooms(session, day, departure)
     candidates = [r for r in free if category is None or r.category == category]
     if not candidates:
@@ -106,7 +123,6 @@ def _walk_in(session: Session, text: str, folded: str, day: date) -> Plan | None
         return s.plan("walk_in", "Walk-in anlegen", message=message)
 
     room = candidates[0]
-    name = p.extract_new_guest_name(text)
     query = {"walkin": "1", "abreise": departure.isoformat(), "zimmer": room.number}
     steps = [s.navigate("Walk-in-Formular öffnen", f"/reservierungen/neu?{urlencode(query)}")]
     if name:
@@ -125,6 +141,16 @@ def _walk_in(session: Session, text: str, folded: str, day: date) -> Plan | None
 def _check_in(session: Session, text: str, folded: str, day: date) -> Plan | None:
     if not p.has_any(folded, r"\bcheck[- ]?in\b", r"\beinchecken\b", r"\beingecheckt\b"):
         return None
+    return check_in_plan(session, day, folded, mentioned=_mentioned_name(text))
+
+
+def check_in_plan(
+    session: Session, day: date, folded: str, *, mentioned: str | None = None
+) -> Plan:
+    """Check-in of today's arrival named in ``folded`` (folded text, may be the whole request).
+
+    ``mentioned`` is the name as said, for the reply when nobody matches.
+    """
     arrivals = list(
         session.scalars(
             _with_guests(
@@ -166,14 +192,15 @@ def _check_in(session: Session, text: str, folded: str, day: date) -> Plan | Non
             message="Mehrere Anreisen passen – bitte wählen:\n" + "\n".join(lines),
             steps=steps,
         )
-    name = _mentioned_name(text)
-    if name:
+    if mentioned:
         return s.plan(
             "check_in",
             "Check-in starten",
-            message=f"Keine offene Anreise heute für {name}.",
+            message=f"Keine offene Anreise heute für {mentioned}.",
             steps=[
-                s.navigate(f"Nach „{name}“ suchen", f"/reservierungen?{urlencode({'q': name})}")
+                s.navigate(
+                    f"Nach „{mentioned}“ suchen", f"/reservierungen?{urlencode({'q': mentioned})}"
+                )
             ],
         )
     lines = [
@@ -203,6 +230,24 @@ def _move_arrival(session: Session, text: str, folded: str, day: date) -> Plan |
         and p.has_any(folded, r"\banreise\b", r"\bankunft\b")
     ):
         return None
+    return move_arrival_plan(
+        session,
+        day,
+        folded,
+        mentioned=_mentioned_name(text),
+        target=p.parse_target_date(folded, day),
+    )
+
+
+def move_arrival_plan(
+    session: Session,
+    day: date,
+    folded: str,
+    *,
+    mentioned: str | None = None,
+    target: date | None = None,
+) -> Plan:
+    """Move the nearest upcoming arrival of the guest named in ``folded`` to ``target``."""
     title = "Anreise verschieben"
     upcoming = list(
         session.scalars(
@@ -215,8 +260,7 @@ def _move_arrival(session: Session, text: str, folded: str, day: date) -> Plan |
     )
     matches = _best_name_matches(folded, upcoming)
     if not matches:
-        name = _mentioned_name(text)
-        who = f" für {name}" if name else ""
+        who = f" für {mentioned}" if mentioned else ""
         return s.plan("move_arrival", title, message=f"Keine kommende Reservierung{who} gefunden.")
     people = {(r.primary_guest.first_name, r.primary_guest.last_name) for r in matches}
     if len(people) > 1:
@@ -230,7 +274,6 @@ def _move_arrival(session: Session, text: str, folded: str, day: date) -> Plan |
             message="Mehrere Gäste passen – bitte mit Vornamen sagen:\n" + "\n".join(lines),
         )
     res = matches[0]  # nearest arrival of that guest
-    target = p.parse_target_date(folded, day)
     if target is None:
         return s.plan(
             "move_arrival", title, message="Auf welchen Tag soll die Anreise verschoben werden?"
@@ -280,11 +323,26 @@ def _room_availability(session: Session, text: str, folded: str, day: date) -> P
         folded, r"\bfrei\b", r"\bbelegt\b", r"\bverfuegbar", r"\bbesetzt\b"
     ):
         return None
+    start, end = p.parse_span(folded, day) or (None, None)
+    return room_availability_plan(session, day, number, start=start, end=end)
+
+
+def room_availability_plan(
+    session: Session,
+    day: date,
+    number: str,
+    *,
+    start: date | None = None,
+    end: date | None = None,
+) -> Plan:
+    """Is room ``number`` free from ``start`` until the departure morning ``end``? Default: tonight."""
     title = f"Zimmer {number} prüfen"
     room = session.scalar(select(Room).where(Room.number == number))
     if room is None:
         return s.plan("room_availability", title, message=f"Zimmer {number} gibt es nicht.")
-    start, end = p.parse_span(folded, day) or (day, day + timedelta(days=1))
+    start = start or day
+    if end is None or end <= start:
+        end = start + timedelta(days=1)
     blockers = list(
         session.scalars(
             _with_guests(
@@ -315,6 +373,10 @@ def _departures(session: Session, text: str, folded: str, day: date) -> Plan | N
         folded, r"\breist\b.*\bab\b", r"\babreisen?\b", r"\bcheck[- ]?outs?\b", r"\bauschecken\b"
     ):
         return None
+    return departures_plan(session, day)
+
+
+def departures_plan(session: Session, day: date) -> Plan:
     open_departures = list(
         session.scalars(
             _with_guests(
@@ -353,6 +415,10 @@ def _arrivals(session: Session, text: str, folded: str, day: date) -> Plan | Non
         r"\bankuenfte\b",
     ):
         return None
+    return arrivals_plan(session, day)
+
+
+def arrivals_plan(session: Session, day: date) -> Plan:
     arrivals = list(
         session.scalars(
             _with_guests(
@@ -378,16 +444,46 @@ def _arrivals(session: Session, text: str, folded: str, day: date) -> Plan | Non
     )  # fmt: skip
 
 
+DASHBOARD_TITLE = "Übersicht anpassen"
+
+
+def dashboard_plan(
+    *, show: list[str] | None = None, occupancy_days: int | None = None, reset: bool = False
+) -> Plan:
+    """Dashboard layout: ``show`` picks the cards (None = unchanged), or ``reset`` to the default."""
+    if reset:
+        return s.plan(
+            "dashboard", DASHBOARD_TITLE, message="Übersicht wieder in der Standardansicht.",
+            steps=[s.dashboard_reset("Standardansicht wiederherstellen"), s.navigate("Übersicht öffnen", "/")],
+        )  # fmt: skip
+    widgets = [w for w in s.WIDGETS if w in show] if show else None  # keep the page order
+    summary = (
+        "Angezeigt: " + ", ".join(WIDGET_LABELS[w] for w in widgets)
+        if widgets
+        else "Kacheln unverändert"
+    )
+    return _dashboard_layout(widgets, occupancy_days, summary)
+
+
+def _dashboard_layout(widgets: list[str] | None, days: int | None, summary: str) -> Plan:
+    occupancy_days = max(7, min(days, 60)) if days else None
+    if occupancy_days:
+        summary += f" · Belegung für {occupancy_days} Tage"
+    return s.plan(
+        "dashboard", DASHBOARD_TITLE, message=summary,
+        steps=[
+            s.dashboard("Ansicht speichern", widgets=widgets, occupancy_days=occupancy_days),
+            s.navigate("Übersicht öffnen", "/"),
+        ],
+    )  # fmt: skip
+
+
 def _dashboard(session: Session, text: str, folded: str, day: date) -> Plan | None:
-    title = "Übersicht anpassen"
     mentions_board = p.has_any(folded, r"\buebersicht\b", r"\bdashboard\b", r"\bstartseite\b")
     if p.has_any(folded, r"zuruecksetzen", r"\bstandard", r"\balles wieder\b") and (
         mentions_board or p.has_any(folded, r"ansicht")
     ):
-        return s.plan(
-            "dashboard", title, message="Übersicht wieder in der Standardansicht.",
-            steps=[s.dashboard_reset("Standardansicht wiederherstellen"), s.navigate("Übersicht öffnen", "/")],
-        )  # fmt: skip
+        return dashboard_plan(reset=True)
     mentioned = [
         key for key, pattern in DASHBOARD_WIDGET_WORDS.items() if re.search(pattern, folded)
     ]
@@ -409,16 +505,7 @@ def _dashboard(session: Session, text: str, folded: str, day: date) -> Plan | No
         summary = "Angezeigt: " + ", ".join(WIDGET_LABELS[w] for w in widgets)
     else:
         summary = "Kacheln unverändert"
-    occupancy_days = max(7, min(days, 60)) if days else None
-    if occupancy_days:
-        summary += f" · Belegung für {occupancy_days} Tage"
-    return s.plan(
-        "dashboard", title, message=summary,
-        steps=[
-            s.dashboard("Ansicht speichern", widgets=widgets, occupancy_days=occupancy_days),
-            s.navigate("Übersicht öffnen", "/"),
-        ],
-    )  # fmt: skip
+    return _dashboard_layout(widgets, days, summary)
 
 
 _CODE = re.compile(r"^r-?\d{4}-\d{4}$")
@@ -436,6 +523,11 @@ def _search(session: Session, text: str, folded: str, day: date) -> Plan | None:
         len(folded.split()) > 3 or _VERBS.search(folded) or not re.fullmatch(r"[\w\s.'-]+", folded)
     ):
         return None
+    return search_plan(term)
+
+
+def search_plan(term: str) -> Plan:
+    """Reservation search for a guest name, reservation code or room number."""
     return s.plan(
         "search", f"Suche: {term}",
         steps=[s.navigate(f"Nach „{term}“ suchen", f"/reservierungen?{urlencode({'q': term})}")],
@@ -462,10 +554,15 @@ def plan_for(session: Session, text: str, *, day: date | None = None) -> Plan:
             result = rule(session, text, folded, day)
             if result is not None:
                 return result
+    return unknown_plan(session, day, NOT_YET if folded else None)
+
+
+def unknown_plan(session: Session, day: date, message: str | None) -> Plan:
+    """No workflow fits: say so (or ask back) and offer working examples."""
     return s.plan(
         "unknown",
-        "Nicht verstanden" if folded else "Was möchten Sie tun?",
-        message=NOT_YET if folded else None,
+        "Nicht verstanden" if message else "Was möchten Sie tun?",
+        message=message,
         suggestions=suggestions(session, day=day),
     )
 

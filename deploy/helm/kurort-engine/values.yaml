@@ -29,6 +29,16 @@ demo:
   #   off       never seed (production)
   seed: if-empty
 
+# Command bar planner. rules = built-in German phrase rules (no key, no cost);
+# claude = Claude via the Anthropic API, with the rules answering whenever the
+# API is slow or unreachable. The pod then needs outbound HTTPS to api.anthropic.com.
+assistant:
+  engine: rules
+  model: claude-opus-5-5
+  # Secret holding the Anthropic API key (required for engine=claude).
+  existingSecret: ""
+  existingSecretKey: api-key
+
 # Staff login via OpenID Connect — Keycloak or any OIDC provider. The app
 # only needs an issuer, a confidential client and a `roles` claim carrying
 # `rezeption` and/or `leitung` (docs/ops/kubernetes.md#authentication).

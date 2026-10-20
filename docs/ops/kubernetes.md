@@ -83,6 +83,9 @@ and data. Delete both by hand to start clean.
 | `app.today` | empty | pin the business date (`YYYY-MM-DD`) for a reproducible demo |
 | `app.extraEnv` | `{}` | extra `KURORT_*` variables for all app containers |
 | `demo.seed` | `if-empty` | `if-empty` seeds an empty DB, `reset` wipes and reseeds on every pod start, `off` never seeds |
+| `assistant.engine` | `rules` | command bar planner: `rules` (built-in German phrase rules, no key) or `claude` (Claude via the Anthropic API; the rules answer when it fails or takes longer than 15 s) |
+| `assistant.model` | `claude-opus-5-5` | Claude model for `engine=claude` |
+| `assistant.existingSecret` / `.existingSecretKey` | — / `api-key` | Secret holding the Anthropic API key, passed as `ANTHROPIC_API_KEY` (required for `engine=claude`; the pod needs outbound HTTPS to `api.anthropic.com`) |
 | `ingress.enabled`, `.className`, `.host`, `.annotations`, `.tls` | on, `traefik`, `kurort.localhost` | standard Ingress settings |
 | `resources`, `podSecurityContext`, `securityContext` | small requests, non-root | app pod |
 | `postgresql.enabled` | `true` | bundled database |
@@ -99,7 +102,14 @@ and data. Delete both by hand to start clean.
 | `auth.session.existingSecret` / `.existingSecretKey` | — / `session-secret` | cookie-signing key; empty = generated once into `<fullname>-auth` |
 
 With `auth.enabled=true` the render fails fast when the issuer, the client
-secret or a public URL is missing.
+secret or a public URL is missing. With `assistant.engine=claude` it fails when
+`assistant.existingSecret` is missing:
+
+```bash
+kubectl -n kurort create secret generic kurort-assistant --from-literal=api-key='<Anthropic API key>'
+helm upgrade --install kurort deploy/helm/kurort-engine -n kurort --reuse-values \
+  --set assistant.engine=claude --set assistant.existingSecret=kurort-assistant
+```
 
 The app accepts `postgresql://`, `postgres://` and `postgresql+psycopg://` URLs.
 

@@ -47,6 +47,8 @@ web = [
     "authlib>=1.6",
     "httpx2>=2.9",  # Authlib's HTTP client (plain httpx is its deprecated fallback)
     "itsdangerous>=2.1",
+    # Command bar on Claude (KURORT_ASSISTANT_ENGINE=claude); the phrase rules need nothing.
+    "anthropic>=1.15",
 ]
 dev = [
     "httpx>=0.27",

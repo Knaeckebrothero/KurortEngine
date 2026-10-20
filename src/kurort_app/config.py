@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
     late_arrival_from: time = time(18, 0)
 
+    # Command bar planner. "rules" = built-in German phrase rules; "claude" = Claude
+    # via the Anthropic API (key in ANTHROPIC_API_KEY), with the rules as fallback.
+    assistant_engine: Literal["rules", "claude"] = "rules"
+    assistant_model: str = "claude-opus-5-5"
+    # Seconds to wait for Claude before answering from the rules.
+    assistant_timeout: float = 15.0
+
     # Staff login. "oidc" (default) requires the OIDC/session settings below and
     # refuses to start without them; "off" serves every page without a login.
     auth: Literal["oidc", "off"] = "oidc"

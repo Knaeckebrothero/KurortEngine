@@ -82,6 +82,17 @@ database-url
 - name: HOME
   value: /tmp
 {{ include "kurort.auth.env" . }}
+- name: KURORT_ASSISTANT_ENGINE
+  value: {{ .Values.assistant.engine | quote }}
+- name: KURORT_ASSISTANT_MODEL
+  value: {{ .Values.assistant.model | quote }}
+{{- with .Values.assistant.existingSecret }}
+- name: ANTHROPIC_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ . }}
+      key: {{ $.Values.assistant.existingSecretKey }}
+{{- end }}
 {{- range $name, $value := .Values.app.extraEnv }}
 - name: {{ $name }}
   value: {{ $value | quote }}
@@ -150,4 +161,15 @@ database-url
       key: session-secret
       {{- end }}
 {{- end }}
+{{- end -}}
+
+{{/* ---- Command bar assistant ---- */}}
+
+{{- define "kurort.assistant.validate" -}}
+{{- if not (has .Values.assistant.engine (list "rules" "claude")) -}}
+{{- fail (printf "assistant.engine must be rules or claude (got %q)" .Values.assistant.engine) -}}
+{{- end -}}
+{{- if and (eq .Values.assistant.engine "claude") (not .Values.assistant.existingSecret) -}}
+{{- fail "assistant.engine=claude needs assistant.existingSecret (a Secret holding the Anthropic API key)" -}}
+{{- end -}}
 {{- end -}}
