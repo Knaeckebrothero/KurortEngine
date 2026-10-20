@@ -111,7 +111,7 @@ def test_a_tool_call_gives_the_same_plan_as_the_rules(client, seeded, engine):
     assert {**plan, "engine": rules["engine"]} == rules
 
 
-def test_the_request_names_today_and_offers_strict_tools(client, db, engine):
+def test_the_request_names_today_and_offers_one_tool_per_workflow(client, db, engine):
     fake = engine(tool_call("departures"))
     ask(client, "Wer muss heute noch raus?")
 
@@ -133,7 +133,8 @@ def test_the_request_names_today_and_offers_strict_tools(client, db, engine):
     ]  # fmt: skip
     for tool in call["tools"]:
         schema = tool["input_schema"]
-        assert tool["strict"] is True and schema["additionalProperties"] is False
+        assert "strict" not in tool  # strict drops details said after a later field
+        assert schema["additionalProperties"] is False
         assert set(schema["required"]) <= set(schema["properties"])
 
 

@@ -65,10 +65,12 @@ def _date(description: str) -> dict[str, Any]:
 
 
 def _tool(name: str, description: str, properties: dict, required: list[str]) -> dict:
+    # Not strict: strict tool use makes Claude write the fields in schema order, so a
+    # detail it reaches late is dropped ("Einzelzimmer für drei Nächte" lost the
+    # nights). _run checks every field itself instead.
     return {
         "name": name,
         "description": description,
-        "strict": True,
         "input_schema": {
             "type": "object",
             "properties": properties,
