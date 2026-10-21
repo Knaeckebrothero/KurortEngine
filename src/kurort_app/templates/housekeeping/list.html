@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
   <div><h1>Zimmerstatus</h1><p>Heute im Haus · {{ business_date | date('day') }}</p></div>
-  <form class="page-actions hk-bulk" method="post" action="/zimmerstatus/bleibe"><button class="btn" type="submit">Bleibezimmer auf schmutzig setzen <span class="num">({{ stayover_count }})</span></button></form>
+  {% include "housekeeping/_bulk.html" %}
 </div>
 <div class="hk-filters">
   <nav class="hk-chips" aria-label="Etage"><strong>Etage</strong>
@@ -12,9 +12,11 @@
   </nav>
   <nav class="hk-chips" aria-label="Status"><strong>Status</strong>
     <a class="btn{% if not status %} primary{% endif %}" href="{{ url(status='') }}">Alle <span class="num">{{ floor_count }}</span></a>
-    {% for value, label in statuses.items() %}<a class="btn{% if status == value %} primary{% endif %}" href="{{ url(status=value) }}">{{ label }} <span class="num" data-status-count="{{ value }}">{{ counts[value] }}</span></a>{% endfor %}
+    {% for value, label in statuses.items() %}<a class="btn{% if status == value %} primary{% endif %}" href="{{ url(status=value) }}">{{ label }} <span class="num" id="hk-count-{{ value }}" data-status-count="{{ value }}">{{ counts[value] }}</span></a>{% endfor %}
   </nav>
-  <nav class="hk-chips" aria-label="Sortierung"><strong>Sortierung</strong><a href="{{ url(sort='dringend') }}"{% if sort == 'dringend' %} aria-current="true"{% endif %}>Dringend zuerst</a><a href="{{ url(sort='zimmer') }}"{% if sort == 'zimmer' %} aria-current="true"{% endif %}>Zimmernummer</a></nav>
+  <nav class="hk-chips" aria-label="Sortierung"><strong>Sortierung</strong>
+    {% for value, label in (('dringend', 'Dringend zuerst'), ('zimmer', 'Zimmernummer')) %}<a class="btn{% if sort == value %} primary{% endif %}" href="{{ url(sort=value) }}"{% if sort == value %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+  </nav>
 </div>
 <div class="hk-grid">
   {% for item in items %}{% include "housekeeping/_room_card.html" %}{% else %}<p>Keine Zimmer für diese Auswahl.</p>{% endfor %}

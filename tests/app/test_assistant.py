@@ -334,44 +334,89 @@ def test_move_arrival_warns_when_the_room_is_taken(client, seeded):
 
 
 def test_move_arrival_ambiguous_and_unknown(client, seeded):
-    a, b = _upcoming(seeded)[:2]
+    a, b = [r for r in _upcoming(seeded) if r.arrival != FRIDAY][:2]
     _rename(a, "Paul", "Zander")
     _rename(b, "Petra", "Zander")
     seeded.commit()
     plan = ask(client, "Verschieb die Anreise von Herrn Zander auf Freitag")
     assert plan["message"].startswith("Mehrere Gäste passen")
+    assert a.code in plan["message"] and b.code in plan["message"]
     assert plan["steps"] == []
+    # each guest is a button that runs the move for just that guest
+    assert plan["suggestions"] == [
+        f"Verschiebe die Anreise von {primary(r).full_name} auf 16.10." for r in (a, b)
+    ]
+    chosen = ask(client, plan["suggestions"][1])
+    assert chosen["steps"][0]["url"] == f"/reservierungen/{b.id}/bearbeiten"
+    assert chosen["steps"][1]["fields"]["anreise"] == "2026-10-16"
 
     plan = ask(client, "Verschieb die Anreise von Herrn Niemand auf Freitag")
     assert plan["message"] == "Keine kommende Reservierung für Niemand gefunden."
 
 
+def test_move_arrival_skips_the_stay_that_already_arrives_that_day(client, seeded):
+    upcoming = _upcoming(seeded)
+    on_friday = next(r for r in upcoming if r.arrival == FRIDAY)
+    later = next(r for r in upcoming if r.arrival > FRIDAY)
+    _rename(on_friday, "Christa", "Zander")
+    _rename(later, "Anja", "Zander")
+    seeded.commit()
+    plan = ask(client, "Verschiebe die Anreise von Frau Zander auf Freitag")
+    assert plan["suggestions"] == []
+    assert plan["steps"][0]["url"] == f"/reservierungen/{later.id}/bearbeiten"
+    assert on_friday.code not in plan["message"]
+
+
 @pytest.mark.parametrize(
-    ("text", "config"),
+    ("text", "config", "url"),
     [
         (
             "Zeig mir nur Anreisen und Belegung, 30 Tage",
             {"widgets": ["today", "occupancy"], "occupancy_days": 30},
+            "/?zeigen=anreisen",  # the Heute table shows arrivals too
         ),
         (
             "Blende Heute aus",
             {"widgets": ["metrics", "occupancy"], "occupancy_days": None},
+            "/",
         ),
-        ("Blende die Kennzahlen aus", {"widgets": ["today", "occupancy"], "occupancy_days": None}),
-        ("Belegung für 30 Tage", {"widgets": None, "occupancy_days": 30}),
-        ("Belegung für 100 Tage", {"widgets": None, "occupancy_days": 60}),
+        (
+            "Blende die Kennzahlen aus",
+            {"widgets": ["today", "occupancy"], "occupancy_days": None},
+            "/",
+        ),
+        ("Belegung für 30 Tage", {"widgets": None, "occupancy_days": 30}, "/"),
+        ("Belegung für 100 Tage", {"widgets": None, "occupancy_days": 60}, "/"),
         (
             "Übersicht: nur Kennzahlen, Belegung 3 Tage",
             {"widgets": ["metrics", "occupancy"], "occupancy_days": 7},
+            "/",
+        ),
+        (
+            "Übersicht nur Abreisen",
+            {"widgets": ["today"], "occupancy_days": None},
+            "/?zeigen=abreisen",
+        ),
+        (
+            "Blende die Anreisen aus",
+            {"widgets": ["metrics", "occupancy"], "occupancy_days": None},
+            "/",
         ),
     ],
 )
-def test_dashboard_configuration(client, seeded, text, config):
+def test_dashboard_configuration(client, seeded, text, config, url):
     plan = ask(client, text)
     assert "hints" not in str(plan)
     assert plan["intent"] == "dashboard"
     assert plan["steps"][0] == {"type": "dashboard", "label": "Ansicht speichern", "config": config}
-    assert plan["steps"][1]["url"] == "/"
+    assert plan["steps"][1]["url"] == url
+
+
+def test_dashboard_arrivals_only_says_so(client, seeded):
+    plan = ask(client, "Zeig mir nur Anreisen und Belegung, 30 Tage")
+    assert plan["message"] == (
+        "Angezeigt: Heute, Belegung · Heute nur Anreisen · Belegung für 30 Tage"
+    )
 
 
 def test_dashboard_reset(client, seeded):
@@ -390,6 +435,25 @@ def test_plain_names_codes_and_rooms_search(client, seeded, text, q):
     url = steps_of(plan, "navigate")[0]["url"]
     assert url.startswith("/reservierungen?")
     assert query_of(url)["q"] == q
+
+
+def test_an_invoice_request_says_it_is_not_there_yet(client, seeded):
+    plan = ask(client, "Rechnung für Zimmer 110")
+    assert plan["intent"] == "search"
+    assert plan["message"] == (
+        "Rechnungen kann ich noch nicht – hier die Aufenthalte von Zimmer 110."
+    )
+    assert query_of(steps_of(plan, "navigate")[0]["url"])["q"] == "110"
+
+    plan = ask(client, "Rechnung für Herrn Klaus Becker")
+    assert plan["message"] == (
+        "Rechnungen kann ich noch nicht – hier die Aufenthalte von Klaus Becker."
+    )
+
+    plan = ask(client, "Mach mal die Rechnung fertig")
+    assert plan["intent"] == "unknown"
+    assert plan["message"] == "Rechnungen kann ich noch nicht."
+    assert plan["suggestions"]
 
 
 def test_unknown_request_offers_examples(client, seeded):

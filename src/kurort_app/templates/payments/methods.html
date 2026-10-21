@@ -2,6 +2,8 @@
 {% import "_macros.html" as ui %}
 {% set add_form = method_form | default({}) %}
 {% set method_errors = method_errors | default({}) %}
+{% set row_errors = row_errors | default({}) %}
+{% set row_form = row_form | default({}) %}
 {% block title %}Zahlungsarten{% endblock %}
 {% block content %}
 <div class="page-header"><div><h1>Zahlungsarten</h1><p>Bezeichnungen und Reihenfolge ändern. Nicht mehr benötigte Zahlungsarten deaktivieren statt löschen.</p></div></div>
@@ -16,16 +18,20 @@
       <thead><tr><th scope="col">Code</th><th scope="col">Einstellungen</th><th scope="col">Reihenfolge</th></tr></thead>
       <tbody>
         {% for method in methods %}
+        {% set editing = row_id == method.id %}
+        {% set row_values = row_form if editing else {} %}
+        {% set row_error = row_errors.get('label') if editing else none %}
         <tr data-method-id="{{ method.id }}">
           <td data-label="Code"><code class="mono">{{ method.code }}</code><span class="sub">Nicht änderbar</span></td>
           <td>
             <form class="payment-method-edit" method="post" action="/verwaltung/zahlungsarten/{{ method.id }}">
               <div class="field">
                 <label for="method-{{ method.id }}-label">Bezeichnung</label>
-                <input class="input" id="method-{{ method.id }}-label" name="label" type="text" maxlength="60" value="{{ method.label }}" required>
+                <input class="input" id="method-{{ method.id }}-label" name="label" type="text" maxlength="60" value="{{ row_values.get('label', method.label) }}" required{% if row_error %} aria-invalid="true" aria-describedby="method-{{ method.id }}-label-error"{% endif %}>
+                {% if row_error %}<span class="error" id="method-{{ method.id }}-label-error" role="alert">{{ row_error }}</span>{% endif %}
               </div>
-              <label class="checkbox" for="method-{{ method.id }}-deferred"><input id="method-{{ method.id }}-deferred" name="deferred" type="checkbox" value="1"{% if method.deferred %} checked{% endif %}><span>Später bezahlt (auf Rechnung)</span></label>
-              <label class="checkbox" for="method-{{ method.id }}-active"><input id="method-{{ method.id }}-active" name="active" type="checkbox" value="1"{% if method.active %} checked{% endif %}><span>Aktiv</span></label>
+              <label class="checkbox" for="method-{{ method.id }}-deferred"><input id="method-{{ method.id }}-deferred" name="deferred" type="checkbox" value="1"{% if (row_values.get('deferred') == '1' if editing else method.deferred) %} checked{% endif %}><span>Später bezahlt (auf Rechnung)</span></label>
+              <label class="checkbox" for="method-{{ method.id }}-active"><input id="method-{{ method.id }}-active" name="active" type="checkbox" value="1"{% if (row_values.get('active') == '1' if editing else method.active) %} checked{% endif %}><span>Aktiv</span></label>
               <button class="btn" type="submit">Speichern<span class="sr-only">: {{ method.label }}</span></button>
             </form>
           </td>

@@ -1,5 +1,6 @@
 """F5 guest mail: editable templates, safe rendering and synchronous transports."""
 
+import pytest
 from sqlalchemy import text
 
 from tests.app.test_engine_adapter import make_stay
@@ -47,7 +48,12 @@ def test_ac3_compose_logs_exact_message_and_history(client, db):
         },
     )
     assert response.status_code == 200
-    assert "protokolliert – nicht versendet" in response.text
+    # Demo transport "log": a calm info notice, not a green success or an error.
+    assert (
+        "E-Mail an Anna Weber gespeichert – Testbetrieb, es wird nichts verschickt."
+        in response.text
+    )
+    assert "notice info" in response.text
     row = db.execute(text("SELECT * FROM email_messages")).mappings().one()
     assert row["subject"] == f"Ihre Buchung {res.code}"
     assert row["body"] == "Guten Tag Anna – schön, dass Sie kommen!"
@@ -163,7 +169,7 @@ def test_ac4_smtp_failure_retry_and_queued_commit(client, db, monkeypatch):
     mail.send(db, row, settings=settings)
     assert row.status == "failed" and "Mailserver nicht erreichbar" in row.error
     page = client.get(f"/e-mails/{row.id}").text
-    assert "fehlgeschlagen" in page and "Erneut senden" in page
+    assert "Fehlgeschlagen" in page and "Erneut senden" in page
     FakeSMTP.fail = False
     client.app.state.settings = settings
     assert client.post(f"/e-mails/{row.id}/erneut").status_code == 200
@@ -206,7 +212,8 @@ def test_ac6_manager_edits_and_system_cannot_deactivate(client, db):
         client.post("/verwaltung/e-mail/vorlagen/buchungsbestaetigung", data=form).status_code
         == 200
     )
-    assert "Guten Tag {{ gast.name }}" in client.get(f"/reservierungen/{r.id}/e-mail").text
+    compose = client.get(f"/reservierungen/{r.id}/e-mail").text
+    assert f"Guten Tag {r.primary_guest.full_name}</textarea>" in compose
     form.update(key="spaetanreise", name="Spätanreise", active="")
     response = client.post("/verwaltung/e-mail/vorlagen/spaetanreise", data=form)
     assert response.status_code == 422 and "Systemvorlagen" in response.text
@@ -257,3 +264,144 @@ def test_manager_oidc_edit_and_safe_settings(oidc_client, idp, db):
     form.update(key="eigene_vorlage", name="Eigene Vorlage")
     assert oidc_client.post("/verwaltung/e-mail/vorlagen", data=form).status_code == 200
     assert db.scalar(text("SELECT count(*) FROM email_templates WHERE key='eigene_vorlage'")) == 1
+
+
+def test_compose_opens_filled_with_preview_and_keeps_typed_text(client, db):
+    from kurort_app.defaults import ensure_defaults
+
+    ensure_defaults(db)
+    r = make_stay(db, [{"first": "Anna"}])
+    r.primary_guest.email = "anna@example.de"
+    db.commit()
+    page = client.get(f"/reservierungen/{r.id}/e-mail").text
+    form = page.split('id="subject"', 1)[1].split("</textarea>", 1)[0]
+    assert f'value="Ihre Buchung {r.code} im Hotel Rheinland"' in form
+    assert "Guten Tag Anna Weber," in form and "{{" not in form
+    preview = page.split('id="mail-preview"', 1)[1]
+    assert f"Ihre Buchung {r.code} im Hotel Rheinland" in preview
+    # Placeholders stay usable: listed with this stay's values and filled on send.
+    assert "<code>{{ gast.vorname }}</code> – Anna" in page
+    assert 'onchange="mailSwitchTemplate(this)"' in page and 'id="mail-switch"' in page
+    partial = client.get(
+        f"/reservierungen/{r.id}/e-mail?vorlage=anreiseinformationen",
+        headers={"HX-Request": "true"},
+    ).text
+    assert partial.startswith('<div id="compose"') and "Ihre Anreise am" in partial
+    sent = client.post(
+        f"/reservierungen/{r.id}/e-mail",
+        data={
+            "template_key": "buchungsbestaetigung",
+            "to_address": "anna@example.de",
+            "subject": f"Ihre Buchung {r.code}",
+            "body": "Guten Tag Anna Weber,\r\nbis bald, {{ gast.vorname }}!",
+        },
+    )
+    assert sent.status_code == 200
+    body = db.scalar(text("SELECT body FROM email_messages"))
+    assert body == "Guten Tag Anna Weber,\nbis bald, Anna!"
+
+
+def test_outbox_names_templates_and_reception_gets_postausgang(oidc_client, idp, db):
+    from kurort_app.defaults import ensure_defaults
+    from kurort_app.models import EmailMessageRow
+    from tests.app.auth_helpers import login
+
+    ensure_defaults(db)
+    r = make_stay(db, [{}])
+    row = EmailMessageRow(
+        reservation_id=r.id,
+        template_key="buchungsbestaetigung",
+        to_address="gast@example.de",
+        subject="Grüße",
+        body="Hallo",
+        transport="log",
+        status="logged",
+        attempts=1,
+        created_by="m.schmidt",
+    )
+    db.add(row)
+    db.commit()
+    idp.claims["roles"] = ["rezeption"]
+    login(oidc_client)
+    outbox = oidc_client.get("/e-mails").text
+    assert "Buchungsbestätigung" in outbox and "buchungsbestaetigung" not in outbox
+    assert "Testbetrieb – nicht verschickt" in outbox
+    message = oidc_client.get(f"/e-mails/{row.id}").text
+    assert "Buchungsbestätigung" in message and "M. Schmidt" in message
+    assert message.count("Testbetrieb – nicht verschickt") == 1 and "Versandversuche" not in message
+    assert "<span>Postausgang</span>" in message
+
+
+def test_settings_show_test_transport_and_safe_field_errors(client, db):
+    from sqlalchemy import select
+
+    from kurort_app.defaults import ensure_defaults
+    from kurort_app.models import SafeCompartment
+
+    ensure_defaults(db)
+    page = client.get("/verwaltung/e-mail").text
+    assert "Versand: Testbetrieb (kein Mailserver eingerichtet)." in page
+    first = db.scalar(select(SafeCompartment).order_by(SafeCompartment.position))
+    response = client.post(
+        "/verwaltung/safe-faecher", data={"label": first.label, "fixed_pin": "12ab", "active": "on"}
+    )
+    assert response.status_code == 422
+    assert "Diesen Fachnamen gibt es bereits." in response.text
+    assert "Der Code besteht aus 1 bis 8 Ziffern." in response.text
+    assert f'id="new-label" name="label" maxlength="40" required value="{first.label}"' in (
+        response.text
+    )
+    assert "12ab" not in response.text
+    response = client.post(
+        f"/verwaltung/safe-faecher/{first.id}", data={"label": "Fach Neu", "position": "x"}
+    )
+    assert response.status_code == 422 and "Bitte eine ganze Zahl angeben." in response.text
+    assert 'value="Fach Neu"' in response.text
+    response = client.post("/verwaltung/safe-faecher", data={"label": "Fach Ende", "active": "on"})
+    assert response.status_code == 200
+    positions = list(db.scalars(select(SafeCompartment.position).order_by(SafeCompartment.id)))
+    assert positions[-1] == max(positions[:-1]) + 1
+
+
+def test_new_template_key_comes_from_the_name(client, db):
+    from kurort_app.defaults import ensure_defaults
+
+    ensure_defaults(db)
+    assert 'name="key"' not in client.get("/verwaltung/e-mail/vorlagen/neu").text
+    form = dict(name="Rückfrage Ärztin", subject="Rückfrage", body="Guten Tag {{ gast.name }}")
+    for _ in range(2):
+        assert client.post("/verwaltung/e-mail/vorlagen", data=form).status_code == 200
+    keys = db.scalars(
+        text("SELECT key FROM email_templates WHERE name='Rückfrage Ärztin' ORDER BY id")
+    ).all()
+    assert keys == ["rueckfrage_aerztin", "rueckfrage_aerztin_2"]
+    # "neu" is the new-template page's address, never a template key.
+    client.post("/verwaltung/e-mail/vorlagen", data={**form, "name": "Neu"})
+    assert db.scalar(text("SELECT key FROM email_templates WHERE name='Neu'")) == "neu_2"
+
+
+@pytest.mark.parametrize(
+    "body,message",
+    [
+        ("{{ gast.name }", "Ein Platzhalter ist nicht richtig geschlossen"),
+        ("{{ gast.name", "Ein Platzhalter ist nicht richtig geschlossen"),
+        ("{{ gast.name | upper }}", "nur einen Namen aus der Liste"),
+        ("{% if x %}a{% endif %}", "ist nicht erlaubt"),
+        ("{{ gast.vornamee }}", "Unbekannter Platzhalter: gast.vornamee"),
+    ],
+)
+def test_placeholder_errors_are_german(body, message):
+    from kurort_app.services import mail_templates
+
+    with pytest.raises(mail_templates.TemplateValidationError, match=message):
+        mail_templates.validate_template("Betreff", body)
+
+
+def test_arrival_time_reads_uhr(db):
+    from datetime import time
+
+    from kurort_app.services import mail_templates
+
+    r = make_stay(db, [{}])
+    r.eta = time(12, 15)
+    assert mail_templates.context_for(r)["reservierung"]["ankunftszeit"] == "12:15 Uhr"

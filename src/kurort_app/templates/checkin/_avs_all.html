@@ -1,0 +1,6 @@
+{# Offered while two or more guests still wait for printing. #}
+<div id="avs-all"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {%- if printable_open >= 2 -%}
+  <form method="post" action="/check-in/{{ r.id }}/avs/alle"><button class="btn" type="submit">Alle als gedruckt markieren</button></form>
+  {%- endif -%}
+</div>

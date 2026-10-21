@@ -57,7 +57,7 @@ def schedules(app, records, *, today, now):
                     continue
                 due = latest.astimezone(HOTEL_TZ).date() + timedelta(days=interval)
                 state = "erledigt" if today < due else ("fällig" if today == due else "überfällig")
-                note = due.strftime("%d.%m.%Y")
+                note = f"fällig {'seit' if today > due else 'am'} {due:%d.%m.%Y}"
             href = f"/apps/{app.slug}/{rule.record}/neu?{urlencode({rule.via: target.id})}"
             result.append(StatusItem(rule.title, target, state, href, note))
     return result
@@ -66,6 +66,12 @@ def schedules(app, records, *, today, now):
 def alerts(app, records, *, today):
     result = []
     for rule in app.alerts:
+        # "Verbrauchen bis 21.10.2026": the date field's label, unless the rule shifts it
+        label = (
+            app.collection(rule.collection).field(rule.field).label
+            if not rule.offset_days
+            else "Frist"
+        )
         for record in records:
             if (
                 record.deleted_at
@@ -94,7 +100,7 @@ def alerts(app, records, *, today):
                         record,
                         state,
                         f"/apps/{app.slug}/{record.collection}/{record.id}",
-                        deadline.strftime("%d.%m.%Y"),
+                        f"{label} {deadline:%d.%m.%Y}",
                     )
                 )
     return result

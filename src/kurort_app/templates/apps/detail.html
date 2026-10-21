@@ -4,7 +4,7 @@
 <div class="app-page stack">
   <nav class="breadcrumb" aria-label="Pfad"><a href="/apps/{{ app.slug }}">{{ app.title }}</a><span aria-hidden="true"> › </span><a href="/apps/{{ app.slug }}/{{ collection.key }}">{{ collection.title }}</a><span aria-hidden="true"> › </span>{{ row_title(row) }}</nav>
   <header class="page-header">
-    <div><p class="eyebrow">{{ collection.item }}</p><h1>{{ row_title(row) }}</h1>{% if row.out_of_range %}<div class="badges"><span class="badge warning">Abweichung</span></div>{% endif %}</div>
+    <div><p class="eyebrow">{{ collection.item }}</p><h1>{{ row_title(row) }}</h1>{% if row.out_of_range %}<div class="badges"><span class="badge warning">Abweichung</span>{% for label, text in ranges(row).items() %}<span class="app-meta app-range">Sollbereich {{ label }}: {{ text }}</span>{% endfor %}</div>{% endif %}</div>
     {% if ctx.can_edit(collection.key) %}<div class="page-actions"><a class="btn primary" href="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}/bearbeiten">Bearbeiten</a></div>{% endif %}
   </header>
 
@@ -18,10 +18,10 @@
   <section class="card app-panel stack" aria-labelledby="app-metadata-title">
     <h2 id="app-metadata-title">Erfasst und geändert</h2>
     <dl class="app-facts">
-      <div><dt>Erfasst von</dt><dd>{{ row.created_by }}</dd></div>
+      <div><dt>Erfasst von</dt><dd>{{ row.created_by|staff_name }}</dd></div>
       <div><dt>Erfasst am</dt><dd class="num">{{ row.created_at|date }} · {{ row.created_at|time }} Uhr</dd></div>
       {% if row.updated_at %}
-      <div><dt>Zuletzt geändert von</dt><dd>{{ row.updated_by }}</dd></div>
+      <div><dt>Zuletzt geändert von</dt><dd>{{ row.updated_by|staff_name }}</dd></div>
       <div><dt>Zuletzt geändert am</dt><dd class="num">{{ row.updated_at|date }} · {{ row.updated_at|time }} Uhr</dd></div>
       {% endif %}
     </dl>
@@ -66,8 +66,9 @@
         {% for event in history %}
         <li>
           <p>{{ event.summary }}</p>
-          <p class="app-meta">{{ event.actor }} · {{ event.at|date }} · {{ event.at|time }} Uhr</p>
-          {% if event.payload %}<details class="app-disclosure"><summary>Änderungsdetails</summary><pre class="app-audit-payload">{{ event.payload|tojson(indent=2) }}</pre></details>{% endif %}
+          <p class="app-meta">{{ event.actor|staff_name }} · {{ event.at|date }} · {{ event.at|time }} Uhr</p>
+          {% set changed = show_changes(event) %}
+          {% if changed %}<details class="app-disclosure"><summary>Änderungsdetails</summary><ul class="app-changes">{% for label, before, after in changed %}<li><span class="app-change-label">{{ label }}:</span> {% if event.action == 'app_record.created' %}{{ after }}{% elif event.action == 'app_record.deleted' %}{{ before }}{% else %}{{ before }} → {{ after }}{% endif %}</li>{% endfor %}</ul></details>{% endif %}
         </li>
         {% else %}<li class="muted">Noch keine Änderungen dokumentiert.</li>{% endfor %}
       </ol>

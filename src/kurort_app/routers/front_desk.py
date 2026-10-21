@@ -26,7 +26,7 @@ from kurort_app.models import (
 )
 from kurort_app.services import housekeeping, payments
 from kurort_app.services import today as desk
-from kurort_app.web import STATUS_LABELS, WEEKDAYS, fmt_date, redirect_with_notice, templates
+from kurort_app.web import STATUS_LABELS, WEEKDAYS, fmt_money, redirect_with_notice, templates
 
 router = APIRouter(dependencies=[Depends(require_role("rezeption", "leitung"))])
 
@@ -81,6 +81,11 @@ def _in_house(session: Session) -> list[Reservation]:
 def _room_sort_key(reservation: Reservation) -> tuple[int, str]:
     number = reservation.room.number if reservation.room else ""
     return (int(number) if number.isdigit() else 9999, number)
+
+
+def _money_flags(session: Session, reservation: Reservation) -> list[desk.Flag]:
+    """The payment badge ("Offen …", "Bezahlt"), for lists that show money in its own column."""
+    return payments.payment_flags(session, desk.TodayRow("abreise", reservation, []))
 
 
 def _room_count(session: Session) -> int:
@@ -148,7 +153,7 @@ def occupancy_chart(counts: list[int], start: date, capacity: int) -> dict:
                 "day": f"{night:%d.%m.}",
                 "date": night,
                 "is_today": i == 0,
-                "weekend": night.weekday() >= 5,
+                "weekend": night.weekday() in (4, 5),  # Fri and Sat nights
                 "labelled": not dense or i == 0 or night.weekday() == 0,
             }
         )
@@ -231,6 +236,12 @@ def departures_page(
 ) -> HTMLResponse:
     day = _parse_day(tag)
     rows = _departures(session, day)
+    balances = {r.id: payments.balance(r) for r in rows}
+    flags = {}
+    for r in rows:
+        # The Saldo column shows the open amount; keep "Bezahlt"/"Guthaben" as status.
+        money = _money_flags(session, r) if balances[r.id].open > 0 else []
+        flags[r.id] = [f for f in desk.flags_for(session, "abreise", r) if f not in money]
     context = {
         "day": day,
         "is_today": day == today(),
@@ -239,8 +250,8 @@ def departures_page(
         "rows": rows,
         "open_count": sum(1 for r in rows if r.status == CHECKED_IN),
         "done_count": sum(1 for r in rows if r.status == CHECKED_OUT),
-        "flags": {r.id: desk.flags_for(session, "abreise", r) for r in rows},
-        "balance": {r.id: payments.balance(r) for r in rows},
+        "flags": flags,
+        "balance": balances,
     }
     return templates.TemplateResponse(request, "front_desk/departures.html", context)
 
@@ -260,6 +271,16 @@ def in_house_page(
         sort = "zimmer"
     day = today()
     rows = sorted(_in_house(session), key=IN_HOUSE_SORTS[sort])
+    money = {r.id: _money_flags(session, r) for r in rows}
+    # Money gets its own column; each guest's Meldeschein status already says what is unsigned.
+    flags = {
+        r.id: [
+            f
+            for f in desk.flags_for(session, "abreise", r)
+            if f not in money[r.id] and f.text != desk.UNSIGNED_FLAG
+        ]
+        for r in rows
+    }
     context = {
         "rows": rows,
         "sort": sort,
@@ -268,7 +289,8 @@ def in_house_page(
         "guest_count": sum(len(r.guests) for r in rows),
         "departing_today": sum(1 for r in rows if r.departure <= day),
         "remaining": {r.id: (r.departure - day).days for r in rows},
-        "flags": {r.id: desk.flags_for(session, "abreise", r) for r in rows},
+        "flags": flags,
+        "money": money,
         "capacity": _room_count(session),
     }
     return templates.TemplateResponse(request, "front_desk/in_house.html", context)
@@ -303,7 +325,9 @@ def checkout_page(
 
 
 @router.post("/check-out/{reservation_id}")
-def checkout(reservation_id: int, session: Session = Depends(get_session)) -> RedirectResponse:
+async def checkout(
+    request: Request, reservation_id: int, session: Session = Depends(get_session)
+) -> RedirectResponse:
     reservation = _get_reservation(session, reservation_id)
     guest = reservation.primary_guest
     name = guest.full_name if guest else reservation.code
@@ -314,11 +338,20 @@ def checkout(reservation_id: int, session: Session = Depends(get_session)) -> Re
             f"Check-out nicht möglich: {name} ({reservation.code}) ist „{state}“, nicht im Haus.",
             "danger",
         )
+    balance = payments.balance(reservation)
+    form = await request.form()
+    # Leaving with money open is allowed, but only on purpose.
+    if balance.open > 0 and not form.get("offen_geklaert"):
+        return redirect_with_notice(
+            f"/check-out/{reservation.id}",
+            f"Noch {fmt_money(balance.open)} offen. Zahlung erfassen oder bestätigen, "
+            "dass der offene Betrag geklärt ist.",
+            "danger",
+        )
     reservation.status = CHECKED_OUT
     reservation.checked_out_at = datetime.now(UTC)
     housekeeping.mark_dirty_after_checkout(session, reservation)
     room = reservation.room.number if reservation.room else None
-    balance = payments.balance(reservation)
     audit.record(
         session,
         action="check_out",
@@ -336,5 +369,5 @@ def checkout(reservation_id: int, session: Session = Depends(get_session)) -> Re
         },
     )
     session.commit()
-    suffix = f" · Zimmer {room} ist frei" if room else ""
-    return redirect_with_notice("/abreisen", f"{name} ausgecheckt{suffix} ({fmt_date(today())}).")
+    suffix = f" · Zimmer {room} zur Reinigung freigegeben" if room else ""
+    return redirect_with_notice("/abreisen", f"{name} ausgecheckt{suffix}.")

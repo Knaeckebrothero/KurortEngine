@@ -1,13 +1,15 @@
 {% extends "base.html" %}
+{% import "_macros.html" as ui %}
 {% block title %}Spätanreisen{% endblock %}
 {% block content %}
-<div class="page-header"><div><h1>Spätanreisen</h1><p>Schlüssel prüfen, Ankunft bestätigen, Meldescheine nachhalten.</p></div><a class="btn" href="/anreisen">Zu den Anreisen</a></div>
+<div class="page-header"><div><h1>Spätanreisen</h1><p>Schlüssel prüfen, Ankunft bestätigen, Meldescheine nachhalten.</p></div><div class="page-actions"><a class="btn" href="/anreisen">Zu den Anreisen</a></div></div>
 <div class="mail-work stack">
 <h2>Von gestern und früher</h2>
-{% for late in earlier %}{% set r = late.reservation %}<article class="card card-body stack"><div><a href="/reservierungen/{{ r.id }}">{{ r.primary_guest.full_name if r.primary_guest else r.code }}</a><span class="sub">{{ r.code }} · {{ r.arrival | date }} · Zimmer {{ r.room.number if r.room else 'offen' }} · {{ late.compartment.label }}</span><strong>{{ late.status | late_status_label }}</strong></div>
+{% for late in earlier %}{% set r = late.reservation %}<article class="card card-body stack"><div><a href="/reservierungen/{{ r.id }}">{{ r.primary_guest.full_name if r.primary_guest else r.code }}</a><span class="sub">{{ r.code }} · {{ r.arrival | date }}{% if r.eta %}, {{ r.eta | time }} Uhr{% endif %} · Zimmer {{ r.room.number if r.room else 'offen' }} · {{ late.compartment.label }}</span>{{ ui.badge(late.status | late_status_label, 'warning' if late.status == 'angereist' else 'info') }}</div>
 <div class="stack late-actions">{% if late.status == 'vorbereitet' %}<form method="post" action="/spaetanreise/{{ r.id }}/angekommen"><button class="btn primary" type="submit">Angekommen</button></form><details><summary>Nicht angereist?</summary><form method="post" action="/spaetanreise/{{ r.id }}/nicht-angereist"><p>Schlüssel und Meldeschein zurück an die Rezeption holen.</p><button class="btn danger" type="submit">Nicht angereist</button></form></details>{% endif %}
 {% if not late.meldeschein_returned_at %}<form method="post" action="/spaetanreise/{{ r.id }}/meldeschein"><button class="btn" type="submit">Meldeschein abgegeben</button></form>{% else %}<p>Meldeschein liegt vor</p>{% endif %}</div></article>{% else %}<p class="muted">Keine offenen Spätanreisen aus früheren Tagen.</p>{% endfor %}
 <h2>Heute Abend</h2>
-{% for late in evening %}{% set r = late.reservation %}<article class="card card-body stack"><h3>{{ r.primary_guest.full_name if r.primary_guest else r.code }}</h3><p>{{ r.code }} · {{ r.eta | time }} Uhr · {{ late.compartment.label }} · Vorbereitet</p><a class="btn" href="/spaetanreise/{{ r.id }}">Vorbereitung öffnen</a></article>{% else %}<p class="muted">Heute noch keine Spätanreise vorbereitet.</p>{% endfor %}
+{% if pending %}<section class="card card-body stack"><h3>Noch vorzubereiten</h3><ul>{% for r in pending %}<li><a href="/spaetanreise/{{ r.id }}">{{ r.primary_guest.full_name if r.primary_guest else r.code }}</a> · {{ r.eta | time }} Uhr · Zimmer {{ r.room.number if r.room else 'offen' }}</li>{% endfor %}</ul></section>{% endif %}
+{% for late in evening %}{% set r = late.reservation %}<article class="card card-body stack"><div><h3>{{ r.primary_guest.full_name if r.primary_guest else r.code }}</h3><span class="sub">{{ r.code }} · {{ r.eta | time }} Uhr · Zimmer {{ r.room.number if r.room else 'offen' }} · {{ late.compartment.label }}</span>{{ ui.badge(late.status | late_status_label, 'info') }}</div><a class="btn" href="/spaetanreise/{{ r.id }}">Vorbereitung öffnen</a></article>{% else %}{% if not pending %}<p class="muted">Heute Abend keine Spätanreisen.</p>{% endif %}{% endfor %}
 </div>
 {% endblock %}

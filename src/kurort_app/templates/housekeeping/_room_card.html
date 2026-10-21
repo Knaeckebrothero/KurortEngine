@@ -7,10 +7,12 @@
   <p class="hk-situation">{{ item.label }}</p>
   <div><span class="badge {{ room.housekeeping_status | room_status_kind }}">{{ room.housekeeping_status | room_status_label }}</span></div>
   {% if room.housekeeping_status == 'out_of_order' and room.housekeeping_note %}<p class="hk-note">{{ room.housekeeping_note }}</p>{% endif %}
-  {% if room.housekeeping_changed_at %}<p class="muted hk-changed">Zuletzt {{ room.housekeeping_changed_at | time }} · {{ room.housekeeping_changed_by }}</p>{% endif %}
+  {% if room.housekeeping_changed_at %}<p class="muted hk-changed">Zuletzt {{ room.housekeeping_changed_at | time }} · {{ room.housekeeping_changed_by | staff_name }}</p>{% endif %}
   {% set next_status = {'dirty': 'clean', 'clean': 'inspected', 'out_of_order': 'dirty'}.get(room.housekeeping_status) %}
+  {# settle:600ms keeps the new card "htmx-added" that long; housekeeping.css ignores taps on
+     it then, so a double tap on "Sauber" can't land on the "Geprüft" that replaces it. #}
   {% macro status_form(status, label, primary=false) %}
-  <form method="post" action="/zimmerstatus/{{ room.id }}/{{ status }}" hx-post="/zimmerstatus/{{ room.id }}/{{ status }}" hx-target="#room-{{ room.id }}" hx-swap="outerHTML">
+  <form method="post" action="/zimmerstatus/{{ room.id }}/{{ status }}" hx-post="/zimmerstatus/{{ room.id }}/{{ status }}" hx-target="#room-{{ room.id }}" hx-swap="outerHTML settle:600ms" hx-disabled-elt="find button">
     <input type="hidden" name="zurueck" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
     {% if status == 'out_of_order' %}<label for="note-{{ room.id }}">Notiz (optional)</label><input class="input" id="note-{{ room.id }}" name="notiz" maxlength="200" placeholder="z. B. Heizung defekt">{% endif %}
     <button class="btn{% if primary %} primary{% endif %}" type="submit">{{ label }}</button>
@@ -18,6 +20,6 @@
   {% endmacro %}
   {% if next_status %}{{ status_form(next_status, {'clean': 'Sauber', 'inspected': 'Geprüft', 'dirty': 'Wieder in Betrieb'}[next_status], true) }}{% endif %}
   <details class="hk-other"><summary>Anderer Status</summary>
-    {% for status, label in statuses.items() %}{% if status != room.housekeeping_status and status != next_status %}{{ status_form(status, label | capitalize) }}{% endif %}{% endfor %}
+    {% for status, label in statuses.items() %}{% if status != room.housekeeping_status and status != next_status %}{{ status_form(status, label) }}{% endif %}{% endfor %}
   </details>
 </article>

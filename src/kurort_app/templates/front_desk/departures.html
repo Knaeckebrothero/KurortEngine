@@ -13,7 +13,6 @@
 </div>
 
 <section class="card" aria-label="Abreiseliste">
-  <p class="card-body muted">Zahlungsübersicht – keine Rechnung.</p>
   {% if rows %}
   <div class="table-wrap">
     <table class="table fd-queue">
@@ -34,7 +33,7 @@
           <td>{{ fd.room(r) }}</td>
           <td>{{ ui.guest_cell(r) }}</td>
           <td class="num">{{ r.arrival | date('day') }} – {{ r.departure | date('day') }}<span class="sub">{{ r.nights }} {{ 'Nacht' if r.nights == 1 else 'Nächte' }}</span></td>
-          <td class="num fd-money">{{ b.open | money }}<span class="sub">{% if b.kurtaxe is not none %}inkl. {{ b.kurtaxe | money }} Kurtaxe{% else %}Kurtaxe offen{% endif %}</span></td>
+          <td class="num fd-money">{{ b.open | money }}{% if b.kurtaxe is not none and b.open >= b.kurtaxe > 0 %}<span class="sub">davon Kurtaxe {{ b.kurtaxe | money }}</span>{% endif %}</td>
           <td>{{ fd.flags(flags[r.id]) }}</td>
           <td class="actions">
             {% if r.status == 'checked_in' %}
@@ -48,6 +47,7 @@
       </tbody>
     </table>
   </div>
+  <p class="fd-footnote">Saldo: nur Übersicht – ersetzt keine Rechnung.</p>
   {% else %}
     {{ ui.empty('Keine Abreisen', 'Für ' ~ (day | date('long')) ~ ' ist keine Abreise geplant.') }}
   {% endif %}

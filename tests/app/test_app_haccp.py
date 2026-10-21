@@ -376,3 +376,13 @@ def test_ac9_reception_records_but_cannot_change_master_data(oidc_client, idp, s
         )
         assert oidc_client.post(f"/apps/haccp/{collection}/neu", data=row.data).status_code == 403
         assert oidc_client.post(f"/apps/haccp/{collection}/{row.id}/loeschen").status_code == 403
+
+
+def test_list_search_finds_device_names_and_german_numbers(client, seeded):
+    def titles(q):
+        page = client.get("/apps/haccp/messungen", params={"q": q})
+        return set(re.findall(r'class="app-record-title" href="[^"]+">([^<]+)</a>', page.text))
+
+    assert titles("Tiefkühler") == {"Tiefkühler Küche"}
+    assert titles("-16,5") == {"Tiefkühler Küche"}
+    assert titles("Getränkekühlschrank") == {"Getränkekühlschrank Bar"}

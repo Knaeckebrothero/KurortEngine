@@ -69,6 +69,50 @@ def display(session, app, field, value, *, unit=True):
     )
 
 
+def _limit(field, value):
+    """A schema min/max (stored as float) in the field's own display form, e.g. "100,0 °C"."""
+    return values.display(field, int(value) if field.type == "integer" else Decimal(str(value)))
+
+
+def bounds(session, app, collection, field, data):
+    """The (low, high) range of ``field`` for one record; a bound can come from a reference."""
+    result = []
+    for bound in (field.range.min, field.range.max):
+        if isinstance(bound, RangeSource):
+            first, second = bound.from_.split(".")
+            target = record(session, app, collection.field(first).collection, data.get(first))
+            bound = target.data.get(second) if target else None
+        result.append(Decimal(str(bound)) if bound is not None else None)
+    return result
+
+
+def interval(field, low, high):
+    """A range as people read it: "0,0 bis 7,0 °C", "ab 63,0 °C" or "bis 7,0 °C"."""
+
+    def show(value):
+        return values.display(field, value, unit=False)
+
+    if low is not None and high is not None:
+        text = f"{show(low)} bis {show(high)}"
+    elif low is not None or high is not None:
+        text = f"ab {show(low)}" if low is not None else f"bis {show(high)}"
+    else:
+        return ""
+    return f"{text} {field.unit}" if field.unit else text
+
+
+def ranges(session, app, row):
+    """Each ranged field's allowed interval for ``row``, by field label (detail page)."""
+    collection = app.collection(row.collection)
+    result = {}
+    for field in collection.fields:
+        if field.range and (
+            text := interval(field, *bounds(session, app, collection, field, row.data))
+        ):
+            result[field.label] = text
+    return result
+
+
 def validate(session, app, collection, raw):
     data, errors = {}, {}
     for field in collection.fields:
@@ -88,9 +132,9 @@ def validate(session, app, collection, raw):
             errors[field.key] = f"Bitte höchstens {field.max_length} Zeichen eingeben."
         elif field.type in {"integer", "decimal"}:
             if field.min is not None and parsed < Decimal(str(field.min)):
-                errors[field.key] = f"Wert muss mindestens {str(field.min).replace('.', ',')} sein."
+                errors[field.key] = f"Wert muss mindestens {_limit(field, field.min)} sein."
             if field.max is not None and parsed > Decimal(str(field.max)):
-                errors[field.key] = f"Wert darf höchstens {str(field.max).replace('.', ',')} sein."
+                errors[field.key] = f"Wert darf höchstens {_limit(field, field.max)} sein."
         elif field.type in {"select", "multiselect"}:
             chosen = parsed if isinstance(parsed, list) else [parsed]
             if any(v not in {o.key for o in field.options} for v in chosen):
@@ -108,35 +152,27 @@ def validate(session, app, collection, raw):
     for field in collection.fields:
         if not field.range or field.key not in data:
             continue
-        bounds = []
-        for bound in (field.range.min, field.range.max):
-            if isinstance(bound, RangeSource):
-                first, second = bound.from_.split(".")
-                ref_field = collection.field(first)
-                target = record(session, app, ref_field.collection, data.get(first))
-                bound = target.data.get(second) if target else None
-            bounds.append(Decimal(str(bound)) if bound is not None else None)
+        low, high = bounds(session, app, collection, field, data)
         number = Decimal(str(data[field.key]))
-        low, high = bounds
-        outside = (low is not None and number < low) or (high is not None and number > high)
-        if not outside:
+        above = high is not None and number > high
+        if not above and not (low is not None and number < low):
             continue
         deviation = True
         if field.range.severity == "block":
-
-            def bound_label(value, field=field):
-                return values.display(field, value, unit=False) if value is not None else "offen"
-
-            interval = f"{bound_label(low)} bis {bound_label(high)}" + (
-                f" {field.unit}" if field.unit else ""
+            errors[field.key] = (
+                f"Wert außerhalb des zulässigen Bereichs ({interval(field, low, high)})."
             )
-            errors[field.key] = f"Wert außerhalb des zulässigen Bereichs ({interval})."
-        else:
-            for key in field.require_when_out_of_range:
-                if data.get(key) in (None, "", []):
-                    errors[key] = (
-                        f'Bei einer Abweichung ist „{collection.field(key).label}" Pflicht.'
-                    )
+            continue
+        missing = [k for k in field.require_when_out_of_range if data.get(k) in (None, "", [])]
+        if missing:
+            limit = "über der Obergrenze" if above else "unter der Untergrenze"
+            todo = ", ".join(f"„{collection.field(k).label}“" for k in missing)
+            errors[field.key] = (
+                f"{values.display(field, number)} liegt {limit} "
+                f"{values.display(field, high if above else low)} – bitte {todo} eintragen."
+            )
+        for key in missing:
+            errors[key] = f"Bei einer Abweichung ist „{collection.field(key).label}“ Pflicht."
     if errors:
         raise RecordValidationError(errors)
     return data, deviation
@@ -226,6 +262,50 @@ def record_date(collection, row):
     return value.astimezone(HOTEL_TZ).date() if isinstance(value, datetime) else value
 
 
+def search_text(session, app, collection, row, titles):
+    """What a list row shows (German numbers, referenced titles) plus its stored values.
+
+    ``titles`` caches reference titles across the rows of one search.
+    """
+
+    def reference_title(field):
+        def lookup(id):
+            if (field.collection, id) not in titles:
+                target = record(session, app, field.collection, id)
+                titles[field.collection, id] = title(session, app, target)
+            return titles[field.collection, id]
+
+        return lookup
+
+    shown = [
+        values.display(f, row.data.get(f.key), reference_title=reference_title(f))
+        for f in collection.fields
+    ]
+    return " ".join([*shown, json.dumps(row.data, ensure_ascii=False)]).casefold()
+
+
+def changes(session, app, payload):
+    """An audit payload's changes as (label, before, after), formatted like the detail view."""
+    collection = next((c for c in app.collections if c.key == payload.get("collection")), None)
+    changed = payload.get("changes") or {}
+    fields = {f.key: f for f in collection.fields} if collection else {}
+    result = []
+    for key in [k for k in fields if k in changed] + [k for k in changed if k not in fields]:
+        before, after = changed[key]
+        if key in fields:
+            field = fields[key]
+            result.append(
+                (
+                    field.label,
+                    display(session, app, field, before),
+                    display(session, app, field, after),
+                )
+            )
+        else:
+            result.append((key, *("–" if v in (None, "", []) else str(v) for v in (before, after))))
+    return result
+
+
 def query(
     session, app, collection, *, q="", von=None, bis=None, deviations=False, page=None, where=None
 ):
@@ -242,9 +322,8 @@ def query(
             and (not end or day <= end)
         ]
     if q:
-        rows = [
-            r for r in rows if q.casefold() in json.dumps(r.data, ensure_ascii=False).casefold()
-        ]
+        needle, titles = q.strip().casefold(), {}
+        rows = [r for r in rows if needle in search_text(session, app, collection, r, titles)]
     if deviations:
         rows = [r for r in rows if r.out_of_range]
     key = collection.order_by.removeprefix("-")

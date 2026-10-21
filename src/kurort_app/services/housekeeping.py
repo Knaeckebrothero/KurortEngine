@@ -22,6 +22,12 @@ from kurort_app.models import (
 from kurort_app.web import HOUSEKEEPING_LABELS
 
 
+def status_word(status: str) -> str:
+    """The status inside a sentence: "Zimmer 103 ist sauber.", "… ist außer Betrieb."."""
+    label = HOUSEKEEPING_LABELS[status]
+    return label[:1].lower() + label[1:]
+
+
 def set_status(
     session: Session, room: Room, status: str, *, reason: str, note: str | None = None
 ) -> None:
@@ -39,7 +45,7 @@ def set_status(
         action="room.status_changed",
         entity="room",
         entity_id=room.id,
-        summary=f"Zimmer {room.number}: {HOUSEKEEPING_LABELS[previous]} → {HOUSEKEEPING_LABELS[status]}",
+        summary=f"Zimmer {room.number}: {status_word(previous)} → {status_word(status)}",
         payload={"from": previous, "to": status, "reason": reason, "note": room.housekeeping_note},
     )
 
@@ -49,18 +55,23 @@ class RoomSituation:
     room: Room
     departure: Reservation | None = None
     arrival: Reservation | None = None
+    arrived: Reservation | None = None  # checked in today
     stayover: bool = False
 
     @property
     def label(self) -> str:
+        eta = f" · ca. {self.arrival.eta:%H:%M}" if self.arrival and self.arrival.eta else ""
         if self.departure and self.arrival:
-            return "Abreise · Anreise heute"
+            return f"Abreise · Anreise heute{eta}"
+        if self.departure and self.arrived:
+            return "Abreise · Angereist"
         if self.departure:
             return "Abgereist" if self.departure.status == CHECKED_OUT else "Abreise heute"
         if self.arrival:
-            eta = f" · ca. {self.arrival.eta:%H:%M}" if self.arrival.eta else ""
             return f"Anreise heute{eta}"
-        return "Bleibe" if self.stayover else "frei"
+        if self.arrived:
+            return "Angereist"
+        return "Bleiber" if self.stayover else "Frei"
 
     @property
     def priority(self) -> int:
@@ -94,6 +105,8 @@ def situations(session: Session, day: date) -> list[RoomSituation]:
             item.departure = stay
         if stay.arrival == day and stay.status == RESERVED:
             item.arrival = stay
+        if stay.arrival == day and stay.status == CHECKED_IN:
+            item.arrived = stay
         if stay.status == CHECKED_IN and stay.arrival < day < stay.departure:
             item.stayover = True
     return list(by_room.values())
@@ -103,7 +116,10 @@ def stayover_rooms(items: list[RoomSituation]) -> list[Room]:
     return [
         item.room
         for item in items
-        if item.label == "Bleibe" and item.room.housekeeping_status in ROOM_READY
+        if item.stayover
+        and not item.departure
+        and not item.arrival
+        and item.room.housekeeping_status in ROOM_READY
     ]
 
 
@@ -119,7 +135,13 @@ def room_not_ready_flags(session: Session, row) -> list:
     if row.kind != "anreise" or r.status != RESERVED or r.room is None:
         return []
     if r.room.housekeeping_status == ROOM_DIRTY:
-        return [Flag("Zimmer noch nicht sauber", "warning", f"/zimmerstatus?etage={r.room.floor}")]
+        return [
+            Flag(
+                "Zimmer noch nicht sauber",
+                "warning",
+                f"/zimmerstatus?etage={r.room.floor}#room-{r.room.id}",
+            )
+        ]
     if r.room.housekeeping_status == ROOM_OUT_OF_ORDER:
         return [Flag("Zimmer außer Betrieb", "danger", f"/reservierungen/{r.id}/bearbeiten")]
     return []

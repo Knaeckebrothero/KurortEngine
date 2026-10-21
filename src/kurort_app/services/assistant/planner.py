@@ -38,7 +38,16 @@ WIDGET_LABELS = {
     "today": "Heute",
     "occupancy": "Belegung",
 }
+# The Heute table's filter chips (/?zeigen=…), picked when a request names one direction.
+TODAY_FILTER_WORDS = {
+    "anreisen": r"\b(anreisen?|ankuenfte)\b",
+    "abreisen": r"\babreisen?\b",
+}
+TODAY_FILTERS = ("alle", *TODAY_FILTER_WORDS)
 NOT_YET = "Das kann ich noch nicht."
+# Workflows the app does not have yet: the reply says so instead of quietly doing
+# something else ("Rechnung für Zimmer 110" is not just a search for 110).
+NOT_SUPPORTED = {r"\brechnung": "Rechnungen"}
 
 
 def _span(start: date, end: date) -> str:
@@ -262,16 +271,23 @@ def move_arrival_plan(
     if not matches:
         who = f" für {mentioned}" if mentioned else ""
         return s.plan("move_arrival", title, message=f"Keine kommende Reservierung{who} gefunden.")
+    if target is not None:
+        # A stay that already arrives on the target day is not the one to move.
+        matches = [r for r in matches if r.arrival != target] or matches
     people = {(r.primary_guest.first_name, r.primary_guest.last_name) for r in matches}
     if len(people) > 1:
         lines = [
             f"{r.primary_guest.full_name} · {r.code} · Anreise {fmt_date(r.arrival, 'day')}"
             for r in matches
         ]
+        # One button per guest; the full name picks them when the request runs again.
+        when = f" auf {target:%d.%m.}" if target else ""
+        choices = [f"Verschiebe die Anreise von {r.primary_guest.full_name}{when}" for r in matches]
         return s.plan(
             "move_arrival",
             title,
-            message="Mehrere Gäste passen – bitte mit Vornamen sagen:\n" + "\n".join(lines),
+            message="Mehrere Gäste passen:\n" + "\n".join(lines),
+            suggestions=list(dict.fromkeys(choices)),
         )
     res = matches[0]  # nearest arrival of that guest
     if target is None:
@@ -448,9 +464,16 @@ DASHBOARD_TITLE = "Übersicht anpassen"
 
 
 def dashboard_plan(
-    *, show: list[str] | None = None, occupancy_days: int | None = None, reset: bool = False
+    *,
+    show: list[str] | None = None,
+    occupancy_days: int | None = None,
+    reset: bool = False,
+    today_filter: str | None = None,
 ) -> Plan:
-    """Dashboard layout: ``show`` picks the cards (None = unchanged), or ``reset`` to the default."""
+    """Dashboard layout: ``show`` picks the cards (None = unchanged), or ``reset`` to the default.
+
+    ``today_filter`` sets the Heute table's chip (``anreisen``/``abreisen``/``alle``).
+    """
     if reset:
         return s.plan(
             "dashboard", DASHBOARD_TITLE, message="Übersicht wieder in der Standardansicht.",
@@ -462,18 +485,26 @@ def dashboard_plan(
         if widgets
         else "Kacheln unverändert"
     )
-    return _dashboard_layout(widgets, occupancy_days, summary)
+    return _dashboard_layout(widgets, occupancy_days, summary, today_filter)
 
 
-def _dashboard_layout(widgets: list[str] | None, days: int | None, summary: str) -> Plan:
+def _dashboard_layout(
+    widgets: list[str] | None, days: int | None, summary: str, today_filter: str | None = None
+) -> Plan:
     occupancy_days = max(7, min(days, 60)) if days else None
+    table_hidden = widgets is not None and "today" not in widgets
+    if table_hidden or today_filter not in TODAY_FILTERS:
+        today_filter = None
+    if today_filter and today_filter != "alle":
+        summary += f" · Heute nur {today_filter.capitalize()}"
     if occupancy_days:
         summary += f" · Belegung für {occupancy_days} Tage"
+    url = f"/?{urlencode({'zeigen': today_filter})}" if today_filter else "/"
     return s.plan(
         "dashboard", DASHBOARD_TITLE, message=summary,
         steps=[
             s.dashboard("Ansicht speichern", widgets=widgets, occupancy_days=occupancy_days),
-            s.navigate("Übersicht öffnen", "/"),
+            s.navigate("Übersicht öffnen", url),
         ],
     )  # fmt: skip
 
@@ -505,17 +536,22 @@ def _dashboard(session: Session, text: str, folded: str, day: date) -> Plan | No
         summary = "Angezeigt: " + ", ".join(WIDGET_LABELS[w] for w in widgets)
     else:
         summary = "Kacheln unverändert"
-    return _dashboard_layout(widgets, days, summary)
+    # "nur Anreisen …" also sets the Heute table to arrivals.
+    directions = [k for k, pattern in TODAY_FILTER_WORDS.items() if re.search(pattern, folded)]
+    today_filter = directions[0] if len(directions) == 1 and not hide else None
+    return _dashboard_layout(widgets, days, summary, today_filter)
 
 
 _CODE = re.compile(r"^r-?\d{4}-\d{4}$")
 _VERBS = re.compile(
     r"\b(zeig|oeffne|mach|leg|starte?|such|finde|verschieb|buch|ist|sind|wer|was|wie|wann|wo|bitte|kannst)\b"
 )
+_SALUTATION = re.compile(r"^(herrn?|frau|familie|fam\.?)\s+", re.IGNORECASE)
+_NAME_WORDS = re.compile(r"[^\W\d_][\w'.-]*( [^\W\d_][\w'.-]*)?")
 
 
 def _search(session: Session, text: str, folded: str, day: date) -> Plan | None:
-    term = re.sub(r"^(herrn?|frau|familie|fam\.?)\s+", "", text.strip(), flags=re.IGNORECASE)
+    term = _SALUTATION.sub("", text.strip())
     folded = p.fold(term)
     if _CODE.match(folded) or re.fullmatch(r"\d{3}", folded):
         pass
@@ -526,10 +562,50 @@ def _search(session: Session, text: str, folded: str, day: date) -> Plan | None:
     return search_plan(term)
 
 
-def search_plan(term: str) -> Plan:
-    """Reservation search for a guest name, reservation code or room number."""
+def is_plain_search(session: Session, text: str, *, day: date | None = None) -> bool:
+    """A reservation code, a room number, or a name that finds stays: a search, nothing to plan."""
+    term = _SALUTATION.sub("", text.strip())
+    folded = p.fold(term)
+    if _CODE.match(folded) or re.fullmatch(r"\d{3}", folded):
+        return True
+    return bool(_NAME_WORDS.fullmatch(folded) and search(session, term, day=day, limit=1))
+
+
+def _not_supported(folded: str) -> str | None:
+    return next(
+        (label for pattern, label in NOT_SUPPORTED.items() if re.search(pattern, folded)), None
+    )
+
+
+def _unsupported(session: Session, text: str, folded: str, day: date) -> Plan | None:
+    """For "Rechnung für Zimmer 110": say it cannot do that yet, then show what it can (the stays)."""
+    topic = _not_supported(folded)
+    if topic is None:
+        return None
+    code = re.search(r"\br-?\d{4}-\d{4}\b", folded)
+    term = p.parse_room_number(folded) or (code and code.group().upper()) or _mentioned_name(text)
+    if not term:
+        return unknown_plan(session, day, f"{topic} kann ich noch nicht.")
+    return search_plan(term, request=text)
+
+
+def search_plan(term: str, *, request: str | None = None) -> Plan:
+    """Reservation search for a guest name, reservation code or room number.
+
+    ``request`` is what was said: when it asks for something the app cannot do yet
+    ("Rechnung für Zimmer 110"), the reply says so rather than silently searching.
+    """
+    message = None
+    if topic := _not_supported(p.fold(request or "")):
+        if re.fullmatch(r"\d{1,4}", term):
+            shown = f"die Aufenthalte von Zimmer {term}"
+        elif _CODE.match(p.fold(term)):
+            shown = f"die Reservierung {term}"
+        else:
+            shown = f"die Aufenthalte von {term}"
+        message = f"{topic} kann ich noch nicht – hier {shown}."
     return s.plan(
-        "search", f"Suche: {term}",
+        "search", f"Suche: {term}", message=message,
         steps=[s.navigate(f"Nach „{term}“ suchen", f"/reservierungen?{urlencode({'q': term})}")],
     )  # fmt: skip
 
@@ -542,6 +618,7 @@ RULES: tuple[Rule, ...] = (
     _dashboard,
     _departures,
     _arrivals,
+    _unsupported,
     _search,
 )
 

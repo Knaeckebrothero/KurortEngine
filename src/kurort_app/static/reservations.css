@@ -68,6 +68,7 @@
 }
 .guest-facts { grid-template-columns: 120px 1fr; padding-left: 52px; font-size: 14px; }
 .guest-facts dd .badge { margin-left: var(--space-1); }
+.guest-facts .guest-phone { display: block; }
 
 .res-tax-total { font-size: 20px; font-weight: 750; }
 .res-tax-foot { font-size: 13px; border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); padding-bottom: var(--space-3); }
@@ -103,6 +104,7 @@
 .party-row { padding-bottom: var(--space-3); border-bottom: 1px dashed var(--border-subtle); }
 .party-row:last-child { border-bottom: 0; padding-bottom: 0; }
 .room-hint { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.res-reset { display: contents; }
 .room-field.htmx-request .select { opacity: 0.6; }
 
 /* ---------- Room plan ---------- */
@@ -125,7 +127,7 @@
 
 .plan {
   --room-col: 156px; --row-h: 40px; --half: minmax(22px, 1fr);
-  position: relative; overflow: auto; max-height: calc(100vh - 250px); min-height: 360px;
+  position: relative; overflow: auto; max-height: calc(100vh - 355px); min-height: 360px;
   background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card);
   box-shadow: var(--elevation-1);
 }
@@ -142,17 +144,17 @@
 .plan-label strong { font-size: 14px; }
 .plan-cat { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.plan-head { position: sticky; top: 0; z-index: 5; grid-template-rows: 52px; background: var(--surface-subtle); border-bottom: 1px solid var(--border-strong); }
+.plan-head { position: sticky; top: 0; z-index: 5; grid-template-rows: 56px; background: var(--surface-subtle); border-bottom: 1px solid var(--border-strong); }
 .plan-head .plan-label { background: var(--surface-subtle); z-index: 6; }
 .plan-corner span { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); font-weight: 650; }
 .plan-day {
-  grid-row: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border-right: 1px solid var(--border-subtle); line-height: 16px;
+  grid-row: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  padding-bottom: 6px; border-right: 1px solid var(--border-subtle); line-height: 16px;
 }
 .plan-day.is-weekend { background: color-mix(in srgb, var(--text-primary) 4%, var(--surface-subtle)); }
 .plan-wd { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); font-weight: 650; }
 .plan-dn { font-size: 16px; font-weight: 700; }
-.plan-month { position: absolute; top: 3px; left: 6px; font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; }
+.plan-month { font-size: 10px; line-height: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; }
 .plan-day.is-today .plan-dn {
   background: var(--primary); color: var(--on-primary); border-radius: var(--radius-badge);
   min-width: 28px; padding: 1px 6px; text-align: center;
@@ -220,11 +222,12 @@
 @media (max-width: 860px) {
   .res-filter { grid-template-columns: 1fr; }
   .res-col-channel, .res-col-amount { display: none; }
-  .guest-facts { padding-left: 0; }
+  .guest-facts { padding-left: 0; grid-template-columns: 104px 1fr; }
   .stay-strip { grid-template-columns: 1fr; text-align: left; }
   .stay-end-right { text-align: left; }
   .stay-line { min-height: 28px; }
-  .plan { --room-col: 96px; max-height: none; }
+  /* Own scroll box on phones too, so the date row stays visible (185 px ≈ pinned top bar). */
+  .plan { --room-col: 96px; max-height: calc(100vh - 185px); max-height: calc(100svh - 185px); }
   .plan-cat { display: none; }
 }
 

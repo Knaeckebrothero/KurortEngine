@@ -15,12 +15,22 @@
 {% endif %}
 
 {% if problems %}
-<div class="notice danger ci-errors" role="{{ 'alert' if submitted else 'status' }}" tabindex="-1" id="fehler">
+{% set n = problems | length %}
+{# A problem whose field holds a value is an invalid entry, not a missing one. #}
+{% set ns = namespace(invalid=false) %}
+{% for row, name, msg in problems %}{% if row.v.get(name) %}{% set ns.invalid = true %}{% endif %}{% endfor %}
+{% set field_labels = {'first_name': 'Vorname', 'last_name': 'Familienname', 'birth_date': 'Geburtsdatum', 'nationality': 'Staatsangehörigkeit', 'street': 'Straße und Hausnummer', 'postal_code': 'PLZ', 'city': 'Ort', 'id_document_number': 'Ausweisnummer'} %}
+<div class="notice {{ 'danger' if submitted and not saved else 'warning' }} ci-errors" role="{{ 'alert' if submitted else 'status' }}" tabindex="-1" id="fehler">
   <div>
-    <p><strong>{{ problems | length }} {{ 'Angabe fehlt' if problems | length == 1 else 'Angaben fehlen' }} für den Meldeschein.</strong></p>
+    <p><strong>
+      {%- if saved %}Gespeichert. Für den Meldeschein fehlen noch:
+      {%- elif submitted %}Nicht gespeichert – {{ n }} {{ 'Angabe' if n == 1 else 'Angaben' }} prüfen.
+      {%- elif ns.invalid %}{{ n }} {{ 'Angabe' if n == 1 else 'Angaben' }} prüfen.
+      {%- else %}{{ n }} {{ 'Angabe fehlt' if n == 1 else 'Angaben fehlen' }} für den Meldeschein.{% endif -%}
+    </strong></p>
     <ul>
       {% for row, name, msg in problems %}
-      <li><a href="#g{{ row.rg.id }}_{{ name }}">{{ row.rg.guest.full_name.strip() or 'Gast' }}: {{ msg }}</a></li>
+      <li><a href="#g{{ row.rg.id }}_{{ name }}">{% if rows | length > 1 %}{{ row.rg.guest.full_name.strip() or 'Gast' }}: {% endif %}{{ field_labels.get(name, msg) if saved else msg }}</a></li>
       {% endfor %}
     </ul>
   </div>

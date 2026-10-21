@@ -1,1 +1,1 @@
-{% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% else %}<h2>{{ subject }}</h2><pre class="mail-text">{{ body }}</pre>{% endif %}
+{% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% else %}<p class="mail-subject"><span class="muted">Betreff:</span> <strong>{{ subject }}</strong></p><pre class="mail-text">{{ body }}</pre>{% endif %}

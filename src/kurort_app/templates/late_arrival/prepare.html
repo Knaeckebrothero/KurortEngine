@@ -1,23 +1,33 @@
 {% extends "base.html" %}
-{% block title %}Spätanreise vorbereiten{% endblock %}
+{% set open_late = late and late.status != 'abgebrochen' %}
+{% set state = {'vorbereitet': 'vorbereitet', 'angereist': 'angereist', 'abgeschlossen': 'abgeschlossen', 'nicht_angereist': 'nicht angereist'} %}
+{% set heading = ('Spätanreise – ' ~ state.get(late.status, late.status)) if open_late else 'Spätanreise vorbereiten' %}
+{% set who = r.primary_guest.full_name if r.primary_guest else r.code %}
+{% block title %}{{ heading }}{% endblock %}
 {% block content %}
 <nav class="breadcrumb"><a href="/reservierungen/{{ r.id }}">{{ r.code }}</a> › Spätanreise</nav>
-<div class="page-header"><div><h1>Spätanreise vorbereiten</h1><p>{{ r.primary_guest.full_name if r.primary_guest else r.code }} · Zimmer {{ r.room.number if r.room else 'offen' }} · {{ r.eta | time }} Uhr</p></div><a class="btn" href="/spaetanreisen">Spätanreisen</a></div>
+<div class="page-header"><div><h1>{{ heading }}</h1><p>{{ who }} · Zimmer {{ r.room.number if r.room else 'offen' }} · {% if r.arrival != business_date %}Anreise {{ r.arrival | date }}, {% endif %}{% if r.eta %}{{ r.eta | time }} Uhr{% else %}Ankunftszeit offen{% endif %}</p></div><div class="page-actions"><a class="btn" href="/spaetanreisen">Spätanreisen</a></div></div>
 <div class="mail-work stack">
 {% if error %}<div class="notice danger" role="alert">{{ error }}{% if 'AVS' in error %} · <a href="/check-in/{{ r.id }}/avs">In AVS drucken</a>{% endif %}</div>{% endif %}
-{% for hint in hints %}<div class="notice warning">{{ hint.message }} – Hinweis für die Vorbereitung</div>{% endfor %}
+{% if not open_late or late.status == 'vorbereitet' %}{% for hint in hints %}<div class="notice warning">{{ hint.message.rstrip(".") }} – Hinweis für die Vorbereitung</div>{% endfor %}{% endif %}
 <details class="card card-body"><summary>Meldescheine prüfen</summary><ul>{% for rg in r.guests %}<li>{{ rg.guest.full_name }}: {{ rg.meldeschein_status | meldeschein_label }}</li>{% endfor %}</ul><a href="/check-in/{{ r.id }}/avs">AVS-Schritt öffnen</a></details>
-{% if late and late.status != 'abgebrochen' %}
-<section class="card card-body stack"><h2>{{ late.status | late_status_label }} · {{ late.compartment.label }}</h2>
+{% if open_late %}{% set fach = late.compartment.label %}
+<section class="card card-body stack"><h2>Safe · {{ fach }}</h2>
 {% if late.status == 'vorbereitet' %}
-{% if pin %}<div class="notice info"><div><strong class="mail-pin">PIN {{ pin }}</strong><p>{% if late.compartment.fixed_pin %}Fester Code von {{ late.compartment.label }}{% else %}jetzt am Safe {{ late.compartment.label }} einstellen{% endif %}</p></div></div>{% else %}<div id="pin-display"><span class="mail-pin">••••</span><form method="post" action="/spaetanreise/{{ r.id }}/pin" hx-post="/spaetanreise/{{ r.id }}/pin" hx-target="#pin-display"><button class="btn" type="submit">PIN anzeigen</button></form></div>{% endif %}
-{% if late.email_message %}<p>{{ late.email_message.status | email_status_label }}{% if late.email_message.status == 'logged' %} (kein Mailserver eingerichtet){% endif %}</p>{% if late.email_message.status == 'failed' %}<a class="btn" href="/e-mails/{{ late.email_message.id }}">Fehlgeschlagen – Erneut senden</a>{% endif %}{% else %}<div class="notice warning">Keine E-Mail-Adresse – PIN telefonisch mitteilen</div><form method="post" action="/spaetanreise/{{ r.id }}/telefonisch"><button class="btn" type="submit">Gast telefonisch informiert</button></form>{% endif %}
-{% if late.phone_notified_at %}<p>Telefonisch informiert {{ late.phone_notified_at | date }} {{ late.phone_notified_at | time }}</p>{% endif %}
-<form method="post" action="/spaetanreise/{{ r.id }}/abbrechen"><button class="btn" type="submit">Vorbereitung abbrechen</button></form>
+<div id="pin-display" class="stack"><p>PIN für {{ fach }}: <span class="mail-pin" role="img" aria-label="PIN verborgen">••••</span></p><form method="post" action="/spaetanreise/{{ r.id }}/pin" hx-post="/spaetanreise/{{ r.id }}/pin" hx-target="#pin-display"><button class="btn" type="submit">PIN anzeigen</button></form></div>
+{% if late.email_message %}<p>E-Mail an {{ who }}: {{ late.email_message.status | email_status_label }}</p>{% if late.email_message.status == 'failed' %}<a class="btn" href="/e-mails/{{ late.email_message.id }}">Fehlgeschlagen – Erneut senden</a>{% endif %}{% else %}<div class="notice warning">Keine E-Mail-Adresse – PIN telefonisch mitteilen</div><form method="post" action="/spaetanreise/{{ r.id }}/telefonisch"><button class="btn" type="submit">Gast telefonisch informiert</button></form>{% endif %}
+{% if late.phone_notified_at %}<p>Telefonisch informiert {{ late.phone_notified_at | date }} {{ late.phone_notified_at | time }} Uhr</p>{% endif %}
+{% if r.arrival < business_date %}<form method="post" action="/spaetanreise/{{ r.id }}/angekommen"><button class="btn primary" type="submit">Angekommen</button></form><details><summary>Nicht angereist?</summary><form class="stack" method="post" action="/spaetanreise/{{ r.id }}/nicht-angereist"><p>Schlüssel und Meldeschein aus {{ fach }} zurück an die Rezeption holen.</p><button class="btn danger" type="submit">Nicht angereist</button></form></details>{% endif %}
+<details><summary>Vorbereitung abbrechen?</summary><form class="stack" method="post" action="/spaetanreise/{{ r.id }}/abbrechen"><p>Bitte Schlüssel und Meldeschein aus {{ fach }} nehmen und zurück an die Rezeption bringen. Danach ist {{ fach }} wieder frei.</p><button class="btn danger" type="submit">Vorbereitung abbrechen</button></form></details>
+{% elif late.status == 'nicht_angereist' %}
+<p>Als nicht angereist markiert am {{ late.closed_at | date }} · {{ fach }} ist wieder frei.</p>
+{% else %}
+<p>Eingecheckt am {{ late.arrived_confirmed_at | date }} um {{ late.arrived_confirmed_at | time }} Uhr · {{ fach }} ist wieder frei.</p>
+{% if late.status == 'angereist' %}<div class="notice warning">Meldeschein noch nicht abgegeben</div><form method="post" action="/spaetanreise/{{ r.id }}/meldeschein"><button class="btn primary" type="submit">Meldeschein abgegeben</button></form>{% elif late.meldeschein_returned_at %}<p>Meldeschein abgegeben am {{ late.meldeschein_returned_at | date }}.</p>{% endif %}
 {% endif %}</section>
 {% else %}
 <form class="card card-body stack" method="post" action="/spaetanreise/{{ r.id }}">
-<div class="field"><label for="compartment_id">Safe-Fach</label><select class="input" id="compartment_id" name="compartment_id" required><option value="">Bitte wählen</option>{% for c in compartments %}<option value="{{ c.id }}">{{ c.label }} · {{ 'fester Code' if c.fixed_pin else 'neuer PIN' }}</option>{% endfor %}</select></div>
+<div class="field"><label for="compartment_id">Safe-Fach</label><select class="input" id="compartment_id" name="compartment_id" required><option value="">Bitte wählen</option>{% for c in compartments %}<option value="{{ c.id }}"{% if c.id | string == chosen %} selected{% endif %}>{{ c.label }} · {{ 'fester Code' if c.fixed_pin else 'neuer PIN' }}</option>{% endfor %}</select></div>
 <label class="checkbox"><input type="checkbox" name="key_in_safe" required>Schlüssel liegt im Safe</label>
 <label class="checkbox"><input type="checkbox" name="meldeschein_in_safe" required>Meldeschein liegt im Safe</label>
 <button class="btn primary" type="submit">{{ 'Vorbereiten und E-Mail senden' if r.primary_guest and r.primary_guest.email else 'Vorbereiten' }}</button>

@@ -116,7 +116,14 @@ def test_corrective_action_block_range_and_open_bound(db, definition):
     data = {"geraet": device.id, "temperatur": "8.5", "gemessen_am": "2026-10-14T07:30"}
     with pytest.raises(store.RecordValidationError) as exc:
         store.create(db, definition, "messungen", data)
-    assert exc.value.errors["massnahme"] == 'Bei einer Abweichung ist „Maßnahme" Pflicht.'
+    assert exc.value.errors["massnahme"] == "Bei einer Abweichung ist „Maßnahme“ Pflicht."
+    assert exc.value.errors["temperatur"] == (
+        "8,5 °C liegt über der Obergrenze 7,0 °C – bitte „Maßnahme“ eintragen."
+    )
+    low = {**data, "temperatur": "-1"}
+    with pytest.raises(store.RecordValidationError) as exc:
+        store.create(db, definition, "messungen", low)
+    assert exc.value.errors["temperatur"].startswith("-1,0 °C liegt unter der Untergrenze 0,0 °C")
     field = definition.collection("messungen").field("temperatur")
     field.range.severity = "block"
     with pytest.raises(store.RecordValidationError) as exc:
@@ -412,3 +419,90 @@ def test_http_record_actor_is_logged_in_username(db, app_definitions, oidc_clien
         )
     ).one()
     assert event.actor == "m.schmidt"
+
+
+def test_search_matches_what_the_list_shows(db, definition):
+    from kurort_app.apps import store
+
+    device = store.create(db, definition, "geraete", {"name": "Tiefkühler Küche"})
+    other = store.create(db, definition, "geraete", {"name": "Keller"})
+    reading = store.create(
+        db,
+        definition,
+        "messungen",
+        {
+            "geraet": device.id,
+            "gemessen_am": "2026-10-14T07:30",
+            "temperatur": "9,5",
+            "zustand": "gut",
+            "mitarbeiter": "j.becker",
+        },
+    )
+    store.create(
+        db,
+        definition,
+        "messungen",
+        {"geraet": other.id, "gemessen_am": "2026-10-14T08:00", "temperatur": "4"},
+    )
+
+    def found(q):
+        return [r.id for r in store.query(db, definition, "messungen", q=q)]
+
+    for q in ("tiefkühler", "9,5 °C", "9.5", "Gut", "J. Becker", "j.becker", "14.10.2026 07:30 "):
+        assert found(q) == [reading.id], q
+    assert found("nirgends") == []
+
+
+def test_history_changes_read_like_the_detail_view(db, http_app):
+    from kurort_app.apps import store
+
+    client, app = http_app
+    kitchen = store.create(db, app, "geraete", {"name": "Küche", "soll_min": "0", "soll_max": "7"})
+    cellar = store.create(db, app, "geraete", {"name": "Keller"})
+    data = {
+        "geraet": kitchen.id,
+        "gemessen_am": "2026-10-14T07:30",
+        "temperatur": "8,5",
+        "massnahme": "Tür geschlossen",
+        "mitarbeiter": "m.schmidt",
+    }
+    reading = store.create(db, app, "messungen", data, actor="m.schmidt")
+    reading.data = {**reading.data, "legacy": "alt"}
+    store.update(
+        db,
+        app,
+        reading,
+        {**data, "geraet": cellar.id, "temperatur": "6", "massnahme": "", "kontrolliert": "on"},
+        actor="t.weber",
+    )
+    event = db.scalars(
+        select(AuditEvent).where(
+            AuditEvent.action == "app_record.updated", AuditEvent.entity_id == str(reading.id)
+        )
+    ).one()
+    assert store.changes(db, app, event.payload) == [
+        ("Gerät", "Küche", "Keller"),
+        ("Temperatur", "8,5 °C", "6,0 °C"),
+        ("Maßnahme", "Tür geschlossen", "–"),
+        ("Kontrolliert", "–", "ja"),
+    ]
+    legacy = {"collection": "messungen", "changes": {"alt": [None, "x"]}}
+    assert store.changes(db, app, legacy) == [("alt", "–", "x")]
+    deviation = store.create(db, app, "messungen", data, actor="m.schmidt")
+    db.commit()
+    page = client.get(f"/apps/geraetecheck/messungen/{reading.id}").text
+    assert "Küche → Keller" in page and "8,5 °C → 6,0 °C" in page and "Tür geschlossen → –" in page
+    assert "null" not in page and "app-audit-payload" not in page
+    assert "<dd>M. Schmidt</dd>" in page and "<dd>T. Weber</dd>" in page
+    assert "Sollbereich" not in page
+    page = client.get(f"/apps/geraetecheck/messungen/{deviation.id}").text
+    assert "Abweichung" in page and "Sollbereich Temperatur: 0,0 bis 7,0 °C" in page
+    assert "Gerät:</span> Küche" in page  # a new entry lists its values without arrows
+
+
+def test_form_messages_name_field_once_and_limits_carry_the_unit(db, http_app):
+    client, _ = http_app
+    page = client.post("/apps/geraetecheck/geraete/neu", data={}).text
+    assert "Name ist Pflicht." in page and "Name: Name ist Pflicht." not in page
+    page = client.post("/apps/geraetecheck/messungen/neu", data={"temperatur": "101"}).text
+    assert "Temperatur: Wert darf höchstens 100,0 °C sein." in page

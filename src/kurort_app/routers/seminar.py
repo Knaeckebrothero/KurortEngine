@@ -17,6 +17,8 @@ from kurort_app.services import seminar
 from kurort_app.web import (
     MONTHS,
     NAV,
+    SLOT_LABELS,
+    SPACE_STATUS_LABELS,
     NavItem,
     fmt_date,
     fmt_money,
@@ -47,8 +49,11 @@ def _int(raw: str) -> int:
 
 
 def _money(raw: str) -> Decimal | None:
+    raw = raw.strip()
+    if "," in raw:  # German input: 1.234,50
+        raw = raw.replace(".", "").replace(",", ".")
     try:
-        value = Decimal(raw.strip().replace(",", "."))
+        value = Decimal(raw)
         if (
             not value.is_finite()
             or abs(value) > Decimal("99999999.99")
@@ -58,6 +63,11 @@ def _money(raw: str) -> Decimal | None:
         return value
     except InvalidOperation:
         return None
+
+
+def _money_input(value: Decimal) -> str:
+    """A price as staff type it into a form field: 190,00."""
+    return f"{value:.2f}".replace(".", ",")
 
 
 def _spaces(session: Session) -> list[FunctionSpace]:
@@ -273,8 +283,9 @@ def _validate(
                 "nachmittag": "nachmittags",
                 "ganztags": "ganztags",
             }[half]
+            status = SPACE_STATUS_LABELS.get(clash.status, clash.status).lower()
             errors["zeit"] = (
-                f"{space.name} ist am {fmt_date(overlap)} {label} bereits gebucht ({clash.display_name}, {clash.status})."
+                f"{space.name} ist am {fmt_date(overlap)} {label} bereits gebucht ({clash.display_name}, {status})."
             )
     values.update(
         space_id=space.id if space else None,
@@ -305,7 +316,10 @@ def _record(session: Session, booking: SpaceBooking, action: str, verb: str) -> 
         action=f"space_booking.{action}",
         entity="space_booking",
         entity_id=booking.id,
-        summary=f"{booking.space.name} {fmt_date(booking.start_date)} {booking.slot} für {booking.display_name} {verb}",
+        summary=(
+            f"{booking.space.name} {fmt_date(booking.start_date)} "
+            f"{SLOT_LABELS.get(booking.slot, booking.slot)} für {booking.display_name} {verb}"
+        ),
     )
 
 
@@ -349,7 +363,7 @@ def _booking_form(booking: SpaceBooking) -> dict[str, str]:
         "email": booking.email or "",
         "telefon": booking.phone or "",
         "personen": str(booking.attendees),
-        "preis": str(booking.price) if booking.price_manual else "",
+        "preis": _money_input(booking.price) if booking.price_manual else "",
         "reservierung": booking.reservation.code if booking.reservation else "",
         "kaffee": "on" if booking.catering_coffee else "",
         "mittagessen": "on" if booking.catering_lunch else "",

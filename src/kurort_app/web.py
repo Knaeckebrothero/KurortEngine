@@ -60,10 +60,10 @@ STATUS_LABELS = {
 }
 PAYMENT_STATE_LABELS = {"bezahlt": "Bezahlt", "offen": "Offen", "guthaben": "Guthaben"}
 HOUSEKEEPING_LABELS = {
-    "dirty": "schmutzig",
-    "clean": "sauber",
-    "inspected": "geprüft",
-    "out_of_order": "außer Betrieb",
+    "dirty": "Schmutzig",
+    "clean": "Sauber",
+    "inspected": "Geprüft",
+    "out_of_order": "Außer Betrieb",
 }
 HOUSEKEEPING_KINDS = {
     "dirty": "warning",
@@ -143,6 +143,15 @@ class NavItem:
     group: str  # one of NAV_GROUPS
     roles: tuple[str, ...] = ("rezeption", "leitung")  # who sees the link (login on)
     match: str | None = None  # path prefix that marks the link active; default href
+    also: tuple[str, ...] = ()  # further path prefixes that mark it active (sub-pages elsewhere)
+
+    def active_for(self, path: str) -> bool:
+        """Whether the sidebar should mark this link as the current page for ``path``."""
+        if path.startswith(self.also) if self.also else False:
+            return True
+        if self.href == "/":
+            return path == "/"
+        return path.startswith(self.match or self.href)
 
 
 NAV_GROUPS = ("Heute", "Planung", "Apps", "Verwaltung")
@@ -156,6 +165,7 @@ NAV: list[NavItem] = [
         "Übersicht",
         '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
         "Heute",
+        also=("/zahlungen/",),
     ),
     NavItem(
         "/anreisen",
@@ -163,6 +173,7 @@ NAV: list[NavItem] = [
         '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/>'
         '<path d="M15 12H3"/>',
         "Heute",
+        also=("/check-in/", "/spaetanreise"),
     ),
     NavItem(
         "/abreisen",
@@ -170,6 +181,7 @@ NAV: list[NavItem] = [
         '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/>'
         '<path d="M21 12H9"/>',
         "Heute",
+        also=("/check-out/",),
     ),
     NavItem(
         "/im-haus",
@@ -235,11 +247,25 @@ def _context(request: Request) -> dict[str, Any]:
     }
 
 
+def staff_name(login: str | None) -> str:
+    """A staff login as people read it: "m.schmidt" → "M. Schmidt", "rezeption" → "Rezeption".
+
+    The app keeps no staff table, so this formats the login instead of looking up a name.
+    """
+    if not login:
+        return "–"
+    first, _, last = login.partition(".")
+    if not last:
+        return login[:1].upper() + login[1:]
+    return f"{first[:1].upper()}. {last[:1].upper()}{last[1:]}"
+
+
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR), context_processors=[_context])
 templates.env.filters.update(
     date=fmt_date,
     time=fmt_time,
     money=fmt_money,
+    staff_name=staff_name,
     status_label=lambda s: STATUS_LABELS.get(s, s),
     room_status_label=lambda s: HOUSEKEEPING_LABELS.get(s, s),
     room_status_kind=lambda s: HOUSEKEEPING_KINDS.get(s, "plain"),
@@ -263,13 +289,13 @@ templates.env.filters.update(
 
 EMAIL_STATUS_LABELS = {
     "queued": "Versand ausstehend",
-    "sent": "gesendet",
-    "failed": "fehlgeschlagen",
-    "logged": "protokolliert – nicht versendet",
+    "sent": "Gesendet",
+    "failed": "Fehlgeschlagen",
+    "logged": "Testbetrieb – nicht verschickt",
 }
 LATE_STATUS_LABELS = {
     "vorbereitet": "Vorbereitet",
-    "angereist": "Meldeschein ausstehend",
+    "angereist": "Angereist · Meldeschein ausstehend",
     "abgeschlossen": "Abgeschlossen",
     "abgebrochen": "Abgebrochen",
     "nicht_angereist": "Nicht angereist",

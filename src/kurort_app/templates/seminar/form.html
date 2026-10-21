@@ -2,9 +2,9 @@
 {% import "reservations/_form_macros.html" as f with context %}
 {% block title %}{{ 'Buchung bearbeiten' if booking else 'Neue Buchung' }}{% endblock %}
 {% block content %}
-<nav class="breadcrumb" aria-label="Pfad"><a href="/seminarraum">Seminarraum</a> › {% if booking %}<a href="/seminarraum/{{ booking.id }}">Buchung {{ booking.id }}</a> › Bearbeiten{% else %}Neue Buchung{% endif %}</nav>
+<nav class="breadcrumb" aria-label="Pfad"><a href="/seminarraum">Seminarraum</a> › {% if booking %}<a href="/seminarraum/{{ booking.id }}">{{ booking.display_name }} · {{ booking.start_date | date }}</a> › Bearbeiten{% else %}Neue Buchung{% endif %}</nav>
 <div class="page-header"><div><h1>{{ 'Buchung bearbeiten' if booking else 'Neue Buchung' }}</h1><p>Seminarraum buchen – eine Zimmerreservierung ist nicht nötig.</p></div></div>
-{% if errors %}<div class="notice danger res-error-summary" role="alert" id="error-summary" tabindex="-1"><div><strong>Bitte Angaben prüfen</strong><ul>{% for name, message in errors.items() %}<li><a href="#{{ name }}">{{ message }}</a></li>{% endfor %}</ul></div></div>{% endif %}
+{% if errors %}<div class="notice danger res-error-summary seminar-errors" role="alert" id="error-summary" tabindex="-1"><div><strong>Bitte Angaben prüfen</strong><ul>{% for name, message in errors.items() %}<li><a href="#{{ name }}">{{ message }}</a></li>{% endfor %}</ul></div></div>{% endif %}
 {% macro input(name, label, type='text', optional=false) -%}
 <div class="field"><label for="{{ name }}">{{ label }}{% if optional %} <span class="muted">(optional)</span>{% endif %}</label><input class="input" id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ form.get(name, '') }}"{{ f.invalid(name) }}>{{ f.error(name) }}</div>
 {%- endmacro %}
@@ -13,7 +13,7 @@
 {% if spaces|length == 1 and not errors.get('raum') %}<input type="hidden" name="raum" id="raum" value="{{ spaces[0].id }}"><p class="muted">{{ spaces[0].name }} · bis {{ spaces[0].capacity }} Personen</p>
 {% else %}<div class="field"><label for="raum">Raum</label><select class="select" id="raum" name="raum"{{ f.invalid('raum') }}><option value="">Bitte wählen</option>{% for s in spaces %}<option value="{{ s.id }}"{% if form.get('raum') == s.id|string %} selected{% endif %}>{{ s.name }} · {{ s.capacity }} Personen{% if not s.active %} · inaktiv{% endif %}</option>{% endfor %}</select>{{ f.error('raum') }}</div>{% endif %}
 <div class="seminar-form-grid">{{ input('von', 'Von', 'date') }}{{ input('bis', 'Bis', 'date') }}</div>
-<fieldset id="zeit"{{ f.invalid('zeit') }}><legend>Zeit</legend><div class="row">{% for slot in slots %}<label class="checkbox"><input type="radio" name="zeit" value="{{ slot }}"{% if form.get('zeit') == slot %} checked{% endif %}>{{ slot | slot_label }}</label>{% endfor %}</div>{{ f.error('zeit') }}</fieldset>
+<fieldset class="field seminar-slots" id="zeit"{{ f.invalid('zeit') }}><legend>Zeit</legend><div class="row">{% for slot in slots %}<label class="checkbox"><input type="radio" name="zeit" value="{{ slot }}"{% if form.get('zeit') == slot %} checked{% endif %}>{{ slot | slot_label }}</label>{% endfor %}</div>{{ f.error('zeit') }}</fieldset>
 {% if not booking %}<div class="field"><label for="status">Status</label><select class="select" id="status" name="status"{{ f.invalid('status') }}>{% for status in ['angefragt', 'bestaetigt'] %}<option value="{{ status }}"{% if form.get('status') == status %} selected{% endif %}>{{ status | space_status_label }}</option>{% endfor %}</select>{{ f.error('status') }}</div>{% endif %}
 </div></section>
 <section class="card"><div class="card-header"><h2>Veranstalter</h2></div><div class="card-body seminar-form-grid">

@@ -1,0 +1,5 @@
+{# Response to a status tap: the new card, then the list's counts as out-of-band swaps. #}
+{% include "housekeeping/_room_card.html" %}
+{% for value in statuses %}<span class="num" id="hk-count-{{ value }}" hx-swap-oob="true" data-status-count="{{ value }}">{{ counts[value] }}</span>
+{% endfor %}
+{% include "housekeeping/_bulk.html" %}

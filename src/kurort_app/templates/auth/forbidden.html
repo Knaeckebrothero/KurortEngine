@@ -1,8 +1,13 @@
 {% extends "auth/_layout.html" %}
 {% block title %}Kein Zugriff{% endblock %}
 {% block content %}
-<h1>Kein Zugriff{% if user and not user.has_access %} – Rolle fehlt{% endif %}</h1>
+{% set no_role = user and not user.has_access %}
+<h1>Kein Zugriff{% if no_role %} – Rolle fehlt{% endif %}</h1>
 <p class="muted">Diese Seite gehört nicht zu Ihrem Bereich. Bitte wenden Sie sich an die Hausleitung, wenn Sie Zugriff benötigen.</p>
-{% if home_path != '/' %}<p><a class="btn primary" href="{{ home_path }}">Zu Ihrem Bereich</a></p>{% endif %}
-<form class="auth-actions" method="post" action="/auth/logout"><button class="btn" type="submit">Abmelden</button></form>
+<div class="auth-actions">
+  {%- if not no_role %}
+  <a class="btn primary" href="{{ home_path }}">{{ 'Zur Übersicht' if home_path == '/' else 'Zu Ihrem Bereich' }}</a>
+  {%- endif %}
+  <form method="post" action="/auth/logout"><button class="btn" type="submit">Abmelden</button></form>
+</div>
 {% endblock %}

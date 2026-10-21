@@ -137,8 +137,8 @@ def test_ac2_record_payment_and_audit(client, db, stay):
     assert event.entity == "reservation" and event.entity_id == str(stay.id)
     assert event.payload == {"payment_id": p.id, "amount": "120.50", "method": "bar"}
     html = client.get(f"/reservierungen/{stay.id}").text
-    assert "Offen 279,50 €" in html
-    assert "Firma Müller GmbH" in html and "rezeption" in html
+    assert '<span class="muted">Offen</span><strong class="num">279,50 €</strong>' in html
+    assert "Firma Müller GmbH" in html and "Erfasst von Rezeption" in html
 
 
 @pytest.mark.parametrize(
@@ -147,6 +147,10 @@ def test_ac2_record_payment_and_audit(client, db, stay):
         ({"amount": ""}, "Betrag fehlt"),
         ({"amount": "0"}, "Betrag muss größer als 0 sein"),
         ({"amount": "12,345"}, "Höchstens zwei Nachkommastellen"),
+        ({"amount": "0.500"}, "Höchstens zwei Nachkommastellen"),
+        ({"amount": "1.000.000"}, "Höchstens 100.000,00 €"),
+        ({"amount": "12 34"}, "Betrag ungültig"),
+        ({"amount": "€"}, "Betrag fehlt"),
         ({"amount": "100.000,01"}, "Höchstens 100.000,00 €"),
         ({"amount": "NaN"}, "Betrag ungültig"),
         ({"amount": "1e2"}, "Betrag ungültig"),
@@ -174,7 +178,19 @@ def test_ac3_inactive_method(client, db, stay):
 
 
 @pytest.mark.parametrize(
-    "amount,expected", [("1.234,50", "1234.50"), ("120.50", "120.50"), ("100.000,00", "100000.00")]
+    "amount,expected",
+    [
+        ("1.234,50", "1234.50"),
+        ("120.50", "120.50"),
+        ("100.000,00", "100000.00"),
+        # A dot followed by exactly three digits groups thousands; otherwise it is a decimal point.
+        ("1.000", "1000.00"),
+        ("2.500", "2500.00"),
+        ("920,50 €", "920.50"),
+        ("920.50", "920.50"),
+        ("€ 120,50", "120.50"),
+        ("1 000,00 €", "1000.00"),
+    ],
 )
 def test_german_amounts_and_warning_before_overpayment(client, db, stay, amount, expected):
     response = _post(client, db, stay, amount=amount)
@@ -203,7 +219,8 @@ def test_ac4_cancel_requires_reason_and_cannot_be_repeated(client, db, stay):
     assert p.cancel_reason == "Doppelt erfasst" and p.cancelled_by == "rezeption"
     assert _audit(db, "payment_cancelled").payload["reason"] == "Doppelt erfasst"
     html = client.get(f"/reservierungen/{stay.id}").text
-    assert "Offen 400,00 €" in html and "<s>" in html and "Doppelt erfasst" in html
+    assert '<span class="muted">Offen</span><strong class="num">400,00 €</strong>' in html
+    assert "<s>" in html and "Doppelt erfasst" in html
     assert (
         client.post(url, data={"reason": "Noch einmal"}, follow_redirects=False).status_code == 409
     )
@@ -220,7 +237,7 @@ def test_ac5_deferred_receipt_and_validation(client, db, stay):
     )
     p = _payments(db)[0]
     assert p.received_on is None
-    assert "Bezahlt · Rechnung offen 400,00 €" in client.get(f"/reservierungen/{stay.id}").text
+    assert "400,00 € auf Rechnung, Eingang offen" in client.get(f"/reservierungen/{stay.id}").text
     assert f'data-payment-id="{p.id}"' in client.get("/zahlungen/offen?ansicht=rechnung").text
     url = f"/zahlungen/{p.id}/eingang"
     for value in ("2026-10-15", "2026-10-13", "falsch"):
@@ -259,12 +276,12 @@ def test_ac7_today_departures_only_and_dashboard_notice(client, db, stay):
     db.commit()
     html = client.get("/").text
     assert f'href="/reservierungen/{stay.id}#zahlung"' in html
-    assert "Offen 400,00 €" in html and "1 offene Beträge" in html
+    assert "Offen 400,00 €" in html and "1 offener Betrag" in html
     row = html.split(f'data-reservation-id="{arrival.id}"', 1)[1].split("</tr>", 1)[0]
     assert "Offen 400,00 €" not in row and "Bezahlt" not in row
     _post(client, db, stay, amount="400")
     assert "Bezahlt" in client.get("/").text
-    assert "offene Beträge</a>" not in client.get("/").text
+    assert "offener Betrag" not in client.get("/").text
 
 
 def test_ac8_checkout_payment_and_unpaid_checkout_audit(client, db, stay):
@@ -277,7 +294,9 @@ def test_ac8_checkout_payment_and_unpaid_checkout_audit(client, db, stay):
     )
     html = client.get(f"/check-out/{stay.id}").text
     assert "279,50 €" in html and "Bar" in html
-    response = client.post(f"/check-out/{stay.id}", follow_redirects=False)
+    response = client.post(
+        f"/check-out/{stay.id}", data={"offen_geklaert": "1"}, follow_redirects=False
+    )
     assert response.status_code == 303
     assert _audit(db, "check_out").payload["open"] == "279.50"
 
@@ -378,16 +397,39 @@ def test_ac10_oidc_roles_and_actor(oidc_client, idp, db, stay):
     )
 
 
-def test_ac11_amount_screens_disclaim_invoice(client, db, stay):
-    for url in (
-        f"/reservierungen/{stay.id}",
-        f"/check-out/{stay.id}",
-        "/zahlungen/offen",
-        "/zahlungen/offen?ansicht=rechnung",
-        "/abreisen",
-        "/",
-    ):
-        assert "Zahlungsübersicht – keine Rechnung." in client.get(url).text
+def test_ac11_payment_card_disclaims_invoice_once(client, db, stay):
+    assert client.get(f"/reservierungen/{stay.id}").text.count("ersetzt keine Rechnung") == 1
+    for url in ("/zahlungen/offen", "/zahlungen/offen?ansicht=rechnung"):
+        html = client.get(url).text
+        assert "Rechnung offen" not in html and "keine Rechnung" not in html
+    assert "Auf Rechnung – Eingang offen" in client.get("/zahlungen/offen?ansicht=rechnung").text
+
+
+def test_payment_confirmation_shows_in_the_card(client, db, stay):
+    html = client.get("/zahlungen/offen").text
+    entry = f"/reservierungen/{stay.id}?zahlung=erfassen#zahlung"
+    assert f'href="{entry}"' in html
+    card = client.get(entry.partition("#")[0]).text.split('id="zahlung"', 1)[1]
+    assert '<details class="payment-disclosure payment-entry" open>' in card
+    location = _post(client, db, stay).headers["location"]
+    assert location == f"/reservierungen/{stay.id}?zahlung=erfasst#zahlung"
+    html = client.get(location.partition("#")[0]).text
+    card = html.split('id="zahlung"', 1)[1]
+    assert "Zahlung erfasst." in card and "Zahlung erfasst." not in html.split('id="zahlung"')[0]
+    url = f"/reservierungen/{stay.id}/zahlungen/{_payments(db)[0].id}/stornieren"
+    location = client.post(url, data={"reason": "Doppelt"}, follow_redirects=False).headers[
+        "location"
+    ]
+    assert "Zahlung storniert." in client.get(location.partition("#")[0]).text
+
+
+def test_method_edit_error_stays_on_its_row(client, db, stay):
+    ec = _method(db, "ec")
+    html = client.post(f"/verwaltung/zahlungsarten/{ec.id}", data={"label": ""}).text
+    row = html.split(f'data-method-id="{ec.id}"', 1)[1].split("</tr>", 1)[0]
+    assert "Bezeichnung fehlt" in row and 'aria-invalid="true"' in row
+    add_form = html.split('id="method-add-h"', 1)[1]
+    assert "Bezeichnung fehlt" not in add_form and 'aria-invalid="true"' not in add_form
 
 
 @pytest.mark.parametrize(

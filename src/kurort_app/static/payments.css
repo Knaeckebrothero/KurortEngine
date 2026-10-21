@@ -1,6 +1,7 @@
 /* Payment tracking: reservation card, shared entry form and staff lists. */
 
-.payment-card { min-width: 0; scroll-margin-top: var(--space-12); }
+/* Jumps to #zahlung land below the sticky top bar (taller where it wraps, 861–1100 px). */
+.payment-card { min-width: 0; scroll-margin-top: 100px; }
 .payment-card .card-body, .payment-form, .payment-disclosure-body { min-width: 0; }
 .payment-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
 .payment-summary .badge { white-space: normal; border-radius: var(--radius-control); overflow-wrap: anywhere; }
@@ -55,6 +56,10 @@
 .payment-method-edit > .btn { justify-self: start; }
 .payment-method-order { display: flex; flex-direction: column; gap: var(--space-2); }
 .payment-method-order form, .payment-method-order .btn { width: 100%; }
+
+@media (min-width: 861px) and (max-width: 1100px) {
+  .payment-card { scroll-margin-top: 150px; }
+}
 
 @media (max-width: 860px) {
   .fd-bill td.num { white-space: nowrap; overflow-wrap: normal; width: 1%; }

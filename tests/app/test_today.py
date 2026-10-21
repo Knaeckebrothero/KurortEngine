@@ -54,7 +54,10 @@ def test_today_hooks_render_and_block_only_checkin(client, db, monkeypatch):
     )
     html = client.get(f"/check-out/{res.id}").text
     assert html.index("Testwarnung") < html.index('id="bill-title"')
-    assert client.post(f"/check-out/{res.id}", follow_redirects=False).status_code == 303
+    response = client.post(
+        f"/check-out/{res.id}", data={"offen_geklaert": "1"}, follow_redirects=False
+    )
+    assert response.status_code == 303
     db.expire_all()
     assert db.get(Reservation, res.id).status == CHECKED_OUT
 

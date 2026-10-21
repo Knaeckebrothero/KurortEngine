@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
-{% block title %}{{ 'Rechnung offen' if view == 'rechnung' else 'Offene Beträge' }}{% endblock %}
+{% block title %}{{ 'Auf Rechnung – Eingang offen' if view == 'rechnung' else 'Offene Beträge' }}{% endblock %}
 {% block content %}
 <div class="page-header">
-  <div><h1>{{ 'Rechnung offen' if view == 'rechnung' else 'Offene Beträge' }}</h1><p>Zahlungsübersicht – keine Rechnung.</p></div>
+  <div><h1>{{ 'Auf Rechnung – Eingang offen' if view == 'rechnung' else 'Offene Beträge' }}</h1><p>{{ 'Auf Rechnung erfasste Zahlungen, deren Geld noch nicht eingegangen ist.' if view == 'rechnung' else 'Gäste im Haus und abgereiste Gäste mit offenem Betrag – früheste Abreise zuerst.' }}</p></div>
   <div class="page-actions"><a class="btn" href="/abreisen">Zu den Abreisen</a></div>
 </div>
 <nav class="chips payment-tabs" aria-label="Zahlungsansicht">
   <a class="chip" href="/zahlungen/offen"{% if view == 'offen' %} aria-current="true"{% endif %}>Offene Beträge</a>
-  <a class="chip" href="/zahlungen/offen?ansicht=rechnung"{% if view == 'rechnung' %} aria-current="true"{% endif %}>Rechnung offen</a>
+  <a class="chip" href="/zahlungen/offen?ansicht=rechnung"{% if view == 'rechnung' %} aria-current="true"{% endif %}>Auf Rechnung – Eingang offen</a>
 </nav>
 {% if view == 'rechnung' %}
 <section class="card" aria-label="Ausstehende Zahlungseingänge">
   {% if transfers %}
   <table class="table payment-queue payment-transfers">
-    <caption class="sr-only">Rechnung offen – Zahlungseingänge erfassen</caption>
+    <caption class="sr-only">Auf Rechnung – Zahlungseingänge erfassen</caption>
     <thead><tr><th scope="col">Zahlende Person oder Firma</th><th scope="col">Zahlungsart</th><th scope="col">Betrag</th><th scope="col">Seit</th><th scope="col">Eingang erfassen</th></tr></thead>
     <tbody>
       {% for p in transfers %}
@@ -40,7 +40,7 @@
       {% endfor %}
     </tbody>
   </table>
-  {% else %}{{ ui.empty('Keine offenen Rechnungszahlungen', 'Alle erfassten Zahlungseingänge sind geklärt.') }}{% endif %}
+  {% else %}{{ ui.empty('Keine offenen Zahlungseingänge', 'Das Geld aller Zahlungen auf Rechnung ist eingegangen.') }}{% endif %}
 </section>
 {% else %}
 <section class="card" aria-label="Offene Beträge">
@@ -55,7 +55,7 @@
         <td data-label="Gast">{{ ui.guest_cell(reservation) }}</td>
         <td data-label="Zimmer">{{ reservation.room.number if reservation.room else 'Noch nicht zugewiesen' }}</td>
         <td class="num payment-money" data-label="Offen">{{ b.open | money }}</td>
-        <td class="actions"><a class="btn primary" href="/reservierungen/{{ reservation.id }}#zahlung">Zahlung erfassen</a></td>
+        <td class="actions"><a class="btn primary" href="/reservierungen/{{ reservation.id }}?zahlung=erfassen#zahlung">Zahlung erfassen</a></td>
       </tr>
       {% endfor %}
     </tbody>

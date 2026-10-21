@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 
 from kurort_app.config import HOTEL_TZ
 from kurort_app.config import today as business_today
+from kurort_app.web import staff_name
 
 
 def typed(field, value):
@@ -132,6 +133,8 @@ def display(field, value, *, reference_title=None, unit=True):
         )
     elif field.type == "reference" and reference_title:
         result = reference_title(parsed)
+    elif field.type == "staff":
+        result = staff_name(parsed)
     else:
         result = str(parsed)
     return f"{result} {field.unit}" if unit and field.unit else result

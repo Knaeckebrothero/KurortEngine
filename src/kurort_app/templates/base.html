@@ -23,7 +23,7 @@
 {% import "_assistant.html" as assistant with context %}
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
 {% macro nav_link(item) -%}
-  {%- set active = (nav_path == item.href) if item.href == '/' else nav_path.startswith(item.match or item.href) -%}
+  {%- set active = item.active_for(nav_path) -%}
   <a class="rail-link" href="{{ item.href }}"{% if active %} aria-current="page"{% endif %}>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ item.icon | safe }}</svg>
     <span>{{ item.label }}</span>
@@ -33,9 +33,9 @@
   <aside class="rail" aria-label="Hauptnavigation">
     <a class="brand" href="/">
       <span class="brand-mark" aria-hidden="true">HR</span>
-      <span><span class="brand-name">{{ hotel_name }}</span><span class="brand-sub">{{ hotel_city }} · Rezeption</span></span>
+      <span><span class="brand-name">{{ hotel_name }}</span><span class="brand-sub">{{ hotel_city }}</span></span>
     </a>
-    <details class="rail-menu"><summary>Menü</summary>
+    <details class="rail-menu"><summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Menü</summary>
     <nav class="rail-nav">
       {% for group, links in nav_groups %}
       <span class="rail-label">{{ group }}</span>
@@ -49,7 +49,7 @@
       </a>
     </div>{% endif %}
     </details>
-    <div class="rail-foot">KurortEngine · Kurbeitragssatzung {{ hotel_city }}</div>
+    <div class="rail-foot">KurortEngine</div>
   </aside>
   <div class="main">
     <header class="topbar">
@@ -76,11 +76,19 @@
     <main id="main" class="content">
       {% if flash %}<div class="notice {{ flash.kind or 'success' }} flash" role="status"><p>{{ flash.text }}</p></div>{% endif %}
       {% block content %}{% endblock %}
-      {% if nav_path in ('/', '/im-haus') %}<p class="muted">Zahlungsübersicht – keine Rechnung.</p>{% endif %}
     </main>
   </div>
 </div>
 {% if front_desk_access %}{{ assistant.drawer() }}{% endif %}
 {% block scripts %}{% endblock %}
+{% if flash %}<script>
+  // The notice is on screen now; take it out of the address so a reload does not repeat it.
+  (function () {
+    var url = new URL(window.location.href);
+    url.searchParams.delete("notice");
+    url.searchParams.delete("notice_kind");
+    history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+  })();
+</script>{% endif %}
 </body>
 </html>

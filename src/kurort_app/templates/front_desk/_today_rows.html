@@ -8,7 +8,7 @@
       <td>{{ fd.room(r) }}</td>
       <td><span class="badge {{ 'info' if row.kind == 'anreise' else 'plain' }}">{{ 'Anreise' if row.kind == 'anreise' else 'Abreise' }}</span></td>
       <td>{{ fd.flags(row.flags) }}</td>
-      <td class="actions">{% if row.kind == 'anreise' and r.status == 'reserved' %}<a class="btn sm{% if next_arrival and r.id == next_arrival.id %} primary{% endif %}" href="/check-in/{{ r.id }}">Check-in</a>{% elif row.kind == 'abreise' and r.status == 'checked_in' %}<a class="btn sm" href="/check-out/{{ r.id }}">Check-out</a>{% else %}<a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>{% endif %}</td>
+      <td class="actions">{% if row.kind == 'anreise' and r.status == 'reserved' %}<a class="btn sm primary" href="/check-in/{{ r.id }}">Check-in</a>{% elif row.kind == 'abreise' and r.status == 'checked_in' %}<a class="btn sm primary" href="/check-out/{{ r.id }}">Check-out</a>{% else %}<a class="btn sm ghost" href="/reservierungen/{{ r.id }}">Ansehen</a>{% endif %}</td>
     </tr>
   {% endfor %}</tbody>
 </table>

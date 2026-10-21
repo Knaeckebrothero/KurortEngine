@@ -14,8 +14,10 @@
       {% if rg.meldeschein_status == 'offen' %}
       <form method="post" action="/check-in/{{ r.id }}/avs/{{ rg.id }}/gedruckt" hx-post="/check-in/{{ r.id }}/avs/{{ rg.id }}/gedruckt" hx-target="#avs-guest-{{ rg.id }}" hx-swap="outerHTML"><button class="btn primary" type="submit">In AVS gedruckt</button></form>
       {% else %}
-      <span class="badge success">Gedruckt {{ rg.meldeschein_printed_at | time }} · {{ card.printed_by }}</span>
-      <form method="post" action="/check-in/{{ r.id }}/avs/{{ rg.id }}/offen" hx-post="/check-in/{{ r.id }}/avs/{{ rg.id }}/offen" hx-target="#avs-guest-{{ rg.id }}" hx-swap="outerHTML"><button class="btn ghost sm" type="submit">Rückgängig</button></form>
+      <div class="row">
+        <span class="badge success">Gedruckt{% if rg.meldeschein_printed_at %} {{ rg.meldeschein_printed_at | time }} Uhr{% endif %}{% if card.printed_by %} · {{ card.printed_by | staff_name }}{% endif %}</span>
+        <form method="post" action="/check-in/{{ r.id }}/avs/{{ rg.id }}/offen" hx-post="/check-in/{{ r.id }}/avs/{{ rg.id }}/offen" hx-target="#avs-guest-{{ rg.id }}" hx-swap="outerHTML"><button class="btn ghost sm" type="submit">Rückgängig</button></form>
+      </div>
       {% endif %}
     {% endif %}
   </div>

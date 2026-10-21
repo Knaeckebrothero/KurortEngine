@@ -4,7 +4,7 @@
 {% block title %}Check-out {{ r.code }}{% endblock %}
 {% block content %}
 {% set g = r.primary_guest %}
-<div class="breadcrumb"><a href="/abreisen">Abreisen</a> / <span class="mono">{{ r.code }}</span></div>
+<div class="breadcrumb"><a href="/abreisen">Abreisen</a> › <span class="mono">{{ r.code }}</span></div>
 <div class="page-header">
   <div>
     <span class="eyebrow">Check-out</span>
@@ -22,12 +22,11 @@
 <div class="notice warning flash" role="status"><p><strong>Vorzeitige Abreise.</strong> Geplant war der {{ r.departure | date('long') }}. Restnächte bitte mit dem Gast klären.</p></div>
 {% endif %}
 
-{% for warning in warnings %}<div class="notice warning"><p>{% if warning.href %}<a href="{{ warning.href }}">{{ warning.text }}</a>{% else %}{{ warning.text }}{% endif %}</p></div>{% endfor %}
+{% for warning in warnings %}<div class="notice warning flash"><p>{% if warning.href %}<a href="{{ warning.href }}">{{ warning.text }}</a>{% else %}{{ warning.text }}{% endif %}</p></div>{% endfor %}
 <div class="fd-checkout">
   <section class="card" aria-labelledby="bill-title">
-    <header class="card-header"><h2 id="bill-title">Abrechnung (Vorschau)</h2></header>
+    <header class="card-header"><div><h2 id="bill-title">Abrechnung (Vorschau)</h2><span class="sub">Nur Übersicht – ersetzt keine Rechnung.</span></div></header>
     <div class="card-body">
-      <p class="muted">Zahlungsübersicht – keine Rechnung.</p>
       <table class="table fd-bill">
         <tbody>
           <tr>
@@ -41,10 +40,10 @@
               {% else %}<span class="badge warning">Kurtaxe noch nicht berechnet</span>{% endif %}
             </td>
           </tr>
-          {% for p in r.payments %}<tr><th scope="row">{% if p.cancelled_at %}<s>{{ p.method.label }} · storniert</s>{% else %}{{ p.method.label }}{% endif %}<span class="sub">{{ p.paid_on | date }}{% if not p.cancelled_at and not p.received_on %} · Rechnung offen{% endif %}</span></th><td class="num">{% if p.cancelled_at %}<s>{{ p.amount | money }}</s>{% else %}−{{ p.amount | money }}{% endif %}</td></tr>{% endfor %}
+          <tr class="fd-bill-sum"><th scope="row">Gesamt</th><td class="num">{{ balance.due | money }}</td></tr>
+          {% for p in r.payments %}<tr><th scope="row">{% if p.cancelled_at %}<s>{{ p.method.label }} · storniert</s>{% else %}{{ p.method.label }}{% endif %}<span class="sub">{{ p.paid_on | date }}{% if not p.cancelled_at and not p.received_on %} · auf Rechnung, Eingang offen{% endif %}</span></th><td class="num">{% if p.cancelled_at %}<s>{{ p.amount | money }}</s>{% else %}−{{ p.amount | money }}{% endif %}</td></tr>{% endfor %}
         </tbody>
         <tfoot>
-          <tr><th scope="row">Gesamt</th><td class="num">{{ balance.due | money }}</td></tr>
           <tr><th scope="row">Offen</th><td class="num">{{ balance.open | money }}</td></tr>
         </tfoot>
       </table>
@@ -67,12 +66,22 @@
       </ul>
     </section>
     {% if can_check_out %}
-    <section class="card card-body"><h2>Zahlung erfassen</h2>{% include "payments/_form.html" %}</section>
+    {% if balance.open > 0 %}
+    <section class="card"><div class="card-header"><h2>Zahlung erfassen</h2></div><div class="card-body">{% include "payments/_form.html" %}</div></section>
+    <form class="card card-body fd-confirm" method="post" action="/check-out/{{ r.id }}">
+      <p>Zimmerschlüssel zurücknehmen. Offen sind noch <strong>{{ balance.open | money }}</strong> – bitte erst kassieren.</p>
+      <label class="checkbox"><input type="checkbox" name="offen_geklaert" value="1" required> Offener Betrag ist geklärt</label>
+      <button class="btn danger block" type="submit">Trotz offenem Betrag ({{ balance.open | money }}) auschecken</button>
+      <a class="btn ghost block" href="/abreisen">Abbrechen</a>
+    </form>
+    {% else %}
+    <details class="card fd-pay"><summary>Zahlung erfassen</summary><div class="card-body">{% include "payments/_form.html" %}</div></details>
     <form class="card card-body fd-confirm" method="post" action="/check-out/{{ r.id }}">
       <p>Zimmerschlüssel zurücknehmen, Abrechnung mit dem Gast klären.</p>
       <button class="btn primary block" type="submit">Check-out abschließen</button>
       <a class="btn ghost block" href="/abreisen">Abbrechen</a>
     </form>
+    {% endif %}
     {% else %}
     <a class="btn block" href="/reservierungen/{{ r.id }}">Reservierung ansehen</a>
     {% endif %}

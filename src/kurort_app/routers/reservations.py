@@ -27,7 +27,9 @@ from kurort_app.models import (
     ROOM_OUT_OF_ORDER,
     AuditEvent,
     EmailMessageRow,
+    EmailTemplate,
     Guest,
+    LateArrival,
     Payment,
     Reservation,
     ReservationGuest,
@@ -174,14 +176,18 @@ def reservation_list(
     conditions: list[Any] = []
     if q:
         pattern = _like(q)
+        # Every word must match the guest's first or last name, in any order
+        # ("Herrmann Christa" finds Christa Herrmann).
         guest_match = (
             select(ReservationGuest.reservation_id)
             .join(Guest, Guest.id == ReservationGuest.guest_id)
             .where(
-                or_(
-                    Guest.first_name.ilike(pattern, escape="\\"),
-                    Guest.last_name.ilike(pattern, escape="\\"),
-                    (Guest.first_name + " " + Guest.last_name).ilike(pattern, escape="\\"),
+                *(
+                    or_(
+                        Guest.first_name.ilike(_like(word), escape="\\"),
+                        Guest.last_name.ilike(_like(word), escape="\\"),
+                    )
+                    for word in q.split()
                 )
             )
         )
@@ -236,6 +242,15 @@ def reservation_list(
         query = {k: v for k, v in merged.items() if v not in ("", None)}
         return "/reservierungen" + (f"?{urlencode(query)}" if query else "")
 
+    if q:
+        subtitle = f"Suche nach „{q}“ in allen Aufenthalten"
+    elif not include_past:
+        subtitle = "Aktuelle und kommende Aufenthalte"
+    elif arrival_from or arrival_to:
+        subtitle = "Alle Aufenthalte im gewählten Zeitraum"
+    else:
+        subtitle = "Alle Aufenthalte, auch vergangene"
+    partial = _wants_partial(request)
     context = {
         "rows": rows,
         "q": q,
@@ -252,9 +267,16 @@ def reservation_list(
         "pages": pages,
         "list_url": list_url,
         "today": day,
+        "subtitle": subtitle,
+        "filtered": bool(q or von or bis or status or alle),
+        "partial": partial,
     }
-    template = "reservations/_results.html" if _wants_partial(request) else "reservations/list.html"
-    return templates.TemplateResponse(request, template, context)
+    if not partial:
+        return templates.TemplateResponse(request, "reservations/list.html", context)
+    response = templates.TemplateResponse(request, "reservations/_results.html", context)
+    # The live search sends every form field; keep only the filled ones in the address bar.
+    response.headers["HX-Push-Url"] = list_url()
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +330,11 @@ def _validate_stay(
     elif stay.arrival and (stay.departure - stay.arrival).days > MAX_NIGHTS:
         errors["abreise"] = f"Aufenthalt ist länger als {MAX_NIGHTS} Nächte."
 
+    raw_eta = form.get("eta", "").strip()
+    stay.eta = _parse_time(raw_eta)
+    if raw_eta and stay.eta is None:
+        errors["eta"] = "Ankunftszeit ist ungültig (Format 14:30)."
+
     number = form.get("zimmer", "").strip()
     stay.room = _rooms_by_number(session).get(number) if number else None
     if not number:
@@ -344,10 +371,6 @@ def _validate_stay(
 
     channel = form.get("kanal", "direct")
     stay.channel = channel if channel in CHANNELS else "direct"
-    raw_eta = form.get("eta", "").strip()
-    stay.eta = _parse_time(raw_eta)
-    if raw_eta and stay.eta is None:
-        errors["eta"] = "Ankunftszeit ist ungültig (Format 14:30)."
     package = form.get("paket", "").strip().upper()
     stay.package_code = package if package in KURPAKETE else None
     stay.notes = form.get("notizen", "").strip() or None
@@ -396,7 +419,7 @@ def _validate_guests(
             continue
         birth = _parse_date(raw)
         if not first:
-            errors[prefix + "vorname"] = "Vorname der mitreisenden Person fehlt."
+            errors[prefix + "vorname"] = "Vorname fehlt."
         if raw and birth is None:
             errors[prefix + "geburtsdatum"] = "Geburtsdatum ist ungültig."
         elif birth and birth > day:
@@ -428,6 +451,7 @@ def _room_field_context(
     arrival, departure = _parse_date(raw_arrival), _parse_date(raw_departure)
     all_rooms = session.scalars(select(Room).order_by(Room.number)).all()
     span_ok = bool(arrival and departure and departure > arrival)
+    span_reversed = bool(arrival and departure and departure <= arrival)
     if span_ok:
         free = free_rooms(
             session, arrival, departure, exclude_reservation_id=exclude_reservation_id
@@ -461,6 +485,10 @@ def _room_field_context(
         "free_count": len(free),
         "room_total": len(all_rooms),
         "span_ok": span_ok,
+        "span_reversed": span_reversed,
+        "plan_url": f"/zimmerplan?von={(arrival - timedelta(days=1)).isoformat()}"
+        if span_ok
+        else "/zimmerplan",
         "nights": nights,
         "price": price,
         "nightly_rate": selected_room.nightly_rate if selected_room is not None else None,
@@ -548,9 +576,9 @@ def room_options(
 @router.post("/reservierungen/neu", response_class=HTMLResponse)
 async def reservation_create(request: Request, session: Session = Depends(get_session)) -> Response:
     form = {key: str(value) for key, value in (await request.form()).items()}
-    primary, extras, errors = _validate_guests(form)
+    primary, extras, guest_errors = _validate_guests(form)
     stay = _validate_stay(session, form, party_size=1 + len(extras))
-    errors.update(stay.errors)
+    errors = {**stay.errors, **guest_errors}  # form order: stay first, then guests
     if errors:
         return _form_page(request, session, form, errors, status_code=422)
 
@@ -686,7 +714,17 @@ def reservation_detail(
             .limit(3)
         ).all(),
         "band_labels": BAND_LABELS,
+        "country_names": dict(COUNTRIES),
+        "template_names": dict(
+            session.execute(select(EmailTemplate.key, EmailTemplate.name)).all()
+        ),
         "today": today(),
+        "late_arrival": session.scalar(
+            select(LateArrival).where(
+                LateArrival.reservation_id == reservation.id,
+                LateArrival.status.in_(("vorbereitet", "angereist")),
+            )
+        ),
         "plan_from": (reservation.arrival - timedelta(days=1)).isoformat(),
     }
     context.update(payments.form_context(session, reservation))

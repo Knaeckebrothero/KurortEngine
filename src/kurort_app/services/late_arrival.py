@@ -1,7 +1,7 @@
 """Safe compartments and the human-confirmed late-arrival routine."""
 
 import secrets
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -212,6 +212,53 @@ def transition(session: Session, late: LateArrival, action: str) -> None:
     session.commit()
 
 
+def close_for_checkin(session: Session, r: Reservation) -> str | None:
+    """A regular check-in ends an open late arrival: free the compartment, redact the PIN.
+
+    Returns the freed compartment's label (None without a late arrival). The caller
+    commits together with the check-in itself.
+    """
+    late = session.scalar(
+        select(LateArrival)
+        .where(
+            LateArrival.reservation_id == r.id,
+            LateArrival.status.in_(("vorbereitet", "angereist")),
+        )
+        .with_for_update()
+    )
+    if late is None:
+        return None
+    now = datetime.now(UTC)
+    late.arrived_confirmed_at = late.arrived_confirmed_at or now
+    late.status, late.closed_at = "abgeschlossen", now
+    clear_pin(session, late)
+    record(
+        session,
+        r,
+        "checked_in",
+        "Spätanreise mit regulärem Check-in abgeschlossen",
+        {"compartment": late.compartment.label},
+    )
+    return late.compartment.label
+
+
+def to_prepare(session: Session, day: date) -> list[Reservation]:
+    """The day's reserved stays arriving late (ETA) that have no preparation yet."""
+    prepared = select(LateArrival.reservation_id).where(LateArrival.status != "abgebrochen")
+    return list(
+        session.scalars(
+            select(Reservation)
+            .where(
+                Reservation.arrival == day,
+                Reservation.status == RESERVED,
+                Reservation.eta >= get_settings().late_arrival_from,
+                Reservation.id.not_in(prepared),
+            )
+            .order_by(Reservation.eta, Reservation.id)
+        )
+    )
+
+
 def morning_records(session: Session, day: date) -> list[LateArrival]:
     return list(
         session.scalars(
@@ -245,18 +292,28 @@ def late_flags(session: Session, row: today.TodayRow) -> list[today.Flag]:
 
 
 def morning_notice(session: Session, day: date) -> list[today.Flag]:
-    count = len(morning_records(session, day))
-    if not count:
-        return []
-    return [
-        today.Flag(
-            f"{count} "
-            + ("Spätanreise" if count == 1 else "Spätanreisen")
-            + ": Meldeschein ausstehend",
-            "warning",
-            "/spaetanreisen",
+    records = morning_records(session, day)
+    waiting = [late for late in records if late.status == "vorbereitet"]
+    paper = len(records) - len(waiting)
+    flags = []
+    if waiting:
+        since = (
+            "von gestern"
+            if all(late.reservation.arrival == day - timedelta(days=1) for late in waiting)
+            else "aus früheren Tagen"
         )
-    ]
+        noun = "Spätanreise" if len(waiting) == 1 else "Spätanreisen"
+        flags.append(
+            today.Flag(
+                f"{len(waiting)} {noun} {since}: Ankunft bestätigen", "warning", "/spaetanreisen"
+            )
+        )
+    if paper:
+        noun = "Spätanreise" if paper == 1 else "Spätanreisen"
+        flags.append(
+            today.Flag(f"{paper} {noun}: Meldeschein ausstehend", "warning", "/spaetanreisen")
+        )
+    return flags
 
 
 today.FLAG_PROVIDERS.append(late_flags)

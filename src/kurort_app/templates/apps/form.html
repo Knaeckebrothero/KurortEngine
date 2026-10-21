@@ -23,7 +23,7 @@
       <ul>
         {% for key, message in errors.items() %}
         {% set field = collection.fields|selectattr('key', 'equalto', key)|first %}
-        <li>{% if field is defined %}<a href="#app-{{ key }}">{{ field.label }}: {{ message }}</a>{% else %}{{ message }}{% endif %}</li>
+        <li>{% if field is defined %}<a href="#app-{{ key }}">{{ message if field.label in message else field.label ~ ': ' ~ message }}</a>{% else %}{{ message }}{% endif %}</li>
         {% endfor %}
       </ul>
     </div>

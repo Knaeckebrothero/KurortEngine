@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
-from decimal import ROUND_CEILING, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -179,15 +179,20 @@ async def bestellvorschlag(ctx):
         ordered_raw = raw.get(f"bestellt_{id}", "")
         reason = raw.get(f"grund_{id}", "")
         parsed = {}
-        for key, value in (("bestand", count_raw), ("bestellt", ordered_raw)):
+        for key, value in (
+            ("bestand", count_raw),
+            ("bestellt", ordered_raw),
+            ("vorschlag", raw.get(f"vorschlag_{id}", "")),
+        ):
             try:
                 parsed[key] = values.typed(
                     ctx.definition.collection("positionen").field(key), value.strip()
                 )
-                if parsed[key] is not None and parsed[key] < 0:
+                if parsed[key] is not None and parsed[key] < 0 and key != "vorschlag":
                     errors[f"{key}_{id}"] = "Bitte mindestens 0 eingeben."
             except ValueError as exc:
-                errors[f"{key}_{id}"] = str(exc)
+                if key != "vorschlag":
+                    errors[f"{key}_{id}"] = str(exc)
                 parsed[key] = None
         if reason and reason not in {o.key for o in choices}:
             errors[f"grund_{id}"] = "Bitte einen gültigen Grund wählen."
@@ -210,12 +215,16 @@ async def bestellvorschlag(ctx):
                 "count_raw": count_raw,
                 "ordered_raw": ordered_raw,
                 "ordered": ordered,
+                # A quantity still equal to the suggestion it was shown with follows the
+                # new suggestion on "Vorschlag aktualisieren"; one the user typed stays.
+                "edited": bool(ordered_raw.strip()) and parsed["bestellt"] != parsed["vorschlag"],
                 "reason": reason,
             }
         )
     if posted and action == "berechnen" and not errors:
         for row in rows:
-            row["ordered"] = row["suggestion"].amount or Decimal(0)
+            if not row["edited"]:
+                row["ordered"] = row["suggestion"].amount or Decimal(0)
     if not errors:
         for row in rows:
             row["ordered_raw"] = str(row["ordered"]).replace(".", ",")
@@ -231,6 +240,20 @@ async def bestellvorschlag(ctx):
         row["article"].data["name"]
         for row in rows
         if number(row["article"].data.get("preis")) is None
+    ]
+    labels = {
+        "lieferant": "Lieferant",
+        "lieferung_am": "Lieferung am",
+        "naechste_lieferung": "Nächste Lieferung",
+    }
+    for article in selected:
+        name = article.data["name"]
+        labels[f"bestand_{article.id}"] = f"{name}, Bestand jetzt"
+        labels[f"bestellt_{article.id}"] = f"{name}, Bestellen"
+        labels[f"grund_{article.id}"] = f"{name}, Grund"
+    summary = [
+        (key, f"{labels[key]}: {message}" if key in labels else message)
+        for key, message in errors.items()
     ]
     if posted and action == "speichern" and not errors and supplier:
         actor = ctx.user.username if ctx.user else "rezeption"
@@ -277,12 +300,14 @@ async def bestellvorschlag(ctx):
                     )
                     lines += 1
         ctx.session.commit()
-        notice = f"Bestellung bei {supplier.data['name']} gespeichert – {lines} Positionen, ca. {web.fmt_money(total)}."
+        positions = f"{lines} Position" if lines == 1 else f"{lines} Positionen"
+        notice = f"Bestellung bei {supplier.data['name']} gespeichert – {positions}, ca. {web.fmt_money(total)}."
         return web.redirect_with_notice(f"/apps/inventur/bestellungen/{order.id}", notice)
     response = ctx.render(
         "inventur/bestellvorschlag.html",
         raw=raw,
         errors=errors,
+        summary=summary,
         supplier=supplier,
         suppliers=suppliers,
         rows=rows,
@@ -332,6 +357,12 @@ ARTICLES = (
     ("Tomaten", "kg", 3, "0.5", None, "1", "0.04", "3.20"),
     ("Gurken", "stueck", 3, "2", None, "1", "0.05", "0.79"),
 )
+
+
+def counted(article, amount):
+    """A demo count: whole numbers for units counted in pieces, cents for kg and litres."""
+    whole = article.data["einheit"] in {"stueck", "packung", "kiste", "portion"}
+    return amount.quantize(Decimal(1) if whole else Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def seed_demo(session, anchor):
@@ -433,15 +464,16 @@ def seed_demo(session, anchor):
             )
             for article in (a for a in articles if a.data["lieferant"] == supplier.id):
                 data = article.data
-                stock = (
+                stock = counted(
+                    article,
                     Decimal(rng.randrange(20, 90))
                     / 100
                     * (
                         number(data.get("zielbestand"))
                         or number(data.get("mindestbestand"))
                         or Decimal(10)
-                    )
-                ).quantize(Decimal("0.01"))
+                    ),
+                )
                 store.create(
                     session,
                     app,
@@ -491,7 +523,7 @@ def seed_demo(session, anchor):
             {
                 "artikel": article.id,
                 "gezaehlt_am": at,
-                "menge": (minimum * Decimal("0.8")).quantize(Decimal("0.01")),
+                "menge": counted(article, minimum * Decimal("0.8")),
                 "mitarbeiter": "m.schmidt",
             },
             actor="m.schmidt",

@@ -27,21 +27,7 @@
 </div>
 {% endif %}
 
-<ol class="ci-stepper" aria-label="Check-in-Schritte">
-  {% for s in steps %}
-  <li class="ci-step is-{{ s.status }}{% if s.done %} is-done{% endif %}">
-    <a href="{{ s.href }}"{% if s.status == 'current' %} aria-current="step"{% endif %}>
-      <span class="ci-step-num" aria-hidden="true">{% if s.done and s.status != 'current' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% else %}{{ s.number }}{% endif %}</span>
-      <span class="ci-step-text">
-        <span class="ci-step-label">{{ s.label }}</span>
-        <span class="ci-step-state">
-          {%- if s.done %}erledigt{% elif s.key == 'abschluss' %}bestätigen{% else %}{{ s.open_count }} offen{% endif -%}
-        </span>
-      </span>
-    </a>
-  </li>
-  {% endfor %}
-</ol>
+{% include "checkin/_stepper.html" %}
 
 <div class="ci-layout">
   <div class="ci-main">
@@ -66,21 +52,7 @@
         <dt>Kurtaxe</dt>
         <dd class="num">{% if r.kurtaxe %}{{ r.kurtaxe.amount | money }}{% else %}<span class="muted">wird automatisch berechnet</span>{% endif %}</dd>
       </dl>
-      <div class="ci-party">
-        <span class="eyebrow">Gäste</span>
-        <ul>
-          {% for rg in r.guests %}
-          <li>
-            <span class="guest-name">{{ rg.guest.full_name }}</span>
-            <span class="badges">
-              {% if rg.is_primary %}<span class="badge plain">Hauptgast</span>{% endif %}
-              {{ ui.meldeschein(rg.meldeschein_status) }}
-
-            </span>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
+      {% include "checkin/_party.html" %}
       {% if r.notes %}
       <div class="notice ci-note"><p><strong>Notiz:</strong> {{ r.notes }}</p></div>
       {% endif %}

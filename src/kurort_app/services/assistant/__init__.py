@@ -16,6 +16,8 @@ __all__ = ["plan_for", "search", "suggestions"]
 
 # Answered from the rules because Claude was configured but did not deliver.
 RULES_FALLBACK = "rules-fallback"
+# A bare name, code or room number: searched directly, Claude is not asked.
+PLAIN_SEARCH = "plain-search"
 
 
 def plan_for(session: Session, text: str, *, day: date | None = None) -> dict[str, Any]:
@@ -23,6 +25,10 @@ def plan_for(session: Session, text: str, *, day: date | None = None) -> dict[st
     day = day or business_today()
     if get_settings().assistant_engine != "claude" or not text.strip():
         return planner.plan_for(session, text, day=day)
+    if planner.is_plain_search(session, text, day=day):
+        result = planner.plan_for(session, text, day=day)
+        result["engine"] = PLAIN_SEARCH
+        return result
     from kurort_app.services.assistant import claude  # loads the Anthropic SDK only when used
 
     result = claude.plan(session, text, day=day)

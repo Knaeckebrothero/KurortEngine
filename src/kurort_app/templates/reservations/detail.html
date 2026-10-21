@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% import "_macros.html" as ui %}
 {% set lead = r.primary_guest %}
+{% set closed = r.status in ('cancelled', 'no_show') %}
 {% block title %}{{ lead.full_name if lead else r.code }} · {{ r.code }}{% endblock %}
 {% block content %}
 <nav class="breadcrumb" aria-label="Pfad"><a href="/reservierungen">Reservierungen</a> › <span class="mono">{{ r.code }}</span></nav>
@@ -21,11 +22,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         Bearbeiten
       </a>
-      {% if r.arrival == today %}<a class="btn" href="/spaetanreise/{{ r.id }}">Spätanreise vorbereiten</a>{% endif %}
+      {% if late_arrival %}<a class="btn" href="/spaetanreise/{{ r.id }}">Spätanreise vorbereitet · {{ late_arrival.compartment.label }}</a>{% elif r.arrival == today %}<a class="btn" href="/spaetanreise/{{ r.id }}">Spätanreise vorbereiten</a>{% endif %}
+      {% if r.arrival <= today %}
       <a class="btn primary" href="/check-in/{{ r.id }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
         Check-in starten
       </a>
+      {% endif %}
     {% elif r.status == 'checked_in' %}
       <a class="btn primary" href="/check-out/{{ r.id }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -96,7 +99,7 @@
               <span class="sub">{% if rg.is_primary %}Hauptgast{% else %}Mitreisend{% endif %}{% if row.age is not none %} · {{ row.age }} Jahre{% endif %}</span>
             </div>
             <div class="badges guest-item-badges">
-              {{ ui.meldeschein(rg.meldeschein_status) }}
+              {% if not closed %}{{ ui.meldeschein(rg.meldeschein_status) }}{% endif %}
               {% if rg.meldeschein_status == 'gedruckt' %}<form method="post" action="/meldeschein/{{ rg.id }}/unterschrieben"><input type="hidden" name="zurueck" value="/reservierungen/{{ r.id }}#gaeste"><button class="btn ghost sm" type="submit">Unterschrift erfassen</button></form>{% endif %}
             </div>
           </div>
@@ -104,10 +107,10 @@
             <dt>Geburtsdatum</dt>
             <dd class="num">{% if g.birth_date %}{{ g.birth_date | date }}{% else %}<span class="badge danger">Fehlt</span>{% endif %}</dd>
             <dt>Staatsangeh.</dt>
-            <dd>{{ g.nationality }}</dd>
+            <dd>{{ country_names.get(g.nationality, g.nationality) }}</dd>
             <dt>Anschrift</dt>
-            <dd>{% if g.address_line %}{{ g.address_line }}{% if g.country and g.country != 'DE' %}, {{ g.country }}{% endif %}{% else %}<span class="muted">–</span>{% endif %}</dd>
-            {% if g.email or g.phone %}<dt>Kontakt</dt><dd>{% if g.email %}<a href="mailto:{{ g.email }}">{{ g.email }}</a>{% endif %}{% if g.email and g.phone %} · {% endif %}{% if g.phone %}<span class="num">{{ g.phone }}</span>{% endif %}</dd>{% endif %}
+            <dd>{% if g.address_line %}{{ g.address_line }}{% if g.country and g.country != 'DE' %}, {{ country_names.get(g.country, g.country) }}{% endif %}{% else %}<span class="muted">–</span>{% endif %}</dd>
+            {% if g.email or g.phone %}<dt>Kontakt</dt><dd>{% if g.email %}<a class="guest-email" href="mailto:{{ g.email }}">{% if '@' in g.email %}{% set mailbox, domain = g.email.split('@', 1) %}{{ mailbox }}@<wbr>{{ domain }}{% else %}{{ g.email }}{% endif %}</a>{% endif %}{% if g.phone %}<span class="num guest-phone">{{ g.phone }}</span>{% endif %}</dd>{% endif %}
             {% if g.disability_pct %}<dt>Behinderung</dt><dd>GdB {{ g.disability_pct }}</dd>{% endif %}
             <dt>Kurtaxe</dt>
             <dd>
@@ -123,6 +126,7 @@
       </ul>
     </section>
 
+    {% if r.kurtaxe or not closed %}
     <section class="card" aria-labelledby="tax-h">
       <div class="card-header"><h2 id="tax-h">Kurtaxe</h2>
         {% if r.kurtaxe %}<div class="card-actions"><span class="res-tax-total num">{{ r.kurtaxe.amount | money }}</span></div>{% endif %}
@@ -149,6 +153,7 @@
       <div class="card-body muted">Die Kurtaxe wird beim Check-in nach der Kurbeitragssatzung berechnet.</div>
       {% endif %}
     </section>
+    {% endif %}
   </div>
 
   <aside class="stack">
@@ -157,8 +162,8 @@
     <section class="card" aria-labelledby="mail-h">
       <div class="card-header"><h2 id="mail-h">E-Mails</h2></div>
       <div class="card-body stack">
-        {% if lead and lead.email %}<a class="btn" href="/reservierungen/{{ r.id }}/e-mail">E-Mail senden</a>{% else %}<p class="muted">Keine E-Mail-Adresse hinterlegt</p>{% endif %}
-        {% for message in email_messages %}<div><span class="sub">{{ message.created_at | date }} · {{ message.template_key or 'Eigene Nachricht' }}</span><span>{{ message.status | email_status_label }}</span></div>{% endfor %}
+        {% if closed %}{% if not email_messages %}<p class="muted">Keine E-Mails versendet</p>{% endif %}{% elif lead and lead.email %}<a class="btn" href="/reservierungen/{{ r.id }}/e-mail">E-Mail senden</a>{% else %}<p class="muted">Keine E-Mail-Adresse hinterlegt</p>{% endif %}
+        {% for message in email_messages %}<div><span class="sub">{{ message.created_at | date }} · {{ template_names.get(message.template_key, message.template_key) if message.template_key else 'Eigene Nachricht' }}</span><span>{{ message.status | email_status_label }}</span></div>{% endfor %}
         <details><summary>Weitere E-Mails</summary><a class="btn ghost" href="/e-mails?reservation_id={{ r.id }}">Alle E-Mails</a></details>
       </div>
     </section>
@@ -176,7 +181,7 @@
           <span class="timeline-dot" aria-hidden="true"></span>
           <div>
             <p>{{ e.summary }}</p>
-            <span class="sub num">{{ e.at | date }} · {{ e.at | time }} · {{ e.actor }}</span>
+            <span class="sub num">{{ e.at | date }} · {{ e.at | time }} · {{ e.actor | staff_name }}</span>
           </div>
         </li>
         {% endfor %}

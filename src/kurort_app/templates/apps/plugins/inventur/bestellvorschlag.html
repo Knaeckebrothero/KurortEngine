@@ -20,8 +20,9 @@
   .inv-filters { grid-template-columns: minmax(0, 1fr); }
   .inv-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); background: var(--surface); }
   .inv-list { border: 0; background: transparent; box-shadow: none; }
-  .inv-sticky { position: sticky; bottom: 0; z-index: 2; padding: var(--space-3); }
-  .inv-sticky .app-actions { gap: var(--space-2); }
+  .inv-sticky { position: sticky; bottom: 0; z-index: 2; padding: var(--space-3); gap: var(--space-2); }
+  .inv-sticky .app-actions { gap: var(--space-2); flex-direction: row; }
+  .inv-sticky .app-actions > .btn { width: auto; min-width: 0; flex: 1 1 0; padding-inline: var(--space-2); white-space: normal; }
 }
 </style>
 {% endblock %}
@@ -30,7 +31,7 @@
 <div class="app-page inv-page stack">
   <nav class="breadcrumb" aria-label="Pfad"><a href="/apps/inventur">{{ app.title }}</a><span aria-hidden="true"> › </span>Bestellvorschlag</nav>
   <header class="page-header"><div><p class="eyebrow">Inventur &amp; Bestellung</p><h1>Bestellvorschlag</h1><p>Bestände prüfen. Vorschlag anpassen. Bestellung festhalten.</p></div></header>
-  {% if errors %}<div class="notice danger app-panel" role="alert"><h2>Bitte die markierten Angaben prüfen.</h2><p>Es wurde nichts gespeichert.</p><ul>{% for key, message in errors.items() %}<li><a href="#{{ key }}">{{ message }}</a></li>{% endfor %}</ul></div>{% endif %}
+  {% if errors %}<div class="notice danger app-panel app-error-summary" role="alert"><div><h2>Bitte die markierten Angaben prüfen.</h2><p>Es wurde nichts gespeichert.</p><ul>{% for key, message in summary %}<li><a href="#{{ key }}">{{ message }}</a></li>{% endfor %}</ul></div></div>{% endif %}
   <form method="get" class="card app-panel inv-filters">
     <div class="field"><label for="lieferant">Lieferant</label><select class="select" id="lieferant" name="lieferant" {% if errors.get('lieferant') %}aria-invalid="true" aria-describedby="error-lieferant"{% endif %}>
       {% if not supplier %}<option value="{{ raw.get('lieferant', '') }}">Bitte auswählen</option>{% endif %}
@@ -53,6 +54,7 @@
         <div><p class="app-meta">Zuletzt gezählt</p>{% if row.latest %}<p>{{ decimal(row.latest.data.menge) }} {{ display('einheit', article.data.einheit) }}<br><span class="app-meta">{{ row.latest_at|date }} · {{ row.latest_at|time }}</span></p>{% else %}<p>Bestand unbekannt</p>{% endif %}</div>
         <div class="inv-entry">
           <div class="field"><label for="bestand_{{ id }}">Bestand jetzt<span class="sr-only">: {{ article.data.name }}</span></label><input class="input" id="bestand_{{ id }}" name="bestand_{{ id }}" inputmode="decimal" value="{{ row.count_raw }}" placeholder="{{ decimal(row.latest.data.menge) if row.latest else '0' }}" {% if errors.get('bestand_' ~ id) %}aria-invalid="true" aria-describedby="error-bestand_{{ id }}"{% endif %}>{{ error('bestand_' ~ id) }}</div>
+          <input type="hidden" name="vorschlag_{{ id }}" value="{{ decimal(row.suggestion.amount or 0) }}">
           <div class="field"><label for="bestellt_{{ id }}">Bestellen<span class="sr-only">: {{ article.data.name }}</span></label><input class="input" id="bestellt_{{ id }}" name="bestellt_{{ id }}" inputmode="decimal" value="{{ row.ordered_raw }}" {% if errors.get('bestellt_' ~ id) %}aria-invalid="true" aria-describedby="error-bestellt_{{ id }}"{% endif %}>{{ error('bestellt_' ~ id) }}</div>
         </div>
         <div><p class="app-meta">Vorschlag</p><strong class="num">{{ decimal(row.suggestion.amount) }} {{ display('einheit', article.data.einheit) if row.suggestion.amount is not none else '' }}</strong>{% for flag in row.suggestion.flags %}<p><span class="badge warning">{{ flag }}</span></p>{% endfor %}</div>
@@ -60,15 +62,15 @@
       </article>
     {% else %}<p class="app-panel">Keine aktiven Artikel für diesen Lieferanten. Artikel können Sie in den Stammdaten ergänzen.</p>{% endfor %}
     </div>
+    {% if missing_prices %}<p class="app-meta">{{ missing_prices|length }} Artikel ohne Preis: {{ missing_prices|join(', ') }}</p>{% endif %}
+    <p class="app-meta">Summe: Nettowerte, berechnet mit aktuellen Artikelpreisen. Die Bestellung wird nicht an den Lieferanten gesendet.</p>
     <div class="inv-sticky stack">
       <strong class="num" id="inv-total" aria-live="polite">Summe ca. {{ total|money }}</strong>
-      {% if missing_prices %}<p class="app-meta">{{ missing_prices|length }} Artikel ohne Preis: {{ missing_prices|join(', ') }}</p>{% endif %}
-      <p class="app-meta">Nettowerte · Berechnet mit aktuellen Artikelpreisen. Nicht an den Lieferanten gesendet.</p>
       <div class="app-actions"><button class="btn" type="submit" name="aktion" value="berechnen">Vorschlag aktualisieren</button>{% if ctx.can_edit('bestellungen') and supplier and rows %}<button class="btn primary" type="submit" name="aktion" value="speichern">Bestellung speichern</button>{% endif %}</div>
     </div>
   </form>
   <section class="card app-panel" aria-labelledby="history-title"><h2 id="history-title">Letzte Bestellungen{% if supplier %} · {{ supplier.data.name }}{% endif %}</h2><p class="app-meta">Werte mit aktuellen Artikelpreisen.</p><ul class="inv-history">
-    {% for entry in history %}<li><a href="/apps/inventur/bestellungen/{{ entry.order.id }}">{{ entry.date|date }}</a><p>Vorgeschlagen {{ entry.vorschlag|money }} · Bestellt {{ entry.bestellt|money }}</p><p class="app-meta">{{ entry.differences }} Positionen mit Abweichung</p></li>{% else %}<li>Noch keine Bestellungen vorhanden.</li>{% endfor %}
+    {% for entry in history %}<li><a href="/apps/inventur/bestellungen/{{ entry.order.id }}">{{ entry.date|date }}</a><p>Vorgeschlagen {{ entry.vorschlag|money }} · Bestellt {{ entry.bestellt|money }}</p><p class="app-meta">{{ entry.differences }} {{ 'Position' if entry.differences == 1 else 'Positionen' }} mit Abweichung</p></li>{% else %}<li>Noch keine Bestellungen vorhanden.</li>{% endfor %}
   </ul></section>
 </div>
 <script>

@@ -1,1 +1,1 @@
-<strong class="mail-pin">PIN {{ pin }}</strong>
+<div class="notice info"><div><strong class="mail-pin">PIN {{ pin }}</strong><p>{% if late.compartment.fixed_pin %}Fester Code von {{ late.compartment.label }}{% else %}PIN für {{ late.compartment.label }} – am Safe einstellen{% endif %}</p></div></div>

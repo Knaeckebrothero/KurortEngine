@@ -18,7 +18,7 @@ from sqlalchemy import select
 from kurort_app.auth import AuthConfigError
 from kurort_app.config import Settings
 from kurort_app.main import create_app
-from kurort_app.models import CHECKED_IN, RESERVED, AuditEvent, Reservation
+from kurort_app.models import RESERVED, AuditEvent, Reservation, Room
 from tests.app.auth_helpers import END_SESSION, ISSUER, login, oidc_settings
 from tests.app.conftest import BUSINESS_DATE
 
@@ -181,17 +181,14 @@ def test_audit_records_the_logged_in_user_async_endpoint(oidc_client, seeded):
 
 
 def test_audit_records_the_logged_in_user_sync_endpoint(oidc_client, seeded):
-    departing = seeded.scalar(
-        select(Reservation)
-        .where(Reservation.status == CHECKED_IN, Reservation.departure == BUSINESS_DATE)
-        .order_by(Reservation.id)
-    )
+    # The room status change is a plain ``def`` endpoint (runs in the threadpool);
+    # check-out became async when it started reading the form.
+    room = seeded.scalar(select(Room).order_by(Room.id))
+    status = "inspected" if room.housekeeping_status != "inspected" else "clean"
     login(oidc_client)
-    oidc_client.post(f"/check-out/{departing.id}", follow_redirects=False)
+    oidc_client.post(f"/zimmerstatus/{room.id}/{status}", follow_redirects=False)
     event = seeded.scalars(
-        select(AuditEvent).where(
-            AuditEvent.entity == "reservation", AuditEvent.entity_id == str(departing.id)
-        )
+        select(AuditEvent).where(AuditEvent.entity == "room", AuditEvent.entity_id == str(room.id))
     ).one()
     assert event.actor == "m.schmidt"
 

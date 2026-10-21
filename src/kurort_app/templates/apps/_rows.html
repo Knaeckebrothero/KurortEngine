@@ -5,7 +5,7 @@
     <a class="app-record-title" href="/apps/{{ app.slug }}/{{ collection.key }}/{{ row.id }}">{{ row_title(row) }}</a>
   </div>
   <dl class="app-row-values">
-    {% for key in collection.list_fields[:4] %}
+    {% for key in (collection.list_fields|reject('equalto', collection.title_field)|list)[:4] %}
     <div><dt>{{ collection.field(key).label }}</dt><dd>{{ show_value(row, key) }}</dd></div>
     {% endfor %}
   </dl>

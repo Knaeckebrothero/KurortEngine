@@ -1,6 +1,6 @@
 <article class="seminar-entry">
   <div class="seminar-entry-date num">{{ b.start_date | date }}{% if b.end_date != b.start_date %} – {{ b.end_date | date }}{% endif %}<span class="sub">{{ b.slot | slot_label }}{% if show_rooms %} · {{ b.space.name }}{% endif %}</span></div>
   <div><a class="seminar-name" href="/seminarraum/{{ b.id }}">{{ b.display_name }}</a><span class="sub">{{ b.attendees }} Personen{% if catering_text(b) %} · {{ catering_text(b) }}{% endif %}</span></div>
-  <span class="badge {{ 'success' if b.status == 'bestaetigt' else 'warning' if b.status == 'angefragt' else 'plain' }}">{{ b.status | space_status_label }}</span>
+  <span class="badge {{ {'angefragt': 'warning', 'bestaetigt': 'info', 'storniert': 'danger'}.get(b.status, 'plain') }}">{{ b.status | space_status_label }}</span>
   <strong class="num">{{ b.price | money }}</strong>
 </article>

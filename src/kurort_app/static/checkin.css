@@ -48,6 +48,7 @@
 
 /* Context card */
 .ci-context { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+.ci-context > .badge, .ci-avs-guest .badge { align-self: flex-start; }
 .ci-room { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
 .ci-room-num {
   font-size: 30px; line-height: 1; font-weight: 750; letter-spacing: -0.02em;
@@ -126,6 +127,7 @@
 .is-ok .ci-check::after { content: ""; width: 10px; height: 6px; border: solid var(--on-primary); border-width: 0 0 2.5px 2.5px; transform: translateY(-1px) rotate(-45deg); }
 .is-open .ci-check { border: 2px solid var(--status-warning-fg); background: var(--status-warning-bg); }
 .ci-bill {
+  margin-top: var(--space-5);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-control); overflow: hidden; font-size: 15px;
 }
 .ci-bill > div { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); }
@@ -157,6 +159,7 @@
 .ci-copy-values dt { color: var(--text-secondary); font-size: 13px; }
 .ci-copy-values dd { margin: 0; display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; overflow-wrap: anywhere; }
 .ci-signature { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; }
+#avs-all:empty { display: none; }
 @media (min-width: 961px) {
   .ci-reservation::details-content { content-visibility: visible; }
   .ci-reservation:not([open]) > :not(summary) { display: flex; }

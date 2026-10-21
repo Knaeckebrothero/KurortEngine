@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
@@ -94,6 +95,48 @@ def test_missing_birth_date_starts_on_guest_step_and_save_fixes_it(client, db):
     assert _reload(db, res).guests[0].guest.birth_date.isoformat() == "1958-05-17"
 
 
+def test_invalid_or_emptied_fields_save_nothing(client, db):
+    res = make_stay(db, [{"first": "Ada"}, {"first": "Bert"}])
+    ada, bert = res.guests
+    form = {
+        **_guest_form(ada, first_name="", city="Mainz"),
+        **_guest_form(bert, street="Am Markt 1"),
+    }
+    page = client.post(f"/check-in/{res.id}/gaeste", data=form)
+    assert page.status_code == 200
+    assert "Nicht gespeichert – 1 Angabe prüfen." in page.text
+    assert "Ada Weber: Vorname fehlt." in page.text  # two guests: lines name the guest
+    # What was typed stays in the form, but nothing reached the database.
+    assert 'value="Mainz"' in page.text and 'value="Am Markt 1"' in page.text
+    res = _reload(db, res)
+    assert [rg.guest.first_name for rg in res.guests] == ["Ada", "Bert"]
+    assert res.guests[0].guest.city == "Gelnhausen"
+    assert res.guests[1].guest.street == "Lindenallee 4"
+    assert not db.scalars(select(AuditEvent).where(AuditEvent.action == "guest.updated")).all()
+
+    single = make_stay(db, [{"first": "Cora"}], code="R-TEST-0009")
+    rg = single.guests[0]
+    page = client.post(
+        f"/check-in/{single.id}/gaeste",
+        data=_guest_form(rg, disability_pct="5", city="Mainz"),
+    ).text
+    assert "Nicht gespeichert – 1 Angabe prüfen." in page
+    assert f'<li><a href="#g{rg.id}_disability_pct">GdB als Zahl' in page  # no name prefix
+    assert _reload(db, single).guests[0].guest.city == "Gelnhausen"
+
+
+def test_incomplete_data_is_saved_and_says_what_is_missing(client, db):
+    res = make_stay(db, [{"first": "Christa", "last": "Herrmann", "birth": None}])
+    rg = res.guests[0]
+    page = client.get(f"/check-in/{res.id}/gaeste").text
+    assert "1 Angabe fehlt für den Meldeschein." in page
+    response = client.post(f"/check-in/{res.id}/gaeste", data=_guest_form(rg, city="Mainz"))
+    assert response.status_code == 200
+    assert "Gespeichert. Für den Meldeschein fehlen noch:" in response.text
+    assert f'<li><a href="#g{rg.id}_birth_date">Geburtsdatum</a></li>' in response.text
+    assert _reload(db, res).guests[0].guest.city == "Mainz"
+
+
 def test_changing_data_after_printing_resets_the_meldeschein(client, db):
     res = make_stay(db, [{"first": "Ada"}])
     rg = res.guests[0]
@@ -118,7 +161,14 @@ def test_htmx_printing_returns_only_the_guest_card_and_can_be_undone(client, db)
     )
     assert response.status_code == 200 and "<html" not in response.text
     assert f'id="avs-guest-{rg.id}"' in response.text
-    assert "Gedruckt" in response.text and "rezeption" in response.text
+    assert "Gedruckt" in response.text and "· Rezeption</span>" in response.text
+    # The stepper and the sidebar follow out of band instead of staying stale.
+    assert 'id="ci-stepper" aria-label="Check-in-Schritte" hx-swap-oob="true"' in response.text
+    stepper = response.text.split('id="ci-stepper"', 1)[1].split("</ol>", 1)[0]
+    assert "erledigt" in stepper and "1 offen" not in stepper
+    assert 'id="ci-party" hx-swap-oob="true"' in response.text
+    assert "Meldeschein offen" not in response.text
+    assert 'id="avs-all" hx-swap-oob="true"></div>' in response.text
     rg = _reload(db, res).guests[0]
     assert rg.meldeschein_status == "gedruckt" and rg.meldeschein_printed_at
     assert (
@@ -172,6 +222,8 @@ def test_kurtaxe_exemption_needs_evidence(client, db):
     assert "Nachweis fehlt" in preview.text and "<html" not in preview.text
     page = client.get(f"/check-in/{res.id}/abschluss").text
     assert 'id="kurtaxe" open' in page and "Befreiungsnachweis fehlt" in page
+    assert '<strong>Kurtaxe</strong><span class="sub">Nachweis fehlt</span>' in page
+    assert "normaler Satz" not in page
     blocked = client.post(f"/check-in/{res.id}/abschluss", follow_redirects=False)
     assert "noch nicht möglich" in _notice(blocked)
     assert _reload(db, res).status == RESERVED
@@ -209,7 +261,11 @@ def test_completion_is_refused_while_items_are_open(client, db):
     assert "noch nicht möglich" in _notice(response)
     assert _reload(db, res).status == RESERVED
     page = client.get(f"/check-in/{res.id}/abschluss").text
-    assert "Noch 1 Punkt offen." in page and "1 Person ·" in page
+    assert "Noch 1 Punkt offen" in page and "1 Person ·" in page
+    # The checklist names the open item; no second list repeats it.
+    assert '<strong>AVS gedruckt</strong><span class="sub">0 von 1</span>' in page
+    assert "in AVS noch nicht gedruckt" not in page
+    assert re.search(r'<button class="btn primary ci-complete" type="submit" disabled>', page)
 
 
 def test_avs_values_order_and_incomplete_guest(client, db):
@@ -324,8 +380,6 @@ def test_seeded_arrivals_surface_their_blockers(client, seeded):
 
 def test_three_step_entry_and_stepper(client, db):
     """AC-1: complete data goes directly to AVS, with exactly three steps."""
-    import re
-
     from kurort_app.services import engine
 
     assert engine.STEP_KEYS == ("gaeste", "avs", "abschluss")

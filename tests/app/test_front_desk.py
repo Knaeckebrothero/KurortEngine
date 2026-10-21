@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
+from urllib.parse import unquote_plus
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
@@ -15,9 +16,12 @@ from kurort_app.models import (
     NO_SHOW,
     RESERVED,
     AuditEvent,
+    Payment,
+    PaymentMethod,
     Reservation,
     ReservationGuest,
 )
+from kurort_app.services import payments
 from kurort_app.web import fmt_money
 from tests.app.conftest import BUSINESS_DATE
 
@@ -97,12 +101,17 @@ def test_dashboard_today_combines_filters_and_finished_rows(client, seeded):
     )
     for row in arrivals + departures:
         assert f'data-reservation-id="{row.id}"' in html
-    assert f'Anreisen <span class="num">{len(arrivals)}</span>' in html
-    assert f'Abreisen <span class="num">{len(departures)}</span>' in html
+    assert f'Anreisen <span class="count">{len(arrivals)}</span>' in html
+    assert f'Abreisen <span class="count">{len(departures)}</span>' in html
     for kind, rows in (("anreisen", arrivals), ("abreisen", departures)):
         page = client.get(f"/?zeigen={kind}").text
         found = re.findall(r'data-reservation-id="(\d+)"', page)
         assert set(map(int, found)) == {r.id for r in rows}
+        # A link without JavaScript; with htmx it swaps only the Heute card.
+        chip = re.search(rf'<a class="chip" href="/\?zeigen={kind}"[^>]*>', html).group(0)
+        assert 'hx-select="#heute"' in chip and 'hx-target="#heute"' in chip
+        assert 'hx-push-url="true"' in chip
+    assert 'id="heute"' in html
     for row in arrivals:
         if row.status == RESERVED:
             assert f'href="/check-in/{row.id}"' in html
@@ -171,7 +180,26 @@ def test_arrivals_for_another_day(client, seeded):
     for r in rows:
         assert f'data-code="{r.code}"' in html
     # Future arrivals cannot be checked in yet.
-    assert "Check-in starten" not in html
+    assert 'href="/check-in/' not in html
+
+
+def test_lists_use_the_same_action_labels_and_styles(client, seeded):
+    pages = [client.get(path).text for path in ("/", "/anreisen", "/abreisen", "/im-haus")]
+    assert all("Check-in starten" not in page for page in pages)
+    for page in pages:
+        for label in ("Check-in", "Check-out"):
+            for cls in re.findall(
+                rf'<a class="([^"]*)" href="/check-[a-z]+/\d+">{label}</a>', page
+            ):
+                assert cls == "btn sm primary", (label, cls)
+    assert re.search(r'<a class="btn sm primary" href="/check-in/\d+">Check-in</a>', pages[1])
+
+
+def test_dashboard_notices_are_warning_notices(client, seeded):
+    html = client.get("/").text
+    notices = re.findall(r'<div class="notice warning fd-notice"><p><a href="([^"]+)">', html)
+    assert "/zahlungen/offen" in notices
+    assert "Wochenende" in html  # the darker bars are explained in the legend
 
 
 def test_departures_lists_open_and_finished_checkouts(client, seeded):
@@ -186,13 +214,33 @@ def test_departures_lists_open_and_finished_checkouts(client, seeded):
         assert f'data-code="{r.code}"' in html
         if r.status == CHECKED_IN:
             assert f'href="/check-out/{r.id}"' in html
+    assert "inkl." not in html
+    for r in rows:
+        row = re.search(rf'data-code="{r.code}".*?</tr>', html, re.S).group(0)
+        b = payments.balance(r)
+        # The Saldo column carries the open amount; the status column does not repeat it.
+        assert f"Offen {fmt_money(b.open)}" not in row
+        if b.open > 0 and b.kurtaxe:
+            assert f"davon Kurtaxe {fmt_money(b.kurtaxe)}" in row
+        elif b.open <= 0:
+            assert "davon Kurtaxe" not in row
 
 
 def test_in_house_lists_every_checked_in_stay_and_sorts(client, seeded):
     rows = _reservations(seeded, Reservation.status == CHECKED_IN)
     html = client.get("/im-haus").text
+    assert '<th scope="col">Saldo</th>' in html
     for r in rows:
         assert f'data-code="{r.code}"' in html
+        row = re.search(rf'data-code="{r.code}".*?</tr>', html, re.S).group(0)
+        cells = re.findall(r"<td[^>]*>.*?</td>", row, re.S)
+        saldo, meldeschein = cells[-2], cells[-3]
+        assert "Offen " not in meldeschein and "Bezahlt" not in meldeschein
+        assert "Offen " in saldo or "Bezahlt" in saldo or "Guthaben" in saldo
+        # Each guest's status says what is unsigned; no second "Unterschrift fehlt".
+        assert row.count("Unterschrift fehlt") == sum(
+            rg.meldeschein_status == "gedruckt" for rg in r.guests
+        )
     by_departure = client.get("/im-haus?sort=abreise").text
     codes = re.findall(r'<tr data-code="([^"]+)"', by_departure)
     expected = [r.code for r in sorted(rows, key=lambda r: (r.departure, int(r.room.number)))]
@@ -230,11 +278,67 @@ def test_checkout_summary_flags_missing_kurtaxe(client, seeded):
     assert "Kurtaxe noch nicht berechnet" in html
 
 
+def test_checkout_bill_lists_payments_after_the_total(client, seeded):
+    r = next(r for r in _reservations(seeded, Reservation.status == CHECKED_IN) if r.payments)
+    html = client.get(f"/check-out/{r.id}").text
+    bill = html[html.index('class="table fd-bill"') :]
+    order = [bill.index(">Logis<"), bill.index(">Kurtaxe<"), bill.index(">Gesamt<")]
+    order += [bill.index(r.payments[0].method.label), bill.index(">Offen<")]
+    assert order == sorted(order)
+
+
+def test_checkout_with_money_open_needs_a_confirmation(client, seeded):
+    r = next(
+        r
+        for r in _reservations(seeded, Reservation.status == CHECKED_IN)
+        if payments.balance(r).open > 0
+    )
+    b = payments.balance(r)
+    html = client.get(f"/check-out/{r.id}").text
+    assert f"Trotz offenem Betrag ({fmt_money(b.open)}) auschecken" in html
+    assert 'name="offen_geklaert"' in html and "Offener Betrag ist geklärt" in html
+    assert "Check-out abschließen" not in html and "confirm(" not in html
+    response = client.post(f"/check-out/{r.id}", follow_redirects=False)
+    assert response.headers["location"].startswith(f"/check-out/{r.id}?notice=")
+    assert "notice_kind=danger" in response.headers["location"]
+    seeded.expire_all()
+    assert seeded.get(Reservation, r.id).status == CHECKED_IN
+
+
+def test_checkout_without_money_open_is_one_step(client, seeded):
+    r = _departing(seeded)
+    b = payments.balance(r)
+    payments.ensure_payment_methods(seeded)
+    method = seeded.scalars(select(PaymentMethod).where(PaymentMethod.code == "bar")).one()
+    seeded.add(
+        Payment(
+            reservation_id=r.id,
+            method_id=method.id,
+            amount=b.open,
+            paid_on=BUSINESS_DATE,
+            received_on=BUSINESS_DATE,
+            recorded_by="rezeption",
+        )
+    )
+    seeded.commit()
+    html = client.get(f"/check-out/{r.id}").text
+    assert "Check-out abschließen" in html and "Trotz offenem Betrag" not in html
+    assert '<details class="card fd-pay"><summary>Zahlung erfassen</summary>' in html
+    response = client.post(f"/check-out/{r.id}", follow_redirects=False)
+    assert response.headers["location"].startswith("/abreisen?notice=")
+    seeded.expire_all()
+    assert seeded.get(Reservation, r.id).status == CHECKED_OUT
+
+
 def test_checkout_happy_path_records_audit(client, seeded):
     r = _departing(seeded)
-    response = client.post(f"/check-out/{r.id}", follow_redirects=False)
+    response = client.post(
+        f"/check-out/{r.id}", data={"offen_geklaert": "1"}, follow_redirects=False
+    )
     assert response.status_code == 303
     assert response.headers["location"].startswith("/abreisen?notice=")
+    room = r.room.number
+    assert f"Zimmer {room} zur Reinigung freigegeben" in unquote_plus(response.headers["location"])
 
     seeded.expire_all()
     stored = seeded.get(Reservation, r.id)

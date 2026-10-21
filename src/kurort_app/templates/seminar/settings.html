@@ -9,7 +9,7 @@
 {% set failed = editing == id %}
 <form class="card seminar-space" method="post" action="/verwaltung/seminarraum/{{ space.id if space else 'neu' }}" novalidate>
 <div class="card-header"><h2>{{ space.name if space else 'Raum hinzufügen' }}</h2></div><div class="card-body stack"><div class="seminar-form-grid">
-{% for key, label, value, type in [('name', 'Name', space.name if space else '', 'text'), ('kapazitaet', 'Kapazität (Personen)', space.capacity if space else '', 'number'), ('halbtag', 'Halbtag netto (€)', space.price_half_day if space else '', 'text'), ('ganztag', 'Ganztag netto (€)', space.price_full_day if space else '', 'text')] %}
+{% for key, label, value, type in [('name', 'Name', space.name if space else '', 'text'), ('kapazitaet', 'Kapazität (Personen)', space.capacity if space else '', 'number'), ('halbtag', 'Halbtag netto (€)', ('%.2f'|format(space.price_half_day))|replace('.', ',') if space else '', 'text'), ('ganztag', 'Ganztag netto (€)', ('%.2f'|format(space.price_full_day))|replace('.', ',') if space else '', 'text')] %}
 <div class="field"><label for="s{{ id }}-{{ key }}">{{ label }}</label><input class="input" id="s{{ id }}-{{ key }}" name="{{ key }}" type="{{ type }}" value="{{ form.get(key, '') if failed else value }}"{% if failed and errors.get(key) %} aria-invalid="true" aria-describedby="s{{ id }}-{{ key }}-error"{% endif %}>{% if failed and errors.get(key) %}<span class="error" id="s{{ id }}-{{ key }}-error">{{ errors[key] }}</span>{% endif %}</div>
 {% endfor %}</div>
 <label class="checkbox"><input type="checkbox" name="aktiv"{% if (failed and form.get('aktiv') == 'on') or (not failed and (not space or space.active)) %} checked{% endif %}>aktiv – nimmt neue Buchungen an</label>

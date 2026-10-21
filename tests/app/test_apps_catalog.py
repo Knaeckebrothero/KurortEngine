@@ -60,6 +60,23 @@ def test_catalogue_lifecycle_preserves_records_and_sidebar(db, app_oidc, idp):
     )
 
 
+def test_catalogue_is_its_own_active_link_and_deactivation_asks_first(db, app_client):
+    install(db, app_client.app.state.apps.valid["geraetecheck"])
+    db.commit()
+
+    def active(path):
+        page = app_client.get(path).text
+        return re.findall(r'<a class="rail-link" href="([^"]+)" aria-current="page"', page)
+
+    assert active("/apps") == ["/apps"]
+    assert active("/apps/geraetecheck/geraete") == ["/apps/geraetecheck"]
+    page = app_client.get("/apps").text
+    confirm = re.search(r"<details[^>]*>\s*<summary>Deaktivieren ….*?</details>", page, re.S)[0]
+    assert "verschwindet für alle Mitarbeitenden" in confirm
+    assert 'action="/apps/geraetecheck/deaktivieren"' in confirm
+    assert page.count("/deaktivieren") == 1
+
+
 def test_roles_override_and_view_only_actions(db, app_oidc, idp):
     app = app_oidc.app.state.apps.valid["geraetecheck"]
     install(db, app)

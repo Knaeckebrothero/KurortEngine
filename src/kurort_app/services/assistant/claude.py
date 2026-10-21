@@ -122,8 +122,9 @@ TOOLS = [
     _tool(
         "dashboard",
         "Change the dashboard: which cards it shows, how many days the occupancy chart "
-        "covers, or reset it to the default. Cards: metrics (Kennzahlen), today (the "
-        "arrivals and departures table, Heute), occupancy (Belegung).",
+        "covers, which rows the Heute table lists, or reset it to the default. Cards: "
+        "metrics (Kennzahlen), today (the arrivals and departures table, Heute), "
+        "occupancy (Belegung).",
         {
             "show": {
                 "type": "array",
@@ -131,6 +132,11 @@ TOOLS = [
                 "description": "The cards to show; leave out to keep the current cards.",
             },
             "occupancy_days": {"type": "integer", "description": "Days in the chart, 7 to 60."},
+            "today_filter": {
+                "type": "string",
+                "enum": list(planner.TODAY_FILTERS),
+                "description": "Rows of the Heute table: all, only arrivals or only departures.",
+            },
             "reset": {"type": "boolean", "description": "Back to the default layout."},
         },
         [],
@@ -186,21 +192,23 @@ def plan(session: Session, text: str, *, day: date, client: Any = None) -> dict 
 
     call = next((block for block in response.content if block.type == "tool_use"), None)
     if call is not None:
-        result = _run(session, day, call.name, call.input)
+        result = _run(session, day, call.name, call.input, text=text)
     else:
         reply = " ".join(b.text.strip() for b in response.content if b.type == "text").strip()
         if not reply or response.stop_reason == "max_tokens":
             return None
         result = s.plan(
-            "unknown", "Assistent", message=reply, suggestions=planner.suggestions(session, day=day)
+            "unknown", "Antwort", message=reply, suggestions=planner.suggestions(session, day=day)
         )
     if result is not None:
         result["engine"] = ENGINE
     return result
 
 
-def _run(session: Session, day: date, name: str, args: dict[str, Any]) -> dict | None:
-    """The plan for one tool call; None for a call the app cannot carry out."""
+def _run(
+    session: Session, day: date, name: str, args: dict[str, Any], *, text: str = ""
+) -> dict | None:
+    """The plan for one tool call (``text``: the request); None for a call the app cannot carry out."""
     if name == "walk_in":
         first, last = _text(args.get("first_name")), _text(args.get("last_name"))
         category = args.get("category")
@@ -244,10 +252,11 @@ def _run(session: Session, day: date, name: str, args: dict[str, Any]) -> dict |
             show=show or None,
             occupancy_days=_int(args.get("occupancy_days")),
             reset=args.get("reset") is True,
+            today_filter=_text(args.get("today_filter")),
         )
     if name == "search":
         term = _text(args.get("term"))
-        return planner.search_plan(term) if term else None
+        return planner.search_plan(term, request=text) if term else None
     log.warning("assistant: Claude called an unknown tool %r", name)
     return None
 

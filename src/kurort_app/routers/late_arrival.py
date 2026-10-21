@@ -1,6 +1,7 @@
 """Late-arrival preparation and the next shift's paper/key check."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -33,7 +34,11 @@ def _late(session, rid):
     return row
 
 
-def _page(request, session, r, error=None, pin=None):
+def _who(r):
+    return r.primary_guest.full_name if r.primary_guest else r.code
+
+
+def _page(request, session, r, error=None, chosen=""):
     late = session.scalar(select(LateArrival).where(LateArrival.reservation_id == r.id))
     response = templates.TemplateResponse(
         request,
@@ -43,7 +48,7 @@ def _page(request, session, r, error=None, pin=None):
             "late": late,
             "compartments": late_arrival.available_compartments(session),
             "error": error,
-            "pin": pin,
+            "chosen": chosen,
             "hints": today_service.checkin_blockers(session, r),
         },
     )
@@ -62,23 +67,31 @@ def preparation_page(
 @router.post("/spaetanreise/{reservation_id}")
 async def prepare(request: Request, reservation_id: int, session: Session = Depends(get_session)):
     r = reservation(session, reservation_id)
+    done = f"/spaetanreise/{r.id}"
+    late = session.scalar(select(LateArrival).where(LateArrival.reservation_id == r.id))
+    if late and late.status != "abgebrochen":
+        # A reload or second click of the same form: show the stay as it is now.
+        return RedirectResponse(done, status_code=303)
     form = await request.form()
+    chosen = str(form.get("compartment_id") or "")
     try:
-        compartment_id = int(str(form.get("compartment_id", "0")))
-        late, pin = late_arrival.prepare(
+        if not chosen.isdigit():
+            raise ValueError("Bitte ein Safe-Fach wählen.")
+        late, _pin = late_arrival.prepare(
             session,
             r,
-            compartment_id,
+            int(chosen),
             form.get("key_in_safe") == "on",
             form.get("meldeschein_in_safe") == "on",
             settings=request.app.state.settings,
         )
-        late_arrival.transition(session, late, "pin_viewed")
-        # Render the once-only PIN directly: no PIN/query flag or session copy in a URL.
-        return _page(request, session, r, pin=pin)
     except (ValueError, engine.CheckinError) as exc:
         session.rollback()
-        return _page(request, session, r, error=str(exc))
+        return _page(request, session, r, error=str(exc), chosen=chosen)
+    # Post/redirect/get: the page masks the PIN until staff press "PIN anzeigen".
+    return redirect_with_notice(
+        done, f"Spätanreise für {_who(r)} vorbereitet · {late.compartment.label}"
+    )
 
 
 @router.post("/spaetanreise/{reservation_id}/pin")
@@ -89,7 +102,9 @@ def reveal(request: Request, reservation_id: int, session: Session = Depends(get
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
     pin = late.compartment.fixed_pin or late.pin
-    response = templates.TemplateResponse(request, "late_arrival/_pin.html", {"pin": pin})
+    response = templates.TemplateResponse(
+        request, "late_arrival/_pin.html", {"pin": pin, "late": late}
+    )
     response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -105,8 +120,28 @@ def morning(request: Request, session: Session = Depends(get_session)):
     return templates.TemplateResponse(
         request,
         "late_arrival/morning.html",
-        {"earlier": late_arrival.morning_records(session, today()), "evening": evening},
+        {
+            "earlier": late_arrival.morning_records(session, today()),
+            "evening": evening,
+            "pending": late_arrival.to_prepare(session, today()),
+        },
     )
+
+
+def _done_message(late, action):
+    r, fach = late.reservation, late.compartment.label
+    if action == "arrived":
+        text = f"{_who(r)} eingecheckt" + (f" · Zimmer {r.room.number}" if r.room else "")
+        return text + (" · Meldeschein noch ausstehend" if late.status == "angereist" else "")
+    if action == "meldeschein_returned":
+        text = f"Meldeschein von {_who(r)} abgegeben"
+        return text + (" · Spätanreise abgeschlossen" if late.status == "abgeschlossen" else "")
+    return {
+        "no_show": f"{_who(r)} als nicht angereist markiert – Schlüssel und Meldeschein "
+        f"aus {fach} nehmen",
+        "cancelled": f"Vorbereitung abgebrochen – Schlüssel und Meldeschein aus {fach} nehmen",
+        "phone_notified": "Vermerkt: Gast telefonisch informiert",
+    }[action]
 
 
 def _action(session, rid, action, return_to):
@@ -116,7 +151,7 @@ def _action(session, rid, action, return_to):
     except (ValueError, engine.CheckinError) as exc:
         session.rollback()
         return redirect_with_notice(return_to, str(exc), "warning")
-    return redirect_with_notice(return_to, "Spätanreise aktualisiert")
+    return redirect_with_notice(return_to, _done_message(late, action))
 
 
 @router.post("/spaetanreise/{reservation_id}/telefonisch")

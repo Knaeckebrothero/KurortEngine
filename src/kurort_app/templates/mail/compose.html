@@ -2,6 +2,20 @@
 {% block title %}E-Mail senden{% endblock %}
 {% block content %}
 <nav class="breadcrumb"><a href="/reservierungen/{{ r.id }}">{{ r.code }}</a> › E-Mail senden</nav>
-<div class="page-header"><div><h1>E-Mail senden</h1><p>{{ r.primary_guest.full_name if r.primary_guest else r.code }}</p></div><a class="btn ghost" href="/e-mails?reservation_id={{ r.id }}">Postausgang</a></div>
+<div class="page-header"><div><h1>E-Mail senden</h1><p>{{ r.primary_guest.full_name if r.primary_guest else r.code }}</p></div><div class="page-actions"><a class="btn" href="/e-mails?reservation_id={{ r.id }}">Postausgang</a></div></div>
 {% include "mail/_compose.html" %}
+{% endblock %}
+{% block scripts %}
+<script>
+// A new template replaces subject and text; typed changes are only dropped on request.
+function mailSwitchTemplate(select) {
+  const form = select.form, notice = document.getElementById('mail-switch');
+  const same = (a, b) => a.replace(/\r\n/g, '\n').trim() === b.replace(/\r\n/g, '\n').trim();
+  const load = () => htmx.ajax('GET', form.action + '?vorlage=' + encodeURIComponent(select.value), {target: '#compose', swap: 'outerHTML'});
+  if (same(form.elements.subject.value, form.dataset.subject) && same(form.elements.body.value, form.dataset.body)) return load();
+  notice.hidden = false;
+  notice.querySelector('[data-switch="replace"]').onclick = load;
+  notice.querySelector('[data-switch="keep"]').onclick = () => { select.value = select.dataset.current; notice.hidden = true; select.focus(); };
+}
+</script>
 {% endblock %}

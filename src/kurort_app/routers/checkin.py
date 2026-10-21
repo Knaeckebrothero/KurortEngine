@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+from types import SimpleNamespace
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
@@ -278,6 +279,26 @@ def _parse_guest(
     return clean, errors, raw
 
 
+def _filled(value: Any) -> bool:
+    return value is not None and str(value).strip() != ""
+
+
+def _check_guest(
+    rg: ReservationGuest, clean: dict[str, Any], parse_errors: dict[str, str]
+) -> tuple[dict[str, str], bool]:
+    """Errors the guest would have after saving ``clean``, and whether saving must stop.
+
+    Missing Meldeschein data may be saved and completed later. Invalid values
+    (including a birth date in the future) and a field emptied that had a value
+    are never saved: they would silently remove data that was right.
+    """
+    before = {f: getattr(rg.guest, f) for f in GUEST_FIELDS}
+    after = {**before, **clean}
+    missing = engine.guest_data_errors(SimpleNamespace(guest=SimpleNamespace(**after)))
+    blocking = bool(parse_errors) or any(_filled(before[f]) or _filled(after[f]) for f in missing)
+    return {**missing, **parse_errors}, blocking
+
+
 @router.post("/check-in/{reservation_id}/gaeste", response_class=HTMLResponse)
 async def guests_save(
     request: Request, reservation_id: int, session: Session = Depends(get_session)
@@ -286,13 +307,28 @@ async def guests_save(
     if isinstance(reservation, RedirectResponse):
         return reservation
     form = await request.form()
+    parsed = [(rg, *_parse_guest(form, rg)) for rg in reservation.guests]
+    checked = {rg.id: _check_guest(rg, clean, errors) for rg, clean, errors, _ in parsed}
+    if any(blocking for _, blocking in checked.values()):
+        return _render(
+            request,
+            "checkin/gaeste.html",
+            reservation,
+            "gaeste",
+            rows=_guest_rows(
+                reservation,
+                {rg_id: errors for rg_id, (errors, _) in checked.items()},
+                {rg.id: raw for rg, _, _, raw in parsed},
+            ),
+            countries=COUNTRIES,
+            submitted=True,
+            saved=False,
+        )
+
     all_errors: dict[int, dict[str, str]] = {}
-    raw_values: dict[int, dict[str, str]] = {}
     stale_forms: list[str] = []
     tax_inputs_changed = False
-
-    for rg in reservation.guests:
-        clean, parse_errors, raw = _parse_guest(form, rg)
+    for rg, clean, _, _ in parsed:
         g: Guest = rg.guest
         changed = [f for f, v in clean.items() if getattr(g, f) != v]
         for f in changed:
@@ -310,10 +346,9 @@ async def guests_save(
                 summary=f"Gästedaten geändert: {g.full_name}",
                 payload={"fields": changed, "reservation": reservation.code},
             )
-        errors = {**engine.guest_data_errors(rg), **parse_errors}
+        errors = engine.guest_data_errors(rg)
         if errors:
             all_errors[rg.id] = errors
-            raw_values[rg.id] = raw
     if tax_inputs_changed:
         engine.drop_assessment(session, reservation)
     if not all_errors:
@@ -321,14 +356,16 @@ async def guests_save(
     session.commit()
 
     if all_errors:
+        # Saved, but the Meldeschein still lacks data: stay here and say what.
         return _render(
             request,
             "checkin/gaeste.html",
             reservation,
             "gaeste",
-            rows=_guest_rows(reservation, all_errors, raw_values),
+            rows=_guest_rows(reservation),
             countries=COUNTRIES,
             submitted=True,
+            saved=True,
             stale_forms=stale_forms,
         )
     text = "Gästedaten gespeichert."
@@ -454,8 +491,17 @@ def _avs_card(session: Session, rg: ReservationGuest) -> dict[str, Any]:
         "values": values,
         "incomplete": False,
         "copy_all": "\n".join(f"{label}: {value}" for label, value in values),
-        "printed_by": event.actor if event else "–",
+        "printed_by": event.actor if event else None,
     }
+
+
+def _printable_open(reservation: Reservation) -> int:
+    """Guests whose sheet can be printed but is not yet."""
+    return sum(
+        1
+        for rg in reservation.guests
+        if rg.meldeschein_status == MELDESCHEIN_OPEN and not engine.guest_data_errors(rg)
+    )
 
 
 @router.get("/check-in/{reservation_id}/avs", response_class=HTMLResponse)
@@ -470,6 +516,7 @@ def avs_step(request: Request, reservation_id: int, session: Session = Depends(g
         "avs",
         cards=[_avs_card(session, rg) for rg in reservation.guests],
         avs_url=get_settings().avs_url,
+        printable_open=_printable_open(reservation),
     )
 
 
@@ -559,9 +606,15 @@ def _avs_update(request: Request, reservation_id: int, rg_id: int, session: Sess
             )
     session.commit()
     if _is_htmx(request):
-        return templates.TemplateResponse(
-            request, "checkin/_avs_guest.html", {"r": reservation, "card": _avs_card(session, rg)}
-        )
+        # The card, plus the stepper, the sidebar and "Alle als gedruckt" out of band.
+        context = {
+            "r": reservation,
+            "card": _avs_card(session, rg),
+            "steps": _stepper(reservation, "avs", engine.readiness(reservation)),
+            "printable_open": _printable_open(reservation),
+            "oob": True,
+        }
+        return templates.TemplateResponse(request, "checkin/_avs_update.html", context)
     return RedirectResponse(url, status_code=303)
 
 
@@ -673,12 +726,52 @@ def _assess(session: Session, reservation: Reservation, *, auto: bool) -> None:
 
 
 def _open_items(session: Session, reservation: Reservation) -> list[engine.Blocker]:
+    state = engine.readiness(reservation)
+    return [b for key in engine.STEP_KEYS for b in state[key]] + _extra_items(session, reservation)
+
+
+def _extra_items(session: Session, reservation: Reservation) -> list[engine.Blocker]:
+    """Open items from other features; the Abschluss checklist does not show them."""
     from kurort_app.services.today import checkin_blockers
 
-    state = engine.readiness(reservation)
-    return [b for key in engine.STEP_KEYS for b in state[key]] + checkin_blockers(
-        session, reservation
-    )
+    return checkin_blockers(session, reservation)
+
+
+def _split_room_item(items: list[engine.Blocker]) -> dict:
+    """The room-status item goes into the checklist's Zimmer row; the rest stay below it."""
+    room = [b for b in items if (b.action_url or "").startswith("/zimmerstatus/")]
+    return {
+        "room_item": room[0] if room else None,
+        "extra_items": [b for b in items if b not in room],
+    }
+
+
+def _kurtaxe_summary(result: engine.KurtaxeResult, reservation: Reservation) -> str:
+    """The Kurtaxe line of the Abschluss checklist, worded like the other rows."""
+    if result.blockers:
+        reasons = []
+        for line in result.lines:
+            if not line.blocker:
+                continue
+            if line.age is None:
+                reason = "Geburtsdatum fehlt"
+            elif line.exemption and not line.evidence:
+                reason = "Nachweis fehlt"
+            elif line.exemption:
+                reason = "Befreiung prüfen"
+            else:
+                reason = "Tarifgruppe prüfen"
+            if reason not in reasons:
+                reasons.append(reason)
+        return " · ".join(reasons) or "klären"
+    if reservation.kurtaxe is None:
+        return "wird beim Abschluss berechnet"
+    amount = fmt_money(reservation.kurtaxe.amount)
+    if not result.exempt_count:
+        return f"{amount} · normaler Satz"
+    labels = ", ".join(dict.fromkeys(line.exemption_label for line in result.lines if line.exempt))
+    persons = "Person" if result.exempt_count == 1 else "Personen"
+    return f"{amount} · {result.exempt_count} {persons} befreit ({labels})"
 
 
 @router.get("/check-in/{reservation_id}/abschluss", response_class=HTMLResponse)
@@ -696,6 +789,8 @@ def summary_step(request: Request, reservation_id: int, session: Session = Depen
         reservation,
         "abschluss",
         open_items=_open_items(session, reservation),
+        **_split_room_item(_extra_items(session, reservation)),
+        kurtaxe_summary=_kurtaxe_summary(result, reservation),
         **_kurtaxe_context(result, reservation),
     )
 
@@ -721,6 +816,9 @@ async def complete(request: Request, reservation_id: int, session: Session = Dep
             _signed(session, rg)
     reservation.status = CHECKED_IN
     reservation.checked_in_at = datetime.now(UTC)
+    from kurort_app.services.late_arrival import close_for_checkin
+
+    freed = close_for_checkin(session, reservation)  # frees a prepared safe compartment
     primary, room = reservation.primary_guest, reservation.room
     who = primary.full_name if primary else reservation.code
     _audit_step(
@@ -733,4 +831,7 @@ async def complete(request: Request, reservation_id: int, session: Session = Dep
         kurtaxe=str(reservation.kurtaxe.amount),
     )
     session.commit()
-    return redirect_with_notice("/", f"{who} ist eingecheckt · Zimmer {room.number}")
+    notice = f"{who} ist eingecheckt · Zimmer {room.number}"
+    if freed:
+        notice += f" · Schlüssel und Meldeschein aus {freed} nehmen"
+    return redirect_with_notice("/", notice)

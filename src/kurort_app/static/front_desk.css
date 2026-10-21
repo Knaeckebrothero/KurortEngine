@@ -31,10 +31,14 @@ a.fd-metric:hover { color: inherit; border-color: var(--border-strong); box-shad
 .fd-queue .badges + .sub { margin-top: var(--space-1); }
 .fd-note { max-width: 42ch; font-style: italic; margin-top: 2px; }
 .fd-money { font-weight: 650; white-space: nowrap; }
+.fd-footnote { margin: 0; padding: var(--space-3) var(--space-5); font-size: 13px; color: var(--text-secondary); }
 .fd-sort { color: inherit; text-decoration: none; }
 .fd-sort:hover { color: var(--text-primary); text-decoration: underline; }
 
 .fd-queue .badge { white-space: normal; border-radius: var(--radius-control); }
+.fd-queue .fd-saldo .badge, .fd-queue td.num .sub .badge, .fd-queue .fd-ms .badge { white-space: nowrap; }
+.fd-ms + .fd-ms { margin-top: var(--space-2); }
+.fd-ms .sub { color: var(--text-primary); }
 
 /* ---------- Occupancy chart ---------- */
 .fd-chart-card .card-header { flex-wrap: wrap; }
@@ -52,9 +56,10 @@ a.fd-metric:hover { color: inherit; border-color: var(--border-strong); box-shad
 .fd-bar-value { fill: var(--text-primary); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .fd-bar-today .fd-axis-day { fill: var(--primary); }
 .fd-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: var(--space-3) 0 0; font-size: 13px; color: var(--text-secondary); }
-.fd-key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--color-rhine-300); margin-left: var(--space-2); }
-.fd-key:first-child { margin-left: 0; }
+.fd-legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.fd-key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--color-rhine-300); }
 .fd-key-today { background: var(--chart-occupied); }
+.fd-key-weekend { background: var(--color-rhine-400); }
 .fd-key-cap { background: none; border-top: 2px dashed var(--border-strong); height: 0; border-radius: 0; }
 
 /* ---------- Check-out ---------- */
@@ -62,15 +67,21 @@ a.fd-metric:hover { color: inherit; border-color: var(--border-strong); box-shad
 .fd-bill td { text-align: right; font-size: 15px; padding: 12px 0; }
 .fd-bill tbody tr:hover { background: none; }
 .fd-bill tfoot th, .fd-bill tfoot td { font-size: 20px; line-height: 28px; font-weight: 750; border-bottom: 0; border-top: 2px solid var(--border-strong); padding-top: var(--space-4); }
+.fd-bill .fd-bill-sum th, .fd-bill .fd-bill-sum td { font-size: 17px; font-weight: 750; border-top: 2px solid var(--border-strong); }
 .fd-inline-notice { margin-top: var(--space-4); font-size: 14px; }
 .fd-party { list-style: none; margin: 0; padding: var(--space-2) var(--space-5) var(--space-4); }
 .fd-party li { padding: var(--space-2) 0; border-bottom: 1px solid var(--border-subtle); }
 .fd-party li:last-child { border-bottom: 0; }
 .fd-confirm { display: flex; flex-direction: column; gap: var(--space-2); }
 .fd-confirm p { margin: 0 0 var(--space-2); color: var(--text-secondary); font-size: 14px; }
+.fd-confirm p strong { color: var(--text-primary); }
+.fd-confirm .checkbox { font-weight: 600; }
+.fd-confirm .btn { white-space: normal; text-align: center; padding-block: var(--space-2); }
+.fd-pay > summary { padding: var(--space-4) var(--space-5); cursor: pointer; font-weight: 650; }
+.fd-pay[open] > summary { border-bottom: 1px solid var(--border-subtle); }
 
 @media (max-width: 1100px) {
-  .fd-split, .fd-checkout { grid-template-columns: 1fr; }
+  .fd-split, .fd-checkout { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 860px) {
   .fd-queue thead { display: none; }
@@ -83,7 +94,8 @@ a.fd-metric:hover { color: inherit; border-color: var(--border-strong); box-shad
 
 .fd-today { margin-bottom: var(--space-4); }
 .fd-finished > summary { padding: var(--space-4) var(--space-5); cursor: pointer; font-weight: 650; }
-.fd-notice { margin: var(--space-3) 0; }
+.fd-notices { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
+.fd-notice a { color: inherit; font-weight: 650; }
 @media (max-width: 860px) {
   .fd-today-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .fd-today-table td { min-width: 0; }

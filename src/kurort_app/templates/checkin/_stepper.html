@@ -1,0 +1,15 @@
+<ol class="ci-stepper" id="ci-stepper" aria-label="Check-in-Schritte"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% for s in steps %}
+  <li class="ci-step is-{{ s.status }}{% if s.done %} is-done{% endif %}">
+    <a href="{{ s.href }}"{% if s.status == 'current' %} aria-current="step"{% endif %}>
+      <span class="ci-step-num" aria-hidden="true">{% if s.done and s.status != 'current' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% else %}{{ s.number }}{% endif %}</span>
+      <span class="ci-step-text">
+        <span class="ci-step-label">{{ s.label }}</span>
+        <span class="ci-step-state">
+          {%- if s.done %}erledigt{% elif s.key == 'abschluss' %}bestätigen{% else %}{{ s.open_count }} offen{% endif -%}
+        </span>
+      </span>
+    </a>
+  </li>
+  {% endfor %}
+</ol>

@@ -1,0 +1,15 @@
+{# Bleibezimmer always means all floors (routers/housekeeping.py mark_stayovers). #}
+{% set scope = ', alle Etagen' if etage is not none else '' %}
+<div class="page-actions hk-bulk" id="hk-bulk"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if stayover_count %}
+  <details>
+    <summary class="btn"><span>Bleibezimmer auf schmutzig setzen <span class="num">({{ stayover_count }}{{ scope }})</span></span></summary>
+    <form class="card" method="post" action="/zimmerstatus/bleibe">
+      <p>{{ stayover_count }} Zimmer mit Bleibern{% if etage is not none %} auf allen Etagen{% endif %} {{ 'werden' if stayover_count > 1 else 'wird' }} auf „Schmutzig“ gesetzt.</p>
+      <button class="btn primary" type="submit">Ja, {{ stayover_count }} Zimmer auf schmutzig setzen</button>
+    </form>
+  </details>
+  {% else %}
+  <button class="btn" type="button" disabled><span>Bleibezimmer auf schmutzig setzen <span class="num">(0)</span></span></button>
+  {% endif %}
+</div>

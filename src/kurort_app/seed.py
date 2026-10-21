@@ -10,7 +10,7 @@ Meldeschein) give the front desk something real to resolve in a demo.
 from __future__ import annotations
 
 import random
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -205,6 +205,18 @@ def _birth_date(rng: random.Random, age: int, anchor: date) -> date:
     return date(anchor.year - age, rng.randint(1, 12), rng.randint(1, 28))
 
 
+def _email(first: str, last: str) -> str:
+    slug = (
+        f"{first}.{last}".lower()
+        .replace(" ", "")
+        .replace("ü", "ue")
+        .replace("ö", "oe")
+        .replace("ä", "ae")
+        .replace("ß", "ss")
+    )
+    return f"{slug}@example.de"
+
+
 def _make_guest(
     rng: random.Random,
     anchor: date,
@@ -229,14 +241,6 @@ def _make_guest(
     roll = rng.random()
     if age >= 16 and roll < 0.06:
         disability = rng.choice((70, 80, 90))
-    slug = (
-        f"{first}.{last}".lower()
-        .replace(" ", "")
-        .replace("ü", "ue")
-        .replace("ö", "oe")
-        .replace("ä", "ae")
-        .replace("ß", "ss")
-    )
     return Guest(
         first_name=first,
         last_name=last,
@@ -246,7 +250,7 @@ def _make_guest(
         postal_code=postal,
         city=city,
         country=country,
-        email=f"{slug}@example.de" if rng.random() < 0.8 else None,
+        email=_email(first, last) if rng.random() < 0.8 else None,
         phone=f"+49 {rng.randint(150, 179)} {rng.randint(1000000, 9999999)}"
         if rng.random() < 0.7
         else None,
@@ -304,7 +308,7 @@ def seed_demo_data(
 
     rng = random.Random(SEED)
     anchor = anchor or business_today()
-    now = datetime.now(UTC)
+    now = datetime.combine(anchor, time(9), tzinfo=HOTEL_TZ)  # fixed, so a reseed is repeatable
 
     rooms: list[Room] = []
     for floor, categories in enumerate(ROOM_LAYOUT, start=1):
@@ -382,8 +386,14 @@ def _apply_lifecycle(rng: random.Random, res: Reservation, anchor: date, now: da
         return datetime.combine(day, time(hour, rng.randint(0, 59)), tzinfo=HOTEL_TZ)
 
     if res.departure < anchor or (res.departure == anchor and rng.random() < 0.3):
-        res.status = CHECKED_OUT
-        res.checked_in_at, res.checked_out_at = at(res.arrival, 15), at(res.departure, 10)
+        # A third of today's departures left before breakfast; the rest are still in house
+        # until the desk checks them out. Both times are drawn either way, so the other data
+        # stays the same.
+        checked_in = at(res.arrival, 15)
+        checked_out = at(res.departure, 10 if res.departure < anchor else 7)
+        res.status = CHECKED_OUT if res.departure < anchor or checked_out <= now else CHECKED_IN
+        res.checked_in_at = checked_in
+        res.checked_out_at = checked_out if res.status == CHECKED_OUT else None
     elif res.arrival < anchor:
         res.status = CHECKED_IN
         res.checked_in_at = at(res.arrival, 15)
@@ -396,8 +406,6 @@ def _apply_lifecycle(rng: random.Random, res: Reservation, anchor: date, now: da
         for rg in res.guests:
             rg.meldeschein_status = MELDESCHEIN_SIGNED
             rg.meldeschein_printed_at = rg.meldeschein_signed_at = res.checked_in_at
-    # Departure-day stays are still "checked_in" until the desk checks them out.
-    _ = now
 
 
 def _plant_exceptions(rng: random.Random, reservations: list[Reservation], anchor: date) -> None:
@@ -499,12 +507,14 @@ def _seed_late_arrivals(session: Session, anchor: date, reservations: list[Reser
         ),
         key=lambda r: r.id,
     )[-1]
-    for r, code in ((current, "F5-HEUTE"), (previous, "F5-GESTERN")):
-        r.code, r.eta, r.status, r.checked_in_at = code, time(21, 30), RESERVED, None
-        r.primary_guest.email = "spaetanreise@example.de"
+    for r in (current, previous):
+        r.eta, r.status, r.checked_in_at = time(21, 30), RESERVED, None
+        guest = r.primary_guest
+        guest.email = guest.email or _email(guest.first_name, guest.last_name)
         for rg in r.guests:
             rg.meldeschein_status = MELDESCHEIN_PRINTED
-            rg.meldeschein_printed_at = datetime.combine(r.arrival, time(16), tzinfo=HOTEL_TZ)
+            printed = time(7, 30) if r.arrival == anchor else time(16)
+            rg.meldeschein_printed_at = datetime.combine(r.arrival, printed, tzinfo=HOTEL_TZ)
             rg.meldeschein_signed_at = None
         drop_assessment(session, r)
     compartment = session.scalar(select(SafeCompartment).where(SafeCompartment.label == "Fach 2"))
@@ -589,7 +599,9 @@ def _seed_payments(session: Session, anchor: date, reservations: list[Reservatio
                 payer="Firma Müller GmbH" if method.deferred else None,
                 note="Demozahlung",
                 recorded_by="rezeption",
-                recorded_at=datetime.combine(paid_on, time(10), tzinfo=HOTEL_TZ),
+                recorded_at=datetime.combine(
+                    paid_on, time(7, 30) if paid_on == anchor else time(10), tzinfo=HOTEL_TZ
+                ),
             )
         )
     session.flush()
@@ -602,11 +614,21 @@ def _seed_housekeeping(
     from kurort_app.services.housekeeping import set_status
 
     rng = random.Random(SEED + 2)
+    live = [r for r in reservations if r.status not in (CANCELLED, NO_SHOW)]
     arriving = next(
-        (r.room for r in reservations if r.arrival == anchor and r.status == RESERVED), rooms[0]
+        (r.room for r in live if r.arrival == anchor and r.status == RESERVED), rooms[0]
     )
-    others = rng.sample([room for room in rooms if room != arriving], 4)
+    # Rooms left today wait for cleaning, as after a check-out at the desk.
+    departed = [r for r in live if r.departure == anchor and r.status == CHECKED_OUT]
+    for r in departed:
+        set_status(session, r.room, ROOM_DIRTY, reason="checkout")
+        r.room.housekeeping_changed_at = r.checked_out_at
+    # Out of order only where nobody stays today or arrives in the next three days.
+    booked = {r.room_id for r in live if r.departure >= anchor >= r.arrival - timedelta(days=3)}
+    broken = rng.choice([room for room in rooms if room.id not in booked] or rooms)
+    set_status(session, broken, ROOM_OUT_OF_ORDER, reason="manual", note="Heizung defekt")
+    taken = {broken.id, arriving.id, *(r.room_id for r in departed)}
+    others = rng.sample([room for room in rooms if room.id not in taken], 3)
     for room in [arriving, *others[:2]]:
         set_status(session, room, ROOM_DIRTY, reason="manual")
-    set_status(session, others[2], ROOM_OUT_OF_ORDER, reason="manual", note="Heizung defekt")
-    set_status(session, others[3], ROOM_INSPECTED, reason="manual")
+    set_status(session, others[2], ROOM_INSPECTED, reason="manual")

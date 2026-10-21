@@ -18,6 +18,8 @@ from kurort_app.models import (
     RESERVED,
     ROOM_OUT_OF_ORDER,
     AuditEvent,
+    EmailMessageRow,
+    EmailTemplate,
     Guest,
     Reservation,
     ReservationGuest,
@@ -155,6 +157,16 @@ def test_search_by_full_name(client, seeded):
     assert target.code in html
 
 
+def test_search_by_name_in_any_order(client, seeded):
+    target = _first(seeded, Reservation.status == CHECKED_IN)
+    guest = target.primary_guest
+    html = client.get("/reservierungen", params={"q": f"{guest.last_name} {guest.first_name}"}).text
+    assert target.code in html
+    assert "Keine Reservierung gefunden" in (
+        client.get("/reservierungen", params={"q": f"{guest.last_name} Zzyzx"}).text
+    )
+
+
 def test_search_by_code(client, seeded):
     target = _first(seeded, Reservation.status == CHECKED_OUT)
     html = client.get("/reservierungen", params={"q": target.code}).text
@@ -190,10 +202,21 @@ def test_status_filter_and_counts(client, seeded):
 
 
 def test_htmx_request_returns_results_fragment(client, seeded):
-    response = client.get("/reservierungen", params={"q": "müller"}, headers={"HX-Request": "true"})
+    response = client.get(
+        "/reservierungen",
+        params={"q": "müller", "status": "", "von": "", "bis": ""},
+        headers={"HX-Request": "true"},
+    )
     assert response.status_code == 200
     assert "<html" not in response.text
     assert 'id="results"' in response.text
+    # The live search also refreshes the subtitle and the reset button, and keeps the URL short.
+    assert '<p id="res-subtitle" hx-swap-oob="true">Suche nach „müller“' in response.text
+    assert 'hx-swap-oob="true"><a class="btn ghost" href="/reservierungen">Zurücksetzen' in (
+        response.text
+    )
+    assert response.headers["HX-Push-Url"] == "/reservierungen?q=m%C3%BCller"
+    assert "hx-swap-oob" not in client.get("/reservierungen").text
 
 
 def test_pagination(client, seeded):
@@ -216,6 +239,54 @@ def test_detail_for_arrival_offers_check_in(client, seeded):
     assert f'href="/check-in/{target.id}"' in html
     assert f'href="/reservierungen/{target.id}/bearbeiten"' in html
     assert "stornieren" in html
+
+
+def test_detail_future_reservation_offers_no_check_in(client, seeded):
+    target = _first(seeded, Reservation.status == RESERVED, Reservation.arrival > D)
+    html = client.get(f"/reservierungen/{target.id}").text
+    assert f'href="/reservierungen/{target.id}/bearbeiten"' in html
+    assert f'href="/check-in/{target.id}"' not in html
+
+
+def test_detail_reads_like_a_person_wrote_it(client, seeded):
+    target = _first(seeded, Reservation.arrival == D, Reservation.status == RESERVED)
+    target.primary_guest.nationality = "AT"
+    seeded.add(EmailTemplate(key="test_vorlage", name="Testvorlage", subject="s", body="b"))
+    seeded.add(
+        EmailMessageRow(
+            reservation_id=target.id,
+            template_key="test_vorlage",
+            to_address="gast@example.de",
+            subject="s",
+            body="b",
+        )
+    )
+    seeded.add(
+        AuditEvent(
+            actor="m.schmidt",
+            action="reservation.updated",
+            entity="reservation",
+            entity_id=str(target.id),
+            summary="Notiz geändert",
+        )
+    )
+    seeded.commit()
+    html = client.get(f"/reservierungen/{target.id}").text
+    assert "Österreich" in html
+    assert "Testvorlage" in html and "test_vorlage" not in html
+    assert "M. Schmidt" in html and "m.schmidt" not in html
+
+
+@pytest.mark.parametrize("status", [CANCELLED, NO_SHOW])
+def test_detail_of_closed_stay_hides_open_tasks(client, seeded, status):
+    target = _first(seeded, Reservation.status == RESERVED, Reservation.arrival > D)
+    target.status = status
+    seeded.commit()
+    html = client.get(f"/reservierungen/{target.id}").text
+    assert "Meldeschein offen" not in html
+    assert "beim Check-in nach der Kurbeitragssatzung berechnet" not in html
+    assert "E-Mail senden" not in html
+    assert f'href="/check-in/{target.id}"' not in html
 
 
 def test_detail_shows_blockers(client, seeded):
@@ -345,6 +416,14 @@ def test_create_validation_errors_are_reported_in_german(client, seeded):
         "Bitte ein Zimmer wählen.",
     ):
         assert message in text
+    summary = text.split('id="error-summary"')[1].split("</ul>")[0]
+    assert "Vorname: Vorname fehlt." not in summary, "the message already names the field"
+    # Listed in form order: the stay section comes before the guest.
+    assert (
+        summary.index("Abreise muss")
+        < summary.index("Bitte ein Zimmer")
+        < summary.index("Vorname fehlt.")
+    )
     assert 'id="vorname"' in text and 'aria-invalid="true"' in text
     assert 'value="kein-at"' in text, "entered data is preserved"
 
@@ -403,6 +482,25 @@ def test_room_options_partial_lists_only_free_rooms(client, seeded):
     offered = set(re.findall(r'<option value="(\d{3})"', html))
     assert offered == free
     assert f'<span class="num">{len(free)}</span> von 33 Zimmern frei' in html
+
+
+def test_room_options_partial_explains_empty_and_reversed_spans(client, seeded):
+    arrival, departure = D + timedelta(days=200), D + timedelta(days=202)
+    for room in free_rooms(seeded, arrival, departure):
+        _book(seeded, room, arrival, departure)
+    html = client.get(
+        "/reservierungen/verfuegbare-zimmer",
+        params={"anreise": arrival.isoformat(), "abreise": departure.isoformat()},
+    ).text
+    assert "Für diesen Zeitraum ist kein Zimmer frei." in html
+    assert f'href="/zimmerplan?von={(arrival - timedelta(days=1)).isoformat()}"' in html
+    assert "Kein Zimmer frei" in html
+    reversed_html = client.get(
+        "/reservierungen/verfuegbare-zimmer",
+        params={"anreise": departure.isoformat(), "abreise": arrival.isoformat()},
+    ).text
+    assert "Abreise muss nach der Anreise liegen." in reversed_html
+    assert "Zeitraum wählen" not in reversed_html
 
 
 def test_room_options_partial_flags_taken_selection(client, seeded):

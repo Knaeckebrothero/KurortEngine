@@ -35,11 +35,16 @@
     steps: drawer.querySelector("[data-ai-steps]"),
     message: drawer.querySelector("[data-ai-message]"),
     suggest: drawer.querySelector("[data-ai-suggest]"),
+    suggestLabel: drawer.querySelector("[data-ai-suggest-label]"),
     suggestList: drawer.querySelector("[data-ai-suggest-list]"),
     note: drawer.querySelector("[data-ai-note]"),
     close: drawer.querySelector("[data-ai-close]"),
     again: drawer.querySelector("[data-ai-again]"),
+    status: drawer.querySelector("[data-ai-status]"),
+    expand: drawer.querySelector("[data-ai-expand]"),
   };
+  // Phone layout: the drawer covers the page, so after a plan it shrinks to a status bar.
+  const phone = window.matchMedia("(max-width: 860px)");
 
   const user = document.body.dataset.user || "anon";
   const DASH_KEY = `kurort.dashboard.${user}`;
@@ -91,6 +96,10 @@
     "Ist Zimmer 204 am Wochenende frei?",
     "Zeig mir nur Anreisen und Belegung, 30 Tage",
   ];
+  // A bare name, reservation code or room number: with live matches, Enter opens the
+  // first one instead of asking the assistant (same shapes as planner.is_plain_search).
+  const PLAIN_SEARCH =
+    /^(?:(?:herrn?|frau|familie|fam\.?)\s+)?(?:r-?\d{4}-\d{4}|\d{3}|\p{L}[\p{L}\d'.-]*(?: \p{L}[\p{L}\d'.-]*)?)$/iu;
 
   // ---------------------------------------------------------------- helpers
 
@@ -146,6 +155,7 @@
 
   let items = [];
   let active = -1;
+  let picked = false; // the user moved the selection with the arrow keys
   let examples = null;
   let searchTimer = 0;
   let searchSeq = 0;
@@ -212,7 +222,8 @@
     } else {
       items.push({ kind: "run", text: query });
       parts.push(optionHtml(items[0], 0));
-      if (lastResults.query === query && lastResults.results.length) {
+      const found = lastResults.query === query && lastResults.results.length > 0;
+      if (found) {
         parts.push('<li class="ai-group" role="presentation">Gäste &amp; Reservierungen</li>');
         for (const result of lastResults.results) {
           items.push({ kind: "result", ...result });
@@ -221,7 +232,7 @@
       } else if (lastResults.pending) {
         parts.push('<li class="ai-empty" role="presentation">Suche …</li>');
       }
-      if (active < 0 || active >= items.length) active = 0;
+      if (!picked || active < 0 || active >= items.length) active = found && PLAIN_SEARCH.test(query) ? 1 : 0;
     }
     list.innerHTML = parts.join("");
     highlightActive();
@@ -287,6 +298,7 @@
   });
   input.addEventListener("input", () => {
     micError.hidden = true;
+    picked = false;
     scheduleSearch();
     renderPop();
   });
@@ -295,6 +307,7 @@
       event.preventDefault();
       if (pop.hidden) renderPop();
       if (!items.length) return;
+      picked = true;
       const delta = event.key === "ArrowDown" ? 1 : -1;
       active = active < 0 ? (delta > 0 ? 0 : items.length - 1) : (active + delta + items.length) % items.length;
       highlightActive();
@@ -369,7 +382,37 @@
     renderPop();
   });
 
+  /** Phone: shrink the finished plan to a status bar (title, next step, "Details", close). */
+  function collapse(plan) {
+    const steps = [...ui.steps.children];
+    if (!phone.matches || !steps.length || steps.some((li) => li.classList.contains("is-warn"))) return;
+    if (plan.suggestions && plan.suggestions.length) return; // a choice is waiting in the drawer
+    const last = steps.at(-1);
+    const next = last.classList.contains("is-attention")
+      ? last.querySelector(".ai-step-label")?.firstChild?.textContent || ""
+      : String(plan.message || "").split("\n")[0];
+    ui.status.innerHTML = `<strong>${escapeHtml(plan.title || "Assistent")}</strong>${
+      next ? `<span>${escapeHtml(next.trim())}</span>` : ""
+    }`;
+    ui.status.hidden = false;
+    ui.expand.hidden = false;
+    ui.expand.setAttribute("aria-expanded", "false");
+    drawer.classList.add("is-collapsed");
+  }
+
+  function expand() {
+    drawer.classList.remove("is-collapsed");
+    ui.status.hidden = true;
+    ui.expand.hidden = true;
+    ui.expand.setAttribute("aria-expanded", "true");
+  }
+  ui.expand.addEventListener("click", () => {
+    expand();
+    ui.title.focus({ preventScroll: true });
+  });
+
   function resetRun(text) {
+    expand();
     ui.quote.textContent = text;
     ui.runTitle.innerHTML = "";
     ui.steps.innerHTML = "";
@@ -449,8 +492,10 @@
     ui.message.hidden = false;
   }
 
-  function renderSuggestions(suggestions) {
+  function renderSuggestions(suggestions, intent) {
     if (!suggestions || !suggestions.length) return;
+    // Examples when nothing fit; otherwise the candidates the request could mean.
+    ui.suggestLabel.textContent = intent === "unknown" ? "Probieren Sie zum Beispiel:" : "Bitte wählen:";
     ui.suggestList.innerHTML = suggestions
       .map((s) => `<li><button type="button" data-text="${escapeHtml(s)}">${escapeHtml(s)}</button></li>`)
       .join("");
@@ -533,8 +578,9 @@
     }
     clearPending();
     renderMessage(plan.message);
-    renderSuggestions(plan.suggestions);
+    renderSuggestions(plan.suggestions, plan.intent);
     if (!steps.length && !plan.message) renderMessage("Erledigt.");
+    collapse(plan);
   }
 
   async function perform(step, ctx) {
@@ -590,14 +636,20 @@
 
   function markFilled(el) {
     el.classList.add("ai-filled");
-    const label = el.id ? scope().querySelector(`label[for="${CSS.escape(el.id)}"]`) : el.closest(".field")?.querySelector("label");
-    if (label && !label.querySelector(".ai-filled-tag")) {
-      label.insertAdjacentHTML("beforeend", `<span class="ai-filled-tag">${ICON.spark}vom Assistenten ausgefüllt</span>`);
+    // A corner badge on the field, out of the flow: labels keep one line and rows stay aligned.
+    const field = el.closest(".field");
+    if (field && !field.querySelector(":scope > .ai-filled-tag")) {
+      field.classList.add("ai-filled-field");
+      field.insertAdjacentHTML(
+        "beforeend",
+        `<span class="ai-filled-tag" title="vom Assistenten ausgefüllt">${ICON.spark}<span aria-hidden="true">Assistent</span><span class="sr-only">vom Assistenten ausgefüllt</span></span>`,
+      );
     }
     const clear = (event) => {
       if (!event.isTrusted) return; // our own synthetic events don't count as an edit
       el.classList.remove("ai-filled");
-      label?.querySelector(".ai-filled-tag")?.remove();
+      field?.classList.remove("ai-filled-field");
+      field?.querySelector(":scope > .ai-filled-tag")?.remove();
       el.removeEventListener("input", clear);
       el.removeEventListener("change", clear);
     };
@@ -736,9 +788,10 @@
       const present = new Set(widgets.map((el) => el.dataset.widget));
       config.widgets = config.widgets.filter((id) => present.has(id));
     }
-    const urlDays = new URLSearchParams(window.location.search).get("tage");
-    if (config.occupancy_days && Number(chart.dataset.occupancyDays) !== config.occupancy_days && (force || !urlDays)) {
-      return `/?tage=${config.occupancy_days}`;
+    const params = new URLSearchParams(window.location.search);
+    if (config.occupancy_days && Number(chart.dataset.occupancyDays) !== config.occupancy_days && (force || !params.has("tage"))) {
+      params.set("tage", config.occupancy_days); // keep ?zeigen= (the Heute filter)
+      return `/?${params}`;
     }
     if (Array.isArray(config.widgets) && config.widgets.length) {
       widgets.forEach((el) => el.classList.toggle("ai-hidden", !config.widgets.includes(el.dataset.widget)));
@@ -781,7 +834,8 @@
       window.location.replace(reload);
       return { navigating: true };
     }
-    if (step.reset && new URLSearchParams(window.location.search).has("tage")) {
+    if (step.reset && window.location.pathname === "/" && window.location.search) {
+      // ?tage= or ?zeigen= (Heute filter) would outlive the reset: reload plain.
       savePending({ plan: ctx.plan, text: ctx.text, next: ctx.index + 1 });
       window.location.replace("/");
       return { navigating: true };
@@ -843,12 +897,28 @@
   function startListening() {
     micError.hidden = true;
     heard = "";
-    recognition = new Recognition();
+    const rec = new Recognition();
+    recognition = rec;
     recognition.lang = "de-DE";
     recognition.interimResults = true;
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
-    recognition.onstart = () => micUi(true);
+    // Some browsers accept start() and then never begin (no permission prompt, no error).
+    let started = false;
+    const noStart = setTimeout(() => {
+      if (started || recognition !== rec) return;
+      showMicError("Spracheingabe startet nicht – bitte tippen Sie Ihren Auftrag.");
+      try {
+        rec.abort();
+      } catch (_) {
+        /* never started */
+      }
+    }, 3000);
+    recognition.onstart = () => {
+      started = true;
+      clearTimeout(noStart);
+      micUi(true);
+    };
     recognition.onresult = (event) => {
       let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -860,7 +930,10 @@
     };
     recognition.onerror = (event) => {
       heard = "";
-      if (MIC_ERRORS[event.error]) showMicError(MIC_ERRORS[event.error]);
+      if (MIC_ERRORS[event.error]) {
+        clearTimeout(noStart);
+        showMicError(MIC_ERRORS[event.error]);
+      }
     };
     recognition.onend = () => {
       micUi(false);
@@ -874,6 +947,7 @@
     try {
       recognition.start();
     } catch (_) {
+      clearTimeout(noStart);
       showMicError("Spracheingabe konnte nicht starten.");
     }
   }
@@ -903,6 +977,9 @@
   if (pending && pending.plan) {
     clearPending();
     if (Date.now() - (pending.at || 0) < PENDING_TTL_MS) {
+      // The bar mirrors ?q= of a search page; it keeps what was asked
+      // ("Rechnung für Zimmer 110"), not the search term the plan derived ("110").
+      if (input.value && pending.text) input.value = pending.text;
       const token = ++runToken;
       resetRun(pending.text || "");
       openDrawer({ focus: false });

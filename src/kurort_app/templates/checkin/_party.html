@@ -1,0 +1,15 @@
+{% import "_macros.html" as ui %}
+<div class="ci-party" id="ci-party"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <span class="eyebrow">Gäste</span>
+  <ul>
+    {% for rg in r.guests %}
+    <li>
+      <span class="guest-name">{{ rg.guest.full_name }}</span>
+      <span class="badges">
+        {% if rg.is_primary %}<span class="badge plain">Hauptgast</span>{% endif %}
+        {{ ui.meldeschein(rg.meldeschein_status) }}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>

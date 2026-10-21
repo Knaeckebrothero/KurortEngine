@@ -16,8 +16,8 @@
     <label class="sr-only" for="ai-input">Assistent – Was möchten Sie tun? Oder Gast suchen</label>
     <input id="ai-input" class="ai-input" name="q" type="text" autocomplete="off" spellcheck="false"
            role="combobox" aria-expanded="false" aria-controls="ai-list" aria-autocomplete="list"
-           placeholder="Was möchten Sie tun? – z. B. Walk-in für Herrn Becker, 2 Nächte"
-           value="{{ request.query_params.get('q', '') }}">
+           placeholder="Fragen oder Gast suchen …"
+           value="{{ request.query_params.get('q', '') if request.url.path.startswith('/reservierungen') else '' }}">
     <kbd class="ai-kbd" aria-hidden="true" data-ai-kbd>Strg K</kbd>
     <button type="button" class="ai-mic" data-ai-mic hidden aria-pressed="false" aria-label="Spracheingabe starten">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3.5"/></svg>
@@ -37,8 +37,10 @@
     <span class="ai-avatar" aria-hidden="true">{{ spark_icon() }}</span>
     <div class="ai-drawer-heading">
       <h2 id="ai-drawer-title" tabindex="-1">Assistent</h2>
-      <span class="ai-drawer-sub">öffnet, sucht und füllt vor – speichern tun Sie</span>
+      <span class="ai-drawer-sub">öffnet, sucht und füllt vor – Speichern bleibt bei Ihnen</span>
+      <p class="ai-drawer-status" data-ai-status hidden></p>
     </div>
+    <button type="button" class="btn sm ai-expand" data-ai-expand hidden aria-controls="ai-drawer" aria-expanded="false">Details</button>
     <button type="button" class="btn ghost sm ai-close" data-ai-close aria-label="Assistent schließen">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
@@ -50,7 +52,7 @@
       <ol class="ai-steps" data-ai-steps></ol>
       <div class="ai-message" data-ai-message hidden></div>
       <div class="ai-suggest" data-ai-suggest hidden>
-        <p class="ai-suggest-label">Probieren Sie zum Beispiel:</p>
+        <p class="ai-suggest-label" data-ai-suggest-label>Probieren Sie zum Beispiel:</p>
         <ul data-ai-suggest-list></ul>
       </div>
     </div>

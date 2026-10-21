@@ -27,8 +27,8 @@
           {{ sort_header('gast', 'Gast') }}
           <th scope="col">Anreise</th>
           {{ sort_header('abreise', 'Abreise') }}
-          <th scope="col">Personen</th>
           <th scope="col">Meldeschein</th>
+          <th scope="col">Saldo</th>
           <th scope="col" class="actions"><span class="sr-only">Aktion</span></th>
         </tr>
       </thead>
@@ -43,8 +43,8 @@
             {{ r.departure | date('day') }}
             <span class="sub">{% if left <= 0 %}<span class="badge warning">Abreise heute</span>{% elif left == 1 %}noch 1 Nacht{% else %}noch {{ left }} Nächte{% endif %}</span>
           </td>
-          <td class="num">{{ r.guests|length }}</td>
-          <td>{{ fd.flags(flags[r.id]) }}{% for rg in r.guests %}<div>{{ rg.guest.full_name }} · {{ ui.meldeschein(rg.meldeschein_status) }}{% if rg.meldeschein_status == 'gedruckt' %}<form method="post" action="/meldeschein/{{ rg.id }}/unterschrieben"><input type="hidden" name="zurueck" value="/im-haus"><button class="btn ghost sm" type="submit">Unterschrift erfassen</button></form>{% endif %}</div>{% endfor %}</td>
+          <td>{% for rg in r.guests %}<div class="fd-ms"><span class="sub">{{ rg.guest.full_name }}</span>{{ ui.meldeschein(rg.meldeschein_status) }}{% if rg.meldeschein_status == 'gedruckt' %}<form method="post" action="/meldeschein/{{ rg.id }}/unterschrieben"><input type="hidden" name="zurueck" value="/im-haus"><button class="btn ghost sm" type="submit">Unterschrift erfassen</button></form>{% endif %}</div>{% endfor %}</td>
+          <td class="fd-saldo">{{ fd.flags(money[r.id] + flags[r.id]) }}</td>
           <td class="actions">
             {% if left <= 0 %}
             <a class="btn sm primary" href="/check-out/{{ r.id }}">Check-out</a>

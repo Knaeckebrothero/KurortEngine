@@ -5,7 +5,7 @@
           hx-target="#room-field" hx-swap="outerHTML"
           hx-include="[name=anreise],[name=abreise],[name=reservierung]"
           {% if room_error %}aria-invalid="true" aria-describedby="zimmer-error zimmer-hint"{% else %}aria-describedby="zimmer-hint"{% endif %}>
-    <option value="">Zimmer wählen …</option>
+    <option value="">{{ 'Kein Zimmer frei' if span_ok and not room_groups else 'Zimmer wählen …' }}</option>
     {% for category, rooms in room_groups %}
     <optgroup label="{{ category }}">
       {% for room in rooms %}
@@ -18,14 +18,18 @@
     {% endfor %}
   </select>
   <span class="hint room-hint" id="zimmer-hint">
-    {% if not span_ok %}
+    {% if span_reversed %}
+      Abreise muss nach der Anreise liegen.
+    {% elif not span_ok %}
       Zeitraum wählen, um nur freie Zimmer zu sehen.
     {% elif selected_taken %}
-      <span class="badge warning">Belegt</span> Zimmer {{ selected_room }} ist im gewählten Zeitraum nicht frei – bitte ein anderes wählen.
+      <span class="badge warning">Belegt</span> <span>Zimmer {{ selected_room }} ist im gewählten Zeitraum nicht frei – bitte ein anderes wählen.</span>
     {% elif price is not none %}
-      <span class="badge success">Frei</span> {{ nights }} {{ 'Nacht' if nights == 1 else 'Nächte' }} × {{ nightly_rate | money }} = <strong class="num">{{ price | money }}</strong>
+      <span class="badge success">Frei</span> <span>{{ nights }} {{ 'Nacht' if nights == 1 else 'Nächte' }} × {{ nightly_rate | money }} = <strong class="num">{{ price | money }}</strong></span>
+    {% elif free_count == 0 %}
+      <span class="badge warning">Ausgebucht</span> <span>Für diesen Zeitraum ist kein Zimmer frei. <a href="{{ plan_url }}">Im Zimmerplan ansehen</a></span>
     {% else %}
-      <span class="num">{{ free_count }}</span> von {{ room_total }} Zimmern frei · {{ nights }} {{ 'Nacht' if nights == 1 else 'Nächte' }}
+      <span><span class="num">{{ free_count }}</span> von {{ room_total }} Zimmern frei · {{ nights }} {{ 'Nacht' if nights == 1 else 'Nächte' }}</span>
     {% endif %}
   </span>
   {% if room_error %}<span class="error" id="zimmer-error">{{ room_error }}</span>{% endif %}

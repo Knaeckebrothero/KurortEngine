@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 from tests.app.conftest import BUSINESS_DATE as D
 
@@ -77,6 +78,12 @@ def test_ac1_seed_definition_and_history(db, client):
                 if r.data["artikel"] == article.id
             )
             assert D - timedelta(days=3) <= latest.astimezone(UTC).date() < D
+        counted = {a.id for a in articles if a.data["einheit"] in {"stueck", "packung", "kiste"}}
+        assert counted and all(
+            Decimal(r.data["menge"]) == int(Decimal(r.data["menge"]))
+            for r in counts
+            if r.data["artikel"] in counted
+        )
     assert client.get("/apps/inventur").status_code == 200
 
 
@@ -140,8 +147,14 @@ def test_ac5_recalculate_without_writes_and_preserve_errors(seeded, client):
     page = client.post(PATH, data=data)
     assert page.status_code == 200
     row = next(r for r in page.context["rows"] if r["article"].id == article.id)
-    assert row["suggestion"].amount == 0 and row["ordered"] == 0
+    # A typed quantity survives "Vorschlag aktualisieren" ...
+    assert row["suggestion"].amount == 0 and row["ordered"] == 5
     assert row["count_raw"] == "999,5"
+    # ... one still equal to the suggestion shown with it follows the new suggestion.
+    page = client.post(PATH, data={**data, f"vorschlag_{article.id}": "5"})
+    row = next(r for r in page.context["rows"] if r["article"].id == article.id)
+    assert row["ordered"] == 0 and row["ordered_raw"] == "0"
+    assert f'name="vorschlag_{article.id}" value="0"' in page.text
     for action in ("berechnen", "speichern"):
         for key, value, message in [
             (f"bestand_{article.id}", "-1", "mindestens 0"),
@@ -155,6 +168,13 @@ def test_ac5_recalculate_without_writes_and_preserve_errors(seeded, client):
             assert message in invalid.text
             assert invalid.context["raw"][key] == value
             assert invalid.context["raw"][f"grund_{article.id}"] == "angebot"
+    invalid = client.post(PATH, data={**data, f"bestand_{article.id}": "-1"})
+    assert invalid.context["summary"] == [
+        (
+            f"bestand_{article.id}",
+            f"{article.data['name']}, Bestand jetzt: Bitte mindestens 0 eingeben.",
+        )
+    ]
     assert len(store.records(seeded, app)) == before
     assert len(seeded.scalars(select(AuditEvent)).all()) == audit_before
 
@@ -331,6 +351,8 @@ def test_counts_use_timestamp_and_zero_orders_are_omitted(seeded, client):
     data[f"bestellt_{article.id}"] = "2,5"
     response = client.post(PATH, data=data, follow_redirects=False)
     assert response.status_code == 303
+    notice = parse_qs(urlsplit(response.headers["location"]).query)["notice"][0]
+    assert "gespeichert – 1 Position, ca." in notice
     created = [r for r in store.records(seeded, app) if r.id not in before]
     assert len([r for r in created if r.collection == "bestaende"]) == len(articles)
     lines = [r for r in created if r.collection == "positionen"]
@@ -351,3 +373,14 @@ def test_kitchen_realm_raw_config_contract():
     assert (jana["firstName"], jana["lastName"], jana["roles"]) == ("Jana", "Becker", ["kueche"])
     template = (root / "deploy/k3d/keycloak/templates/realm-configmap.yaml").read_text()
     assert '(dict "name" "kueche" "description" "Küche")' in template
+
+
+def test_list_search_finds_article_and_supplier_names(seeded, client):
+    import re
+
+    def titles(collection, q):
+        page = client.get(f"/apps/inventur/{collection}", params={"q": q})
+        return set(re.findall(r'class="app-record-title" href="[^"]+">([^<]+)</a>', page.text))
+
+    assert titles("bestaende", "Brötchen") == {"Brötchen"}
+    assert titles("artikel", "Bäckerei") == {"Brötchen", "Croissants", "Vollkornbrot"}

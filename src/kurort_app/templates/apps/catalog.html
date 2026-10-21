@@ -30,11 +30,19 @@
         <form method="post" action="/apps/{{ entry.slug }}/installieren"><button class="btn primary" type="submit">Installieren<span class="sr-only">: {{ entry.title }}</span></button></form>
         {% elif entry.state == 'Aktiv' %}
         <a class="btn primary" href="/apps/{{ entry.slug }}">App öffnen<span class="sr-only">: {{ entry.title }}</span></a>
-        <form method="post" action="/apps/{{ entry.slug }}/deaktivieren"><button class="btn" type="submit">Deaktivieren<span class="sr-only">: {{ entry.title }}</span></button></form>
         {% elif entry.state == 'Deaktiviert' %}
         <form method="post" action="/apps/{{ entry.slug }}/aktivieren"><button class="btn primary" type="submit">Aktivieren<span class="sr-only">: {{ entry.title }}</span></button></form>
         {% endif %}
       </div>
+      {% if entry.state == 'Aktiv' %}
+      <details class="app-disclosure">
+        <summary>Deaktivieren …<span class="sr-only"> {{ entry.title }}</span></summary>
+        <div class="app-disclosure-body stack">
+          <p>„{{ entry.title }}“ wirklich deaktivieren? Die App verschwindet für alle Mitarbeitenden aus der Seitenleiste. Die Einträge bleiben erhalten; Sie können die App jederzeit wieder aktivieren.</p>
+          <form method="post" action="/apps/{{ entry.slug }}/deaktivieren"><button class="btn" type="submit">App deaktivieren</button></form>
+        </div>
+      </details>
+      {% endif %}
       {% if entry.state in ['Aktiv', 'Deaktiviert'] %}
       <details class="app-disclosure app-destructive">
         <summary>Deinstallieren …<span class="sr-only"> {{ entry.title }}</span></summary>

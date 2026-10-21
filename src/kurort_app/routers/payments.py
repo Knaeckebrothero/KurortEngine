@@ -6,6 +6,7 @@ from decimal import Decimal
 from urllib.parse import unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -62,8 +63,13 @@ def _local_next(raw: str, fallback: str) -> str:
     return raw if not parts.scheme and not parts.netloc else fallback
 
 
-def _redirect(target: str, message: str):
+def _redirect(target: str, message: str, card: str | None = None):
     base, sep, anchor = target.partition("#")
+    if card and anchor == "zahlung":
+        # The page jumps to the payment card, so the card shows the confirmation
+        # (payments/_card.html); a notice at the page top would be out of view.
+        query = "&" if "?" in base else "?"
+        return RedirectResponse(f"{base}{query}zahlung={card}#zahlung", status_code=303)
     response = redirect_with_notice(base, message)
     if sep:
         response.headers["location"] += f"#{anchor}"
@@ -85,12 +91,17 @@ def _int(raw: str) -> int:
 
 
 def _amount(raw: str) -> tuple[Decimal | None, str | None]:
-    raw = raw.strip()
+    """German amounts as staff type them: "920,50 €", "1.000", "1 000,00", "920.50"."""
+    raw = raw.replace("€", "").strip()
+    raw = re.sub(r"(?<=\d)\s(?=\d{3}(?!\d))", "", raw)  # "1 000" groups thousands
     if not raw:
         return None, "Betrag fehlt"
-    if not re.fullmatch(r"[+-]?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d+)?|[+-]?\d+\.\d+", raw):
+    if re.fullmatch(r"[+-]?\d+\.\d+", raw) and not re.fullmatch(r"[+-]?[1-9]\d{0,2}\.\d{3}", raw):
+        normalized = raw  # "920.50": a single dot without three digits after it is a decimal point
+    elif re.fullmatch(r"[+-]?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d+)?", raw):
+        normalized = raw.replace(".", "").replace(",", ".")  # "1.000", "2.500,00"
+    else:
         return None, "Betrag ungültig"
-    normalized = raw.replace(".", "").replace(",", ".") if "," in raw else raw
     amount = Decimal(normalized)
     if amount.as_tuple().exponent < -2:
         return None, "Höchstens zwei Nachkommastellen"
@@ -175,7 +186,7 @@ async def record_payment(
         f"Zahlung erfasst · {method.label} · {payments.money(amount)}",
     )
     session.commit()
-    return _redirect(form["next"], "Zahlung erfasst.")
+    return _redirect(form["next"], "Zahlung erfasst.", "erfasst")
 
 
 @router.post("/reservierungen/{reservation_id}/zahlungen/{payment_id}/stornieren")
@@ -202,7 +213,7 @@ async def cancel_payment(
     payment.cancel_reason = reason
     _event(session, payment, "payment_cancelled", f"Zahlung storniert · {reason}", reason=reason)
     session.commit()
-    return _redirect(f"/reservierungen/{r.id}#zahlung", "Zahlung storniert.")
+    return _redirect(f"/reservierungen/{r.id}#zahlung", "Zahlung storniert.", "storniert")
 
 
 @router.get("/zahlungen/offen")
@@ -263,11 +274,19 @@ def _methods(session):
     )
 
 
-def _methods_page(request, session, errors=None, form=None):
+def _methods_page(request, session, errors=None, form=None, row_id=None):
+    """Errors and typed values belong to the add form, or to the row ``row_id``."""
     return templates.TemplateResponse(
         request,
         "payments/methods.html",
-        {"methods": _methods(session), "method_errors": errors or {}, "method_form": form or {}},
+        {
+            "methods": _methods(session),
+            "method_errors": {} if row_id else errors or {},
+            "method_form": {} if row_id else form or {},
+            "row_id": row_id,
+            "row_errors": errors if row_id else {},
+            "row_form": form if row_id else {},
+        },
     )
 
 
@@ -339,6 +358,7 @@ async def update_method(request: Request, method_id: int, session: Session = Dep
                 session,
                 {"label": "Bezeichnung fehlt" if not label else "Höchstens 60 Zeichen"},
                 form,
+                method.id,
             )
         method.label = label
         method.deferred = form.get("deferred") == "1"

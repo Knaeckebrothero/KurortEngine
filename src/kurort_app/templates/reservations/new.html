@@ -21,7 +21,8 @@
     <strong>{{ errors|length }} {{ 'Angabe' if errors|length == 1 else 'Angaben' }} prüfen</strong>
     <ul>
       {% for name, message in errors.items() %}
-      <li><a href="#{{ 'zimmer' if name == 'zimmer' else name }}">{{ field_labels.get(name, 'Mitreisende Person') }}: {{ message }}</a></li>
+      {%- set label = field_labels.get(name) or 'Mitreisende Person ' ~ name.split('_')[1] -%}
+      <li><a href="#{{ name }}">{% if label in message %}{{ message }}{% else %}{{ label }}: {{ message }}{% endif %}</a></li>
       {% endfor %}
     </ul>
   </div>

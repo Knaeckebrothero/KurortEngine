@@ -1,7 +1,6 @@
 .hk-filters { display: grid; gap: var(--space-3); margin-bottom: var(--space-6); }
 .hk-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .hk-chips strong { min-width: var(--space-12); }
-.hk-chips [aria-current] { font-weight: 700; text-decoration-thickness: 2px; }
 .hk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-4); }
 .hk-room { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
 .hk-room-head { display: flex; align-items: center; gap: var(--space-4); }
@@ -13,6 +12,19 @@
 .hk-room form { display: grid; gap: var(--space-2); }
 .hk-room > form { margin-top: auto; }
 .hk-room .btn, .hk-chips .btn, .hk-bulk .btn, .hk-other summary { min-height: var(--space-12); }
+/* A just-swapped card ignores taps for a moment (see _room_card.html, settle:600ms). */
+.hk-room.htmx-added button, .hk-room.htmx-added summary { pointer-events: none; }
+.hk-bulk summary { list-style: none; cursor: pointer; }
+.hk-bulk summary::-webkit-details-marker { display: none; }
+.hk-bulk details[open] summary { background: var(--surface-hover); }
+.hk-bulk .btn { white-space: normal; text-align: center; }
+.hk-bulk form { display: grid; gap: var(--space-3); max-width: 360px; margin-top: var(--space-2); padding: var(--space-4); }
+.hk-bulk form p { margin: 0; }
+@media (min-width: 601px) {
+  /* Desktop: the confirmation drops down over the filters instead of pushing the title. */
+  .hk-bulk details { position: relative; }
+  .hk-bulk form { position: absolute; right: 0; top: 100%; z-index: 5; width: 360px; }
+}
 .hk-other summary { display: flex; align-items: center; cursor: pointer; color: var(--primary); text-decoration: underline; }
 .hk-other form + form { margin-top: var(--space-3); }
 .hk-room .input { min-width: 0; width: 100%; }
@@ -20,6 +32,7 @@
   .hk-grid { grid-template-columns: minmax(0, 1fr); }
   .hk-chips { gap: var(--space-2); }
   .hk-chips strong { width: 100%; }
+  .hk-bulk, .hk-bulk details, .hk-bulk .btn { width: 100%; }
   .plan { --room-col: calc(var(--space-12) * 3); }
 }
 

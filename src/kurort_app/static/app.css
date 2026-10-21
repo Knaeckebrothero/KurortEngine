@@ -110,6 +110,9 @@ h1, h2, h3 { margin: 0; }
   background: var(--rail-bg); color: var(--rail-fg);
   display: flex; flex-direction: column; gap: var(--space-6);
   padding: var(--space-6) var(--space-4); position: sticky; top: 0; height: 100vh;
+  /* A long sidebar (Leitung) scrolls on its own on short screens. */
+  overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--color-neutral-600) transparent;
 }
 .brand { display: flex; gap: var(--space-3); align-items: center; padding: 0 var(--space-2); color: var(--rail-fg-strong); text-decoration: none; }
 .brand:hover { color: var(--rail-fg-strong); }
@@ -157,6 +160,8 @@ h1, h2, h3 { margin: 0; }
 
 /* ---------- Signed-in user (top bar) ---------- */
 .userbox { flex: none; display: flex; align-items: center; gap: var(--space-3); padding-left: var(--space-4); border-left: 1px solid var(--border-subtle); }
+/* No assistant bar (housekeeping, kitchen): the user box still sits at the right edge. */
+.topbar-date + .userbox { margin-left: auto; }
 .avatar {
   width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center;
   background: var(--selection-bg); color: var(--primary); font-weight: 700; font-size: 14px;
@@ -175,7 +180,7 @@ h1, h2, h3 { margin: 0; }
 .auth-card p { margin: 0; }
 .auth-brand { display: flex; gap: var(--space-3); align-items: center; }
 .auth-brand .brand-sub { color: var(--text-secondary); }
-.auth-actions { display: flex; gap: var(--space-2); }
+.auth-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
 /* ---------- Cards & layout ---------- */
 .card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-card); box-shadow: var(--elevation-1); }
@@ -198,9 +203,9 @@ h1, h2, h3 { margin: 0; }
 .metric-note { font-size: 14px; color: var(--text-secondary); }
 
 /* Definition lists */
-.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-2) var(--space-5); margin: 0; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-5); margin: 0; }
 .facts dt { color: var(--text-secondary); font-size: 14px; }
-.facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.facts dd { margin: 0; font-weight: 500; overflow-wrap: break-word; }
 
 /* ---------- Tables / queues ---------- */
 .table-wrap { overflow-x: auto; }
@@ -227,6 +232,8 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; line-heig
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
   font-size: 13px; line-height: 20px; font-weight: 650; padding: 2px 10px;
   border-radius: var(--radius-badge); background: var(--status-neutral-bg); color: var(--status-neutral-fg);
+  /* As wide and tall as its text, also as a flex or grid item (no stretching). */
+  width: fit-content; height: fit-content;
 }
 .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.85; }
 .badge.plain::before { display: none; }
@@ -309,9 +316,15 @@ legend { font-size: 16px; font-weight: 700; margin-bottom: var(--space-3); paddi
   .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Narrow desktop: date and user box on one line, the assistant bar full width below. */
+@media (min-width: 861px) and (max-width: 1100px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar .userbox { margin-left: auto; }
+  .topbar .ai-bar { order: 3; flex-basis: 100%; margin-left: 0; }
+}
 @media (max-width: 860px) {
-  .shell { grid-template-columns: 1fr; background: var(--canvas); }
-  .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
+  .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--canvas); }
+  .rail { position: relative; height: auto; overflow: visible; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); }
   .rail-nav { flex-direction: row; flex-wrap: wrap; }
   .rail-label, .rail-foot, .brand-sub { display: none; }
   .rail-cta { margin: 0 0 0 auto; }
@@ -320,8 +333,9 @@ legend { font-size: 16px; font-weight: 700; margin-bottom: var(--space-3); paddi
   .form-grid { grid-template-columns: 1fr; }
   .form-grid > * { grid-column: auto !important; }
   .search { width: 100%; margin-left: 0; }
-  .userbox { border-left: 0; padding-left: 0; }
-  .topbar { flex-wrap: wrap; }
+  .userbox, .topbar-date + .userbox { border-left: 0; padding-left: 0; margin-left: 0; }
+  /* Not pinned on phones: date, user and assistant together are too tall to keep on screen. */
+  .topbar { flex-wrap: wrap; position: static; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
@@ -335,8 +349,14 @@ legend { font-size: 16px; font-weight: 700; margin-bottom: var(--space-3); paddi
 }
 @media (max-width: 860px) {
   .rail { display: block; }
-  .rail-menu { margin-top: var(--space-2); }
-  .rail-menu > summary { display: flex; }
+  .rail-menu[open] { margin-top: var(--space-3); }
+  /* The menu toggle sits beside the brand; the open menu unfolds below both. */
+  .rail-menu > summary {
+    display: flex; gap: var(--space-2); position: absolute; top: var(--space-2); right: var(--space-2);
+    padding: 0 var(--space-3); border-radius: var(--radius-control); color: var(--rail-fg-strong);
+  }
+  .rail-menu[open] > summary { background: var(--rail-active-bg); }
+  .rail-menu > summary svg { width: 22px; height: 22px; flex: none; }
   .rail-menu .rail-nav { flex-direction: column; }
   .rail-menu .rail-label { display: block; }
   .rail-menu .rail-cta { margin-top: var(--space-3); }

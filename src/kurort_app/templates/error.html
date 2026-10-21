@@ -1,0 +1,11 @@
+{# Error page for browser requests: unknown address, missing record, invalid value.
+   main.py renders it in the app frame for staff, on the login card when nobody is logged in. #}
+{% extends "base.html" if framed else "auth/_layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="{{ 'card auth-card' if framed else 'stack' }}">
+  <h1>{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <div class="auth-actions"><a class="btn primary" href="{{ back[0] }}">{{ back[1] }}</a></div>
+</div>
+{% endblock %}

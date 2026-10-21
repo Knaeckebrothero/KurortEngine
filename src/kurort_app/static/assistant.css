@@ -10,6 +10,10 @@
   --ai-rec: #C13F49;
   --ai-drawer-w: 400px;
 }
+/* Up to 1600px a narrower drawer leaves the docked page room for its queue tables. */
+@media (min-width: 861px) and (max-width: 1599px) {
+  :root { --ai-drawer-w: 340px; }
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --ai-ring: #80D1DF;
@@ -60,11 +64,15 @@
   border: 1px solid transparent; background: transparent; color: var(--text-secondary); cursor: pointer;
   transition: background var(--motion-fast), color var(--motion-fast);
 }
+@media (pointer: coarse) { .ai-mic { width: 44px; height: 44px; } }
 .ai-mic:hover { background: var(--surface-hover); color: var(--primary); }
 .ai-mic svg { width: 20px; height: 20px; }
 .ai-mic.is-listening { background: var(--ai-rec); color: #fff; animation: ai-rec-pulse 1.4s ease-out infinite; }
 
 /* ---------- Popover ---------- */
+/* The sticky top bar is its own stacking context (z-index 20): while the popover is
+   open it rises above the drawer (60), so examples and results are never under it. */
+.topbar:has(.ai-pop:not([hidden])) { z-index: 65; }
 .ai-pop {
   position: absolute; z-index: 45; top: calc(100% + 8px); left: 0; right: 0;
   background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 14px;
@@ -123,6 +131,11 @@
 .ai-drawer-heading h2 { font-size: 18px; line-height: 24px; font-weight: 750; }
 .ai-drawer-heading h2:focus { outline: none; }
 .ai-drawer-sub { display: block; font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.ai-drawer-status { margin: 0; display: flex; flex-direction: column; min-width: 0; }
+.ai-drawer-status strong { font-size: 15px; line-height: 20px; font-weight: 700; }
+.ai-drawer-status strong, .ai-drawer-status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-drawer-status span { font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.ai-expand { flex: none; }
 .ai-close { min-width: 40px; padding: 0 var(--space-2); }
 .ai-drawer-body { flex: 1; overflow-y: auto; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
 .ai-quote {
@@ -184,16 +197,24 @@
 }
 .ai-note { margin: 0; font-size: 12px; line-height: 16px; color: var(--text-secondary); flex: 1; min-width: 160px; }
 
-/* Wide screens (1600px+): the drawer docks beside the page instead of covering it;
-   below that the page would get too narrow for the queue tables. */
-@media (min-width: 1600px) {
+/* From 1440px the drawer docks beside the page instead of covering its right side
+   (check-out buttons, status columns). Below that the queue tables would get too
+   narrow, so it docks only while a plan fills a form: forms reflow fine, and the
+   assistant must not cover the fields it just filled. */
+@media (min-width: 1440px) {
   body.ai-docked .main { margin-right: var(--ai-drawer-w); }
 }
-/* Forms reflow fine in less width, and the assistant must not cover the
-   fields it just filled: dock from 1280px while a plan fills a form. */
 @media (min-width: 1280px) {
   body.ai-docked.ai-docked-form .main { margin-right: var(--ai-drawer-w); }
   .main { transition: margin-right var(--motion-slow, 240ms ease-out); }
+}
+/* Docked, the top bar loses the drawer's width: drop the date and the shortcut hint
+   so the bar keeps room to type and the user box stays inside. */
+@media (min-width: 1440px) and (max-width: 1599px) {
+  body.ai-docked .topbar-date, body.ai-docked .ai-kbd { display: none; }
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  body.ai-docked.ai-docked-form .topbar-date, body.ai-docked.ai-docked-form .ai-kbd { display: none; }
 }
 
 /* ---------- Marks the assistant leaves on pages ---------- */
@@ -203,10 +224,12 @@
   box-shadow: 0 0 0 2px rgb(69 178 197 / 30%);
   transition: background 600ms ease-out, box-shadow 600ms ease-out;
 }
+/* Corner badge on the field's label row; out of the flow so rows stay aligned. */
+.ai-filled-field { position: relative; }
 .ai-filled-tag {
-  display: inline-flex; align-items: center; gap: 4px; margin-left: var(--space-2); vertical-align: 1px;
+  position: absolute; top: 1px; right: 0; display: inline-flex; align-items: center; gap: 4px;
   font: 600 11px/18px var(--font-sans); color: var(--ai-tag-fg); background: var(--ai-tag-bg);
-  border-radius: var(--radius-badge); padding: 0 8px; white-space: nowrap;
+  border-radius: var(--radius-badge); padding: 0 8px; white-space: nowrap; pointer-events: none;
 }
 .ai-filled-tag svg { width: 11px; height: 11px; }
 .ai-spot { position: relative; z-index: 2; outline: 3px solid var(--ai-ring); outline-offset: 2px; border-radius: 8px; animation: ai-spot 1.2s ease-out 3; }
@@ -244,6 +267,20 @@ tr.ai-spot > td { background: var(--ai-fill-bg); }
 @media (max-width: 860px) {
   .ai-bar { flex: 1 1 100%; width: 100%; margin-left: 0; order: 3; }
   .ai-kbd { display: none; }
+  /* After a plan has run the drawer shrinks to a status bar at the top, so the
+     filled form, the highlighted row and the (sticky) save button show. */
+  .ai-drawer.is-collapsed {
+    bottom: auto; width: 100vw; border-left: 0; border-bottom: 1px solid var(--border-subtle);
+  }
+  .ai-drawer.is-collapsed .ai-drawer-head { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); border-bottom: 0; }
+  .ai-drawer.is-collapsed .ai-avatar { width: 32px; height: 32px; border-radius: 9px; box-shadow: none; }
+  .ai-drawer.is-collapsed .ai-avatar svg { width: 18px; height: 18px; }
+  .ai-drawer.is-collapsed .ai-drawer-heading h2 {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .ai-drawer.is-collapsed .ai-drawer-sub,
+  .ai-drawer.is-collapsed .ai-drawer-body,
+  .ai-drawer.is-collapsed .ai-drawer-foot { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ai-drawer, .main { transition: none !important; }

@@ -2,13 +2,13 @@
 {% block step %}
 {% set printed = r.guests | rejectattr('meldeschein_status', 'equalto', 'offen') | list | length %}
 <section class="card">
-  <div class="card-header"><h2>Alles bereit?</h2><span class="sub">Prüfen, dann Zimmer übergeben.</span></div>
+  <div class="card-header"><div><h2>Alles bereit?</h2><span class="sub">Prüfen, dann Zimmer übergeben.</span></div></div>
   <div class="card-body">
     <ul class="ci-checklist">
       <li class="{{ 'is-open' if state.gaeste else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Gästedaten</strong><span class="sub">{{ r.guests | length }} {{ "Person" if r.guests | length == 1 else "Personen" }} · {{ 'Angaben fehlen' if state.gaeste else 'vollständig' }}</span></div><a href="/check-in/{{ r.id }}/gaeste">Ansehen</a></li>
       <li class="{{ 'is-open' if state.avs else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>AVS gedruckt</strong><span class="sub">{{ printed }} von {{ r.guests | length }}</span></div><a href="/check-in/{{ r.id }}/avs">Ansehen</a></li>
-      <li class="{{ 'is-ok' if r.room else 'is-open' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Zimmer</strong><span class="sub">{{ r.room.number if r.room else 'Kein Zimmer zugewiesen' }}</span></div></li>
-      <li class="{{ 'is-open' if result.blockers else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Kurtaxe {{ r.kurtaxe.amount | money if r.kurtaxe else '–' }} · {% if result.exempt_count %}{{ result.exempt_count }} Person{{ 'en' if result.exempt_count != 1 else '' }} befreit ({{ result.lines | selectattr('exempt') | map(attribute='exemption_label') | unique | join(', ') }}){% else %}normaler Satz{% endif %}</strong></div></li>
+      {% set room_ready = r.room and r.room.housekeeping_status in ('clean', 'inspected') %}<li class="{{ 'is-ok' if room_ready else 'is-open' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Zimmer</strong><span class="sub">{% if not r.room %}Kein Zimmer zugewiesen{% elif room_ready %}{{ r.room.number }}{% else %}{{ r.room.number }} · {{ r.room.housekeeping_status | room_status_label }}{% endif %}</span></div>{% if room_item %}<form method="post" action="{{ room_item.action_url }}"><input type="hidden" name="zurueck" value="{{ request.url.path }}"><button class="btn sm" type="submit">{{ room_item.action_label }}</button></form>{% endif %}</li>
+      <li class="{{ 'is-open' if result.blockers else 'is-ok' }}"><span class="ci-check" aria-hidden="true"></span><div><strong>Kurtaxe</strong><span class="sub">{{ kurtaxe_summary }}</span></div></li>
     </ul>
     <details id="kurtaxe"{% if result.blockers %} open{% endif %}>
       <summary>Kurtaxe bearbeiten</summary>
@@ -21,15 +21,16 @@
     </div>
   </div>
 </section>
-{% if open_items %}
-<div class="notice danger" role="status"><div><strong>Noch {{ open_items | length }} {{ "Punkt" if open_items | length == 1 else "Punkte" }} offen.</strong><ul>
-  {% for b in open_items %}<li>{{ b.message }}
+{# The checklist shows the check-in's own open items; other features' items appear here. #}
+{% if extra_items %}
+<div class="notice danger" role="status"><div><strong>Noch offen:</strong><ul>
+  {% for b in extra_items %}<li>{{ b.message }}
     {% if b.action_label and b.action_url %}<form method="post" action="{{ b.action_url }}"><input type="hidden" name="zurueck" value="{{ request.url.path }}"><button class="btn" type="submit">{{ b.action_label }}</button></form>{% endif %}
   </li>{% endfor %}
 </ul></div></div>
 {% endif %}
 <form method="post" action="/check-in/{{ r.id }}/abschluss" class="stack">
   {% for rg in r.guests %}<label class="ci-signature"><input type="checkbox" name="unterschrieben" value="{{ rg.id }}" checked> {{ rg.guest.full_name }} · Unterschrift erhalten</label>{% endfor %}
-  <div class="ci-footer"><a class="btn ghost" href="{{ prev_url }}">Zurück</a><span class="spacer"></span><button class="btn primary ci-complete" type="submit"{% if open_items %} disabled{% endif %}>Check-in abschließen{% if r.room %} · Zimmer {{ r.room.number }}{% endif %}</button></div>
+  <div class="ci-footer"><a class="btn ghost" href="{{ prev_url }}">Zurück</a><span class="spacer"></span>{% if open_items %}<span class="muted">Noch {{ open_items | length }} {{ "Punkt" if open_items | length == 1 else "Punkte" }} offen</span>{% endif %}<button class="btn primary ci-complete" type="submit"{% if open_items %} disabled{% endif %}>Check-in abschließen{% if r.room %} · Zimmer {{ r.room.number }}{% endif %}</button></div>
 </form>
 {% endblock %}

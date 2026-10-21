@@ -45,7 +45,7 @@ def _event(session: Session, row: EmailMessageRow, action: str) -> None:
         entity_id=row.reservation_id or "entfernt",
         summary={
             "email_sent": "E-Mail gesendet",
-            "email_logged": "E-Mail protokolliert – nicht versendet",
+            "email_logged": "E-Mail gespeichert – Testbetrieb, nicht verschickt",
             "email_failed": "E-Mail fehlgeschlagen",
             "email_retried": "E-Mail erneut gesendet",
         }[action],

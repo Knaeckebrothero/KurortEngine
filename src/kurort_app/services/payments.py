@@ -60,14 +60,22 @@ def money(amount: Decimal) -> str:
     return fmt_money(amount)
 
 
+def awaiting_label(b: Balance) -> str:
+    """Paid by invoice ("Auf Rechnung"), money not yet received."""
+    return f"{money(b.awaiting)} auf Rechnung, Eingang offen"
+
+
 def state_label(b: Balance) -> str:
     from kurort_app.web import PAYMENT_STATE_LABELS
 
+    if b.state == "bezahlt" and b.awaiting > 0:
+        # Not "Bezahlt": the money of an invoice payment has not arrived yet.
+        return awaiting_label(b)
     label = PAYMENT_STATE_LABELS[b.state]
     if b.state != "bezahlt":
         label += f" {money(abs(b.open))}"
     if b.awaiting > 0:
-        label += f" · Rechnung offen {money(b.awaiting)}"
+        label += f" · {awaiting_label(b)}"
     return label
 
 
@@ -93,7 +101,14 @@ def form_context(
     )
     return {
         "balance": b,
-        "payment_label": state_label(b),
+        # Card badge; the open amount itself is shown large next to it.
+        "payment_label": (
+            awaiting_label(b)
+            if b.awaiting > 0
+            else "Bezahlt"
+            if b.state == "bezahlt" and b.paid > 0
+            else None
+        ),
         "payment_methods": methods,
         "payment_form": values,
         "payment_errors": errors or {},
@@ -173,7 +188,8 @@ def payment_notice(session, day):
     from kurort_app.services.today import Flag
 
     count = len(open_balances(session))
-    return [Flag(f"{count} offene Beträge", "warning", "/zahlungen/offen")] if count else []
+    text = "1 offener Betrag" if count == 1 else f"{count} offene Beträge"
+    return [Flag(text, "warning", "/zahlungen/offen")] if count else []
 
 
 from kurort_app.services import today as desk  # noqa: E402

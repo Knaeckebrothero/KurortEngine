@@ -148,6 +148,7 @@ def test_ac2_independent_booking_and_audit(client, seeded):
     ).all()
     assert len(events) == 1 and events[0].entity_id == str(booking_id)
     assert "Testfirma" in events[0].summary
+    assert "Ganztags für Testfirma" in events[0].summary  # slot label, not the stored key
     detail = client.get(f"/seminarraum/{booking_id}")
     assert detail.status_code == 200 and "Clara Sommer" in detail.text
     assert events[0].summary in detail.text and "berechnet" in detail.text
@@ -202,7 +203,7 @@ def test_ac3_price_edit_and_manual_clear(client, seeded):
     seeded.expire_all()
     manual = seeded.get(SpaceBooking, manual_id)
     assert manual.price == Decimal("125.50") and manual.price_manual
-    assert 'value="125.50"' in client.get(f"/seminarraum/{manual_id}/bearbeiten").text
+    assert 'value="125,50"' in client.get(f"/seminarraum/{manual_id}/bearbeiten").text
     assert "manuell" in client.get(f"/seminarraum/{manual_id}").text
     manual_form["preis"] = ""
     client.post(f"/seminarraum/{manual_id}/bearbeiten", data=manual_form)
@@ -227,7 +228,9 @@ def test_ac4_http_clashes_and_exclusions(client, seeded):
     )
     _created(client, _form(zeit="nachmittag"))
     later = (D + timedelta(days=31)).isoformat()
-    _created(client, _form(von=later, bis=later))
+    _created(client, _form(von=later, bis=later, status="bestaetigt"))
+    confirmed = client.post("/seminarraum/neu", data=_form(von=later, bis=later))
+    assert "bereits gebucht (Testfirma, bestätigt)." in confirmed.text
     assert (
         client.post(
             f"/seminarraum/{first}/bearbeiten", data=_form(zeit="vormittag"), follow_redirects=False
@@ -375,6 +378,9 @@ def test_ac8_week_strip_and_prefill(client, seeded):
     assert 'value="2026-10-16"' in form
     assert 'value="vormittag" checked' in form
     assert "1 × Halbtag à 190,00 €" in form
+    assert 'class="seminar-day is-today" aria-current="date"><h4>Mi 14.10. · heute' in html
+    label = "Seminarraum Freitag, 16. Oktober 2026, Vormittag: frei – Buchung anlegen"
+    assert f'aria-label="{label}"' in html
 
 
 def test_ac9_settings_audit_prices_and_placeholder(client, seeded):
@@ -399,7 +405,9 @@ def test_ac9_settings_audit_prices_and_placeholder(client, seeded):
     assert before == [
         b.price for b in seeded.scalars(select(SpaceBooking).order_by(SpaceBooking.id))
     ]
-    assert "Platzhalterpreise – bitte prüfen" not in client.get("/verwaltung/seminarraum").text
+    settings = client.get("/verwaltung/seminarraum").text
+    assert "Platzhalterpreise – bitte prüfen" not in settings
+    assert 'value="210,00"' in settings and 'value="390,00"' in settings
     response = client.post(
         "/verwaltung/seminarraum/neu",
         data={

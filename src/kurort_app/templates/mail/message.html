@@ -2,10 +2,9 @@
 {% block title %}E-Mail{% endblock %}
 {% block content %}
 <nav class="breadcrumb"><a href="/e-mails">Postausgang</a> › Nachricht</nav>
-<div class="page-header"><div><h1>{{ 'Spätanreise' if sensitive else message.subject }}</h1><p>{{ message.status | email_status_label }}</p></div>{% if message.reservation_id %}<a class="btn" href="/reservierungen/{{ message.reservation_id }}">Zur Reservierung</a>{% endif %}</div>
-<div class="card card-body stack mail-work"><dl class="facts"><dt>An</dt><dd>{{ message.to_address }}</dd><dt>Erstellt</dt><dd>{{ message.created_at | date }} {{ message.created_at | time }}</dd><dt>Versuche</dt><dd>{{ message.attempts }}</dd></dl>
+<div class="page-header"><div><h1>{{ 'Spätanreise' if sensitive else message.subject }}</h1><p>{{ message.status | email_status_label }}{% if message.status == 'logged' %} (kein Mailserver eingerichtet){% endif %}</p></div>{% if message.reservation_id %}<div class="page-actions"><a class="btn" href="/reservierungen/{{ message.reservation_id }}">Zur Reservierung</a></div>{% endif %}</div>
+<div class="card card-body stack mail-work"><dl class="facts"><dt>An</dt><dd>{{ message.to_address }}</dd><dt>Vorlage</dt><dd>{{ (template_name or 'Vorlage') if message.template_key else 'Eigene Nachricht' }}</dd><dt>Erstellt</dt><dd>{{ message.created_at | date }} {{ message.created_at | time }} · {{ message.created_by | staff_name }}</dd>{% if message.attempts > 1 %}<dt>Versandversuche</dt><dd>{{ message.attempts }}</dd>{% endif %}</dl>
 {% if sensitive %}<p>Der Safe-Code ist nur auf der Vorbereitungsseite sichtbar.</p>{% if message.reservation_id %}<a class="btn" href="/spaetanreise/{{ message.reservation_id }}">Spätanreise öffnen</a>{% endif %}{% else %}<pre class="mail-text">{{ message.body }}</pre>{% endif %}
-{% if message.status == 'logged' %}<p>protokolliert – nicht versendet (kein Mailserver eingerichtet)</p>{% endif %}
 {% if message.error %}<div class="notice danger" role="alert">{{ message.error }}</div>{% endif %}
 {% if message.status == 'failed' %}<form method="post" action="/e-mails/{{ message.id }}/erneut"><button class="btn primary" type="submit">Erneut senden</button></form>{% endif %}
 </div>

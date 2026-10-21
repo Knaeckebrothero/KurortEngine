@@ -5,7 +5,7 @@
   <div>
     <span class="eyebrow">Planung</span>
     <h1>Reservierungen</h1>
-    <p>{% if q %}Suche nach „{{ q }}“ in allen Aufenthalten{% elif default_window %}Aktuelle und kommende Aufenthalte{% else %}Alle Aufenthalte im gewählten Zeitraum{% endif %}</p>
+    <p id="res-subtitle">{{ subtitle }}</p>
   </div>
   <div class="page-actions">
     <a class="btn" href="/reservierungen/neu?walkin=1">
@@ -39,7 +39,7 @@
   </div>
   <div class="res-filter-actions">
     <button class="btn primary" type="submit">Filtern</button>
-    {% if q or von or bis or status or alle %}<a class="btn ghost" href="/reservierungen">Zurücksetzen</a>{% endif %}
+    {% include "reservations/_reset.html" %}
   </div>
 </form>
 

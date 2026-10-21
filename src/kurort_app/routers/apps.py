@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -32,15 +32,17 @@ ICONS = {
     "cart": '<path d="M2 3h3l3 13h11l3-10H6"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/>',
     "list": '<path d="M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1"/>',
 }
+
+
+class CatalogNavItem(web.NavItem):
+    """Active on the catalogue itself only: every installed app lives under /apps/ too."""
+
+    def active_for(self, path):
+        return path == self.href
+
+
 web.NAV.append(
-    web.NavItem(
-        "/apps",
-        "Apps verwalten",
-        ICONS["clipboard"],
-        "Verwaltung",
-        roles=("leitung",),
-        match="/apps/verwaltung",
-    )
+    CatalogNavItem("/apps", "Apps verwalten", ICONS["clipboard"], "Verwaltung", roles=("leitung",))
 )
 
 
@@ -112,6 +114,8 @@ def render(ctx, template, **data):
                 session, app, app.collection(row.collection).field(key), row.data.get(key)
             ),
             "row_title": lambda row: store.title(session, app, row),
+            "show_changes": lambda event: store.changes(session, app, event.payload or {}),
+            "ranges": lambda row: store.ranges(session, app, row),
             **data,
         },
     )
@@ -162,6 +166,10 @@ def lifecycle(slug: str, request: Request, session: Session = DB, user=ADMIN):
     return web.redirect_with_notice("/apps", "App-Status geändert.")
 
 
+class InvalidPeriod(ValueError):
+    pass
+
+
 def period(request):
     day = today()
     try:
@@ -170,10 +178,15 @@ def period(request):
         )
         end = date.fromisoformat(request.query_params.get("bis") or day.isoformat())
     except ValueError as exc:
-        raise HTTPException(422, "Bitte einen gültigen Zeitraum wählen.") from exc
+        raise InvalidPeriod("Bitte einen gültigen Zeitraum wählen.") from exc
     if end < start:
-        raise HTTPException(422, "Das Ende liegt vor dem Beginn.")
+        raise InvalidPeriod("Das Ende liegt vor dem Beginn.")
     return start, end
+
+
+def back_to_report(request, slug):
+    """A download with a broken period goes back to the report page, which explains it."""
+    return RedirectResponse(f"/apps/{slug}/bericht?{request.url.query}", status_code=303)
 
 
 def permitted_reports(ctx):
@@ -198,19 +211,29 @@ def selected_report(ctx):
 @router.get("/{slug}/bericht")
 def report_page(slug: str, request: Request, session: Session = DB):
     ctx = context(request, session, slug)
-    start, end = period(request)
+    try:
+        start, end = period(request)
+        error = None
+    except InvalidPeriod as exc:
+        start = end = None
+        error = str(exc)
     previous_end = today().replace(day=1) - timedelta(days=1)
     choices, selected = selected_report(ctx)
-    return render(
+    response = render(
         ctx,
         "report",
         reports=choices,
         selected=selected,
         start=start,
         end=end,
+        von=request.query_params.get("von") or (start.isoformat() if start else ""),
+        bis=request.query_params.get("bis") or (end.isoformat() if end else ""),
+        period_error=error,
         previous_start=previous_end.replace(day=1),
         previous_end=previous_end,
     )
+    response.status_code = 422 if error else 200
+    return response
 
 
 @router.get("/{slug}/bericht.pdf")
@@ -219,7 +242,10 @@ def pdf(slug: str, request: Request, session: Session = DB):
     _, report = selected_report(ctx)
     if report is None:
         raise HTTPException(404, "Bericht nicht gefunden")
-    start, end = period(request)
+    try:
+        start, end = period(request)
+    except InvalidPeriod:
+        return back_to_report(request, slug)
     content = reports.pdf_export(
         session, ctx.definition, report, start, end, ctx.user.username if ctx.user else "rezeption"
     )
@@ -286,7 +312,10 @@ def home(slug: str, request: Request, session: Session = DB):
 @router.get("/{slug}/{collection}/export.csv")
 def csv_download(slug: str, collection: str, request: Request, session: Session = DB):
     ctx = context(request, session, slug, collection)
-    start, end = period(request)
+    try:
+        start, end = period(request)
+    except InvalidPeriod:
+        return back_to_report(request, slug)
     columns = None
     if request.query_params.get("bericht"):
         _, report = selected_report(ctx)

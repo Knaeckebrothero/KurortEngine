@@ -199,6 +199,10 @@ def test_room_availability_and_dashboard(client, seeded, engine):
     assert plan["steps"][0]["config"] == {"widgets": ["today", "occupancy"], "occupancy_days": 30}
     assert plan["message"] == "Angezeigt: Heute, Belegung · Belegung für 30 Tage"
 
+    engine(tool_call("dashboard", show=["today"], today_filter="anreisen"))
+    plan = ask(client, "Auf der Startseite nur die Anreisen")
+    assert plan["steps"][1]["url"] == "/?zeigen=anreisen"
+
     engine(tool_call("dashboard", reset=True))
     assert ask(client, "Startseite wie vorher")["steps"][0]["reset"] is True
 
@@ -207,8 +211,39 @@ def test_a_text_answer_is_shown_with_examples(client, db, engine):
     engine(reply("Für welchen Gast soll ich die Rechnung erstellen?"))
     plan = ask(client, "Mach mal die Rechnung fertig")
     assert plan["intent"] == "unknown" and plan["engine"] == "claude"
+    assert plan["title"] == "Antwort"
     assert plan["message"] == "Für welchen Gast soll ich die Rechnung erstellen?"
     assert plan["suggestions"]
+
+
+def test_a_search_for_an_unsupported_request_says_so(client, db, engine):
+    engine(tool_call("search", term="110"))
+    plan = ask(client, "Rechnung für Zimmer 110")
+    assert plan["intent"] == "search" and plan["engine"] == "claude"
+    assert plan["message"] == (
+        "Rechnungen kann ich noch nicht – hier die Aufenthalte von Zimmer 110."
+    )
+    assert plan["steps"][0]["url"] == "/reservierungen?q=110"
+
+    engine(tool_call("search", term="Becker"))
+    assert ask(client, "Wo wohnt Herr Becker?")["message"] is None  # a plain search
+
+
+def test_a_bare_name_code_or_room_is_searched_without_claude(client, seeded, engine):
+    fake = engine(tool_call("departures"))
+    res = _arrivals(seeded)[0]
+    for text in (
+        res.code,
+        res.room.number,
+        _primary(res).last_name,
+        f"Frau {_primary(res).last_name}",
+    ):
+        plan = ask(client, text)
+        assert plan["intent"] == "search" and plan["engine"] == "plain-search", text
+    assert not fake.calls
+
+    ask(client, "Hilfe")  # a single word that finds no guest is still Claude's
+    assert len(fake.calls) == 1
 
 
 REQUEST = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")

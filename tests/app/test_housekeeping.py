@@ -52,6 +52,7 @@ def test_manual_status_prg_htmx_audit_and_noop(client, db):
     assert client.post(f"/zimmerstatus/{room.id}/dirty", follow_redirects=False).status_code == 303
     response = client.post(f"/zimmerstatus/{room.id}/clean", follow_redirects=False)
     assert response.status_code == 303 and "notice=" in response.headers["location"]
+    assert "Zimmer 204 ist sauber." in client.get(response.headers["location"]).text
     db.refresh(room)
     assert room.housekeeping_status == "clean"
     assert room.housekeeping_changed_at is not None and room.housekeeping_changed_by == "rezeption"
@@ -63,13 +64,45 @@ def test_manual_status_prg_htmx_audit_and_noop(client, db):
     stamp = room.housekeeping_changed_at
     fragment = client.post(f"/zimmerstatus/{room.id}/clean", headers={"HX-Request": "true"})
     assert fragment.status_code == 200 and len(cards(fragment.text)) == 1
-    assert "<html" not in fragment.text and "Zuletzt" in fragment.text
+    assert "<html" not in fragment.text and "· Rezeption</p>" in fragment.text
     assert len(events(db)) == count
     db.refresh(room)
     assert room.housekeeping_changed_at == stamp
     assert (
-        'hx-swap="outerHTML"' in fragment.text and f'hx-target="#room-{room.id}"' in fragment.text
+        'hx-swap="outerHTML settle:600ms"' in fragment.text
+        and f'hx-target="#room-{room.id}"' in fragment.text
     )
+    assert ">Außer Betrieb</button>" in fragment.text
+
+
+def test_status_tap_updates_counts_and_bulk_out_of_band(client, db):
+    from decimal import Decimal
+
+    stay = make_stay(db, [{}], arrival=D - timedelta(days=1), nights=3)
+    stay.status = "checked_in"
+    db.add(Room(number="301", category="Suite", floor=3, max_occupancy=2, nightly_rate=Decimal(1)))
+    db.commit()
+    page = client.get(f"/zimmerstatus?etage={stay.room.floor}").text
+    assert 'id="hk-count-clean" data-status-count="clean">1</span>' in page
+    assert "(1, alle Etagen)" in page and "auf allen Etagen wird" in page
+    fragment = client.post(
+        f"/zimmerstatus/{stay.room_id}/dirty",
+        headers={
+            "HX-Request": "true",
+            "HX-Current-URL": f"http://testserver/zimmerstatus?etage={stay.room.floor}",
+        },
+    ).text
+    assert len(cards(fragment)) == 1
+    assert 'id="hk-count-dirty" hx-swap-oob="true" data-status-count="dirty">1</span>' in fragment
+    assert 'id="hk-count-clean" hx-swap-oob="true" data-status-count="clean">0</span>' in fragment
+    bulk = fragment.split('id="hk-bulk" hx-swap-oob="true"', 1)[1]
+    assert "disabled><span>Bleibezimmer auf schmutzig setzen" in bulk and "(0)" in bulk
+
+
+def test_invalid_floor_filter_shows_all_floors(client, db):
+    make_stay(db, [{}])
+    response = client.get("/zimmerstatus?etage=x")
+    assert response.status_code == 200 and len(cards(response.text)) == 1
 
 
 def test_note_and_return_path(client, db):
@@ -119,19 +152,30 @@ def test_filters_counts_and_room_sort(client, seeded):
         assert f'data-status-count="{status}">{count}</span>' in html
 
 
+def test_a_guest_checked_in_today_is_not_shown_as_free(client, db):
+    stay = make_stay(db, [{}], arrival=D, nights=2)
+    stay.status = "checked_in"
+    db.commit()
+    assert '<p class="hk-situation">Angereist</p>' in client.get("/zimmerstatus").text
+
+
 def test_situations_urgency_and_bulk_stayover(client, db):
     stay = make_stay(db, [{}], arrival=D - timedelta(days=1), nights=3)
     stay.status = "checked_in"
     db.commit()
     html = client.get("/zimmerstatus").text
-    assert "Bleibe" in html
+    assert '<p class="hk-situation">Bleiber</p>' in html
+    assert '<form class="card" method="post" action="/zimmerstatus/bleibe">' in html
+    assert "Ja, 1 Zimmer auf schmutzig setzen" in html and "alle Etagen" not in html
     response = client.post("/zimmerstatus/bleibe", follow_redirects=False)
     assert response.status_code == 303
     assert "1+Bleibezimmer" in response.headers["location"]
     db.refresh(stay.room)
     assert stay.room.housekeeping_status == "dirty"
     assert events(db)[-1].payload["reason"] == "stayover"
+    assert 'action="/zimmerstatus/bleibe"' not in client.get("/zimmerstatus").text
     again = client.post("/zimmerstatus/bleibe")
+    assert '<div class="notice info flash"' in again.text
     assert "Keine Bleibezimmer zu setzen." in again.text
     for status in ("dirty", "out_of_order", "clean", "inspected"):
         client.post(f"/zimmerstatus/{stay.room_id}/{status}")
@@ -145,7 +189,9 @@ def test_situations_urgency_and_bulk_stayover(client, db):
     db.commit()
     assert "Abgereist" in client.get("/zimmerstatus").text
     arrival = make_stay(db, [{}], code="ARRIVING")
-    assert "Abreise · Anreise heute" in client.get("/zimmerstatus").text
+    arrival.eta = time(15, 30)
+    db.commit()
+    assert "Abreise · Anreise heute · ca. 15:30" in client.get("/zimmerstatus").text
     stay.departure = D - timedelta(days=1)
     stay.arrival = D - timedelta(days=3)
     arrival.eta = time(14, 0)
@@ -227,7 +273,10 @@ def test_checkout_marks_room_dirty_with_audit(client, db):
     stay = make_stay(db, [{}])
     stay.status = "checked_in"
     db.commit()
-    assert client.post(f"/check-out/{stay.id}", follow_redirects=False).status_code == 303
+    response = client.post(
+        f"/check-out/{stay.id}", data={"offen_geklaert": "1"}, follow_redirects=False
+    )
+    assert response.status_code == 303
     db.refresh(stay.room)
     assert stay.room.housekeeping_status == "dirty"
     assert events(db)[-1].payload["reason"] == "checkout"
@@ -240,12 +289,11 @@ def test_arrival_flag_and_checkin_blocker_action(client, db):
     client.post(f"/zimmerstatus/{room.id}/dirty")
     html = client.get("/").text
     assert "Zimmer noch nicht sauber" in html
-    assert f'href="/zimmerstatus?etage={room.floor}"' in html
+    assert f'href="/zimmerstatus?etage={room.floor}#room-{room.id}"' in html
     summary = client.get(f"/check-in/{stay.id}/abschluss").text
-    assert (
-        "Als sauber markieren" in summary
-        and f"Zimmer {room.number} ist noch nicht sauber." in summary
-    )
+    # The dirty room shows once: in the checklist's Zimmer row, with its button.
+    assert "Als sauber markieren" in summary and f"{room.number} · Schmutzig" in summary
+    assert f"Zimmer {room.number} ist noch nicht sauber." not in summary
     assert f'action="/zimmerstatus/{room.id}/clean"' in summary
     client.post(f"/check-in/{stay.id}/abschluss")
     db.refresh(stay)
@@ -293,10 +341,10 @@ def test_out_of_order_flag_blocker_and_plan(client, db):
     row = plan.split(f'data-room-row="{stay.room.number}"', 1)[1].split('<div class="plan-row', 1)[
         0
     ]
-    assert "außer Betrieb" in row and 'title="Heizung defekt"' in row
+    assert "Außer Betrieb" in row and 'title="Heizung defekt"' in row
     assert "/reservierungen/neu?zimmer=" not in row
     client.post(f"/zimmerstatus/{stay.room_id}/inspected")
-    assert "geprüft" in client.get("/zimmerplan").text
+    assert "Geprüft" in client.get("/zimmerplan").text
 
 
 def test_housekeeping_limited_staff_home_navigation_and_forbidden(oidc_client, idp, db):
@@ -394,9 +442,42 @@ def test_seed_reset_plants_cleaning_statuses_without_changing_f1_flags(client, d
                 )
             )
         )
+        stays = db.scalars(select(Reservation)).all()
+        departed = [s for s in stays if s.departure == D and s.status == "checked_out"]
+        assert departed and all(s.room.housekeeping_status == "dirty" for s in departed)
+        broken = next(r for r in rooms if r.housekeeping_status == "out_of_order")
+        assert not any(
+            s.room_id == broken.id
+            and s.status not in ("cancelled", "no_show")
+            and s.departure >= D
+            and s.arrival <= D + timedelta(days=3)
+            for s in stays
+        )
+        assert all(re.fullmatch(r"R-\d{4}-\d{4}", s.code) for s in stays)
+        assert not any(
+            g.email == "spaetanreise@example.de" for s in stays for g in (s.primary_guest,)
+        )
         snapshots.append([(r.number, r.housekeeping_status, r.housekeeping_note) for r in rooms])
         html = client.get("/").text
         assert (
             "Gästedaten fehlen · Geburtsdatum" in html and "Kurtaxe klären · Nachweis fehlt" in html
         )
     assert snapshots[0] == snapshots[1]
+
+
+@pytest.mark.parametrize("hour,status", [(6, "checked_in"), (12, "checked_out")])
+def test_seed_keeps_todays_early_leavers_in_house_until_they_left(hour, status):
+    import random
+    from datetime import datetime
+
+    from kurort_app.seed import HOTEL_TZ, _apply_lifecycle
+
+    stay = Reservation(arrival=D - timedelta(days=3), departure=D)
+    rng = random.Random(0)
+    rng.random = lambda: 0.1  # one of the departures that leave early
+    _apply_lifecycle(rng, stay, D, datetime.combine(D, time(hour), tzinfo=HOTEL_TZ))
+    assert stay.status == status and stay.checked_in_at is not None
+    if status == "checked_out":
+        assert stay.checked_out_at.date() == D and stay.checked_out_at.hour == 7
+    else:
+        assert stay.checked_out_at is None

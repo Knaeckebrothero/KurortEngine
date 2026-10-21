@@ -31,9 +31,11 @@ def test_schedules_day_variable_interval_active_and_hours(app_definitions):
     assert len(result) == 1 and result[0].status == "überfällig"
     assert result[0].note == "noch nie erfasst"
     reading = record(3, "messungen", geraet=1, gemessen_am="2026-10-13T05:30:00+00:00")
-    assert schedules(app, [target, reading], today=TODAY, now=NOW)[0].status == "fällig"
+    due = schedules(app, [target, reading], today=TODAY, now=NOW)[0]
+    assert (due.status, due.note) == ("fällig", "fällig am 14.10.2026")
     reading.data["gemessen_am"] = "2026-10-12T05:30:00+00:00"
-    assert schedules(app, [target, reading], today=TODAY, now=NOW)[0].status == "überfällig"
+    due = schedules(app, [target, reading], today=TODAY, now=NOW)[0]
+    assert (due.status, due.note) == ("überfällig", "fällig seit 13.10.2026")
     s = app.schedules[0]
     s.every_days, s.every_days_field = None, "intervall"
     assert schedules(app, [target, reading], today=TODAY, now=NOW)[0].status == "erledigt"
@@ -50,7 +52,8 @@ def test_alert_window_expiry_silence_and_soft_delete(app_definitions):
 
     app = AppRegistry().valid["geraetecheck"]
     target = record(1, "geraete", pruefung_bis="2026-10-20")
-    assert alerts(app, [target], today=TODAY)[0].status == "läuft ab"
+    alert = alerts(app, [target], today=TODAY)[0]
+    assert (alert.status, alert.note) == ("läuft ab", "Prüfung gültig bis 20.10.2026")
     target.data["pruefung_bis"] = "2026-10-13"
     assert alerts(app, [target], today=TODAY)[0].status == "abgelaufen"
     target.data["pruefung_bis"] = "2027-01-01"

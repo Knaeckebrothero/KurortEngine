@@ -138,7 +138,9 @@ def context_for(
             "naechte": str(reservation.nights),
             "zimmer": room.number if room else "noch nicht zugeteilt",
             "kategorie": room.category if room else "noch nicht zugeteilt",
-            "ankunftszeit": fmt_time(reservation.eta) if reservation.eta else "nicht angegeben",
+            "ankunftszeit": (
+                f"{fmt_time(reservation.eta)} Uhr" if reservation.eta else "nicht angegeben"
+            ),
         },
         "hotel": {"name": settings.hotel_name, "ort": settings.hotel_city},
     }
@@ -160,7 +162,7 @@ def demo_context(*, allow_safe: bool = False) -> dict[str, dict[str, str]]:
             "naechte": "3",
             "zimmer": "204",
             "kategorie": "Doppelzimmer",
-            "ankunftszeit": "21:30",
+            "ankunftszeit": "21:30 Uhr",
         },
         "hotel": {"name": "Hotel Rheinland", "ort": "Bad Orb"},
     }
@@ -189,9 +191,11 @@ def _placeholder(node: nodes.Node) -> str | None:
 def _check_source(source: str, *, allow_safe: bool) -> None:
     try:
         parsed = _ENV.parse(source)
-    except TemplateError as exc:
+    except TemplateError:
+        # Jinja's own messages are English and technical ("unexpected '}'").
         raise TemplateValidationError(
-            f"Vorlage konnte nicht gelesen werden: {exc.message}"
+            "Ein Platzhalter ist nicht richtig geschlossen – "
+            "jeder Platzhalter beginnt mit {{ und endet mit }}."
         ) from None
     allowed = set(placeholder_names(allow_safe=allow_safe))
     # Templates are plain text with placeholders, not programs. Reject all control
@@ -199,15 +203,23 @@ def _check_source(source: str, *, allow_safe: bool) -> None:
     for output in parsed.body:
         if not isinstance(output, nodes.Output):
             raise TemplateValidationError(
-                "Bitte nur Text und die aufgeführten Platzhalter verwenden."
+                "Bitte nur Text und Platzhalter wie {{ gast.name }} verwenden – "
+                "{% … %} ist nicht erlaubt."
             )
         for node in output.nodes:
             if isinstance(node, nodes.TemplateData):
                 continue
             name = _placeholder(node)
+            if name is None:
+                raise TemplateValidationError(
+                    "Ein Platzhalter darf nur einen Namen aus der Liste enthalten, "
+                    "z. B. {{ gast.vorname }} – ohne Zusätze wie | oder ()."
+                )
             if name not in allowed:
-                label = name or "Ausdruck nicht erlaubt"
-                raise TemplateValidationError(f"Unbekannter Platzhalter: {label}")
+                raise TemplateValidationError(
+                    f"Unbekannter Platzhalter: {name} – bitte einen aus der Liste "
+                    "„Verfügbare Platzhalter“ verwenden."
+                )
 
 
 def _subject(subject: str) -> None:

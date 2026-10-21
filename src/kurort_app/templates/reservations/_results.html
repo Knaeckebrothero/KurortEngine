@@ -1,4 +1,8 @@
 {% import "_macros.html" as ui %}
+{% if partial %}{# live search: refresh the page subtitle and the reset button too #}
+<p id="res-subtitle" hx-swap-oob="true">{{ subtitle }}</p>
+{% include "reservations/_reset.html" %}
+{% endif %}
 <section id="results" class="res-results" aria-live="polite" aria-busy="false">
   <div class="res-toolbar">
     <nav class="chips" aria-label="Nach Status filtern">
@@ -50,7 +54,7 @@
             <td class="num res-col-amount">{{ r.rate_total | money }}</td>
             <td class="actions">
               {% if arriving_today %}
-                <a class="btn primary sm" href="/check-in/{{ r.id }}">Check-in starten</a>
+                <a class="btn primary sm" href="/check-in/{{ r.id }}">Check-in</a>
               {% elif leaving %}
                 <a class="btn sm" href="/check-out/{{ r.id }}">Check-out</a>
               {% else %}

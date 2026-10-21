@@ -1,15 +1,19 @@
 {% set pay_errors = payment_errors | default({}) %}
+{# ?zahlung=… after a redirect to #zahlung: confirm here, in view; "erfassen" opens the form. #}
+{% set pay_step = request.query_params.get('zahlung', '') %}
+{% set pay_notice = {'erfasst': 'Zahlung erfasst.', 'storniert': 'Zahlung storniert.'}.get(pay_step) %}
 <section class="card payment-card" id="zahlung" aria-labelledby="payment-h">
   <div class="card-header"><h2 id="payment-h">Zahlung</h2></div>
   <div class="card-body stack">
+    {% if pay_notice and not pay_errors %}<div class="notice success" role="status"><p>{{ pay_notice }}</p></div>{% endif %}
     <div class="payment-summary">
-      <span class="badge {{ 'success' if balance.state == 'bezahlt' and not balance.awaiting else 'warning' }}">{{ payment_label }}</span>
-      <div class="payment-open"><span class="muted">Offen</span><strong class="num">{{ balance.open | money }}</strong></div>
+      {% if payment_label %}<span class="badge {{ 'warning' if balance.awaiting else 'success' }}">{{ payment_label }}</span>{% endif %}
+      <div class="payment-open"><span class="muted">{{ 'Guthaben' if balance.state == 'guthaben' else 'Offen' }}</span><strong class="num">{{ balance.open | abs | money }}</strong></div>
     </div>
     {% if balance.state == 'guthaben' and r.status in ['cancelled', 'no_show'] %}
     <p class="notice warning">Guthaben – Erstattung klären</p>
     {% endif %}
-    <p class="payment-disclaimer muted">Zahlungsübersicht – keine Rechnung.</p>
+    <p class="payment-disclaimer muted">Nur Übersicht – ersetzt keine Rechnung.</p>
     {% if r.status == 'cancelled' %}
     {% for field in ['status', 'reason'] %}
     {% if pay_errors.get(field) %}<div class="notice danger" role="alert"><p>{{ pay_errors[field] }}</p></div>{% endif %}
@@ -24,7 +28,7 @@
           <dt>Gesamt</dt><dd class="num">{{ balance.due | money }}</dd>
           <dt>Bezahlt</dt><dd class="num">{{ balance.paid | money }}</dd>
           <dt>Offen</dt><dd class="num"><strong>{{ balance.open | money }}</strong></dd>
-          {% if balance.awaiting > 0 %}<dt>Rechnung offen</dt><dd class="num">{{ balance.awaiting | money }}</dd>{% endif %}
+          {% if balance.awaiting > 0 %}<dt>Auf Rechnung, Eingang offen</dt><dd class="num">{{ balance.awaiting | money }}</dd>{% endif %}
         </dl>
         {% if r.payments %}
         <ol class="payment-history" aria-label="Zahlungsverlauf">
@@ -38,12 +42,12 @@
             </div>
             {% if p.payer %}<span class="sub">Zahlende Person oder Firma: {{ p.payer }}</span>{% endif %}
             {% if p.note %}<p class="payment-note">{{ p.note }}</p>{% endif %}
-            <span class="sub">Erfasst von {{ p.recorded_by }} · {{ p.recorded_at | date }} {{ p.recorded_at | time }}</span>
+            <span class="sub">Erfasst von {{ p.recorded_by | staff_name }} · {{ p.recorded_at | date }} {{ p.recorded_at | time }}</span>
             {% if p.cancelled_at %}
-            <p class="payment-cancel-reason"><strong>Storniert:</strong> {{ p.cancel_reason }}<span class="sub">{{ p.cancelled_by }} · {{ p.cancelled_at | date }} {{ p.cancelled_at | time }}</span></p>
+            <p class="payment-cancel-reason"><strong>Storniert:</strong> {{ p.cancel_reason }}<span class="sub">{{ p.cancelled_by | staff_name }} · {{ p.cancelled_at | date }} {{ p.cancelled_at | time }}</span></p>
             {% else %}
             {% if p.received_on %}<span class="sub">Eingegangen am {{ p.received_on | date }}</span>
-            {% else %}<span class="sub">Rechnung offen · Eingang noch nicht erfasst</span>{% endif %}
+            {% else %}<span class="sub">Auf Rechnung · Eingang noch nicht erfasst</span>{% endif %}
             <details class="payment-disclosure payment-cancel"{% if pay_errors.get(reason_key) %} open{% endif %}>
               <summary>Zahlung stornieren …</summary>
               <form class="payment-disclosure-body stack" method="post" action="/reservierungen/{{ r.id }}/zahlungen/{{ p.id }}/stornieren">
@@ -65,7 +69,7 @@
       </div>
     </details>
     {% if r.status != 'cancelled' %}
-    <details class="payment-disclosure payment-entry"{% if pay_errors or (overpayment is defined and overpayment is not none) %} open{% endif %}>
+    <details class="payment-disclosure payment-entry"{% if pay_errors or pay_step == 'erfassen' or (overpayment is defined and overpayment is not none) %} open{% endif %}>
       <summary>Zahlung erfassen</summary>
       <div class="payment-disclosure-body">{% include "payments/_form.html" %}</div>
     </details>

@@ -40,6 +40,9 @@ class TodayRow:
     flags: list[Flag]
 
 
+# Lists that show each guest's Meldeschein status leave this flag out.
+UNSIGNED_FLAG = "Unterschrift fehlt"
+
 FlagProvider = Callable[[Session, TodayRow], list[Flag]]
 CheckinBlocker = Callable[[Session, Reservation], list[engine.Blocker]]
 CheckoutWarning = Callable[[Session, Reservation], list[Flag]]
@@ -101,10 +104,10 @@ def departure_flags(session: Session, row: TodayRow) -> list[Flag]:
         return []
     r = row.reservation
     if r.status == CHECKED_OUT:
-        return [Flag("Ausgecheckt", "success")]
+        return [Flag("Abgereist", "success")]
     flags = []
     if any(rg.meldeschein_status != MELDESCHEIN_SIGNED for rg in r.guests):
-        flags.append(Flag("Unterschrift fehlt", "warning", f"/reservierungen/{r.id}#gaeste"))
+        flags.append(Flag(UNSIGNED_FLAG, "warning", f"/reservierungen/{r.id}#gaeste"))
     if r.kurtaxe is None:
         flags.append(Flag("Kurtaxe fehlt", "warning"))
     return flags
