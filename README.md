@@ -73,7 +73,7 @@ The web app's tests need the Postgres test database from
 [local-development.md](docs/ops/local-development.md); without
 `KURORT_TEST_REQUIRE_DB=1` they are skipped when it is missing. The two
 deselected tests are the open defect in [Known issues](#known-issues). State on
-2026-10-20: **605 passed in about 7 minutes**, lint and format clean. Lint covers
+2026-10-21: **676 passed in about 8 minutes**, lint and format clean. Lint covers
 the web app; the older `src/kurort_engine` code still has the findings listed
 there.
 
